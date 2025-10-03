@@ -11,11 +11,27 @@ class PasienController extends Controller
     public function index()
     {
         $dataPasien = Pasien::all();
-
-        return view('admin.pasien');
+        return view('admin.pasien', compact('dataPasien'));
     }
 
     public function createPasien(Request $request)
+    {
+        $request->validate([
+            'nama_pasien' => ['required'],
+            'alamat' => ['required'],
+            'tanggal_lahir' => ['required', 'date'],
+        ]);
+
+        $dataPasien = Pasien::create([
+            'nama_pasien' => $request->nama_pasien,
+            'alamat' => $request->alamat,
+            'tanggal_lahir' => $request->tanggal_lahir,
+        ]);
+
+        return response()->json(['status' => 200, 'data' => $dataPasien, 'message' => 'Data Berhasil Di Tambahkan']);
+    }
+
+    public function updatePasien(Request $request)
     {
 
         $request->validate([
@@ -24,10 +40,23 @@ class PasienController extends Controller
             'tanggal_lahir' => ['required', 'date'],
         ]);
 
-        Pasien::created([
-            'nama_pasien' => $request->
+        $dataPasien = Pasien::where('id', $request->id)->firstOrFail();
+
+        $dataPasien->update([
+            'nama_pasien' => $request->nama_pasien,
+            'alamat' => $request->alamat,
+            'tanggal_lahir' => $request->tanggal_lahir,
         ]);
 
-        return $request;
+        return response()->json(['status' => 200, 'data' => $dataPasien, 'massage' => 'Data Berhasil Di Update']);
+    }
+
+    public function deletePasien(Request $request)
+    {
+        $dataPasien = Pasien::where('id', $request->id);
+
+        $dataPasien->delete();
+
+        return response()->json(['status' => 200, 'data' => $dataPasien, 'massage' => 'Data Berhasil Dihapus']);
     }
 }
