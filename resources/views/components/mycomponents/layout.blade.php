@@ -52,6 +52,17 @@
                     </a>
                 </div>
 
+
+
+                <!-- Tengah: Search -->
+                <div class="flex-1 flex justify-center px-2 md:px-6 search-area">
+                    {{ $search ?? '' }}
+                </div>
+
+
+
+
+                <!-- Kanan: Ikon & Akun -->
                 <div class="flex items-center space-x-3">
                     <a href="#" class="hidden sm:block text-gray-500 hover:text-gray-700 p-2 rounded-full">
                         <i class="fa-solid fa-circle-question fa-lg"></i>

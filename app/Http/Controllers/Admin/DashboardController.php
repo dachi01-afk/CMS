@@ -20,7 +20,6 @@ class DashboardController extends Controller
 {
     public function index()
     {
-
         // Get the count for each jenis_kunjungan
         $jenisKunjungan = Kunjungan::select('jenis_kunjungan')
             ->selectRaw('count(*) as total')

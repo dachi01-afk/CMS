@@ -33,7 +33,6 @@ class PasienController extends Controller
 
     public function updatePasien(Request $request)
     {
-
         $request->validate([
             'nama_pasien' => ['required'],
             'alamat' => ['required'],
