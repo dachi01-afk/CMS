@@ -54,15 +54,10 @@
                     </a>
                 </div>
 
-
-
                 <!-- Tengah: Search -->
                 <div class="flex-1 flex justify-center px-2 md:px-6 search-area">
                     {{ $search ?? '' }}
                 </div>
-
-
-
 
                 <!-- Kanan: Ikon & Akun -->
                 <div class="flex items-center space-x-3">

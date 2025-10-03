@@ -17,6 +17,7 @@ class UserSeeder extends Seeder
         // Seeder 1 Data User Dengan Role Admin. 
         User::create([
             'username' => 'Admin',
+            'email' => 'admin@gmail.com',
             'password' => Hash::make('passwordAdmin'),
             'role' => 'Admin',
         ]);
@@ -24,6 +25,7 @@ class UserSeeder extends Seeder
         // Seeder 1 Data User Dengan Role Dokter. 
         User::create([
             'username' => 'Dokter',
+            'email' => 'dokter@gmail.com',
             'password' => Hash::make('passwordDokter'),
             'role' => 'Dokter',
         ]);
@@ -32,6 +34,7 @@ class UserSeeder extends Seeder
         // Seeder 1 Data User Dengan Role Apoteker. 
         User::create([
             'username' => 'Apoteker',
+            'email' => 'apoteker@gmail.com',
             'password' => Hash::make('passwordApoteker'),
             'role' => 'Apoteker',
         ]);
@@ -39,6 +42,7 @@ class UserSeeder extends Seeder
         // Seeder 1 Data User Dengan Role Pasien. 
         User::create([
             'username' => 'Pasien',
+            'email' => 'apoteker@gmail.com',
             'password' => Hash::make('passwordPasien'),
             'role' => 'Pasien',
         ]);

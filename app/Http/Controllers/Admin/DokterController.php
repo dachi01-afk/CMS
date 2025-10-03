@@ -10,7 +10,8 @@ class DokterController extends Controller
 {
     public function index()
     {
-        return view('admin.dokter');
+        $dataDokter = Dokter::all();
+        return view('admin.dokter', compact('dataDokter'));
     }
 
     public function createDokter(Request $request)
