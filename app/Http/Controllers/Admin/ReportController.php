@@ -5,10 +5,10 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 
-class RawatJalanController extends Controller
+class ReportController extends Controller
 {
     public function index()
     {
-        return view('admin.rawat_jalan');
+        return view('admin.report');
     }
 }

@@ -33,7 +33,7 @@
         <div class="h-1 bg-blue-900 w-full"></div>
 
         <!-- Navbar -->
-        <nav class="h-17 bg-white border-b border-gray-200 shadow-md">
+        <nav class="h-19 bg-white border-b border-gray-200 shadow-md">
             <div class="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-2">
 
                 <!-- Kiri: Sidebar Toggle (Mobile) -->
@@ -114,32 +114,27 @@
                         Dashboard
                     </x-mycomponents.sidebar_link>
 
-                    <x-mycomponents.sidebar_link href="rawat_jalan.index" class="fa-solid fa-calendar-plus">
-                        Rawat Jalan
+                    <x-mycomponents.sidebar_link href="pasien.index" class="fa-solid fa-calendar-plus">
+                        Pasien
                     </x-mycomponents.sidebar_link>
 
-                    <x-mycomponents.sidebar_link href="registrasi.index" class="fa-solid fa-id-badge">
-                        Registrasi
-                    </x-mycomponents.sidebar_link>
-
-                    <x-mycomponents.sidebar_link href="emr.index" class="fa-solid fa-address-card">
-                        EMR
+                    <x-mycomponents.sidebar_link href="dokter.index" class="fa-solid fa-id-badge">
+                        Dokter
                     </x-mycomponents.sidebar_link>
 
                     <x-mycomponents.sidebar_link href="apotek.index" class="fa-solid fa-pills">
                         Apotek
                     </x-mycomponents.sidebar_link>
 
-                    <x-mycomponents.sidebar_link href="kasir.index" class="fa-solid fa-cash-register">
-                        Kasir
+                    <x-mycomponents.sidebar_link href="report.index" class="fa-solid fa-cash-register">
+                        Report
+                    </x-mycomponents.sidebar_link>
+
+                    <x-mycomponents.sidebar_link href="history_kunjungan.index" class="fa-solid fa-cash-register">
+                        History Kunjungan
                     </x-mycomponents.sidebar_link>
 
                     <hr class="my-4 border-gray-300">
-
-                    <x-mycomponents.sidebar_link href="office.index" class="fa-solid fa-building">
-                        Office
-                    </x-mycomponents.sidebar_link>
-
                     <x-mycomponents.sidebar_link href="settings.index" class="fa-solid fa-gear">
                         Settings
                     </x-mycomponents.sidebar_link>

@@ -3,12 +3,14 @@
     {{-- main --}}
     <div>
 
-        <!-- Header Halaman -->
+         <!-- Header Halaman -->
         <div class="mb-6 mt-1">
             <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-3 sm:space-y-0">
-                <h1>Settings</h1>
+                <h1>Dokter</h1>
             </div>
         </div>
+
+
         <!-- Konten -->
         <div class="p-6 bg-white shadow-lg rounded-lg min-h-screen">
             <section id="beranda">
