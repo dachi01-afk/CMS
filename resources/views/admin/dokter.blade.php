@@ -2,17 +2,27 @@
 
     {{-- main --}}
     <div>
+        <div class="mb-2 mt-2">
+            <div class="flex items-center justify-between">
 
-         <!-- Header Halaman -->
-        <div class="mb-6 mt-1">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between space-y-3 sm:space-y-0">
-                <h1>Dokter</h1>
+                <div class="flex items-center space-x-3">
+                    <i class="fa-solid fa-user-doctor fa-2xl text-blue-600"></i>
+
+                    <h1 class="text-3xl font-extrabold text-gray-900 leading-tight">
+                        Manajemen Dokter
+                    </h1>
+                </div>
+
             </div>
-        </div>
 
+            <p class="mt-1 text-sm text-gray-500">
+                Kelola data, jadwal, dan informasi kontak seluruh tenaga medis.
+            </p>
+        </div>
+        <hr class="mb-2 border-gray-200">
 
         <!-- Konten -->
-        <div class="p-6 bg-white shadow-lg rounded-lg min-h-screen">
+        <div class="p-2 bg-white shadow-lg rounded-lg min-h-screen">
             <section id="beranda">
                 <h2 class="text-xl font-semibold text-gray-700 mb-2">Judul Artikel 1</h2>
                 <p class="text-gray-500">Isi artikel...</p>

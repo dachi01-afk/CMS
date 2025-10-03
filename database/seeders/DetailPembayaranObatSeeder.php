@@ -6,8 +6,7 @@ use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Faker\Factory as Faker;
-use App\Models\Pembayaran;
-use App\Models\ResepObat;
+
 
 class DetailPembayaranObatSeeder extends Seeder
 {

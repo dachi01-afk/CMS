@@ -36,7 +36,6 @@
         <nav class="h-19 bg-white border-b border-gray-200 shadow-md">
             <div class="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-2">
 
-                <!-- Kiri: Sidebar Toggle (Mobile) -->
                 <div class="flex items-center space-x-2 sm:space-x-4">
                     <button data-drawer-target="logo-sidebar" data-drawer-toggle="logo-sidebar"
                         aria-controls="logo-sidebar" type="button"
@@ -45,26 +44,14 @@
                         <i class="fa-solid fa-bars fa-lg"></i>
                     </button>
 
-                    <!-- Logo -->
-                    <a href="#" class="hidden sm:flex items-center space-x-2 rtl:space-x-reverse">
+                    <a href="#" class="flex items-center space-x-2 rtl:space-x-reverse">
                         <img src="/storage/assets/royal_klinik.svg" alt="Logo Royal Klinik" class="h-9 w-auto">
-                        <h1 class="text-xl font-bold text-gray-800 whitespace-nowrap">
+                        <h1 class="hidden sm:block text-xl font-bold text-gray-800 whitespace-nowrap">
                             Royal Klinik.id
                         </h1>
                     </a>
                 </div>
 
-
-
-                <!-- Tengah: Search -->
-                <div class="flex-1 flex justify-center px-2 md:px-6 search-area">
-                    {{ $search ?? '' }}
-                </div>
-
-
-
-
-                <!-- Kanan: Ikon & Akun -->
                 <div class="flex items-center space-x-3">
                     <a href="#" class="hidden sm:block text-gray-500 hover:text-gray-700 p-2 rounded-full">
                         <i class="fa-solid fa-circle-question fa-lg"></i>
@@ -72,22 +59,20 @@
                     <a href="#" class="hidden sm:block text-gray-500 hover:text-gray-700 p-2 rounded-full">
                         <i class="fa-solid fa-bell fa-lg"></i>
                     </a>
-                    <!-- Akun Dropdown -->
+
                     <button type="button" id="dropdownAccountButton" data-dropdown-toggle="dropdownAccount"
                         class="text-gray-500 hover:text-gray-700 p-2 rounded-full">
                         <i class="fa-solid fa-circle-user fa-lg"></i>
                     </button>
+
                     <div id="dropdownAccount"
-                        class="z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow w-44 mt-2 right-0 absolute">
+                        class="z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow w-44 mt-2 right-4 sm:right-6 lg:right-8 absolute">
                         <ul class="py-2 text-sm text-gray-700" aria-labelledby="dropdownAccountButton">
-                            <!-- Pengaturan Akun -->
                             <li>
-                                <!-- Pastikan rute 'profile.edit' tersedia di file `routes/web.php` -->
                                 <a href="{{ route('profile.edit') }}" class="block px-4 py-2 hover:bg-gray-100">
                                     Pengaturan Akun
                                 </a>
                             </li>
-                            <!-- Tombol Logout -->
                             <li>
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
