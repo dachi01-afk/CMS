@@ -14,10 +14,33 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        User::factory()->create([
-            'name' => 'Admin',
-            'email' => 'admin@gmail.com',
-            'password' => Hash::make('password'),
+        // Seeder 1 Data User Dengan Role Admin. 
+        User::create([
+            'username' => 'Admin',
+            'password' => Hash::make('passwordAdmin'),
+            'role' => 'Admin',
+        ]);
+
+        // Seeder 1 Data User Dengan Role Dokter. 
+        User::create([
+            'username' => 'Dokter',
+            'password' => Hash::make('passwordDokter'),
+            'role' => 'Dokter',
+        ]);
+
+
+        // Seeder 1 Data User Dengan Role Apoteker. 
+        User::create([
+            'username' => 'Apoteker',
+            'password' => Hash::make('passwordApoteker'),
+            'role' => 'Apoteker',
+        ]);
+
+        // Seeder 1 Data User Dengan Role Pasien. 
+        User::create([
+            'username' => 'Pasien',
+            'password' => Hash::make('passwordPasien'),
+            'role' => 'Pasien',
         ]);
     }
 }

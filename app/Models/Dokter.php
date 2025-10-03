@@ -4,14 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Pasien extends Model
+class Dokter extends Model
 {
-    protected $table = 'pasien';
+    protected $table = 'dokter';
 
     protected $guarded = [];
 
     public function user()
     {
-        return $this->belongsTo(User::class);
+        $this->belongsTo(User::class);
     }
 }

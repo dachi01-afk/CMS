@@ -9,12 +9,15 @@ return new class extends Migration
     /**
      * Run the migrations.
      */
-
     public function up(): void
     {
-        Schema::create('satuan_obat', function (Blueprint $table) {
-            $table->id('id_satuan_obat');
-            $table->string('nama_satuan')->unique();
+        Schema::create('admin', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained('user', 'id', 'admin_user_id')
+                ->cascadeOnDelete()->cascadeOnUpdate();
+            $table->string('nama_admin');
+            $table->string('email_admin');
+            $table->string('no_hp');
             $table->timestamps();
         });
     }
@@ -24,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('satuan_obat');
+        Schema::dropIfExists('admin');
     }
 };
