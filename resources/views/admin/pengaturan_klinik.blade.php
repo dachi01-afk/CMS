@@ -16,9 +16,9 @@
                 </div>
             </div>
 
-            <p class="mt-1 text-sm text-gray-500">
+            {{-- <p class="mt-1 text-sm text-gray-500">
                 Kelola data dasar dan riwayat kunjungan seluruh pasien klinik.
-            </p>
+            </p> --}}
         </div>
         <hr class="mb-2 border-gray-200">
 
@@ -44,21 +44,21 @@
                 </li>
 
 
-                <li class="me-2" role="presentation">
+                {{-- <li class="me-2" role="presentation">
                     <button class="inline-block p-4 border-b-2 rounded-t-lg" id="daftar-layanan-tab"
                         data-tabs-target="#data-daftar-layanan" type="button" role="tab"
                         aria-controls="data-daftar-layanan" aria-selected="false">
                         Daftar Layanan
                     </button>
-                </li>
+                </li> --}}
 
-                <li role="presentation">
+                {{-- <li role="presentation">
                     <button class="inline-block p-4 border-b-2 rounded-t-lg" id="jenis-tes-lab-tab"
                         data-tabs-target="#data-jenis-tes-lab" type="button" role="tab"
                         aria-controls="data-jenis-tes-lab" aria-selected="false">
                         Jenis Tes Lab
                     </button>
-                </li>
+                </li> --}}
             </ul>
         </div>
 

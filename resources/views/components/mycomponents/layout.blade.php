@@ -79,11 +79,11 @@
                     <div id="dropdownAccount"
                         class="z-10 hidden bg-white divide-y divide-gray-100 rounded-lg shadow w-44 mt-2 right-4 sm:right-6 lg:right-8 absolute">
                         <ul class="py-2 text-sm text-gray-700" aria-labelledby="dropdownAccountButton">
-                            <li>
+                            {{-- <li>
                                 <a href="{{ route('profile.edit') }}" class="block px-4 py-2 hover:bg-gray-100">
                                     Pengaturan Akun
                                 </a>
-                            </li>
+                            </li> --}}
                             <li>
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
@@ -106,27 +106,26 @@
             aria-label="Sidebar">
             <div class="h-full px-3 pb-4 overflow-y-auto bg-white">
                 <ul class="space-y-2 font-medium">
-                    <x-mycomponents.sidebar_link href="dashboard.index" class="fa-solid fa-house" :active="Request::routeIs('admin.index')">
+                    <x-mycomponents.sidebar_link href="admin.index" class="fa-solid fa-house" :active="Request::routeIs('admin.index')">
                         Dashboard
                     </x-mycomponents.sidebar_link>
 
                     <x-mycomponents.sidebar_link href="manajemen_pengguna.index"
-                        class="fa-solid fa-users w-5 h-5 text-blue-600">
+                        class="fa-solid fa-users text-blue-600">
                         Manajemen Pengguna
                     </x-mycomponents.sidebar_link>
 
                     <x-mycomponents.sidebar_link href="pengaturan_klinik.index"
-                        class="fa-solid fa-hospital-user w-5 h-5 text-blue-600">
+                        class="fa-solid fa-hospital-user text-blue-600">
                         Pengaturan Klinik
                     </x-mycomponents.sidebar_link>
 
-                    <x-mycomponents.sidebar_link href="laporan.index"
-                        class="fa-solid fa-chart-line w-5 h-5 text-blue-600">
+                    <x-mycomponents.sidebar_link href="laporan.index" class="fa-solid fa-chart-line text-blue-600">
                         Laporan
                     </x-mycomponents.sidebar_link>
 
                     <x-mycomponents.sidebar_link href="data_medis_pasien.index"
-                        class="fa-solid fa-notes-medical w-5 h-5 text-blue-600">
+                        class="fa-solid fa-notes-medical text-blue-600">
                         Data Medis Pasien
                     </x-mycomponents.sidebar_link>
 

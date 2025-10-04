@@ -10,7 +10,7 @@
 <!-- Tabel -->
 <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
     <table id="pasienTable" class="w-full text-sm text-left text-gray-600">
-        <thead class="text-xs uppercase bg-gray-100 text-gray-700">
+        <thead class="text-xs uppercase bg-sky-500 text-white">
             <tr>
                 <th class="px-6 py-3">No</th>
                 <th class="px-6 py-3">Username</th>

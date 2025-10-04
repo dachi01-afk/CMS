@@ -7,8 +7,10 @@ use Illuminate\Http\Request;
 
 class SettingsController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        return view('admin.settings');
+        // Ambil data user yang sedang login
+        $user = $request->user();
+        return view('admin.settings', ['user' => $user]);
     }
 }

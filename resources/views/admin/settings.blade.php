@@ -1,5 +1,4 @@
 <x-mycomponents.layout>
-
     {{-- main --}}
     <div>
 
@@ -14,32 +13,54 @@
                         Pengaturan Sistem
                     </h1>
                 </div>
-
-                <button type="button"
-                    class="px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 transition duration-150 ease-in-out">
-                    <i class="fa-solid fa-floppy-disk mr-2"></i>
-                    Simpan Perubahan
-                </button>
             </div>
-
-            <p class="mt-1 text-sm text-gray-500">
-                Kelola preferensi, akun pengguna, dan konfigurasi dasar aplikasi.
-            </p>
         </div>
         <hr class="mb-2 border-gray-200">
 
+        {{-- sub menu --}}
+        <div class="border-b border-gray-200 dark:border-gray-700 ">
+            <ul class="flex flex-wrap -mb-px text-sm font-medium text-center whitespace-nowrap" id="default-tab"
+                data-tabs-toggle="#tab-content" role="tablist">
+
+                <li class="me-2" role="presentation">
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="informasi-profile-tab"
+                        data-tabs-target="#data-informasi-profile" type="button" role="tab"
+                        aria-controls="data-informasi-profile" aria-selected="true">
+                        Informasi Profile
+                    </button>
+                </li>
+
+                <li class="me-2" role="presentation">
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="ubah-password-tab"
+                        data-tabs-target="#data-ubah-password" type="button" role="tab"
+                        aria-controls="data-ubah-password" aria-selected="false">
+                        Ubah Password
+                    </button>
+                </li>
+            </ul>
+        </div>
 
         <!-- Konten -->
         <div class="p-2 bg-white shadow-lg rounded-lg min-h-screen">
-            <section id="beranda">
-                <h2 class="text-xl font-semibold text-gray-700 mb-2">Judul Artikel 1</h2>
-                <p class="text-gray-500">Isi artikel...</p>
-            </section>
 
-            <section id="layanan" class="mt-8">
-                <h2 class="text-2xl font-semibold text-gray-800 mb-4">Layanan Kami</h2>
-                <!-- Konten layanan -->
-            </section>
+            {{-- Tabs Content --}}
+            <div id="tab-content">
+                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-informasi-profile"
+                    role="tabpanel" aria-labelledby="informasi-profile-tab">
+                    @include('profile.partials.update-profile-information-form')
+                </div>
+
+                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-ubah-password"
+                    role="tabpanel" aria-labelledby="ubah-password-tab">
+                    @include('profile.partials.update-password-form')
+                </div>
+
+                {{-- <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-laporan-resep-dan-apotek"
+                    role="tabpanel" aria-labelledby="laporan-resep-dan-apotek-tab">
+                    @include('profile.partials.delete-user-form')
+                </div> --}}
+            </div>
+
         </div>
 
     </div>
