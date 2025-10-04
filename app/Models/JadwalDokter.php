@@ -9,4 +9,8 @@ class JadwalDokter extends Model
     protected $table = 'jadwal_dokter';
 
     protected $guarded = [];
+
+    public function dokter () {
+        return $this->belongsTo(Dokter::class);
+    }
 }

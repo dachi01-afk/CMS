@@ -10,8 +10,17 @@ class Dokter extends Model
 
     protected $guarded = [];
 
+    protected $casts = [
+        'hari' => 'array'
+    ];
+
     public function user()
     {
         $this->belongsTo(User::class);
+    }
+
+    public function jadwalDokter()
+    {
+        return $this->hasMany(JadwalDokter::class);
     }
 }
