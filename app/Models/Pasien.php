@@ -14,4 +14,9 @@ class Pasien extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function pembayaran()
+    {
+        return $this->belongsTo(Pembayaran::class);
+    }
 }
