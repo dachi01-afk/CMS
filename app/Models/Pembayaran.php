@@ -10,7 +10,13 @@ class Pembayaran extends Model
 
     protected $guarded = [];
 
-    public function pasien() {
+    public function pasien()
+    {
         return $this->belongsTo(Pasien::class);
+    }
+
+    public function administrasi()
+    {
+        return $this->hasMany(Administrasi::class);
     }
 }

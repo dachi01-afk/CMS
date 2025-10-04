@@ -13,8 +13,10 @@ return new class extends Migration
     {
         Schema::create('administrasi', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('pembayaran_id')->constrained('pembayaran', 'id', 'administrasi_pembayaran_id')
+                ->cascadeOnDelete()->cascadeOnUpdate();
             $table->string('laporan');
-            $table->string('tarif');
+            $table->decimal('tarif', 8, 2);
             $table->string('periode');
             $table->timestamps();
         });

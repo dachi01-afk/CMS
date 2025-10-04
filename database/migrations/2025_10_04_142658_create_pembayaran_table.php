@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('pasien_id')->constrained('pasien', 'id', 'pembayaran_pasien_id')
                 ->cascadeOnDelete()->cascadeOnUpdate();
-            $table->integer('total_tagihan');
+            $table->decimal('total_tagihan', 8, 2);
             $table->enum('status', ['Sudah Bayar', 'Belum Bayar']);
             $table->dateTime('tanggal_pembayaran');
             $table->timestamps();

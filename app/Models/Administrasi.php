@@ -10,5 +10,8 @@ class Administrasi extends Model
 
     protected $guarded = [];
 
-    
+    public function pembayaran()
+    {
+        return $this->belongsTo(Pembayaran::class);
+    }
 }

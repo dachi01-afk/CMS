@@ -29,6 +29,7 @@ class DatabaseSeeder extends Seeder
             TesLabSeeder::class,
             KonsulSeeder::class,
             PembayaranSeeder::class,
+            AdministrasiSeeder::class,
         ]);
     }
 }
