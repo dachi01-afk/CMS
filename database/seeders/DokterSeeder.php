@@ -3,8 +3,10 @@
 namespace Database\Seeders;
 
 use App\Models\Dokter;
+use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Faker\Factory as Faker;
 
 class DokterSeeder extends Seeder
 {
@@ -13,12 +15,18 @@ class DokterSeeder extends Seeder
      */
     public function run(): void
     {
-        Dokter::create([
-            'user_id' => 2,
-            'nama_dokter' => 'Agung Prabowo',
-            'spesialisasi' => 'Determatologi',
-            'email' => 'agung@gmail.com',
-            'no_hp' => '084569871245',
-        ]);
+        $roleDokter = User::where('role', 'Dokter')->get();
+        $faker = Faker::create();
+        $spesialis = ['Determatologi', 'Psikiatri', 'Onkologi', 'Kardiologi'];
+
+        for ($i = 0; $i < $roleDokter->count(); $i++) {
+            Dokter::create([
+                'user_id' => $roleDokter[$i]->id,
+                'nama_dokter' => $faker->name,
+                'spesialisasi' => $faker->randomElement($spesialis),
+                'email' => $faker->unique()->safeEmail,
+                'no_hp' => $faker->phoneNumber(),
+            ]);
+        }
     }
 }

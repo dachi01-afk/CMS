@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Pasien;
+use App\Models\User;
 use DateTime;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -13,15 +14,16 @@ class PasienSeeder extends Seeder
 {
     public function run(): void
     {
-        $tanggalLahir = '28-01-2004';
+        $rolePasien = User::where('role', 'Pasien')->get();
+        $faker = Faker::create();
 
-        $resultTanggalLahir = DateTime::createFromFormat('d-m-Y', $tanggalLahir);
-
-        Pasien::created([
-            'user_id' => 4,
-            'nama_pasien' => 'Ferdinan Sianturi',
-            'alamat' => 'Jln. Sakit No. 1',
-            'tanggal_lahir' => $resultTanggalLahir,
-        ]);
+        for ($i = 0; $i < $rolePasien->count(); $i++) {
+            Pasien::created([
+                'user_id' => $rolePasien[$i]->id,
+                'nama_pasien' => $faker->name,
+                'alamat' => $faker->address,
+                'tanggal_lahir' => $faker->dateTimeBetween('-100 years', '-1 day'), 
+            ]);
+        }
     }
 }

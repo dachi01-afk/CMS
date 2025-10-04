@@ -46,7 +46,7 @@ class ObatController extends Controller
 
     public function deleteObat(Request $request)
     {
-        $dataObat = Obat::where('id', $request->id);
+        $dataObat = Obat::findOrFail($request->id);
 
         $dataObat->delete();
 

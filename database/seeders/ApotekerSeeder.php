@@ -3,8 +3,10 @@
 namespace Database\Seeders;
 
 use App\Models\Apoteker;
+use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Faker\Factory as Faker;
 
 class ApotekerSeeder extends Seeder
 {
@@ -13,11 +15,16 @@ class ApotekerSeeder extends Seeder
      */
     public function run(): void
     {
-        Apoteker::create([
-            'user_id' => 3, 
-            'nama_apoteker' => 'Deli Kartika',
-            'email_apoteker' => 'delikartika@gmail.com',
-            'no_hp_apoteker' => '081245789632',
-        ]);
+        $roleApoteker = User::where('role', 'Apoteker')->get();
+        $faker = Faker::create();
+
+        for ($i = 0; $i < $roleApoteker->count(); $i++) {
+            Apoteker::create([
+                'user_id' => $roleApoteker[$i]->id,
+                'nama_apoteker' => $faker->name,
+                'email_apoteker' => $faker->unique()->safeEmail,
+                'no_hp_apoteker' => $faker->phoneNumber(),
+            ]);
+        }
     }
 }
