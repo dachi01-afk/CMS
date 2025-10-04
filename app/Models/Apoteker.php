@@ -14,4 +14,9 @@ class Apoteker extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function resep()
+    {
+        return $this->hasMany(Resep::class);
+    }
 }

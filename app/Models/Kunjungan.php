@@ -9,4 +9,9 @@ class Kunjungan extends Model
     protected $table = 'kunjungan';
 
     protected $guarded = [];
+
+    public function resep()
+    {
+        return $this->hasMany(Resep::class);
+    }
 }

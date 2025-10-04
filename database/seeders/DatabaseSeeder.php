@@ -22,8 +22,9 @@ class DatabaseSeeder extends Seeder
             ApotekerSeeder::class,
             PasienSeeder::class,
             ObatSeeder::class,
-            JadwalDokterSeeder::class, 
+            JadwalDokterSeeder::class,
             KunjunganSeeder::class,
+            ResepSeeder::class,
         ]);
     }
 }
