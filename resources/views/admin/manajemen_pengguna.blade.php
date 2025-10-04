@@ -15,9 +15,9 @@
                 </div>
             </div>
 
-            <p class="mt-1 text-sm text-gray-500">
+            {{-- <p class="mt-1 text-sm text-gray-500">
                 Kelola data dasar dan riwayat kunjungan seluruh pasien klinik.
-            </p>
+            </p> --}}
         </div>
         <hr class="mb-2 border-gray-200">
 

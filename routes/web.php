@@ -19,9 +19,9 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// Route::get('/dashboard', function () {
-//     return view('admin.dashboard');
-// })->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', function () {
+    return view('admin.dashboard');
+})->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::middleware([])->group(function () {
     Route::get('/profile',              [ProfileController::class, 'edit'])->name('profile.edit');
@@ -29,7 +29,7 @@ Route::middleware([])->group(function () {
     Route::delete('/profile',           [ProfileController::class, 'destroy'])->name('profile.destroy');
 
 
-    Route::prefix('dashboard')->name('dashboard.')->group(function () {
+    Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/',                                     [DashboardController::class, 'index'])->name('index');
         Route::get('/chart-kunjungan',                      [DashboardController::class, 'getChartKunjungan'])->name('chart.kunjungan');
         Route::get('/getdashboardmetrics',                  [DashboardController::class, 'getDashboardMetrics'])->name('getdashboardmetrics');

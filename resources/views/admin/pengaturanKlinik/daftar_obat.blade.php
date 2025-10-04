@@ -1,6 +1,6 @@
 <!-- Header -->
 <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-    <h2 class="text-2xl font-bold text-gray-700">Data Pasien</h2>
+    <h2 class="text-2xl font-bold text-gray-700">Daftar Obat</h2>
     <button id="btnAdd"
         class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg shadow hover:bg-blue-700 focus:outline-none">
         + Tambah Data
@@ -13,10 +13,9 @@
         <thead class="text-xs uppercase bg-sky-500 text-white">
             <tr>
                 <th class="px-6 py-3">No</th>
-                <th class="px-6 py-3">Nama</th>
-                <th class="px-6 py-3">Alamat</th>
-                <th class="px-6 py-3">Tanggal Lahir</th>
-                <th class="px-6 py-3">Jenis Kelamin</th>
+                <th class="px-6 py-3">Nama Obat</th>
+                <th class="px-6 py-3">Jumlah</th>
+                <th class="px-6 py-3">Dosis</th>
                 <th class="px-6 py-3 text-center">Aksi</th>
             </tr>
         </thead>
