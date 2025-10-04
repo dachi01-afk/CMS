@@ -18,4 +18,9 @@ class Resep extends Model
     {
         return $this->belongsTo(Apoteker::class);
     }
+
+    public function resepObat()
+    {
+        return $this->hasMany(ResepObat::class);
+    }
 }

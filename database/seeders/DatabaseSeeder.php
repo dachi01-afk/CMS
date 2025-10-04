@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             JadwalDokterSeeder::class,
             KunjunganSeeder::class,
             ResepSeeder::class,
+            ResepObatSeeder::class,
         ]);
     }
 }
