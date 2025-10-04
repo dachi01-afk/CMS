@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
             ResepObatSeeder::class,
             TesLabSeeder::class,
             KonsulSeeder::class,
+            PembayaranSeeder::class,
         ]);
     }
 }
