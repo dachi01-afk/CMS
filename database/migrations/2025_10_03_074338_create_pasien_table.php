@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('nama_pasien');
             $table->string('alamat');
             $table->date('tanggal_lahir');
+            $table->enum('jenis_kelamin', ['Laki-laki', 'Perempuan']);
             $table->timestamps();
         });
     }

@@ -2,76 +2,55 @@
 
 namespace Database\Seeders;
 
-use Carbon\Carbon;
-use Faker\Factory as Faker;
-use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
+use App\Models\Dokter;
 use App\Models\Kunjungan;
-use App\Models\RekamMedis;
-use App\Models\Pembayaran;
+use App\Models\Pasien;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Seeder;
+use Faker\Factory as Faker;
 
 class KunjunganSeeder extends Seeder
 {
+    /**
+     * Run the database seeds.
+     */
     public function run(): void
     {
-        $faker = Faker::create('id_ID');
-        $records = [];
-        $now = now();
+        $faker = Faker::create();
+        $daftarKeluhan = [
+            'Sakit kepala',
+            'Demam tinggi',
+            'Batuk pilek',
+            'Nyeri perut',
+            'Susah tidur'
+        ];
 
-        // Asumsi ID yang sudah ada di tabel relasi
-        $maxPasienId = 10; // Asumsi ada 10 pasien
-        $maxTenagaMedisId = 4; // Asumsi ada 4 dokter
-        $poliIds = [1, 2, 3, 4, 5]; // Asumsi ID Poli (1=Umum, 2=Gigi, 3=Anak, 4=Jantung, 5=Mata)
-        $penjaminIds = [1, 2, 3, 4, 5]; // Asumsi ID Penjamin (1=Pribadi, 2=BPJS, 3+=Asuransi/Perusahaan)
+        $pasien = Pasien::all();
+        $dokter = Dokter::all();
 
-        for ($i = 1; $i <= 20; $i++) {
-            $pasienId = $faker->numberBetween(1, $maxPasienId);
-            $tenagaMedisId = $faker->numberBetween(1, $maxTenagaMedisId);
-            $poliId = $faker->randomElement($poliIds);
+        foreach ($pasien as $p) {
+            // Tentukan tanggal kunjungan pertama pasien ini
+            $hariPertamaBerkunjung = $faker->dateTimeBetween('-1 years', '-1 day');
 
-            // Logika Tipe Pasien
-            $tipePasien = $faker->randomElement(['Non Rujuk', 'Non Rujuk', 'Rujuk']); // 2/3 Non Rujuk
-            $isRujuk = ($tipePasien == 'Rujuk');
+            $jumlahKunjungan = rand(3, 5);
+            $tanggalKunjungan = clone $hariPertamaBerkunjung; // copy supaya bisa dimodifikasi
 
-            $namaRSPerujuk = $isRujuk ? $faker->randomElement(['RSUD Bunda', 'Puskesmas Sehat', 'Klinik Medika']) : null;
-            $namaDokterPerujuk = $isRujuk ? 'Dr. ' . $faker->lastName . ', Sp.' . $faker->randomElement(['A', 'PD', 'THT']) : null;
+            for ($i = 0; $i < $jumlahKunjungan; $i++) {
+                Kunjungan::create([
+                    'dokter_id' => $dokter->random()->id,
+                    'pasien_id' => $p->id,
+                    'tanggal_kunjungan' => $tanggalKunjungan,
+                    'keluhan_awal' => $faker->randomElement($daftarKeluhan),
+                ]);
 
-            // Logika Penjamin
-            $penjaminId = $faker->randomElement([1, 1, 1, 2, 2, 3, 4, 5]); // Proporsi lebih banyak Pribadi dan BPJS
+                // Setiap kunjungan berikutnya maju 1–7 hari
+                $tanggalKunjungan->modify('+' . rand(1, 7) . ' days');
 
-            // Logika Status dan Waktu Pemeriksaan
-            $status = $faker->randomElement(['Succeed', 'Succeed', 'Confirmed', 'Pending', 'Waiting']);
-            $isDone = ($status == 'Succeed' || $status == 'Engaged');
-
-            $waktuKunjungan = Carbon::parse($faker->dateTimeBetween('-5 days', '+3 days'));
-            $jamKunjungan = $waktuKunjungan->format('H:i:s');
-
-            $waktuMulaiPemeriksaan = $isDone
-                ? Carbon::parse($waktuKunjungan)->addMinutes($faker->numberBetween(5, 30))
-                : null;
-
-            $records[] = [
-                'pasien_id' => $pasienId,
-                'tenaga_medis_id' => $tenagaMedisId,
-                'poli_id' => $poliId,
-                'kode_antrian' => strtoupper($faker->randomLetter) . str_pad($i, 3, '0', STR_PAD_LEFT),
-                'tipe_pasien' => $tipePasien,
-                'nama_rs_perujuk' => $namaRSPerujuk,
-                'nama_dokter_perujuk' => $namaDokterPerujuk,
-                'penjamin_id' => $penjaminId,
-                'jenis_kunjungan' => $faker->randomElement(['Rawat Jalan Poli', 'Antri Cepat', 'Kunjungan Sehat']),
-                'jenis_perawatan' => 'Rawat Jalan',
-                'tanggal_kunjungan' => $waktuKunjungan->toDateString(),
-                'jam_kunjungan' => $jamKunjungan,
-                'waktu_mulai_pemeriksaan' => $waktuMulaiPemeriksaan,
-                'status' => $status,
-                'slot' => $faker->randomElement(['Pagi', 'Siang', 'Sore']),
-                'lama_durasi_menit' => $faker->numberBetween(15, 60),
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
+                // Biar gak lewat hari ini
+                if ($tanggalKunjungan > new \DateTime('now')) {
+                    $tanggalKunjungan = new \DateTime('now');
+                }
+            }
         }
-
-        DB::table('kunjungan')->insert($records);
     }
 }
