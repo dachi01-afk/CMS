@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\DataMedisPasienController;
 use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\Admin\ManajemenPenggunaController;
 use App\Http\Controllers\Admin\PengaturanKlinikController;
+use App\Http\Controllers\Dokter\AuthController;
 
 // testing
 // Route::get('testing', function () {
@@ -56,6 +57,9 @@ Route::middleware([])->group(function () {
         Route::get('/',                 [SettingsController::class, 'index'])->name('index');
     });
 });
+
+Route::get('/login-dokter', [AuthController::class, 'login'])->name('login.dokter');
+Route::post('/proses-login-dokter', [AuthController::class, 'prosesLogin'])->name('proses.login.dokter');
 
 
 require __DIR__ . '/auth.php';

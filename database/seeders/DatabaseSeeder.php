@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
             DokterSeeder::class,
             ApotekerSeeder::class,
             PasienSeeder::class,
+            ObatSeeder::class,
         ]);
     }
 }
