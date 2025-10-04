@@ -19,4 +19,9 @@ class Kunjungan extends Model
     {
         return $this->hasMany(TesLab::class);
     }
+
+    public function konsul()
+    {
+        return $this->hasMany(Konsul::class);
+    }
 }
