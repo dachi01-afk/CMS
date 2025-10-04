@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             KunjunganSeeder::class,
             ResepSeeder::class,
             ResepObatSeeder::class,
+            TesLabSeeder::class,
         ]);
     }
 }

@@ -14,4 +14,9 @@ class Kunjungan extends Model
     {
         return $this->hasMany(Resep::class);
     }
+
+    public function tesLab()
+    {
+        return $this->hasMany(TesLab::class);
+    }
 }
