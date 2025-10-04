@@ -5,35 +5,42 @@ namespace App\Http\Controllers\Management;
 use App\Http\Controllers\Controller;
 use App\Models\Pasien;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class PasienController extends Controller
 {
     public function createPasien(Request $request)
     {
         $request->validate([
-            'nama_pasien' => ['required'],
-            'alamat' => ['required'],
-            'tanggal_lahir' => ['required', 'date'],
+            'nama_pasien'   => ['required', 'string', 'max:255'],
+            'alamat'        => ['required', 'string', 'max:255'],
+            'tanggal_lahir' => ['required', 'date', 'before:today'],
         ]);
 
         $dataPasien = Pasien::create([
-            'nama_pasien' => $request->nama_pasien,
-            'alamat' => $request->alamat,
+            'nama_pasien'   => $request->nama_pasien,
+            'alamat'        => $request->alamat,
             'tanggal_lahir' => $request->tanggal_lahir,
         ]);
 
-        return response()->json(['status' => 200, 'data' => $dataPasien, 'message' => 'Data Berhasil Di Tambahkan']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Data berhasil ditambahkan',
+            'data'    => $dataPasien
+        ], 201);
     }
 
     public function updatePasien(Request $request)
     {
         $request->validate([
-            'nama_pasien' => ['required'],
-            'alamat' => ['required'],
-            'tanggal_lahir' => ['required', 'date'],
+            'nama_pasien'   => ['required', 'string', 'max:255'],
+            'alamat'        => ['required', 'string', 'max:255'],
+            'tanggal_lahir' => ['required', 'date', 'before:today'],
         ]);
 
-        $dataPasien = Pasien::where('id', $request->id)->firstOrFail();
+        $userId = Auth::id();
+
+        $dataPasien = Pasien::where('user_id', $userId)->firstOrFail();
 
         $dataPasien->update([
             'nama_pasien' => $request->nama_pasien,
@@ -41,15 +48,15 @@ class PasienController extends Controller
             'tanggal_lahir' => $request->tanggal_lahir,
         ]);
 
-        return response()->json(['status' => 200, 'data' => $dataPasien, 'massage' => 'Data Berhasil Di Update']);
+        return response()->json(['status' => 200, 'data' => $dataPasien, 'message' => 'Data Berhasil Di Update']);
     }
 
     public function deletePasien(Request $request)
     {
-        $dataPasien = Pasien::where('id', $request->id);
+        $dataPasien = Pasien::findOrFail($request->id);
 
         $dataPasien->delete();
 
-        return response()->json(['status' => 200, 'data' => $dataPasien, 'massage' => 'Data Berhasil Dihapus']);
+        return response()->json(['status' => 200, 'data' => $dataPasien, 'message' => 'Data Berhasil Dihapus']);
     }
 }

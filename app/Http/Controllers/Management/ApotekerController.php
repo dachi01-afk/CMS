@@ -49,7 +49,7 @@ class ApotekerController extends Controller
 
     public function deleteApoteker(Request $request)
     {
-        $dataApoteker = Apoteker::where('id', $request->id);
+        $dataApoteker = Apoteker::findOrFail($request->id);
 
         $dataApoteker->delete();
 
