@@ -20,21 +20,7 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        // Get the count for each jenis_kunjungan
-        $jenisKunjungan = Kunjungan::select('jenis_kunjungan')
-            ->selectRaw('count(*) as total')
-            ->groupBy('jenis_kunjungan')
-            ->get();
-        // Ambil daftar nama poli dari relasi tabel poli
-        $jenisPoli = Poli::select('id_poli', 'nama_poli')->get();
-
-        $totalPasien = Kunjungan::count();
-        // Mengirim semua data ke view dashboard
-        return view('admin.dashboard', compact(
-            'jenisKunjungan',
-            'jenisPoli',
-            'totalPasien',
-        ));
+        return view('admin.dashboard');
     }
 
     public function getChartKunjungan(Request $request)

@@ -2,14 +2,12 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Admin\ApotekController;
-use App\Http\Controllers\Admin\DokterController;
-use App\Http\Controllers\Admin\PasienController;
-use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Admin\HistoryKunjunganController;
-
+use App\Http\Controllers\Admin\DataMedisPasienController;
+use App\Http\Controllers\Admin\LaporanController;
+use App\Http\Controllers\Admin\ManajemenPenggunaController;
+use App\Http\Controllers\Admin\PengaturanKlinikController;
 
 // testing
 // Route::get('testing', function () {
@@ -24,7 +22,7 @@ Route::get('/', function () {
 //     return view('admin.dashboard');
 // })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::middleware(['auth:Admin'])->group(function () {
+Route::middleware([])->group(function () {
     Route::get('/profile',              [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile',            [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile',           [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -37,25 +35,22 @@ Route::middleware(['auth:Admin'])->group(function () {
         Route::get('/getdataantricepat',                    [DashboardController::class, 'getDataAntriCepat'])->name('getdataantricepat');
     });
 
-    Route::prefix('pasien')->name('pasien.')->group(function () {
-        Route::get('/',                 [PasienController::class, 'index'])->name('index');
+    Route::prefix('manajemen_pengguna')->name('manajemen_pengguna.')->group(function () {
+        Route::get('/',                 [ManajemenPenggunaController::class, 'index'])->name('index');
     });
 
-    Route::prefix('dokter')->name('dokter.')->group(function () {
-        Route::get('/',                 [DokterController::class, 'index'])->name('index');
+    Route::prefix('pengaturan_klinik')->name('pengaturan_klinik.')->group(function () {
+        Route::get('/',                 [PengaturanKlinikController::class, 'index'])->name('index');
     });
 
-    Route::prefix('apotek')->name('apotek.')->group(function () {
-        Route::get('/',                 [ApotekController::class, 'index'])->name('index');
+    Route::prefix('laporan')->name('laporan.')->group(function () {
+        Route::get('/',                 [LaporanController::class, 'index'])->name('index');
     });
 
-    Route::prefix('report')->name('report.')->group(function () {
-        Route::get('/',                 [ReportController::class, 'index'])->name('index');
+    Route::prefix('data_medis_pasien')->name('data_medis_pasien.')->group(function () {
+        Route::get('/',                 [DataMedisPasienController::class, 'index'])->name('index');
     });
 
-    Route::prefix('history_kunjungan')->name('history_kunjungan.')->group(function () {
-        Route::get('/',                 [HistoryKunjunganController::class, 'index'])->name('index');
-    });
 
     Route::prefix('settings')->name('settings.')->group(function () {
         Route::get('/',                 [SettingsController::class, 'index'])->name('index');

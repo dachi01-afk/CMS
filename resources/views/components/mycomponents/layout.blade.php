@@ -110,24 +110,24 @@
                         Dashboard
                     </x-mycomponents.sidebar_link>
 
-                    <x-mycomponents.sidebar_link href="pasien.index" class="fa-solid fa-calendar-plus">
-                        Pasien
+                    <x-mycomponents.sidebar_link href="manajemen_pengguna.index"
+                        class="fa-solid fa-users w-5 h-5 text-blue-600">
+                        Manajemen Pengguna
                     </x-mycomponents.sidebar_link>
 
-                    <x-mycomponents.sidebar_link href="dokter.index" class="fa-solid fa-id-badge">
-                        Dokter
+                    <x-mycomponents.sidebar_link href="pengaturan_klinik.index"
+                        class="fa-solid fa-hospital-user w-5 h-5 text-blue-600">
+                        Pengaturan Klinik
                     </x-mycomponents.sidebar_link>
 
-                    <x-mycomponents.sidebar_link href="apotek.index" class="fa-solid fa-pills">
-                        Apotek
+                    <x-mycomponents.sidebar_link href="laporan.index"
+                        class="fa-solid fa-chart-line w-5 h-5 text-blue-600">
+                        Laporan
                     </x-mycomponents.sidebar_link>
 
-                    <x-mycomponents.sidebar_link href="report.index" class="fa-solid fa-cash-register">
-                        Report
-                    </x-mycomponents.sidebar_link>
-
-                    <x-mycomponents.sidebar_link href="history_kunjungan.index" class="fa-solid fa-cash-register">
-                        History Kunjungan
+                    <x-mycomponents.sidebar_link href="data_medis_pasien.index"
+                        class="fa-solid fa-notes-medical w-5 h-5 text-blue-600">
+                        Data Medis Pasien
                     </x-mycomponents.sidebar_link>
 
                     <hr class="my-4 border-gray-300">
@@ -164,7 +164,7 @@
     <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
     <script src="https://cdn.datatables.net/2.3.4/js/dataTables.js"></script>
     <script src="https://cdn.datatables.net/responsive/3.0.1/js/dataTables.responsive.js"></script>
-    {{-- <script src="https://cdn.datatables.net/2.3.4/js/dataTables.tailwindcss.js"></script> --}}
+
 </body>
 
 </html>

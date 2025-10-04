@@ -8,12 +8,6 @@ use Illuminate\Http\Request;
 
 class PasienController extends Controller
 {
-    public function index()
-    {
-        $dataPasien = Pasien::all();
-        return view('admin.pasien', compact('dataPasien'));
-    }
-
     public function createPasien(Request $request)
     {
         $request->validate([
