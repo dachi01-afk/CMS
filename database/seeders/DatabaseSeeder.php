@@ -31,6 +31,7 @@ class DatabaseSeeder extends Seeder
             PembayaranSeeder::class,
             AdministrasiSeeder::class,
             EMRSeeder::class,
+            TransaksiApotekerSeeder::class,
         ]);
     }
 }
