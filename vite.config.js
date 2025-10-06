@@ -9,7 +9,11 @@ export default defineConfig({
                 'resources/js/app.js',
 
                 // admin
-                'resources/js/admin/dashboard.js',],
+                'resources/js/admin/dashboard.js',
+                
+                // manajemen-pengguna
+                'resources/js/admin/manajemenPengguna/data_pengguna.js',
+             ],
             refresh: true,
         }),
     ],

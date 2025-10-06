@@ -9,10 +9,6 @@
     <title>CMS-Royal-Klinik</title>
     <link href='{{ asset('storage/assets/royal_klinik.svg') }}' rel='shortcut icon'>
 
-    {{-- datatebels --}}
-    <link rel="stylesheet" href="https://cdn.datatables.net/2.3.4/css/dataTables.tailwindcss.css">
-    <link rel="stylesheet" href="https://cdn.datatables.net/responsive/3.0.1/css/responsive.dataTables.css">
-
     {{-- vite --}}
     @vite(['resources/css/app.css', 'resources/js/app.js']);
 
@@ -27,6 +23,9 @@
 </head>
 
 <body class="bg-gray-50">
+    <!-- 🔔 Toast Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2"></div>
+
     <!-- HEADER -->
     <header class="fixed top-0 w-full z-50">
         <!-- Branding Bar -->
@@ -156,14 +155,7 @@
         </div>
     </footer>
 
-
-
-
-
-    <script src="https://code.jquery.com/jquery-3.7.1.js"></script>
-    <script src="https://cdn.datatables.net/2.3.4/js/dataTables.js"></script>
-    <script src="https://cdn.datatables.net/responsive/3.0.1/js/dataTables.responsive.js"></script>
-
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </body>
 
 </html>

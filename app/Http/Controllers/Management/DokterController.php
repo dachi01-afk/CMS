@@ -2,24 +2,43 @@
 
 namespace App\Http\Controllers\Management;
 
-use App\Http\Controllers\Controller;
 use App\Models\Dokter;
 use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Validator;
 
 class DokterController extends Controller
 {
+
+    public function getDokterById($id)
+    {
+        $dokter = Dokter::findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $dokter
+        ]);
+    }
+
     public function createDokter(Request $request)
     {
         $request->validate([
-            'nama_dokter'   => ['required', 'string', 'max:100'],
-            'spesialisasi'  => ['required', 'string', 'max:100'],
-            'email'         => ['required', 'email', 'unique:dokters,email'],
-            'no_hp'         => ['required', 'regex:/^[0-9]+$/', 'digits_between:10,15'],
+            'nama_dokter'  => 'required|string|max:100',
+            // 'user_id'       => 'nullable',
+            // ',luexists:user,id',
+            'spesialisasi' => [
+                'required',
+                'string',
+                'in:Determatologi,Psikiatri,Onkologi,Kardiologi'
+            ],
+            'email'        => 'required|email|unique:dokter,email',
+            'no_hp'        => 'required',
         ]);
 
-        $dataDokter = Dokter::create([
+        $dokter = Dokter::create([
             'nama_dokter'  => $request->nama_dokter,
+            // 'user_id'      => $request->user_id ?? null,
             'spesialisasi' => $request->spesialisasi,
             'email'        => $request->email,
             'no_hp'        => $request->no_hp,
@@ -27,49 +46,56 @@ class DokterController extends Controller
 
         return response()->json([
             'success' => true,
-            'data'    => $dataDokter,
-            'message' => 'Data Berhasil Ditambahkan',
-        ], 201); // 201 Created
+            'data' => $dokter,
+            'message' => 'Data dokter berhasil ditambahkan'
+        ], 201);
     }
 
-    public function updateDokter(Request $request)
+    public function updateDokter(Request $request, $id)
     {
-        $userId = Auth::id();
+        $dokter = Dokter::findOrFail($id);
 
-        $dataDokter = Dokter::where('user_id', $userId)->firstOrFail();
-
-        $request->validate([
-            'nama_dokter'   => ['required', 'string', 'max:100'],
-            'spesialisasi'  => ['required', 'string', 'max:100'],
-            'email'         => ['required', 'email', 'unique:dokters,email,' . $dataDokter->id],
-            'no_hp'         => ['required', 'regex:/^[0-9]+$/', 'digits_between:10,15'],
+        $validator = Validator::make($request->all(), [
+            'nama_dokter'   => 'required|string|max:255',
+            'spesialisasi'  => 'nullable|string|max:100',
+            'email'         => 'required|email|unique:dokter,email,' . $dokter->id,
+            'no_hp'         => 'required|string|max:20',
         ]);
 
-        $dataDokter->update([
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        // Jika spesialisasi kosong, gunakan yang lama
+        $spesialisasi = $request->filled('spesialisasi')
+            ? $request->spesialisasi
+            : $dokter->spesialisasi;
+
+        $dokter->update([
             'nama_dokter'  => $request->nama_dokter,
-            'spesialisasi' => $request->spesialisasi,
+            'spesialisasi' => $spesialisasi,
             'email'        => $request->email,
             'no_hp'        => $request->no_hp,
         ]);
 
         return response()->json([
             'success' => true,
-            'data'    => $dataDokter,
-            'message' => 'Data berhasil diupdate',
-        ], 200);
+            'message' => 'Data dokter berhasil diperbarui.',
+            'data'    => $dokter,
+        ]);
     }
 
 
-    public function deleteDokter(Request $request)
+    public function deleteDokter($id)
     {
-        $dataDokter = Dokter::findOrFail($request->id);
+        $dataDokter = Dokter::findOrFail($id);
 
         $dataDokter->delete();
 
         return response()->json([
-            'status' => 200,
+            'success' => true,
             'data' => $dataDokter,
-            'message' => 'Data Berhasil Dihapus'
-        ]);
+            'message' => 'Data Berhasil Di Dihapus',
+        ], 200);
     }
 }

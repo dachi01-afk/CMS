@@ -13,8 +13,9 @@ class TesLab extends Model
     protected $casts = [
         'jenis_tes' => 'array',
     ];
+
     public function kunjungan()
     {
-        return $this->belongsTo(Kunjungan::class);
+        return $this->belongsTo(Kunjungan::class, 'kunjungan_id');
     }
 }

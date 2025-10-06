@@ -8,7 +8,8 @@ export default {
         './storage/framework/views/*.php',
         './resources/views/**/*.blade.php',
         './resources/**/*.js',
-        "./node_modules/flowbite/**/*.js"
+        "./node_modules/flowbite/**/*.js",
+        './node_modules/datatables.net-dt/**/*.{js,ts}',
     ],
 
     theme: {

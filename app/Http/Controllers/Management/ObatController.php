@@ -25,15 +25,26 @@ class ObatController extends Controller
         return response()->json(['status' => 200, 'data' => $dataObat, 'message' => 'Data Berhasil Di Tambahkan']);
     }
 
-    public function updateObat(Request $request)
+    public function getObatById($id)
     {
+        $Obat = Obat::findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => $Obat
+        ]);
+    }
+
+    public function updateObat(Request $request, $id)
+    {
+        $dataObat = Obat::findOrFail($id);
+
         $request->validate([
             'nama_obat' => ['required'],
             'jumlah' => ['required', 'integer', 'min:1'],
             'dosis' => ['required', 'numeric', 'min:0', 'max:999999999'],
         ]);
 
-        $dataObat = Obat::where('id', $request->id)->firstOrFail();
 
         $dataObat->update(attributes: [
             'nama_obat' => $request->nama_obat,
@@ -44,12 +55,10 @@ class ObatController extends Controller
         return response()->json(['status' => 200, 'data' => $dataObat, 'massage' => 'Data Berhasil Di Update']);
     }
 
-    public function deleteObat(Request $request)
+    public function deleteObat($id)
     {
-        $dataObat = Obat::findOrFail($request->id);
-
+        $dataObat = Obat::findOrFail($id);
         $dataObat->delete();
-
         return response()->json(['status' => 200, 'data' => $dataObat, 'massage' => 'Data Berhasil Dihapus']);
     }
 }

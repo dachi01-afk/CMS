@@ -15,10 +15,11 @@ class RekamMedis extends Model
     protected $primaryKey = 'id_rekam_medis';
     protected $guarded = [];
 
-    public function kunjungan(): BelongsTo
+    public function kunjungan()
     {
-        return $this->belongsTo(Kunjungan::class, 'kunjungan_id', 'id_kunjungan');
+        return $this->belongsTo(Kunjungan::class, 'kunjungan_id');
     }
+
 
     public function resepObat(): HasMany
     {

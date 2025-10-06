@@ -104,5 +104,4 @@
     </div>
 
     </div>
-
 </x-mycomponents.layout>

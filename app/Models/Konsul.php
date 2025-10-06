@@ -10,7 +10,8 @@ class Konsul extends Model
 
     protected $guarded = [];
 
-    public function kunjungan() {
-        return $this->belongsTo(Kunjungan::class);
+    public function kunjungan()
+    {
+        return $this->belongsTo(Kunjungan::class, 'kunjungan_id');
     }
 }

@@ -2,9 +2,10 @@
 
 namespace App\Http\Controllers\Management;
 
-use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
@@ -14,12 +15,14 @@ class UserController extends Controller
         $request->validate([
             'username' => ['required', 'string', 'max:100'],
             'email'    => ['required', 'email', 'unique:user,email'],
-            'password' => ['required', 'string', 'min:6'],
+            'password' => ['required', 'string', 'min:6', 'confirmed'],
+            'role'     => ['required'],
         ]);
 
         $dataUser = User::create([
             'username' => $request->username,
             'email' => $request->email,
+            'role'     => $request->role,
             'password' => Hash::make($request->password),
         ]);
 
@@ -27,31 +30,49 @@ class UserController extends Controller
             'success' => true,
             'data' => $dataUser,
             'message' => 'Data Berhasil Di Tambahkan',
-        ], 200);
+        ], 201);
     }
 
-    public function updateUser(Request $request)
+    public function getUserById($id)
     {
-        $request->validate([
-            'username' => ['required', 'string', 'max:100'],
-            'email'    => ['required', 'email', 'exists:user,email'],
-            'password' => ['required', 'string', 'min:6'],
-        ]);
+        $user = User::find($id);
 
-        $dataUser = User::where('id', $request->id)->firstOrFail();
-
-        if (!$dataUser) {
+        if (!$user) {
             return response()->json([
-                'success' => false,
-                'message' => 'User tidak ditemukan'
+                'status' => false,
+                'message' => 'Data pengguna tidak ditemukan.'
             ], 404);
         }
 
-        $dataUser->update([
+        return response()->json([
+            'status' => true,
+            'data' => $user
+        ]);
+    }
+
+    public function updateUser(Request $request, $id)
+    {
+        $dataUser = User::findOrFail($id);
+
+        $request->validate([
+            'username' => ['required', 'string', 'max:100'],
+            'email'    => [
+                'required',
+                'email',
+                Rule::unique('user', 'email')->ignore($dataUser->id),
+            ],
+            'password' => ['nullable', 'string', 'min:6', 'confirmed'],
+        ]);
+
+        $updateData = [
             'username' => $request->username,
             'email' => $request->email,
-            'password' => $request->password,
-        ]);
+        ];
+
+        if ($request->filled('password')) {
+            $updateData['password'] = Hash::make($request->password);
+        }
+        $dataUser->update($updateData);
 
         return response()->json([
             'success' => true,
@@ -60,16 +81,9 @@ class UserController extends Controller
         ], 200);
     }
 
-    public function deleteUser(Request $request)
+    public function deleteUser($id)
     {
-        $dataUser = User::find($request->id);
-
-        if (!$dataUser) {
-            return response()->json([
-                'success' => false,
-                'message' => 'User tidak ditemukan'
-            ], 404);
-        }
+        $dataUser = User::findOrFail($id);
 
         $dataUser->delete();
 

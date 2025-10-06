@@ -24,4 +24,14 @@ class Kunjungan extends Model
     {
         return $this->hasMany(Konsul::class);
     }
+
+    public function dokter()
+    {
+        return $this->belongsTo(Dokter::class);
+    }
+
+    public function pasien()
+    {
+        return $this->belongsTo(Pasien::class);
+    }
 }

@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('apoteker', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('user', 'id', 'apoteker_user_id')
-                ->cascadeOnDelete()->cascadeOnUpdate();
+            // $table->foreignId('user_id')->constrained('user', 'id', 'apoteker_user_id')
+            //     ->cascadeOnDelete()->cascadeOnUpdate();
             $table->string('nama_apoteker');
             $table->string('email_apoteker');
             $table->string('no_hp_apoteker');
