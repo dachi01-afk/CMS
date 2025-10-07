@@ -25,20 +25,15 @@ class DokterController extends Controller
     {
         $request->validate([
             'nama_dokter'  => 'required|string|max:100',
-            // 'user_id'       => 'nullable',
-            // ',luexists:user,id',
-            'spesialisasi' => [
-                'required',
-                'string',
-                'in:Determatologi,Psikiatri,Onkologi,Kardiologi'
-            ],
+            'user_id'       => 'required|exists:user,id',
+            'spesialisasi' => 'required|string|in:Determatologi,Psikiatri,Onkologi,Kardiologi',
             'email'        => 'required|email|unique:dokter,email',
-            'no_hp'        => 'required',
+            'no_hp'        => 'required|string|max:15',
         ]);
 
         $dokter = Dokter::create([
             'nama_dokter'  => $request->nama_dokter,
-            // 'user_id'      => $request->user_id ?? null,
+            'user_id'      => $request->user_id,
             'spesialisasi' => $request->spesialisasi,
             'email'        => $request->email,
             'no_hp'        => $request->no_hp,

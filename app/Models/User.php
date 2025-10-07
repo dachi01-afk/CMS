@@ -47,12 +47,12 @@ class User extends Authenticatable
 
     public function dokter()
     {
-        return $this->hasMany(Dokter::class);
+        $this->hasMany(Dokter::class);
     }
 
     public function pasien()
     {
-        return  $this->hasMany(Dokter::class);
+        $this->hasMany(Dokter::class);
     }
 
     public function admin()

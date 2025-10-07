@@ -20,7 +20,7 @@ class ApotekerSeeder extends Seeder
 
         for ($i = 0; $i < $roleApoteker->count(); $i++) {
             Apoteker::create([
-                // 'user_id' => $roleApoteker[$i]->id,
+                'user_id' => $roleApoteker[$i]->id,
                 'nama_apoteker' => $faker->name,
                 'email_apoteker' => $faker->unique()->safeEmail,
                 'no_hp_apoteker' => $faker->phoneNumber(),

@@ -14,9 +14,7 @@ class ManajemenPenggunaController extends Controller
 {
     public function index()
     {
-        // $dataDokter = User::with('dokter')->where('role', 'Dokter')->get();
 
-        // dd($dataDokter);
         return view('admin.manajemen_pengguna');
     }
 

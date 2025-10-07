@@ -33,12 +33,16 @@ Route::get('/dashboard', function () {
 
 Route::get('/testing', [TestingController::class, 'index'])->name('testing');
 
+<<<<<<< HEAD
 Route::get('/getDataJadwalDokter', [APIController::class, 'getDataJadwalDokter'])->name('get.data.jadwal.dokter');
 Route::get('/getDataSpesialisasiDokter', [APIController::class, 'getDataSpesialisasiDokter'])->name('get.data.spesialisasi.dokter');
 Route::get('/getDataTestimoni', [APIController::class, 'getDataTestimoni'])->name('get.data.testimoni');
 Route::get('/getDataDokter', [APIController::class, 'getDataDokter'])->name('get.data.dokter');
 
 Route::middleware([])->group(function () {
+=======
+Route::middleware('auth')->group(function () {
+>>>>>>> b0073ea9941e1c1a37fb880dfab3e042d316a75d
     Route::get('/profile',              [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile',            [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile',           [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -61,7 +65,7 @@ Route::middleware([])->group(function () {
         Route::post('/add_user',                            [UserController::class, 'createUser'])->name('add_user');
         Route::get('/get_user_by_id/{id}',                  [UserController::class, 'getUserById'])->name('get_user_by_id');
         Route::put('/update_user/{id}',                     [UserController::class, 'updateUser'])->name('update_user');
-        Route::delete('/delete_user{id}',                   [UserController::class, 'deleteUser'])->name('delete_user');
+        Route::delete('/delete_user/{id}',                   [UserController::class, 'deleteUser'])->name('delete_user');
 
         // crud dokter
         Route::get('/data_dokter',                          [ManajemenPenggunaController::class, 'dataDokter'])->name('data_dokter');
@@ -126,7 +130,7 @@ Route::middleware([])->group(function () {
         Route::get('/laporan_rekam_medis',                  [DataMedisPasienController::class, 'dataRekamMedis'])->name('laporan_rekam_medis');
 
         // data diagnosa dan konsultasi
-        Route::get('/diagnosa_dan_konsultasi',              [DataMedisPasienController::class, 'dataKonsultasi'])->name('data_lab');
+        Route::get('/diagnosa_dan_konsultasi',              [DataMedisPasienController::class, 'dataKonsultasi'])->name('diagnosa_dan_konsultasi');
 
         // data hasil lab
         Route::get('/hasil_lab',                            [DataMedisPasienController::class, 'dataLab'])->name('hasil_lab');

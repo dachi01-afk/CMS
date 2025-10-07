@@ -13,9 +13,9 @@ da<?php
         {
             Schema::create('pasien', function (Blueprint $table) {
                 $table->id();
-                // $table->foreignId('user_id')->constrained('user', 'id', 'pasien_user_id')
-                //     ->cascadeOnDelete()
-                //     ->cascadeOnUpdate();
+                $table->foreignId('user_id')->constrained('user', 'id', 'pasien_user_id')
+                    ->cascadeOnDelete()
+                    ->cascadeOnUpdate();
                 $table->string('nama_pasien');
                 $table->string('alamat');
                 $table->date('tanggal_lahir');

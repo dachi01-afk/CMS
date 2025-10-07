@@ -20,7 +20,7 @@ class PasienSeeder extends Seeder
 
         for ($i = 0; $i < $rolePasien->count(); $i++) {
             Pasien::create([
-                // 'user_id' => $rolePasien[$i]->id,
+                'user_id' => $rolePasien[$i]->id,
                 'nama_pasien' => $faker->name,
                 'alamat' => $faker->address,
                 'tanggal_lahir' => $faker->dateTimeBetween('-100 years', '-1 day'),
