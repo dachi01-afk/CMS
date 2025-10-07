@@ -14,7 +14,7 @@ class ManajemenPenggunaController extends Controller
 {
     public function index()
     {
-        $dokters = Dokter::select('id', 'nama_dokter')->get();
+
         return view('admin.manajemen_pengguna');
     }
 

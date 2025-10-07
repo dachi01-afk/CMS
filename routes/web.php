@@ -15,6 +15,7 @@ use App\Http\Controllers\Management\DokterController;
 use App\Http\Controllers\Management\JadwalDokterController;
 use App\Http\Controllers\Management\ObatController;
 use App\Http\Controllers\Management\PasienController;
+use App\Http\Controllers\Testing\TestingController;
 
 // testing
 // Route::get('testing', function () {
@@ -28,6 +29,8 @@ Route::get('/', function () {
 Route::get('/dashboard', function () {
     return view('admin.dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
+
+Route::get('/testing', [TestingController::class, 'index'])->name('testing');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile',              [ProfileController::class, 'edit'])->name('profile.edit');
