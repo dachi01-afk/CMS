@@ -2,73 +2,87 @@
 
 namespace App\Http\Controllers\Management;
 
+use App\Models\User;
 use App\Models\Apoteker;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
 class ApotekerController extends Controller
 {
+    // public function index()
+    // {
+    //     $data = Apoteker::with('user')->latest()->get();
+    //     return view('admin.apoteker.index', compact('data'));
+    // }
+
     public function createApoteker(Request $request)
     {
         $request->validate([
-            'nama_apoteker' => ['required', 'string', 'max:100'],
-            'email_apoteker' => ['required', 'email', 'unique:apoteker,email_apoteker'],
-            'no_hp_apoteker' => ['required'],
+            'username'         => 'required|string|max:255',
+            'email_apoteker'   => 'required|email|unique:user,email',
+            'password'         => 'required|string|min:6',
+            'nama_apoteker'    => 'required|string|max:255',
+            'no_hp_apoteker'   => 'nullable|string|max:20',
         ]);
 
-        $dataApoteker = Apoteker::create([
-            'nama_apoteker' => $request->nama_apoteker,
+        $user = User::create([
+            'username' => $request->username,
+            'email'    => $request->email_apoteker,
+            'password' => Hash::make($request->password),
+            'role'     => 'Apoteker',
+        ]);
+
+        Apoteker::create([
+            'user_id'        => $user->id,
+            'nama_apoteker'  => $request->nama_apoteker,
             'email_apoteker' => $request->email_apoteker,
             'no_hp_apoteker' => $request->no_hp_apoteker,
         ]);
 
-        return response()->json(['status' => 201, 'data' => $dataApoteker, 'message' => 'Data Berhasil Di Tambahkan']);
+        return response()->json(['success' => 'Data apoteker berhasil ditambahkan.']);
     }
 
     public function getApotekerById($id)
     {
-        $apoteker = Apoteker::findOrFail($id);
-
-        return response()->json([
-            'success' => true,
-            'data' => $apoteker
-        ]);
+        $data = Apoteker::with('user')->findOrFail($id);
+        return response()->json($data);
     }
 
     public function updateApoteker(Request $request, $id)
     {
-        $dataApoteker = Apoteker::findOrFail($id);
+        $apoteker = Apoteker::findOrFail($id);
+        $user = $apoteker->user;
 
-        $validator = Validator::make($request->all(), [
-            'nama_apoteker'          => 'required|string|max:255',
-            'email_apoteker'         => 'required|email|unique:apoteker,email_apoteker,' . $dataApoteker->id,
-            'no_hp_apoteker'         => 'required',
+        $request->validate([
+            'username'         => 'required|string|max:255',
+            'email_apoteker'   => 'required|email|unique:user,email,' . $user->id,
+            'nama_apoteker'    => 'required|string|max:255',
+            'no_hp_apoteker'   => 'nullable|string|max:20',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
+        $user->update([
+            'username' => $request->username,
+            'email'    => $request->email_apoteker,
+        ]);
 
-        $dataApoteker->update([
-            'nama_apoteker' => $request->nama_apoteker,
+        $apoteker->update([
+            'nama_apoteker'  => $request->nama_apoteker,
             'email_apoteker' => $request->email_apoteker,
             'no_hp_apoteker' => $request->no_hp_apoteker,
         ]);
 
-        return response()->json(['status' => 200, 'data' => $dataApoteker, 'message' => 'Data Berhasil Di Update']);
+        return response()->json(['success' => 'Data apoteker berhasil diperbarui.']);
     }
 
     public function deleteApoteker($id)
     {
-        $dataApoteker = Apoteker::findOrFail($id);
-        $dataApoteker->delete();
+        $apoteker = Apoteker::findOrFail($id);
+        $apoteker->user->delete();
+        $apoteker->delete();
 
-        return response()->json([
-            'success' => true,
-            'data' => $dataApoteker,
-            'message' => 'Data Berhasil Di Dihapus',
-        ], 200);
+        return response()->json(['success' => 'Data apoteker berhasil dihapus.']);
     }
 }

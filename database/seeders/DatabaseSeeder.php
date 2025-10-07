@@ -18,6 +18,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             UserSeeder::class,
             AdminSeeder::class,
+            JenisSpesialisSeeder::class,
             DokterSeeder::class,
             ApotekerSeeder::class,
             PasienSeeder::class,
@@ -33,6 +34,7 @@ class DatabaseSeeder extends Seeder
             EMRSeeder::class,
             TransaksiApotekerSeeder::class,
             TestimoniSeeder::class,
+
         ]);
     }
 }

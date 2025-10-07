@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Dokter;
+use App\Models\JenisSpesialis;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -17,7 +18,7 @@ class DokterSeeder extends Seeder
     {
         $roleDokter = User::where('role', 'Dokter')->get();
         $faker = Faker::create();
-        $spesialis = ['Determatologi', 'Psikiatri', 'Onkologi', 'Kardiologi'];
+        $spesialis = JenisSpesialis::pluck('id')->toArray();
         $foto = 'foto_profil_dokter.jpeg';
 
         for ($i = 0; $i < $roleDokter->count(); $i++) {
@@ -25,7 +26,7 @@ class DokterSeeder extends Seeder
                 'user_id' => $roleDokter[$i]->id,
                 'nama_dokter' => $faker->name,
                 'deskripsi_dokter' => $faker->word(),
-                'spesialisasi' => $faker->randomElement($spesialis),
+                'jenis_spesialis_id' => $faker->randomElement($spesialis),
                 'email' => $faker->unique()->safeEmail,
                 'foto' => $foto,
                 'pengalaman' => $faker->word(),

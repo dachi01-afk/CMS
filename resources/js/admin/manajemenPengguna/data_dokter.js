@@ -147,11 +147,20 @@ $(function () {
         e.preventDefault();
         const url = $formAdd.data('url');
         const formData = {
+            username: $('#username').val(), 
+            password: $('#password').val(), 
             nama_dokter: $('#nama_dokter').val(),
-            spesialisasi: $('#spesialisasi').val(),
+            jenis_spesialis: $('#jenis_spesialis').val(),
             email: $('#email_dokter').val(),
             no_hp: $('#no_hp').val(),
+            foto: $('#foto')[0]?.files[0] ?? null, 
+            deskripsi_dokter: $('#deskripsi_dokter').val(), 
+            pengalaman: $('#pengalaman').val(), 
+
         };
+
+        $('.text-red-600').empty();
+        $formAdd.find('.is-invalid').removeClass('is-invalid');
 
         axios.post(url, formData)
             .then(res => {

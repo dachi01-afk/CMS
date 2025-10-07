@@ -8,14 +8,15 @@ use App\Models\Pasien;
 use App\Models\Apoteker;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\JenisSpesialis;
 use Yajra\DataTables\Facades\DataTables;
 
 class ManajemenPenggunaController extends Controller
 {
     public function index()
     {
-
-        return view('admin.manajemen_pengguna');
+        $spesialis = JenisSpesialis::all();
+        return view('admin.manajemen_pengguna', compact('spesialis'));
     }
 
     public function dataUser()
