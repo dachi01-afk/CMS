@@ -109,6 +109,14 @@ class APIController extends Controller
             'Data Testimoni' => $dataTestimoni,
         ]);
     }
+    public function getDataPasien()
+    {
+        $dataPasien = Pasien::get();
+
+        return response()->json([
+            'Data Pasien' => $dataPasien,
+        ]);
+    }
 
     public function getDataDokter()
     {
