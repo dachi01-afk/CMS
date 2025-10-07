@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
 
 class UserController extends Controller
 {
@@ -35,7 +36,7 @@ class UserController extends Controller
 
     public function getUserById($id)
     {
-        $user = User::find($id);
+        $user = User::findOrFail($id);
 
         if (!$user) {
             return response()->json([
@@ -54,31 +55,37 @@ class UserController extends Controller
     {
         $dataUser = User::findOrFail($id);
 
-        $request->validate([
-            'username' => ['required', 'string', 'max:100'],
-            'email'    => [
-                'required',
-                'email',
-                Rule::unique('user', 'email')->ignore($dataUser->id),
-            ],
-            'password' => ['nullable', 'string', 'min:6', 'confirmed'],
+        $validator = Validator::make($request->all(), [
+            'username' => 'required|string|max:100',
+            'role'     => 'nullable|string|max:100',
+            'email'    => 'required|email|unique:user,email,' . $dataUser->id,
+            'password' => 'nullable|string|min:6|confirmed',
         ]);
+
+
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
 
         $updateData = [
             'username' => $request->username,
             'email' => $request->email,
+            'role' => $request->filled('role') ? $request->role : $dataUser->role,
         ];
 
         if ($request->filled('password')) {
             $updateData['password'] = Hash::make($request->password);
         }
+
         $dataUser->update($updateData);
+
+
 
         return response()->json([
             'success' => true,
             'data' => $dataUser,
             'message' => 'Data Berhasil Di Update',
-        ], 200);
+        ]);
     }
 
     public function deleteUser($id)

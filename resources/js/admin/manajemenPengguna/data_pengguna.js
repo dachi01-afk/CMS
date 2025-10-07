@@ -257,11 +257,7 @@ $(function () {
             $('#edit_user_id').val(user.id);
             $('#edit_username').val(user.username);
             $('#edit_email_pengguna').val(user.email);
-            $('#edit_role option').each(function() {
-            if ($(this).val() === user.role) {
-            $(this).prop('selected', true);
-            }
-            });
+            $('#edit_role').val(user.role);
 
             if(editModal){
                 editModal.show();

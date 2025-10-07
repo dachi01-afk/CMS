@@ -194,10 +194,10 @@
                     <select id="edit_role" name="edit_role" required
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
                         <option value="" disabled selected>Select role</option>
-                        <option value="admin">Admin</option>
-                        <option value="dokter">Dokter</option>
-                        <option value="apoteker">Apoteker</option>
-                        <option value="pasien">Pasien</option>
+                        <option value="Admin">Admin</option>
+                        <option value="Dokter">Dokter</option>
+                        <option value="Apoteker">Apoteker</option>
+                        <option value="Pasien">Pasien</option>
                     </select>
                     <div id="edit_role-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
@@ -219,7 +219,7 @@
                     <input type="password" name="edit_password_confirmation" id="edit_password_confirmation"
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                         placeholder="••••••••"
-                        oninput="this.setCustomValidity(this.value !== edit_password.value ? 'Password tidak sama!' : '')">>
+                        oninput="this.setCustomValidity(this.value !== edit_password.value ? 'Password tidak sama!' : '')">
                     <div id="edit_password_confirmation-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 

@@ -1,6 +1,6 @@
 <!-- Header -->
 <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-    <h2 class="text-2xl font-bold text-gray-700">Data Pasien</h2>
+    <h2 class="text-2xl font-bold text-gray-700">Jadwal Dokter</h2>
 
     <!-- Modal toggle -->
     <button id="btnAddJadwalDokter"
@@ -84,6 +84,7 @@
                         Praktik</label>
                     <select id="hari" name="hari" required
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                        <option value="" disabled selected>-</option>
                         <option value="Senin">Senin</option>
                         <option value="Selasa">Selasa</option>
                         <option value="Rabu">Rabu</option>
@@ -165,6 +166,7 @@
                         Praktik</label>
                     <select id="hari_edit" name="hari_edit" required
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5">
+                        <option value="" disabled selected>-</option>
                         <option value="Senin">Senin</option>
                         <option value="Selasa">Selasa</option>
                         <option value="Rabu">Rabu</option>
