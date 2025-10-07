@@ -13,6 +13,21 @@ export default defineConfig({
                 
                 // manajemen-pengguna
                 'resources/js/admin/manajemenPengguna/data_pengguna.js',
+		'resources/js/admin/manajemenPengguna/data_dokter.js',
+		'resources/js/admin/manajemenPengguna/data_apoteker.js',
+		'resources/js/admin/manajemenPengguna/data_pasien.js',
+
+		// pengaturan klinik
+		'resources/js/admin/pengaturanKlinik/jadwal_dokter.js',
+		'resources/js/admin/pengaturanKlinik/daftar_obat.js',
+		'resources/js/admin/laporan/laporan_kunjungan.js',
+		'resources/js/admin/laporan/laporan_keuangan.js',
+		'resources/js/admin/laporan/laporan_resep_dan_apotek.js',
+		'resources/js/admin/laporan/laporan_administrasi.js',
+		'resources/js/admin/dataMedisPasien/rekam_medis_elektronik.js',
+		'resources/js/admin/dataMedisPasien/data_diagnosa_dan_konsultasi.js',
+		'resources/js/admin/dataMedisPasien/data_hasil_lab.js',
+		
              ],
             refresh: true,
         }),
