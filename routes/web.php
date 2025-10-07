@@ -40,9 +40,11 @@ Route::middleware([])->group(function () {
 
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/',                                     [DashboardController::class, 'index'])->name('index');
-        Route::get('/chart-kunjungan',                      [DashboardController::class, 'getChartKunjungan'])->name('chart.kunjungan');
-        Route::get('/getdashboardmetrics',                  [DashboardController::class, 'getDashboardMetrics'])->name('getdashboardmetrics');
-        Route::get('/getdataantricepat',                    [DashboardController::class, 'getDataAntriCepat'])->name('getdataantricepat');
+        Route::get('/chart_kunjungan',                      [DashboardController::class, 'getChartKunjungan'])->name('chart_kunjungan');
+        Route::get('/total_dokter',                         [DashboardController::class, 'getTotalDokter'])->name('total_dokter');
+        Route::get('/total_pasien',                         [DashboardController::class, 'getTotalPasien'])->name('total_pasien');
+        Route::get('/total_apoteker',                       [DashboardController::class, 'getTotalApoteker'])->name('total_apoteker');
+        Route::get('/stok_obat',                            [DashboardController::class, 'getStokObat'])->name('stok_obat');
     });
 
     Route::prefix('manajemen_pengguna')->name('manajemen_pengguna.')->group(function () {

@@ -63,16 +63,16 @@
 
                 <!-- Kanan: Ikon & Akun -->
                 <div class="flex items-center space-x-3">
-                    <a href="#" class="hidden sm:block text-gray-500 hover:text-gray-700 p-2 rounded-full">
+                    {{-- <a href="#" class="hidden sm:block text-gray-500 hover:text-gray-700 p-2 rounded-full">
                         <i class="fa-solid fa-circle-question fa-lg"></i>
                     </a>
                     <a href="#" class="hidden sm:block text-gray-500 hover:text-gray-700 p-2 rounded-full">
                         <i class="fa-solid fa-bell fa-lg"></i>
-                    </a>
+                    </a> --}}
 
                     <button type="button" id="dropdownAccountButton" data-dropdown-toggle="dropdownAccount"
                         class="text-gray-500 hover:text-gray-700 p-2 rounded-full">
-                        <i class="fa-solid fa-circle-user fa-lg"></i>
+                        <i class="fa-solid fa-circle-user fa-2xl"></i>
                     </button>
 
                     <div id="dropdownAccount"
@@ -155,6 +155,7 @@
         </div>
     </footer>
 
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </body>
 
