@@ -169,15 +169,18 @@ class APIController extends Controller
         return response()->json(['Data Testimoni' => $dataTestimoni]);
     }
 
-    public function indexDokter()
+    public function getDataKunjunganDokter($id)
     {
-        $idUser = Auth::user()->id;
-        $dataDokter = Dokter::where('user_id', $idUser)->get();
+        $dataDokter = Dokter::where('user_id', $id)->get();
 
         $dataKunjungan = Kunjungan::with('dokter', 'pasien')->where('dokter_id', $dataDokter)->get();
 
         return response()->json([
             'Data Orderan Dokter' => $dataKunjungan,
         ]);
+    }
+
+    public function ubahStatusKunjungan() {
+        
     }
 }

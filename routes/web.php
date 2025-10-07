@@ -25,6 +25,7 @@ Route::prefix('api')->withoutMiddleware(['web'])->group(function () {
     Route::post('/check-availability', [App\Http\Controllers\Auth\AuthController::class, 'checkAvailability']);
     Route::post('/register', [App\Http\Controllers\Auth\AuthController::class, 'register']);
     Route::post('/login', [App\Http\Controllers\Auth\AuthController::class, 'login']);
+    Route::post('/login-dokter', []);
 
     // Forgot Password routes
     Route::prefix('forgot-password')->group(function () {
