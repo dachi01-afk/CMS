@@ -15,18 +15,10 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained('user', 'id')
                 ->cascadeOnDelete()
-<<<<<<< HEAD
-                ->cascadeOnUpdate()
-                ->nullable();
-=======
                 ->cascadeOnUpdate();
->>>>>>> b0073ea9941e1c1a37fb880dfab3e042d316a75d
             $table->string('nama_dokter');
-            $table->text('deskripsi_dokter');
             $table->enum('spesialisasi', ['Determatologi', 'Psikiatri', 'Onkologi', 'Kardiologi']);
             $table->string('email')->unique();
-            $table->string('foto');
-            $table->string('pengalaman');
             $table->string('no_hp')->nullable();
             $table->timestamps();
         });
