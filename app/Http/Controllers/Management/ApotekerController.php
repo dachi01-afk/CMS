@@ -12,18 +12,13 @@ use Illuminate\Support\Facades\Validator;
 
 class ApotekerController extends Controller
 {
-    // public function index()
-    // {
-    //     $data = Apoteker::with('user')->latest()->get();
-    //     return view('admin.apoteker.index', compact('data'));
-    // }
 
     public function createApoteker(Request $request)
     {
         $request->validate([
             'username'         => 'required|string|max:255',
             'email_apoteker'   => 'required|email|unique:user,email',
-            'password'         => 'required|string|min:6',
+            'password'         => 'nullable|string|min:6|confirmed',
             'nama_apoteker'    => 'required|string|max:255',
             'no_hp_apoteker'   => 'nullable|string|max:20',
         ]);

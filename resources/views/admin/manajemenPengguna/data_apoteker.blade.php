@@ -65,23 +65,69 @@
                 data-url="{{ route('manajemen_pengguna.add_apoteker') }}" method="POST">
                 @csrf
 
+                {{-- Username --}}
+                <div>
+                    <label for="username"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Username</label>
+                    <input type="text" name="username" id="username_apoteker"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                        placeholder="Nama Apoteker" required>
+                    <div id="username-error_apoteker" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
                 {{-- Nama Apoteker --}}
                 <div>
-                    <label for="nama_apoteker" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    <label for="nama" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                         Nama Apoteker
                     </label>
-                    <input type="text" name="nama_apoteker" id="nama_apoteker"
+                    <input type="text" name="nama" id="nama_apoteker"
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500
                         focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                         placeholder="Nama Apoteker" required>
                     <div id="nama_apoteker-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
+                {{-- Role --}}
+                {{-- <div>
+                    <label for="role_apoteker"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Role</label>
+                    <select id="role_apoteker" name="role_apoteker" required
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                        <option value="" disabled selected>Select role</option>
+                        <option value="admin">Admin</option>
+                        <option value="dokter">Dokter</option>
+                        <option value="apoteker">Apoteker</option>
+                        <option value="pasien">Pasien</option>
+                    </select>
+                    <div id="role_apoteker-error" class="text-red-600 text-sm mt-1"></div>
+                </div> --}}
+
+                {{-- Password --}}
+                <div>
+                    <label for="password"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
+                    <input type="password" name="password" id="password"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                        placeholder="••••••••" required>
+                    <div id="password-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
+                {{-- Confirm Password --}}
+                <div>
+                    <label for="password_confirmation"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Confirm Password</label>
+                    <input type="password" name="password_confirmation" id="password_confirmation"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                        placeholder="••••••••" required
+                        oninput="this.setCustomValidity(this.value !== password.value ? 'Password tidak sama!' : '')">
+                    <div id="password_confirmation-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
                 {{-- Email Apoteker --}}
                 <div>
-                    <label for="email_apoteker"
+                    <label for="email"
                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
-                    <input type="email" name="email_apoteker" id="email_apoteker"
+                    <input type="email" name="email" id="email_apoteker"
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500
                         focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                         placeholder="apoteker@example.com" required>

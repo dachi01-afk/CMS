@@ -104,11 +104,14 @@ $(function () {
     $formAdd.on('submit', function(e) {
         e.preventDefault();
         const url = $formAdd.data('url');
-
         const formData = {
+            username: $('#username_apoteker').val(),
+            password: $('#password').val(),
+            password_confirmation: $('#password_confirmation').val(),
             nama_apoteker: $('#nama_apoteker').val(),
             email_apoteker: $('#email_apoteker').val(),
             no_hp_apoteker: $('#no_hp_apoteker').val(),
+            role: 'Apoteker',
         };
 
         $('.text-red-600').empty();
