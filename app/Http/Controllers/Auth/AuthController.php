@@ -11,6 +11,7 @@ use App\Models\Pasien;
 use App\Models\Dokter;
 use App\Models\Testimoni;
 use App\Models\Kunjungan;
+use App\Models\EMR;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
@@ -689,7 +690,21 @@ class AuthController extends Controller
             'hasil_periksa' => ['required'],
         ]);
 
-        
+        $dataKunjungan = Kunjungan::findOrFail($request->kunjungan_id);
+
+        $dataEMR = EMR::create([
+            'kunjungan_id' => $request->kunjungan_id,
+            'riwayar_penyakit' => $request->riwayat_penyakit,
+            'alergi' => $request->alergi,
+            'hasil_periksa' => $request->hasil_periksa,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'status' => 200,
+            'Data EMR' => $dataEMR,
+            'message' => 'Data EMR Berhasil Ditambahkan'
+        ]);
     }
 
     public function ubahStatusKunjungan(Request $request)

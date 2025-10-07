@@ -19,7 +19,7 @@ class DokterSeeder extends Seeder
         $roleDokter = User::where('role', 'Dokter')->get();
         $faker = Faker::create();
         $spesialis = JenisSpesialis::pluck('id')->toArray();
-        $foto = 'foto_profil_dokter.jpeg';
+        $foto = 'foto_dokter.jpg';
 
         for ($i = 0; $i < $roleDokter->count(); $i++) {
             Dokter::create([

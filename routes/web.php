@@ -75,6 +75,7 @@ Route::prefix('api')->withoutMiddleware(['web'])->group(function () {
     Route::get('/getDataTestimoni', [APIController::class, 'getDataTestimoni']);
     Route::get('/getDataSpesialisasiDokter', [APIController::class, 'getDataSpesialisasiDokter']);
     Route::get('/getDataPasien', [APIController::class, 'getDataPasien']);
+    Route::get('/getDataKunjunganDokter', [APIController::class, 'getDataKunjunganDokter']);
 });
 
 Route::get('/', function () {
@@ -190,6 +191,8 @@ Route::middleware('auth')->group(function () {
     Route::prefix('settings')->name('settings.')->group(function () {
         Route::get('/', [SettingsController::class, 'index'])->name('index');
     });
+
+    
 });
 
 Route::get('/login-dokter', [AuthController::class, 'login'])->name('login.dokter');
