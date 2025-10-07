@@ -13,10 +13,9 @@ return new class extends Migration
     {
         Schema::create('dokter', function (Blueprint $table) {
             $table->id();
-            // $table->foreignId('user_id')->constrained('user', 'id')
-            //     ->cascadeOnDelete()
-            //     ->cascadeOnUpdate()
-            //     ->nullable();
+            $table->foreignId('user_id')->constrained('user', 'id')
+                ->cascadeOnDelete()
+                ->cascadeOnUpdate();
             $table->string('nama_dokter');
             $table->enum('spesialisasi', ['Determatologi', 'Psikiatri', 'Onkologi', 'Kardiologi']);
             $table->string('email')->unique();

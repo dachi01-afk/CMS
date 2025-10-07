@@ -29,7 +29,7 @@ Route::get('/dashboard', function () {
     return view('admin.dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::middleware([])->group(function () {
+Route::middleware('auth')->group(function () {
     Route::get('/profile',              [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile',            [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile',           [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -52,7 +52,7 @@ Route::middleware([])->group(function () {
         Route::post('/add_user',                            [UserController::class, 'createUser'])->name('add_user');
         Route::get('/get_user_by_id/{id}',                  [UserController::class, 'getUserById'])->name('get_user_by_id');
         Route::put('/update_user/{id}',                     [UserController::class, 'updateUser'])->name('update_user');
-        Route::delete('/delete_user{id}',                   [UserController::class, 'deleteUser'])->name('delete_user');
+        Route::delete('/delete_user/{id}',                   [UserController::class, 'deleteUser'])->name('delete_user');
 
         // crud dokter
         Route::get('/data_dokter',                          [ManajemenPenggunaController::class, 'dataDokter'])->name('data_dokter');
@@ -117,7 +117,7 @@ Route::middleware([])->group(function () {
         Route::get('/laporan_rekam_medis',                  [DataMedisPasienController::class, 'dataRekamMedis'])->name('laporan_rekam_medis');
 
         // data diagnosa dan konsultasi
-        Route::get('/diagnosa_dan_konsultasi',              [DataMedisPasienController::class, 'dataKonsultasi'])->name('data_lab');
+        Route::get('/diagnosa_dan_konsultasi',              [DataMedisPasienController::class, 'dataKonsultasi'])->name('diagnosa_dan_konsultasi');
 
         // data hasil lab
         Route::get('/hasil_lab',                            [DataMedisPasienController::class, 'dataLab'])->name('hasil_lab');

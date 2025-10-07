@@ -46,7 +46,6 @@ class PengaturanKlinikController extends Controller
                 return $jadwal->dokter->nama_dokter ?? '-';
             })
             ->addColumn('hari_formatted', function ($jadwal) {
-                // jika json tersimpan ['Senin','Rabu'], ubah menjadi string
                 return is_array($jadwal->hari) ? implode(', ', $jadwal->hari) : $jadwal->hari;
             })
             ->addColumn('action', function ($jadwal) {
