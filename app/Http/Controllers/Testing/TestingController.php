@@ -8,9 +8,12 @@ use Illuminate\Http\Request;
 
 class TestingController extends Controller
 {
-    public function index() {
-        
+    public function index()
+    {
+        $dataJadwalDokter = JadwalDokter::with('dokter')->get();
 
-        return view('testing.index');
+        return response()->json([
+            'data' => $dataJadwalDokter
+        ]);
     }
 }
