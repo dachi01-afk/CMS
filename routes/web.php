@@ -10,6 +10,7 @@ use App\Http\Controllers\Management\UserController;
 use App\Http\Controllers\Admin\DataMedisPasienController;
 use App\Http\Controllers\Admin\PengaturanKlinikController;
 use App\Http\Controllers\Admin\ManajemenPenggunaController;
+use App\Http\Controllers\Api\APIController;
 use App\Http\Controllers\Management\ApotekerController;
 use App\Http\Controllers\Management\DokterController;
 use App\Http\Controllers\Management\JadwalDokterController;
@@ -31,6 +32,11 @@ Route::get('/dashboard', function () {
 })->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::get('/testing', [TestingController::class, 'index'])->name('testing');
+
+Route::get('/getDataJadwalDokter', [APIController::class, 'getDataJadwalDokter'])->name('get.data.jadwal.dokter');
+Route::get('/getDataSpesialisasiDokter', [APIController::class, 'getDataSpesialisasiDokter'])->name('get.data.spesialisasi.dokter');
+Route::get('/getDataTestimoni', [APIController::class, 'getDataTestimoni'])->name('get.data.testimoni');
+Route::get('/getDataDokter', [APIController::class, 'getDataDokter'])->name('get.data.dokter');
 
 Route::middleware([])->group(function () {
     Route::get('/profile',              [ProfileController::class, 'edit'])->name('profile.edit');

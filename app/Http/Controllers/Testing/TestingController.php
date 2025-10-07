@@ -13,7 +13,7 @@ class TestingController extends Controller
         $dataJadwalDokter = JadwalDokter::with('dokter')->get();
 
         return response()->json([
-            'data' => $dataJadwalDokter
+            'data Jadwal Dokter' => $dataJadwalDokter
         ]);
     }
 }

@@ -18,13 +18,17 @@ class DokterSeeder extends Seeder
         $roleDokter = User::where('role', 'Dokter')->get();
         $faker = Faker::create();
         $spesialis = ['Determatologi', 'Psikiatri', 'Onkologi', 'Kardiologi'];
+        $foto = 'foto_profil_dokter.jpeg';
 
         for ($i = 0; $i < $roleDokter->count(); $i++) {
             Dokter::create([
-                // 'user_id' => $roleDokter[$i]->id,
+                'user_id' => $roleDokter[$i]->id,
                 'nama_dokter' => $faker->name,
+                'deskripsi_dokter' => $faker->word(),
                 'spesialisasi' => $faker->randomElement($spesialis),
                 'email' => $faker->unique()->safeEmail,
+                'foto' => $foto,
+                'pengalaman' => $faker->word(),
                 'no_hp' => $faker->phoneNumber(),
             ]);
         }
