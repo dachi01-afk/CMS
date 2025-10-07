@@ -19,4 +19,9 @@ class Pasien extends Model
     {
         return $this->belongsTo(Pembayaran::class);
     }
+
+    public function Testimoni()
+    {
+        return $this->hasMany(Testimoni::class);
+    }
 }
