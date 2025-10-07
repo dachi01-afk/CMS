@@ -26,13 +26,13 @@
             <ul class="flex flex-wrap -mb-px text-sm font-medium text-center whitespace-nowrap" id="default-tab"
                 data-tabs-toggle="#tab-content" role="tablist">
 
-                <li class="me-2" role="presentation">
+                {{-- <li class="me-2" role="presentation">
                     <button class="inline-block p-4 border-b-2 rounded-t-lg" id="pengguna-tab"
                         data-tabs-target="#data-pengguna" type="button" role="tab" aria-controls="data-pengguna"
                         aria-selected="true">
                         Data Pengguna
                     </button>
-                </li>
+                </li> --}}
 
                 <li class="me-2" role="presentation">
                     <button class="inline-block p-4 border-b-2 rounded-t-lg" id="dokter-tab"

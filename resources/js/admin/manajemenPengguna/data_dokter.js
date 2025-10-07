@@ -18,7 +18,10 @@ $(function () {
         columns: [
             { data: 'id', name: 'id' },
             { data: 'nama_dokter', name: 'nama_dokter' },
-            { data: 'spesialisasi', name: 'spesialisasi' },
+            { data: 'username', name: 'username' },
+            { data: 'email_user', name: 'email_user' },
+            { data: 'role', name: 'role' },
+            { data: 'jenis_spesialis_id', name: 'jenis_spesialis_id' }, 
             { data: 'email', name: 'email' },
             { data: 'no_hp', name: 'no_hp' },
             { 
@@ -147,20 +150,11 @@ $(function () {
         e.preventDefault();
         const url = $formAdd.data('url');
         const formData = {
-            username: $('#username').val(), 
-            password: $('#password').val(), 
             nama_dokter: $('#nama_dokter').val(),
-            jenis_spesialis: $('#jenis_spesialis').val(),
+            spesialisasi: $('#spesialisasi').val(),
             email: $('#email_dokter').val(),
             no_hp: $('#no_hp').val(),
-            foto: $('#foto')[0]?.files[0] ?? null, 
-            deskripsi_dokter: $('#deskripsi_dokter').val(), 
-            pengalaman: $('#pengalaman').val(), 
-
         };
-
-        $('.text-red-600').empty();
-        $formAdd.find('.is-invalid').removeClass('is-invalid');
 
         axios.post(url, formData)
             .then(res => {
@@ -217,7 +211,7 @@ $(function () {
         resetEditForm();
         const dokterId = $(this).data('id');
 
-        axios.get(`/manajemen_pengguna/get_dokter_by_id/${dokterId}`)
+        axios.get(`/manajemen_pengguna/data_dokter/${dokterId}`)
             .then(res => {
                 const dokter = res.data.data;
                 const baseUrl = $formEdit.data('url');
@@ -285,7 +279,7 @@ $(function () {
                         title: 'Error Server!',
                         text: 'Terjadi kesalahan server.'
                     });
-                    // console.error(err);
+                    console.error(err);
                 }
             });
     });
@@ -295,6 +289,7 @@ $(function () {
         resetEditForm();
     });
 });
+
 
 
 // delete data dokter
