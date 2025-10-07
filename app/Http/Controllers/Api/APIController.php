@@ -7,11 +7,13 @@ use App\Models\Dokter;
 use App\Models\JadwalDokter;
 use App\Models\Pasien;
 use App\Models\Testimoni;
+use App\Models\Kunjungan;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use PhpParser\Node\Stmt\Foreach_;
+use Illuminate\Support\Facades\Auth;
 
 class APIController extends Controller
 {
@@ -165,5 +167,17 @@ class APIController extends Controller
         ]);
 
         return response()->json(['Data Testimoni' => $dataTestimoni]);
+    }
+
+    public function indexDokter()
+    {
+        $idUser = Auth::user()->id;
+        $dataDokter = Dokter::where('user_id', $idUser)->get();
+
+        $dataKunjungan = Kunjungan::with('dokter', 'pasien')->where('dokter_id', $dataDokter)->get();
+
+        return response()->json([
+            'Data Orderan Dokter' => $dataKunjungan,
+        ]);
     }
 }
