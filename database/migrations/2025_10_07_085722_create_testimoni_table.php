@@ -13,6 +13,9 @@ return new class extends Migration
     {
         Schema::create('testimoni', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('pasien_id')->constrained('pasien', 'id', 'testimoni_pasien_id')
+                ->cascadeOnDelete()
+                ->cascadeOnUpdate();
             $table->string('nama_testimoni');
             $table->string('umur');
             $table->string('pekerjaan');

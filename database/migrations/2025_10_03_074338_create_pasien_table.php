@@ -3,6 +3,7 @@ da<?php
     use Illuminate\Database\Migrations\Migration;
     use Illuminate\Database\Schema\Blueprint;
     use Illuminate\Support\Facades\Schema;
+    use phpDocumentor\Reflection\Types\Nullable;
 
     return new class extends Migration
     {
@@ -17,9 +18,9 @@ da<?php
                     ->cascadeOnDelete()
                     ->cascadeOnUpdate();
                 $table->string('nama_pasien');
-                $table->string('alamat');
-                $table->date('tanggal_lahir');
-                $table->enum('jenis_kelamin', ['Laki-laki', 'Perempuan']);
+                $table->string('alamat')->nullable();
+                $table->date('tanggal_lahir')->nullable();
+                $table->enum('jenis_kelamin', ['Laki-laki', 'Perempuan'])->nullable();
                 $table->timestamps();
             });
         }

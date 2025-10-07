@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Pasien;
 use App\Models\Testimoni;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -18,16 +19,21 @@ class TestimoniSeeder extends Seeder
         $faker = Faker::create('id_ID');
         $foto = 'foto_profil_dokter.jpeg';
         $video = 'VID-20251007-WA0024.mp4';
+        $dataPasien = Pasien::all();
 
-        for ($i = 0; $i < 10; $i++) {
-            Testimoni::create([
-                'nama_testimoni' => $faker->name,
-                'umur' => $faker->numberBetween(20, 100),
-                'pekerjaan' => $faker->jobTitle,
-                'isi_testimoni' => $faker->word(),
-                'foto' => $foto,
-                'link_video' => $video,
-            ]);
+        foreach ($dataPasien as $pasien) {
+            $jumlahTestimoni = rand(1, 3);
+            for ($i = 0; $i < $jumlahTestimoni; $i++) {
+                Testimoni::create([
+                    'pasien_id' => $pasien->id,
+                    'nama_testimoni' => $pasien->nama_pasien,
+                    'umur' => $faker->numberBetween(20, 100),
+                    'pekerjaan' => $faker->jobTitle,
+                    'isi_testimoni' => $faker->word(),
+                    'foto' => $foto,
+                    'link_video' => $video,
+                ]);
+            }
         }
     }
 }

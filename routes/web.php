@@ -33,16 +33,14 @@ Route::get('/dashboard', function () {
 
 Route::get('/testing', [TestingController::class, 'index'])->name('testing');
 
-<<<<<<< HEAD
 Route::get('/getDataJadwalDokter', [APIController::class, 'getDataJadwalDokter'])->name('get.data.jadwal.dokter');
-Route::get('/getDataSpesialisasiDokter', [APIController::class, 'getDataSpesialisasiDokter'])->name('get.data.spesialisasi.dokter');
+Route::get('/getDataKunjungan', [APIController::class, 'getDataKunjungan'])->name('get.data.kunjungan');
 Route::get('/getDataTestimoni', [APIController::class, 'getDataTestimoni'])->name('get.data.testimoni');
 Route::get('/getDataDokter', [APIController::class, 'getDataDokter'])->name('get.data.dokter');
+Route::get('/getDataSpesialisasiDokter', [APIController::class, 'getDataSpesialisasiDokter'])->name('get.data.spesialisasi.dokter');
+Route::get('/getDataDokterSpesialisasi', [APIController::class, 'getDataDokterSpesialisasi'])->name('get.data.dokter.spesialisasi');
 
-Route::middleware([])->group(function () {
-=======
 Route::middleware('auth')->group(function () {
->>>>>>> b0073ea9941e1c1a37fb880dfab3e042d316a75d
     Route::get('/profile',              [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile',            [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile',           [ProfileController::class, 'destroy'])->name('profile.destroy');
