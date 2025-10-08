@@ -101,11 +101,12 @@ Route::get('/dashboard', function () {
     return view('admin.dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::get('/testing', [TestingController::class, 'index'])->name('testing');
+Route::get('/testing', [TestingController::class, 'testing'])->name('testing');
+Route::post('/testing-create-kunjungan', [TestingController::class, 'testingCreateKunjungan'])->name('testing.create.kunjungan');
 
 // Public web routes for data access
 Route::get('/getDataJadwalDokter', [APIController::class, 'getDataJadwalDokter'])->name('get.data.jadwal.dokter');
-Route::get('/getDataKunjungan', [APIController::class, 'getDataKunjungan'])->name('get.data.kunjungan');
+Route::get('/getDataKunjungan', [APIController::class, 'getDataKunjungan'])->name('getee.data.kunjungan');
 Route::get('/getDataTestimoni', [APIController::class, 'getDataTestimoni'])->name('get.data.testimoni');
 Route::get('/getDataDokter', [APIController::class, 'getDataDokter'])->name('get.data.dokter');
 Route::get('/getDataSpesialisasiDokter', [APIController::class, 'getDataSpesialisasiDokter'])->name('get.data.spesialisasi.dokter');
