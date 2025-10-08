@@ -86,7 +86,8 @@ Route::get('/dashboard', function () {
     return view('admin.dashboard');
 })->middleware(['auth', 'verified'])->name('dashboard');
 
-Route::get('/testing', [TestingController::class, 'index'])->name('testing');
+Route::get('/testing', [TestingController::class, 'testing'])->name('testing');
+Route::post('/testing-create-kunjungan', [TestingController::class, 'testingCreateKunjungan'])->name('testing.create.kunjungan');
 
 Route::get('/getDataJadwalDokter', [APIController::class, 'getDataJadwalDokter'])->name('get.data.jadwal.dokter');
 Route::get('/getDataKunjungan', [APIController::class, 'getDataKunjungan'])->name('getee.data.kunjungan');

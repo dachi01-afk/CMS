@@ -6,11 +6,24 @@ use App\Http\Controllers\Controller;
 use App\Models\Dokter;
 use App\Models\JadwalDokter;
 use App\Models\Kunjungan;
+use App\Models\Pasien;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class TestingController extends Controller
 {
+    public function testing()
+    {
+        $dataPasien = Pasien::all();
+        $dataDokter = Dokter::all();
+
+        return view('testing.index', compact('dataPasien', 'dataDokter'));
+    }
+
+   
+
+
     public function index()
     {
         $dataJadwalDokter = JadwalDokter::with('dokter')->get();
