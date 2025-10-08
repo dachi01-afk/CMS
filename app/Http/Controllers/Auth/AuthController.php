@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
@@ -9,9 +10,6 @@ use App\Models\User;
 use App\Models\Pasien;
 use App\Models\Dokter;
 use App\Models\Testimoni;
-use App\Models\Kunjungan;
-use App\Models\JadwalDokter;
-use App\Models\EMR;
 use Illuminate\Support\Str; 
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Cache;
@@ -36,8 +34,8 @@ class AuthController extends Controller
         return response()->json([
             'status' => 'success',
             'available' => !$exists,
-            'message' => $exists 
-                ? ucfirst($request->type) . ' sudah digunakan' 
+            'message' => $exists
+                ? ucfirst($request->type) . ' sudah digunakan'
                 : ucfirst($request->type) . ' tersedia'
         ]);
     }
@@ -50,17 +48,17 @@ class AuthController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:user'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
-        
+
         // Always set role as Pasien for mobile app registration
         $role = 'Pasien';
-        
+
         $user = User::create([
             'username' => $request->username,
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'role' => $role,
         ]);
-        
+
         $responseData = [
             'account' => [
                 'id' => $user->id,
@@ -80,7 +78,7 @@ class AuthController extends Controller
 
             $responseData['account']['pasien_id'] = $pasien->id_pasien ?? $pasien->id;
         }
-        
+
         $token = $user->createToken('authToken')->plainTextToken;
         $responseData['token'] = $token;
 
@@ -98,10 +96,10 @@ class AuthController extends Controller
             'username' => ['required', 'string'],
             'password' => ['required', 'string'],
         ]);
-        
+
         // Cek apakah username ada
         $user = User::where('username', $request->username)->first();
-        
+
         if (!$user) {
             return response()->json([
                 'status' => 'error',
@@ -109,7 +107,7 @@ class AuthController extends Controller
                 'error_type' => 'username_not_found'
             ], 401);
         }
-        
+
         // Cek apakah password benar
         if (!Hash::check($request->password, $user->password)) {
             return response()->json([
@@ -118,11 +116,11 @@ class AuthController extends Controller
                 'error_type' => 'wrong_password'
             ], 401);
         }
-        
+
         // Login berhasil
         $user->tokens()->delete();
         $token = $user->createToken('authToken')->plainTextToken;
-        
+
         $responseData = [
             'account' => [
                 'id' => $user->id,
@@ -135,11 +133,11 @@ class AuthController extends Controller
 
         if ($user->role === 'Pasien') {
             $pasien = Pasien::where('user_id', $user->id)->first();
-            
+
             if (!$pasien) {
                 // Try alternative approach - find by email
                 $pasien = Pasien::where('email', $user->email)->first();
-                
+
                 if (!$pasien) {
                     return response()->json([
                         'status' => 'error',
@@ -148,23 +146,23 @@ class AuthController extends Controller
                     ], 404);
                 }
             }
-            
+
             $responseData['account']['pasien_id'] = $pasien->id_pasien ?? $pasien->id;
         }
 
         if ($user->role === 'Dokter') {
             $dokter = Dokter::where('user_id', $user->id)->first();
-            
+
             if (!$dokter) {
                 // Try alternative approach - find by email
                 $dokter = Dokter::where('email', $user->email)->first();
             }
-            
+
             if ($dokter) {
                 $responseData['account']['dokter_id'] = $dokter->id_dokter ?? $dokter->id;
             }
         }
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Login berhasil.',
@@ -176,7 +174,7 @@ class AuthController extends Controller
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()->delete();
-        
+
         return response()->json([
             'status' => 'success',
             'message' => 'Logout berhasil.'
@@ -187,7 +185,7 @@ class AuthController extends Controller
     public function profile(Request $request)
     {
         $user = $request->user();
-        
+
         $profileData = [
             'id' => $user->id,
             'username' => $user->username,
@@ -197,11 +195,11 @@ class AuthController extends Controller
 
         if ($user->role === 'Pasien') {
             $pasien = Pasien::where('user_id', $user->id)->first();
-            
+
             if (!$pasien) {
                 $pasien = Pasien::where('email', $user->email)->first();
             }
-            
+
             if ($pasien) {
                 $profileData['pasien_id'] = $pasien->id_pasien ?? $pasien->id;
                 $profileData['nomor_rm'] = $pasien->nomor_rm ?? '';
@@ -214,11 +212,11 @@ class AuthController extends Controller
 
         if ($user->role === 'Dokter') {
             $dokter = Dokter::where('user_id', $user->id)->first();
-            
+
             if (!$dokter) {
                 $dokter = Dokter::where('email', $user->email)->first();
             }
-            
+
             if ($dokter) {
                 $profileData['dokter_id'] = $dokter->id_dokter ?? $dokter->id;
                 $profileData['nama_lengkap'] = $dokter->nama_dokter ?? '';
@@ -250,15 +248,15 @@ class AuthController extends Controller
         ]);
 
         $user = $request->user();
-        
+
         Log::info('Update Profile Request', [
             'user_id' => $user->id,
             'request_data' => $request->all()
         ]);
-        
+
         if ($user->role === 'Pasien') {
             $pasien = Pasien::where('user_id', $user->id)->first();
-            
+
             if (!$pasien) {
                 Log::error('Pasien not found', ['user_id' => $user->id]);
                 return response()->json([
@@ -276,7 +274,7 @@ class AuthController extends Controller
             ];
 
             $pasien->update($updateData);
-            
+
             Log::info('Profile Updated Successfully', [
                 'pasien_id' => $pasien->id,
                 'updated_data' => $updateData
@@ -305,44 +303,45 @@ class AuthController extends Controller
     }
 
     // ========== FORGOT PASSWORD METHODS ==========
-    
+
     public function sendOTP(Request $request)
     {
         $request->validate([
             'email' => 'required|email|exists:user,email'
         ]);
 
-        $otp = sprintf('%06d', mt_rand(0, 999999));
+    $otp = sprintf('%06d', mt_rand(0, 999999));
+    
+    // Simpan OTP ke cache selama 10 menit
+    Cache::put("forgot_password_otp_{$request->email}", $otp, 600);
+
+    try {
+        // Kirim email OTP pakai Blade template yang sama
+        Mail::send('emails.otp_notification', [
+            'otp' => $otp,
+            'type' => 'Lupa Password',
+            'expiration_minutes' => 10
+        ], function ($message) use ($request) {
+            $message->to($request->email)
+                    ->subject('Kode OTP untuk Lupa Password');
+        });
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Kode OTP telah dikirim ke email Anda. Silakan cek kotak masuk atau folder spam.'
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Gagal Kirim OTP Lupa Password', ['error' => $e->getMessage()]);
         
-        // Simpan OTP ke cache selama 10 menit
-        Cache::put("forgot_password_otp_{$request->email}", $otp, 600);
-
-        try {
-            // Kirim email OTP pakai Blade template yang sama
-            Mail::send('emails.otp_notification', [
-                'otp' => $otp,
-                'type' => 'Lupa Password',
-                'expiration_minutes' => 10
-            ], function ($message) use ($request) {
-                $message->to($request->email)
-                        ->subject('Kode OTP untuk Lupa Password');
-            });
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Kode OTP telah dikirim ke email Anda. Silakan cek kotak masuk atau folder spam.'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Gagal Kirim OTP Lupa Password', ['error' => $e->getMessage()]);
-            
-            // Jangan hapus OTP agar bisa diverifikasi nanti
-            return response()->json([
-                'status' => 'error',
-                'message' => 'OTP berhasil dibuat tapi gagal dikirim via email. Silakan coba lagi nanti.',
-                // 'debug_otp' => $otp // aktifkan ini hanya untuk pengujian
-            ], 500);
-        }
+        // Jangan hapus OTP agar bisa diverifikasi nanti
+        return response()->json([
+            'status' => 'error',
+            'message' => 'OTP berhasil dibuat tapi gagal dikirim via email. Silakan coba lagi nanti.',
+            // 'debug_otp' => $otp // aktifkan ini hanya untuk pengujian
+        ], 500);
     }
+}
+
 
     public function verifyOTP(Request $request)
     {
@@ -352,7 +351,7 @@ class AuthController extends Controller
         ]);
 
         $cachedOtp = Cache::get("forgot_password_otp_{$request->email}");
-        
+
         if (!$cachedOtp || $cachedOtp !== $request->otp) {
             return response()->json([
                 'status' => 'error',
@@ -375,7 +374,7 @@ class AuthController extends Controller
         ]);
 
         $cachedOtp = Cache::get("forgot_password_otp_{$request->email}");
-        
+
         if (!$cachedOtp || $cachedOtp !== $request->otp) {
             return response()->json([
                 'status' => 'error',
@@ -384,7 +383,7 @@ class AuthController extends Controller
         }
 
         $user = User::where('email', $request->email)->first();
-        
+
         if (!$user) {
             return response()->json([
                 'status' => 'error',
@@ -406,93 +405,83 @@ class AuthController extends Controller
     }
 
     // ========== FORGOT USERNAME METHODS ==========
-
-    public function sendUsernameOTP(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email|exists:user,email'
-        ]);
-
-        $email = strtolower($request->email);
-        $user = User::where('email', $email)->first();
-
-        if (!$user) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Email tidak ditemukan.'
-            ], 404);
-        }
-
-        $otp = sprintf('%06d', mt_rand(0, 999999));
-        Cache::put("forgot_username_otp_{$email}", $otp, 300); // 5 menit
-
-        try {
-            Mail::send('emails.otp_notification', [
-                'otp' => $otp,
-                'type' => 'Lupa Username',
-                'expiration_minutes' => 5
-            ], function ($message) use ($email) {
-                $message->to($email)
-                        ->subject('Kode OTP untuk Lupa Username');
-            });
-
-            return response()->json([
-                'status' => 'success',
-                'message' => 'Kode OTP telah dikirim ke email Anda.'
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Gagal Kirim OTP Username', ['error' => $e->getMessage()]);
-
-            return response()->json([
-                'status' => 'error',
-                'message' => 'OTP gagal dikirim melalui email. Silakan coba lagi nanti.'
-            ], 500);
-        }
+    
+public function sendUsernameOTP(Request $request)
+{
+    $request->validate(['email' => 'required|email|exists:user,email']); // Tambah validasi exists:user,email
+    
+    $user = User::where('email', $request->email)->first();
+    
+    // User pasti ada karena sudah divalidasi 'exists', tapi tetap cek untuk pesan spesifik
+    if (!$user) {
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Email tidak ditemukan.',
+        ], 404);
     }
 
-    public function verifyUsernameOTP(Request $request)
-    {
-        $request->validate([
-            'email' => 'required|email',
-            'otp' => 'required|string|size:6'
-        ]);
+    // 1. Generate OTP (asumsi 6 digit)
+    $otp = sprintf('%06d', mt_rand(0, 999999));
+    
+    // 2. Simpan OTP ke cache selama 5 menit (300 detik)
+    Cache::put("forgot_username_otp_{$request->email}", $otp, 300); // FIX: Menambah Cache::put
 
-        $email = strtolower($request->email);
-        $cachedOtp = Cache::get("forgot_username_otp_{$email}");
+    // 3. Kirim Email menggunakan Blade Template
+    try {
+        Mail::send('emails.otp_notification', [
+            'otp' => $otp,
+            'type' => 'Lupa Username', 
+            'expiration_minutes' => 5
+        ], function ($message) use ($request) {
+            $message->to($request->email)
+                    ->subject('Kode Verifikasi untuk Lupa Username');
+        });
 
-        if (!$cachedOtp) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Kode OTP sudah kedaluwarsa. Silakan kirim ulang kode.'
-            ], 400);
-        }
-
-        if ($cachedOtp !== $request->otp) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Kode OTP yang Anda masukkan salah.'
-            ], 400);
-        }
-
-        $user = User::where('email', $email)->first();
-        if (!$user) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Email tidak ditemukan.'
-            ], 404);
-        }
-
-        // Jangan hapus OTP dulu, tapi tambahkan flag bahwa OTP sudah diverifikasi
-        Cache::put("forgot_username_verified_{$email}", true, 600); // valid 10 menit
-
+        // 4. Berikan Response Sukses
         return response()->json([
             'status' => 'success',
-            'message' => 'OTP berhasil diverifikasi. Silakan lanjut ubah username Anda.',
-            'data' => [
-                'username' => $user->username
-            ]
+            'message' => 'Kode OTP telah dikirim ke email Anda. Silakan cek kotak masuk.',
+            // Hapus 'debug_otp' di production
+            // 'debug_otp' => $otp
         ]);
+    } catch (\Exception $e) {
+        Log::error('Gagal Kirim OTP Username', ['error' => $e->getMessage()]);
+        
+        // JANGAN MENGHAPUS CACHE AGAR BISA TETAP DIVERIFIKASI JIKA SERVER EMAIL BERMASALAH
+        // Tapi berikan pesan yang jelas ke pengguna
+        return response()->json([
+            'status' => 'error',
+            'message' => 'OTP berhasil dibuat, namun gagal dikirim via email. Silakan coba verifikasi.',
+            // Jika Anda ingin mengizinkan pengguna melanjutkan tanpa email (untuk development)
+            // 'debug_otp' => $otp 
+        ], 500); 
     }
+}
+
+   public function verifyUsernameOTP(Request $request)
+{
+    // ... (Validasi)
+
+    $cachedOtp = Cache::get("forgot_username_otp_{$request->email}");
+    
+    if (!$cachedOtp || $cachedOtp !== $request->otp) {
+        // ... (Error response)
+    }
+    
+    // Opsional: Hapus OTP setelah diverifikasi agar tidak bisa dipakai untuk update username lain (security)
+    // Walaupun 'updateUsername' juga melakukan ini, ini bagus sebagai layer pencegahan
+    // Cache::forget("forgot_username_otp_{$request->email}"); // PENTING: Jangan hapus dulu, karena updateUsername masih memerlukannya untuk final check.
+
+    $user = User::where('email', $request->email)->first();
+
+    return response()->json([
+        'status' => 'success',
+        'message' => 'OTP berhasil diverifikasi. Username Anda adalah: '.$user->username, // Tampilkan username di sini
+        'data' => [
+            'username' => $user->username
+        ]
+    ]);
+}
 
     public function updateUsername(Request $request)
     {
@@ -506,19 +495,18 @@ class AuthController extends Controller
             ],
         ]);
 
-        $email = strtolower(trim($request->email));
-        $newUsername = trim($request->username);
-
-        $user = User::where('email', $email)->first();
-        if (!$user) {
+        $cachedOtp = Cache::get("forgot_username_otp_{$request->email}");
+        
+        if (!$cachedOtp || $cachedOtp !== $request->otp) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Email tidak ditemukan.'
             ], 404);
         }
 
-        $verified = Cache::get("forgot_username_verified_{$email}");
-        if (!$verified) {
+        $user = User::where('email', $request->email)->first();
+        
+        if (!$user) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'OTP belum diverifikasi atau sudah kedaluwarsa.'
@@ -539,7 +527,7 @@ class AuthController extends Controller
     }
 
     // ========== TESTIMONI METHODS ==========
-    
+
     public function submitTestimoni(Request $request)
     {
         $request->validate([
@@ -563,7 +551,7 @@ class AuthController extends Controller
         ], 201);
     }
 
-    // ========== BOOKING METHODS ==========
+    // ========== PLACEHOLDER METHODS FOR FUTURE IMPLEMENTATION ==========
     
     public function bookSchedule(Request $request)
     {
@@ -1800,6 +1788,96 @@ class AuthController extends Controller
             return '08:00 - 17:00'; // Default
         } catch (\Exception $e) {
             return '08:00 - 17:00'; // Fallback
+        }
+    }
+
+    // ==== ROLE DOKTER  =====
+
+    public function registerDokter(Request $request)
+    {
+        $request->validate([
+            'username' => ['required', 'string', 'max:255', 'unique:user'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:user'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $user = User::create([
+            'username' => $request->username,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'role' => 'Dokter',
+        ]);
+
+        $responseData = [
+            'account' => [
+                'id' => $user->id,
+                'username' => $user->username,
+                'email' => $user->email,
+                'role' => $user->role,
+            ],
+        ];
+
+        // FIXED: Buat record pasien dengan nama_pasien default dari username
+        if ($user->role === 'Dokter') {
+            $dokter = Dokter::create([
+                'user_id' => $user->id,
+                'nama_dokter' => $request->username, // FIXED: Set default name
+                // Kolom lain dibiarkan null untuk diisi nanti
+            ]);
+
+            $responseData['account']['dokter_id'] = $dokter->id;
+        }
+
+        $token = $user->createToken('authToken')->plainTextToken;
+        $responseData['token'] = $token;
+
+        return response()->json([
+            'status' => 'success',
+            'message' => 'Akun berhasil didaftarkan.',
+            'data' => $responseData
+        ], 201);
+    }
+
+    public function createDataEMR(Request $request)
+    {
+        $request->validate([
+            'kunjungan_id' => ['required'],
+            'riwayat_penyakit' => ['required'],
+            'algergi' => ['required'],
+            'hasil_periksa' => ['required'],
+        ]);
+
+        $dataKunjungan = Kunjungan::findOrFail($request->kunjungan_id);
+
+        $dataEMR = EMR::create([
+            'kunjungan_id' => $request->kunjungan_id,
+            'riwayar_penyakit' => $request->riwayat_penyakit,
+            'alergi' => $request->alergi,
+            'hasil_periksa' => $request->hasil_periksa,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'status' => 200,
+            'Data EMR' => $dataEMR,
+            'message' => 'Data EMR Berhasil Ditambahkan'
+        ]);
+    }
+
+    public function ubahStatusKunjungan(Request $request)
+    {
+        $dataKunjungan = Kunjungan::findOrFail($request->id);
+
+        if ($dataKunjungan->status === 'Engaged') {
+            $dataKunjungan->update([
+                'status' => 'Succeed',
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'Data Kunjungan' => $dataKunjungan,
+                'message' => 'Berhasil mengubah status kunjungan menjadi Succeed'
+            ]);
         }
     }
 }

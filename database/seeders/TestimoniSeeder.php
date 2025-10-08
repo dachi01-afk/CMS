@@ -17,8 +17,8 @@ class TestimoniSeeder extends Seeder
     {
 
         $faker = Faker::create('id_ID');
-        $foto = 'foto_profil_dokter.jpeg';
-        $video = 'VID-20251007-WA0024.mp4';
+        $foto = 'foto_dokter.jpg';
+        $video = 'Testimoni Pelayanan Kesehatan di Rumah Sakit Ciremai.mp4';
         $dataPasien = Pasien::all();
 
         foreach ($dataPasien as $pasien) {

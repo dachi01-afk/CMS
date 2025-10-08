@@ -41,9 +41,12 @@ class ManajemenPenggunaController extends Controller
 
     public function dataDokter()
     {
-        $query = Dokter::select(['id', 'nama_dokter', 'spesialisasi', 'email', 'no_hp']);
+        $query = Dokter::with('user')->select('dokter.*');
 
         return DataTables::of($query)
+            ->addColumn('username', fn($row) => $row->user->username ?? '-')
+            ->addColumn('email_user', fn($row) => $row->user->email ?? '-')
+            ->addColumn('role', fn($row) => $row->user->role ?? '-')
             ->addColumn('action', function ($dokter) {
                 return '
                 <button class="btn-edit-dokter text-blue-600 hover:text-blue-800 mr-2" data-id="' . $dokter->id . '"  title="Edit">
@@ -60,9 +63,12 @@ class ManajemenPenggunaController extends Controller
 
     public function dataPasien()
     {
-        $query = Pasien::select(['id', 'nama_pasien', 'alamat', 'tanggal_lahir', 'jenis_kelamin']);
+        $query = Pasien::with('user')->select('pasien.*');
 
         return DataTables::of($query)
+            ->addColumn('username', fn($row) => $row->user->username ?? '-')
+            ->addColumn('email_user', fn($row) => $row->user->email ?? '-')
+            ->addColumn('role', fn($row) => $row->user->role ?? '-')
             ->addColumn('action', function ($pasien) {
                 return '
             <button class="btn-edit-pasien text-blue-600 hover:text-blue-800 mr-2" data-id="' . $pasien->id . '" title="Edit">
@@ -79,9 +85,12 @@ class ManajemenPenggunaController extends Controller
 
     public function dataApoteker()
     {
-        $query = Apoteker::select(['id', 'nama_apoteker', 'email_apoteker', 'no_hp_apoteker']);
+        $query = Apoteker::with('user')->select('apoteker.*');
 
         return DataTables::of($query)
+            ->addColumn('username', fn($row) => $row->user->username ?? '-')
+            ->addColumn('email_user', fn($row) => $row->user->email ?? '-')
+            ->addColumn('role', fn($row) => $row->user->role ?? '-')
             ->addColumn('action', function ($apoteker) {
                 return '
             <button class="btn-edit-apoteker text-blue-600 hover:text-blue-800 mr-2" data-id="' . $apoteker->id . '" title="Edit">

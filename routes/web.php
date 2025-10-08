@@ -25,6 +25,7 @@ Route::prefix('api')->withoutMiddleware(['web'])->group(function () {
     Route::post('/check-availability', [App\Http\Controllers\Auth\AuthController::class, 'checkAvailability']);
     Route::post('/register', [App\Http\Controllers\Auth\AuthController::class, 'register']);
     Route::post('/login', [App\Http\Controllers\Auth\AuthController::class, 'login']);
+    Route::post('/login-dokter', []);
 
     // Forgot Password routes
     Route::prefix('forgot-password')->group(function () {
@@ -44,6 +45,7 @@ Route::prefix('api')->withoutMiddleware(['web'])->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [App\Http\Controllers\Auth\AuthController::class, 'logout']);
         Route::get('/profile', [App\Http\Controllers\Auth\AuthController::class, 'profile']);
+<<<<<<< HEAD
         Route::patch('/profile/update', [App\Http\Controllers\Auth\AuthController::class, 'updateProfile']);
         Route::put('/appointment/cancel/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'cancelAppointment']);
         Route::put('/appointment/reschedule/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'rescheduleAppointment']);
@@ -55,6 +57,9 @@ Route::prefix('api')->withoutMiddleware(['web'])->group(function () {
             Route::put('/cancel/{kunjungan_id}', [App\Http\Controllers\Auth\AuthController::class, 'cancelAppointment']);
         });
         
+=======
+
+>>>>>>> 0ec211e048ef328f9aea7942c48f5fa7dd3b5eb8
         // Routes untuk pasien
         Route::get('/emr-pasien/{id}', [App\Http\Controllers\Auth\AuthController::class, 'getAllEmrPasien']);
         Route::get('/kunjungan-detail/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'getKunjunganDetail']);
@@ -69,9 +74,13 @@ Route::prefix('api')->withoutMiddleware(['web'])->group(function () {
             Route::post('/create-prescription/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'createPrescription']);
             Route::get('/prescriptions/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'getPrescriptions']);
             Route::get('/patient-history', [App\Http\Controllers\Auth\AuthController::class, 'getPatientHistory']);
+<<<<<<< HEAD
             Route::get('/schedule', [App\Http\Controllers\Auth\AuthController::class, 'getDokterSchedule']);
+=======
+            Route::get('/data-kunjungan-dokter', [APIController::class, 'indexDokter']);
+>>>>>>> 0ec211e048ef328f9aea7942c48f5fa7dd3b5eb8
         });
-        
+
         // Testimoni routes
         Route::prefix('testimoni')->group(function () {
             Route::post('/store', [App\Http\Controllers\Auth\AuthController::class, 'submitTestimoni']);
@@ -83,7 +92,11 @@ Route::prefix('api')->withoutMiddleware(['web'])->group(function () {
     Route::get('/getDataTestimoni', [APIController::class, 'getDataTestimoni']);
     Route::get('/getDataSpesialisasiDokter', [APIController::class, 'getDataSpesialisasiDokter']);
     Route::get('/getDataPasien', [APIController::class, 'getDataPasien']);
+<<<<<<< HEAD
     Route::get('/getDataDokter', [APIController::class, 'getDataDokter']);
+=======
+    Route::get('/getDataKunjunganDokter', [APIController::class, 'getDataKunjunganDokter']);
+>>>>>>> 0ec211e048ef328f9aea7942c48f5fa7dd3b5eb8
 });
 
 Route::get('/', function () {
@@ -186,6 +199,8 @@ Route::middleware('auth')->group(function () {
     Route::prefix('settings')->name('settings.')->group(function () {
         Route::get('/', [SettingsController::class, 'index'])->name('index');
     });
+
+    
 });
 
 Route::get('/login-dokter', [AuthController::class, 'login'])->name('login.dokter');

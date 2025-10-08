@@ -34,7 +34,10 @@
                 <tr>
                     <th class="px-6 py-3">No</th>
                     <th class="px-6 py-3">Nama Apoteker</th>
-                    <th class="px-6 py-3">Email</th>
+                    <th class="px-6 py-3">Username</th>
+                    <th class="px-6 py-3">Email Akun</th>
+                    <th class="px-6 py-3">Role</th>
+                    <th class="px-6 py-3">Email Apoteker</th>
                     <th class="px-6 py-3">No HP</th>
                     <th class="px-6 py-3 text-center">Aksi</th>
                 </tr>
@@ -65,23 +68,69 @@
                 data-url="{{ route('manajemen_pengguna.add_apoteker') }}" method="POST">
                 @csrf
 
+                {{-- Username --}}
+                <div>
+                    <label for="username"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Username</label>
+                    <input type="text" name="username" id="username_apoteker"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                        placeholder="Nama Apoteker" required>
+                    <div id="username-error_apoteker" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
                 {{-- Nama Apoteker --}}
                 <div>
-                    <label for="nama_apoteker" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    <label for="nama" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                         Nama Apoteker
                     </label>
-                    <input type="text" name="nama_apoteker" id="nama_apoteker"
+                    <input type="text" name="nama" id="nama_apoteker"
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500
                         focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                         placeholder="Nama Apoteker" required>
                     <div id="nama_apoteker-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
+                {{-- Role --}}
+                {{-- <div>
+                    <label for="role_apoteker"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Role</label>
+                    <select id="role_apoteker" name="role_apoteker" required
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                        <option value="" disabled selected>Select role</option>
+                        <option value="admin">Admin</option>
+                        <option value="dokter">Dokter</option>
+                        <option value="apoteker">Apoteker</option>
+                        <option value="pasien">Pasien</option>
+                    </select>
+                    <div id="role_apoteker-error" class="text-red-600 text-sm mt-1"></div>
+                </div> --}}
+
+                {{-- Password --}}
+                <div>
+                    <label for="password"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
+                    <input type="password" name="password" id="password"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                        placeholder="••••••••" required>
+                    <div id="password-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
+                {{-- Confirm Password --}}
+                <div>
+                    <label for="password_confirmation"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Confirm Password</label>
+                    <input type="password" name="password_confirmation" id="password_confirmation"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                        placeholder="••••••••" required
+                        oninput="this.setCustomValidity(this.value !== password.value ? 'Password tidak sama!' : '')">
+                    <div id="password_confirmation-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
                 {{-- Email Apoteker --}}
                 <div>
-                    <label for="email_apoteker"
+                    <label for="email"
                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
-                    <input type="email" name="email_apoteker" id="email_apoteker"
+                    <input type="email" name="email" id="email_apoteker"
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500
                         focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                         placeholder="apoteker@example.com" required>
@@ -136,6 +185,18 @@
                 @method('PUT')
                 <input type="hidden" name="apoteker_id" id="edit_apoteker_id">
 
+
+                {{-- Username --}}
+                <div>
+                    <label for="edit_username_apoteker"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Username</label>
+                    <input type="text" name="edit_username_apoteker" id="edit_username_apoteker"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
+                        focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                        placeholder="Username" required>
+                    <div id="edit_username-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
                 {{-- Nama --}}
                 <div>
                     <label for="edit_nama_apoteker"
@@ -169,6 +230,36 @@
                     <div id="edit_no_hp_apoteker-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
+                {{-- Password (Opsional) --}}
+                <div class="pt-2 border-t border-gray-200 dark:border-gray-600">
+                    <h4 class="text-md font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                    </h4>
+
+                    {{-- Password baru --}}
+                    <div>
+                        <label for="edit_password_apoteker"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password Baru</label>
+                        <input type="password" name="edit_password_apoteker" id="edit_password_apoteker"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
+                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="••••••••">
+                        <div id="edit_password_apoteker-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- Konfirmasi Password --}}
+                    <div>
+                        <label for="edit_password_apoteker_confirmation"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Konfirmasi
+                            Password</label>
+                        <input type="password" name="edit_password_apoteker_confirmation"
+                            id="edit_password_apoteker_confirmation"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
+                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="••••••••">
+                        <div id="edit_password_apoteker_confirmation-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+                </div>
+
                 {{-- Buttons --}}
                 <div class="flex justify-end gap-3 mt-5 border-t border-gray-200 pt-4 dark:border-gray-600">
                     <button type="button" id="closeEditApotekerModal"
@@ -187,6 +278,8 @@
         </div>
     </div>
 </div>
+
+
 
 
 

@@ -17,6 +17,9 @@ $(function () {
         columns: [
             { data: 'id', name: 'id' },
             { data: 'nama_apoteker', name: 'nama_apoteker' },
+            { data: 'username', name: 'username' },
+            { data: 'email_user', name: 'email_user' },
+            { data: 'role', name: 'role' },
             { data: 'email_apoteker', name: 'email_apoteker' },
             { data: 'no_hp_apoteker', name: 'no_hp_apoteker' },
             { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center whitespace-nowrap' },
@@ -104,11 +107,14 @@ $(function () {
     $formAdd.on('submit', function(e) {
         e.preventDefault();
         const url = $formAdd.data('url');
-
         const formData = {
+            username: $('#username_apoteker').val(),
+            password: $('#password').val(),
+            password_confirmation: $('#password_confirmation').val(),
             nama_apoteker: $('#nama_apoteker').val(),
             email_apoteker: $('#email_apoteker').val(),
             no_hp_apoteker: $('#no_hp_apoteker').val(),
+            role: 'Apoteker',
         };
 
         $('.text-red-600').empty();
@@ -157,6 +163,94 @@ $(function () {
 
 
 // edit data apoteker
+// $(function () {
+//     const editModalElement = document.getElementById('editApotekerModal');
+//     const editModal = editModalElement ? new Modal(editModalElement) : null;
+//     const $formEdit = $('#formEditApoteker');
+
+//     function resetEditForm() {
+//         $formEdit[0].reset();
+//         $formEdit.find('.is-invalid').removeClass('is-invalid');
+//         $formEdit.find('.text-red-600').empty();
+//     }
+
+//     $('body').on('click', '.btn-edit-apoteker', function() {
+//         resetEditForm();
+//         const id = $(this).data('id');
+
+//         axios.get(`/manajemen_pengguna/get_apoteker_by_id/${id}`)
+//             .then(response => {
+//                 const data = response.data.data;
+//                 const baseUrl = $formEdit.data('url');
+//                 const finalUrl = baseUrl.replace('/0', '/' + data.id);
+//                 $formEdit.data('url', finalUrl);
+
+//                 $('#edit_apoteker_id').val(data.id);
+//                 $('#edit_username').val(data.user.username);
+//                 $('#edit_nama_apoteker').val(data.nama_apoteker);
+//                 $('#edit_email_apoteker').val(data.email_apoteker);
+//                 $('#edit_no_hp_apoteker').val(data.no_hp_apoteker);
+
+//                 if (editModal) editModal.show();
+//             })
+//             .catch(() => {
+//                 Swal.fire({
+//                     icon: 'error',
+//                     title: 'Gagal!',
+//                     text: 'Tidak dapat memuat data apoteker.'
+//                 });
+//             });
+//     });
+
+//     $formEdit.on('submit', function(e) {
+//         e.preventDefault();
+//         const url = $formEdit.data('url');
+
+//         const formData = {
+//             nama_apoteker: $('#edit_nama_apoteker').val(),
+//             email_apoteker: $('#edit_email_apoteker').val(),
+//             no_hp_apoteker: $('#edit_no_hp_apoteker').val(),
+//             _method: 'PUT'
+//         };
+
+//         axios.post(url, formData)
+//             .then(response => {
+//                 Swal.fire({
+//                     icon: 'success',
+//                     title: 'Berhasil!',
+//                     text: response.data.message,
+//                     showConfirmButton: false,
+//                     timer: 2000
+//                 }).then(() => {
+//                     editModal.hide();
+//                     $('#userApoteker').DataTable().ajax.reload(null, false);
+//                 });
+//             })
+//             .catch(error => {
+//                 if (error.response && error.response.status === 422) {
+//                     const errors = error.response.data.errors;
+//                     for (const field in errors) {
+//                         $(`#edit_${field}`).addClass('is-invalid');
+//                         $(`#edit_${field}-error`).html(errors[field][0]);
+//                     }
+//                 } else {
+//                     Swal.fire({
+//                         icon: 'error',
+//                         title: 'Error!',
+//                         text: 'Terjadi kesalahan server.'
+//                     });
+//                 }
+//             });
+//     });
+
+//     $('#closeEditApotekerModal').on('click', function() {
+//         resetEditForm();
+//         if (editModal) editModal.hide();
+//     });
+// });
+
+
+// edit data apoteker
 $(function () {
     const editModalElement = document.getElementById('editApotekerModal');
     const editModal = editModalElement ? new Modal(editModalElement) : null;
@@ -180,6 +274,7 @@ $(function () {
                 $formEdit.data('url', finalUrl);
 
                 $('#edit_apoteker_id').val(data.id);
+                $('#edit_username_apoteker').val(data.user.username);
                 $('#edit_nama_apoteker').val(data.nama_apoteker);
                 $('#edit_email_apoteker').val(data.email_apoteker);
                 $('#edit_no_hp_apoteker').val(data.no_hp_apoteker);
@@ -200,9 +295,12 @@ $(function () {
         const url = $formEdit.data('url');
 
         const formData = {
-            nama_apoteker: $('#edit_nama_apoteker').val(),
-            email_apoteker: $('#edit_email_apoteker').val(),
-            no_hp_apoteker: $('#edit_no_hp_apoteker').val(),
+            edit_username_apoteker: $('#edit_username_apoteker').val(),
+            edit_nama_apoteker: $('#edit_nama_apoteker').val(),
+            edit_email_apoteker: $('#edit_email_apoteker').val(),
+            edit_no_hp_apoteker: $('#edit_no_hp_apoteker').val(),
+            edit_password_apoteker: $('#edit_password_apoteker').val(),
+            edit_password_apoteker_confirmation: $('#edit_password_apoteker_confirmation').val(),
             _method: 'PUT'
         };
 
@@ -216,7 +314,7 @@ $(function () {
                     timer: 2000
                 }).then(() => {
                     editModal.hide();
-                    $('#userApoteker').DataTable().ajax.reload(null, false);
+                    $('#apotekerTable').DataTable().ajax.reload(null, false);
                 });
             })
             .catch(error => {
@@ -241,6 +339,9 @@ $(function () {
         if (editModal) editModal.hide();
     });
 });
+
+
+
 
 // delete data dokter
 $(function () {

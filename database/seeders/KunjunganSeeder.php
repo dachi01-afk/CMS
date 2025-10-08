@@ -41,6 +41,7 @@ class KunjunganSeeder extends Seeder
                     'pasien_id' => $p->id,
                     'tanggal_kunjungan' => $tanggalKunjungan,
                     'keluhan_awal' => $faker->randomElement($daftarKeluhan),
+                    'status' => 'Pending',
                 ]);
 
                 // Setiap kunjungan berikutnya maju 1–7 hari

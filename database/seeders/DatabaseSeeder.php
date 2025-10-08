@@ -34,7 +34,6 @@ class DatabaseSeeder extends Seeder
             EMRSeeder::class,
             TransaksiApotekerSeeder::class,
             TestimoniSeeder::class,
-
         ]);
     }
 }

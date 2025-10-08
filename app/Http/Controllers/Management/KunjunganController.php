@@ -119,4 +119,41 @@ class KunjunganController extends Controller
             'message' => 'Data Kunjungan Berhasil Dihapus',
         ]);
     }
+
+    public function ubahStatusKunjungan(Request $request)
+    {
+        $dataKunjungan = Kunjungan::findOrFail($request->id);
+
+        if ($dataKunjungan->status === 'Pending') {
+            $dataKunjungan->update([
+                'status' => 'Confirmed',
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'Data Kunjungan' => $dataKunjungan,
+                'message' => 'Berhasil mengubah status kunjungan menjadi Confirmed'
+            ]);
+        } elseif ($dataKunjungan->status === 'Confirmed') {
+            $dataKunjungan->update([
+                'status' => 'Waiting',
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'Data Kunjungan' => $dataKunjungan,
+                'message' => 'Berhasil mengubah status kunjungan menjadi Waiting'
+            ]);
+        } elseif ($dataKunjungan->status === 'Waiting') {
+            $dataKunjungan->update([
+                'status' => 'Engaged',
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'Data Kunjungan' => $dataKunjungan,
+                'message' => 'Berhasil mengubah status kunjungan menjadi Engaged'
+            ]);
+        }
+    }
 }

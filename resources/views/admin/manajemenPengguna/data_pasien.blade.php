@@ -34,6 +34,9 @@
                 <tr>
                     <th class="px-6 py-3">No</th>
                     <th class="px-6 py-3">Nama Pasien</th>
+                    <th class="px-6 py-3">Username</th>
+                    <th class="px-6 py-3">Email Akun</th>
+                    <th class="px-6 py-3">Role</th>
                     <th class="px-6 py-3">Alamat</th>
                     <th class="px-6 py-3">Tanggal Lahir</th>
                     <th class="px-6 py-3">Jenis Kelamin</th>
@@ -64,6 +67,16 @@
                 data-url="{{ route('manajemen_pengguna.add_pasien') }}" method="POST">
                 @csrf
 
+                {{-- Username --}}
+                <div>
+                    <label for="username_pasien"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Username</label>
+                    <input type="text" name="username_pasien" id="username_pasien"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                        placeholder="Username" required>
+                    <div id="username_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
                 <div>
                     <label for="nama_pasien" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                         Nama Pasien
@@ -82,6 +95,27 @@
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                         placeholder="Alamat Lengkap" required>
                     <div id="alamat-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
+                {{-- Password --}}
+                <div>
+                    <label for="password_pasien"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
+                    <input type="password" name="password_pasien" id="password_pasien"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                        placeholder="••••••••" required>
+                    <div id="password_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
+                {{-- Confirm Password --}}
+                <div>
+                    <label for="password_pasien_confirmation"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Confirm Password</label>
+                    <input type="password" name="password_pasien_confirmation" id="password_pasien_confirmation"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                        placeholder="••••••••" required
+                        oninput="this.setCustomValidity(this.value !== password_pasien.value ? 'Password tidak sama!' : '')">
+                    <div id="password_pasien_confirmation-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
                 <div>
@@ -191,9 +225,6 @@
         </div>
     </div>
 </div>
-
-
-
 
 
 

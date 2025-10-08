@@ -18,7 +18,7 @@ class PasienController extends Controller
     {
         $request->validate([
             'username'       => 'required|string|max:255',
-            'email'          => 'required|email|unique:user,email',
+            'email_pasien'          => 'required|email|unique:user,email',
             'password'       => 'required|string|min:6',
             'nama_pasien'    => 'required|string|max:255',
             'alamat'         => 'nullable|string|max:255',

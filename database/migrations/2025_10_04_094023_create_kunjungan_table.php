@@ -19,6 +19,7 @@ return new class extends Migration
                 ->cascadeOnDelete()->cascadeOnUpdate();
             $table->date('tanggal_kunjungan');
             $table->text('keluhan_awal');
+            $table->enum('status', ['Pending', 'Confirmed', 'Waiting', 'Engaged', 'Succeed'])->default('Pending');
             $table->timestamps();
         });
     }

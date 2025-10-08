@@ -12,18 +12,13 @@ use Illuminate\Support\Facades\Validator;
 
 class ApotekerController extends Controller
 {
-    // public function index()
-    // {
-    //     $data = Apoteker::with('user')->latest()->get();
-    //     return view('admin.apoteker.index', compact('data'));
-    // }
 
     public function createApoteker(Request $request)
     {
         $request->validate([
             'username'         => 'required|string|max:255',
             'email_apoteker'   => 'required|email|unique:user,email',
-            'password'         => 'required|string|min:6',
+            'password'         => 'nullable|string|min:6|confirmed',
             'nama_apoteker'    => 'required|string|max:255',
             'no_hp_apoteker'   => 'nullable|string|max:20',
         ]);
@@ -48,7 +43,7 @@ class ApotekerController extends Controller
     public function getApotekerById($id)
     {
         $data = Apoteker::with('user')->findOrFail($id);
-        return response()->json($data);
+        return response()->json(['data' => $data]);
     }
 
     public function updateApoteker(Request $request, $id)
@@ -57,24 +52,31 @@ class ApotekerController extends Controller
         $user = $apoteker->user;
 
         $request->validate([
-            'username'         => 'required|string|max:255',
-            'email_apoteker'   => 'required|email|unique:user,email,' . $user->id,
-            'nama_apoteker'    => 'required|string|max:255',
-            'no_hp_apoteker'   => 'nullable|string|max:20',
+            'edit_username_apoteker' => 'required|string|max:255|unique:user,username,' . $user->id,
+            'edit_nama_apoteker'    => 'required|string|max:255',
+            'edit_email_apoteker'   => 'required|email|unique:user,email,' . $user->id,
+            'edit_no_hp_apoteker'   => 'nullable|string|max:20',
+            'edit_password_apoteker'   => 'nullable|string|min:6|confirmed',
         ]);
 
-        $user->update([
-            'username' => $request->username,
-            'email'    => $request->email_apoteker,
-        ]);
+        // Update user
+        $user->username = $request->edit_username_apoteker;
+        $user->email    = $request->edit_email_apoteker;
 
+        if ($request->filled('edit_password_apoteker')) {
+            $user->password = Hash::make($request->edit_password);
+        }
+
+        $user->save();
+
+        // Update apoteker
         $apoteker->update([
-            'nama_apoteker'  => $request->nama_apoteker,
-            'email_apoteker' => $request->email_apoteker,
-            'no_hp_apoteker' => $request->no_hp_apoteker,
+            'nama_apoteker'  => $request->edit_nama_apoteker,
+            'email_apoteker' => $request->edit_email_apoteker,
+            'no_hp_apoteker' => $request->edit_no_hp_apoteker,
         ]);
 
-        return response()->json(['success' => 'Data apoteker berhasil diperbarui.']);
+        return response()->json(['message' => 'Data apoteker berhasil diperbarui.']);
     }
 
     public function deleteApoteker($id)
