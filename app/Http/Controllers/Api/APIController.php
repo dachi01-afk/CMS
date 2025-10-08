@@ -69,33 +69,36 @@ class APIController extends Controller
         ]);
     }
 
-    public function getDataJadwalDokter()
-    {
-        $dataJadwalDokter = JadwalDokter::with('dokter')->get();
+   public function getDataJadwalDokter()
+{
+    $dataJadwalDokter = JadwalDokter::with('dokter')->get();
 
-        $dataDokter = [];
+    $dataDokter = [];
 
-        foreach ($dataJadwalDokter as $jadwal) {
-            // Pastikan relasi dokter tidak null
-            if ($jadwal->dokter) {
-                $dataDokter[] = [
-                    'dokter_id' => $jadwal->dokter->id,
-                    'nama_dokter' => $jadwal->dokter->nama_dokter,
-                    'hari' => $jadwal->hari,
-                    'spesialisasi' => $jadwal->dokter->spesialisasi,
-                    'jam_awal' => $jadwal->jam_awal,
-                    'jam_selesai' => $jadwal->jam_selesai,
-                    'foto' => $jadwal->dokter->foto,
-                    'pengalaman' => $jadwal->dokter->pengalaman,
-                    'deskripsi_dokter' => $jadwal->dokter->deskripsi_dokter,
-                ];
-            }
+    foreach ($dataJadwalDokter as $jadwal) {
+        // Pastikan relasi dokter tidak null
+        if ($jadwal->dokter) {
+            // FIXED: Clean the day name by removing quotes
+            $cleanHari = trim($jadwal->hari, '"\'');
+            
+            $dataDokter[] = [
+                'dokter_id' => $jadwal->dokter->id,
+                'nama_dokter' => $jadwal->dokter->nama_dokter,
+                'hari' => $cleanHari, 
+                'spesialisasi' => $jadwal->dokter->spesialisasi,
+                'jam_awal' => $jadwal->jam_awal,
+                'jam_selesai' => $jadwal->jam_selesai,
+                'foto' => $jadwal->dokter->foto,
+                'pengalaman' => $jadwal->dokter->pengalaman,
+                'deskripsi_dokter' => $jadwal->dokter->deskripsi_dokter,
+            ];
         }
-
-        return response()->json([
-            'Data Jadwal Dokter' => $dataDokter,
-        ]);
     }
+
+    return response()->json([
+        'Data Jadwal Dokter' => $dataDokter,
+    ]);
+}
 
     public function getDataKunjungan() {}
 
