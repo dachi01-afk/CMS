@@ -25,7 +25,7 @@ class DokterSeeder extends Seeder
             Dokter::create([
                 'user_id' => $roleDokter[$i]->id,
                 'nama_dokter' => $faker->name,
-                'deskripsi_dokter' => $faker->word(),
+                'deskripsi_dokter' => $faker->paragraph(),
                 'jenis_spesialis_id' => $faker->randomElement($spesialis),
                 'email' => $faker->unique()->safeEmail,
                 'foto' => $foto,
