@@ -34,7 +34,10 @@
                 <tr>
                     <th class="px-6 py-3">No</th>
                     <th class="px-6 py-3">Nama Apoteker</th>
-                    <th class="px-6 py-3">Email</th>
+                    <th class="px-6 py-3">Username</th>
+                    <th class="px-6 py-3">Email Akun</th>
+                    <th class="px-6 py-3">Role</th>
+                    <th class="px-6 py-3">Email Apoteker</th>
                     <th class="px-6 py-3">No HP</th>
                     <th class="px-6 py-3 text-center">Aksi</th>
                 </tr>
@@ -182,6 +185,18 @@
                 @method('PUT')
                 <input type="hidden" name="apoteker_id" id="edit_apoteker_id">
 
+
+                {{-- Username --}}
+                <div>
+                    <label for="edit_username_apoteker"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Username</label>
+                    <input type="text" name="edit_username_apoteker" id="edit_username_apoteker"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
+                        focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                        placeholder="Username" required>
+                    <div id="edit_username-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
                 {{-- Nama --}}
                 <div>
                     <label for="edit_nama_apoteker"
@@ -215,6 +230,36 @@
                     <div id="edit_no_hp_apoteker-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
+                {{-- Password (Opsional) --}}
+                <div class="pt-2 border-t border-gray-200 dark:border-gray-600">
+                    <h4 class="text-md font-semibold text-gray-800 dark:text-gray-200 mb-2">
+                    </h4>
+
+                    {{-- Password baru --}}
+                    <div>
+                        <label for="edit_password_apoteker"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password Baru</label>
+                        <input type="password" name="edit_password_apoteker" id="edit_password_apoteker"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
+                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="••••••••">
+                        <div id="edit_password_apoteker-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- Konfirmasi Password --}}
+                    <div>
+                        <label for="edit_password_apoteker_confirmation"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Konfirmasi
+                            Password</label>
+                        <input type="password" name="edit_password_apoteker_confirmation"
+                            id="edit_password_apoteker_confirmation"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
+                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="••••••••">
+                        <div id="edit_password_apoteker_confirmation-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+                </div>
+
                 {{-- Buttons --}}
                 <div class="flex justify-end gap-3 mt-5 border-t border-gray-200 pt-4 dark:border-gray-600">
                     <button type="button" id="closeEditApotekerModal"
@@ -233,6 +278,8 @@
         </div>
     </div>
 </div>
+
+
 
 
 
