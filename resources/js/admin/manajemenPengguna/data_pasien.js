@@ -17,6 +17,9 @@ $(function () {
         columns: [
             { data: 'id', name: 'id' },
             { data: 'nama_pasien', name: 'nama_pasien' },
+            { data: 'username', name: 'username' },
+            { data: 'email_user', name: 'email_user' },
+            { data: 'role', name: 'role' },
             { data: 'alamat', name: 'alamat' },
             { data: 'tanggal_lahir', name: 'tanggal_lahir' },
             { data: 'jenis_kelamin', name: 'jenis_kelamin' },
@@ -111,10 +114,15 @@ $(function () {
         const url = $formAdd.data('url');
 
         const formData = {
+            username: $('#username_pasien').val(),
+            password: $('#password').val(),
+            password_confirmation: $('#password_confirmation').val(),
             nama_pasien: $('#nama_pasien').val(),
             alamat: $('#alamat').val(),
+            email_pasien: $('#alamat').val(),
             tanggal_lahir: $('#tanggal_lahir').val(),
             jenis_kelamin: $('#jenis_kelamin').val(),
+            role: 'Apoteker',
         };
 
         $('.text-red-600').empty();
