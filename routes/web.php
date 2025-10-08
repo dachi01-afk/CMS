@@ -25,7 +25,6 @@ Route::prefix('api')->withoutMiddleware(['web'])->group(function () {
     Route::post('/check-availability', [App\Http\Controllers\Auth\AuthController::class, 'checkAvailability']);
     Route::post('/register', [App\Http\Controllers\Auth\AuthController::class, 'register']);
     Route::post('/login', [App\Http\Controllers\Auth\AuthController::class, 'login']);
-    Route::post('/login-dokter', []);
 
     // Forgot Password routes
     Route::prefix('forgot-password')->group(function () {
@@ -45,21 +44,20 @@ Route::prefix('api')->withoutMiddleware(['web'])->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/logout', [App\Http\Controllers\Auth\AuthController::class, 'logout']);
         Route::get('/profile', [App\Http\Controllers\Auth\AuthController::class, 'profile']);
-<<<<<<< HEAD
-        Route::patch('/profile/update', [App\Http\Controllers\Auth\AuthController::class, 'updateProfile']);
-        Route::put('/appointment/cancel/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'cancelAppointment']);
-        Route::put('/appointment/reschedule/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'rescheduleAppointment']);
-        // Enhanced booking routes
+        
+        // MOVED: Booking routes inside auth middleware
         Route::prefix('booking')->group(function () {
             Route::post('/schedule', [App\Http\Controllers\Auth\AuthController::class, 'bookSchedule']);
-            Route::get('/check-availability/{dokter_id}/{tanggal}', [App\Http\Controllers\Auth\AuthController::class, 'checkDoctorAvailability']);
+            Route::get('/check-availability/{dokterId}/{tanggal}', [App\Http\Controllers\Auth\AuthController::class, 'checkDoctorAvailability']);
             Route::get('/my-appointments', [App\Http\Controllers\Auth\AuthController::class, 'getMyAppointments']);
-            Route::put('/cancel/{kunjungan_id}', [App\Http\Controllers\Auth\AuthController::class, 'cancelAppointment']);
+        });
+
+        // Appointment management routes
+        Route::prefix('appointment')->group(function () {
+            Route::put('/cancel/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'cancelAppointment']);
+            Route::put('/reschedule/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'rescheduleAppointment']);
         });
         
-=======
-
->>>>>>> 0ec211e048ef328f9aea7942c48f5fa7dd3b5eb8
         // Routes untuk pasien
         Route::get('/emr-pasien/{id}', [App\Http\Controllers\Auth\AuthController::class, 'getAllEmrPasien']);
         Route::get('/kunjungan-detail/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'getKunjunganDetail']);
@@ -74,11 +72,8 @@ Route::prefix('api')->withoutMiddleware(['web'])->group(function () {
             Route::post('/create-prescription/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'createPrescription']);
             Route::get('/prescriptions/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'getPrescriptions']);
             Route::get('/patient-history', [App\Http\Controllers\Auth\AuthController::class, 'getPatientHistory']);
-<<<<<<< HEAD
             Route::get('/schedule', [App\Http\Controllers\Auth\AuthController::class, 'getDokterSchedule']);
-=======
             Route::get('/data-kunjungan-dokter', [APIController::class, 'indexDokter']);
->>>>>>> 0ec211e048ef328f9aea7942c48f5fa7dd3b5eb8
         });
 
         // Testimoni routes
@@ -87,18 +82,17 @@ Route::prefix('api')->withoutMiddleware(['web'])->group(function () {
         });
     });
 
-    // Public API routes
+    // Public API routes (these don't need authentication)
     Route::get('/getDataJadwalDokter', [APIController::class, 'getDataJadwalDokter']);
     Route::get('/getDataTestimoni', [APIController::class, 'getDataTestimoni']);
     Route::get('/getDataSpesialisasiDokter', [APIController::class, 'getDataSpesialisasiDokter']);
     Route::get('/getDataPasien', [APIController::class, 'getDataPasien']);
-<<<<<<< HEAD
-    Route::get('/getDataDokter', [APIController::class, 'getDataDokter']);
-=======
     Route::get('/getDataKunjunganDokter', [APIController::class, 'getDataKunjunganDokter']);
->>>>>>> 0ec211e048ef328f9aea7942c48f5fa7dd3b5eb8
+    Route::get('/getDataDokter', [APIController::class, 'getDataDokter']);
+    
 });
 
+// Rest of your web routes remain the same...
 Route::get('/', function () {
     return redirect()->route('login');
 });
@@ -199,8 +193,6 @@ Route::middleware('auth')->group(function () {
     Route::prefix('settings')->name('settings.')->group(function () {
         Route::get('/', [SettingsController::class, 'index'])->name('index');
     });
-
-    
 });
 
 Route::get('/login-dokter', [AuthController::class, 'login'])->name('login.dokter');
