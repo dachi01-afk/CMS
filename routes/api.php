@@ -4,20 +4,28 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\APIMobileController;
 
-Route::post('/login', [APIMobileController::class, 'login']);
-Route::post('/register', [APIMobileController::class, 'register']);
-Route::post('/logout', [APIMobileController::class, 'logout']);
+Route::post('/login', [APIMobileController::class, 'login'])->name('api.login');
+Route::post('/logout', [APIMobileController::class, 'logout'])->name('api.logout');
+Route::post('/register', [APIMobileController::class, 'register'])->name('api.register');
 
-// Protected routes (butuh autentikasi)
+// 🌐 Testimoni bisa diakses publik (tidak perlu login untuk lihat testimoni)
+Route::get('/getDataTestimoni', [APIController::class, 'getDataTestimoni']);
+
+// 🔒 PROTECTED ROUTES (butuh autentikasi dengan token)
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/pasien/profile', [APIMobileController::class, 'getProfile']);
     Route::put('/pasien/update', [APIMobileController::class, 'updateProfile']);
-    Route::get('/getJadwalDokter', [APIMobileController::class, 'getJadwalDokter']);
+    Route::get('/getJadwalDokter', [APIMobileController::class, 'getJadwalDokter'])->name('getJadwalDokter');
 
     // Kunjungan routes
     Route::post('/kunjungan/create', [APIMobileController::class, 'bookingDokter']);
+<<<<<<< HEAD
     // Route::put('/kunjungan/ubah-status', [APIMobileController::class, 'ubahStatusKunjungan']);
     // Route::post('/kunjungan/batalkan', [APIMobileController::class, 'batalkanStatusKunjungan']);
+=======
+    Route::put('/kunjungan/ubah-status', [APIMobileController::class, 'ubahStatusKunjungan']);
+    Route::post('/kunjungan/batalkan', [APIMobileController::class, 'batalkanStatusKunjungan']);
+>>>>>>> 5fec23aa1abd56a3060da6f33b6eea91fbb0ac72
     Route::get('/kunjungan/riwayat/{pasien_id}', [APIMobileController::class, 'getRiwayatKunjungan']); // 🔥 TAMBAH INI
 
     Route::get('/getDataJadwalDokter', [APIMobileController::class, 'getDataJadwalDokter']);
@@ -28,6 +36,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/getDataDokterSpesialisasi', [APIMobileController::class, 'getDataDokterSpesialisasi']);
 });
 
+<<<<<<< HEAD
 Route::post('/create-data-testimoni', [APIMobileController::class, 'createDataTestimomi']);
 Route::post('/kunjungan/batalkan', [APIMobileController::class, 'batalkanStatusKunjungan']);
 Route::put('/kunjungan/ubah-status', [APIMobileController::class, 'ubahStatusKunjungan']);
+=======
+Route::post('/create-data-testimoni', [APIMobileController::class, 'createDataTestimomi'])->name('create.data.testimoni');
+>>>>>>> 5fec23aa1abd56a3060da6f33b6eea91fbb0ac72

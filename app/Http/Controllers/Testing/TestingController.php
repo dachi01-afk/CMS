@@ -62,6 +62,7 @@ class TestingController extends Controller
 
         $dataKunjungan->update([
             'status' => 'Canceled',
+            'no_antrian' => null, 
         ]);
 
         return response()->json([
