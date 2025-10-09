@@ -19,13 +19,8 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Kunjungan routes
     Route::post('/kunjungan/create', [APIMobileController::class, 'bookingDokter']);
-<<<<<<< HEAD
     // Route::put('/kunjungan/ubah-status', [APIMobileController::class, 'ubahStatusKunjungan']);
     // Route::post('/kunjungan/batalkan', [APIMobileController::class, 'batalkanStatusKunjungan']);
-=======
-    Route::put('/kunjungan/ubah-status', [APIMobileController::class, 'ubahStatusKunjungan']);
-    Route::post('/kunjungan/batalkan', [APIMobileController::class, 'batalkanStatusKunjungan']);
->>>>>>> 5fec23aa1abd56a3060da6f33b6eea91fbb0ac72
     Route::get('/kunjungan/riwayat/{pasien_id}', [APIMobileController::class, 'getRiwayatKunjungan']); // 🔥 TAMBAH INI
 
     Route::get('/getDataJadwalDokter', [APIMobileController::class, 'getDataJadwalDokter']);
@@ -36,10 +31,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/getDataDokterSpesialisasi', [APIMobileController::class, 'getDataDokterSpesialisasi']);
 });
 
-<<<<<<< HEAD
 Route::post('/create-data-testimoni', [APIMobileController::class, 'createDataTestimomi']);
 Route::post('/kunjungan/batalkan', [APIMobileController::class, 'batalkanStatusKunjungan']);
 Route::put('/kunjungan/ubah-status', [APIMobileController::class, 'ubahStatusKunjungan']);
-=======
-Route::post('/create-data-testimoni', [APIMobileController::class, 'createDataTestimomi'])->name('create.data.testimoni');
->>>>>>> 5fec23aa1abd56a3060da6f33b6eea91fbb0ac72
