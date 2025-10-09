@@ -21,6 +21,7 @@ da<?php
                 $table->string('alamat')->nullable();
                 $table->date('tanggal_lahir')->nullable();
                 $table->enum('jenis_kelamin', ['Laki-laki', 'Perempuan'])->nullable();
+                $table->string('foto_pasien')->nullable();
                 $table->timestamps();
             });
         }

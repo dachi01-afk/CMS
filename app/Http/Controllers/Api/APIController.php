@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\Kunjungan;
 use Illuminate\Support\Facades\Auth;
 use App\Models\Pasien;
+use App\Models\Testimoni;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -516,5 +517,16 @@ class APIController extends Controller
         }
     }
 
+    public function getDataTestimoni() {
+        $dataTestimoni = Testimoni::all();
+
+        return response()->json([
+            'success' => true,
+            'status' => 200,
+            'Data Testimoni' => $dataTestimoni,
+            'message' => 'Berhasil Meminta Data Testimoni',
+        ]);
+    }
+ 
     
 }

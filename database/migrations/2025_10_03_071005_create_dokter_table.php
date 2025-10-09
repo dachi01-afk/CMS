@@ -17,11 +17,10 @@ return new class extends Migration
                 ->cascadeOnDelete()
                 ->cascadeOnUpdate();
             $table->string('nama_dokter');
-            $table->string('foto')->nullable();
+            $table->string('foto_dokter')->nullable();
             $table->text('deskripsi_dokter')->nullable();
             $table->string('pengalaman')->nullable();
             $table->foreignId('jenis_spesialis_id')->constrained('jenis_spesialis', 'id');
-            $table->string('email')->unique();
             $table->string('no_hp')->nullable();
             $table->timestamps();
         });
