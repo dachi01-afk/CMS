@@ -31,7 +31,7 @@ class AuthController extends Controller
             'role' => 'Dokter',
         ]);
 
-        return redirect()->route('');
+        return redirect()->route('dokter.login');
 
         // return response()->json(['status' => 200, 'data' => $dataDokter, 'message' => 'Anda Berhasil Mendaftar']);
     }

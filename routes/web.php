@@ -26,12 +26,12 @@ use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 //     Route::post('/check-availability', [App\Http\Controllers\Auth\AuthController::class, 'checkAvailability']);
 //     Route::post('/register', [App\Http\Controllers\Auth\AuthController::class, 'register']);
 //     Route::post('/login', [App\Http\Controllers\Auth\AuthController::class, 'login']);
-    
+
 //     // ADD THESE NEW ROUTES - Place them before the middleware group
 //     Route::get('/doctors-with-specialties', [App\Http\Controllers\Auth\AuthController::class, 'getDoctorsWithSpecialties']);
 //     Route::get('/specialties', [App\Http\Controllers\Auth\AuthController::class, 'getSpecialties']);
 //     Route::get('/doctor-schedules', [App\Http\Controllers\Auth\AuthController::class, 'getDoctorSchedules']);
-    
+
 //     // Forgot Password routes
 //     Route::prefix('forgot-password')->group(function () {
 //         Route::post('/send-otp', [App\Http\Controllers\Auth\AuthController::class, 'sendOTP']);
@@ -51,7 +51,7 @@ use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 //         Route::post('/logout', [App\Http\Controllers\Auth\AuthController::class, 'logout']);
 //         Route::get('/profile', [App\Http\Controllers\Auth\AuthController::class, 'profile']);
 //         Route::put('/profile', [App\Http\Controllers\Auth\AuthController::class, 'updateProfile']); 
-            
+
 //         // CHANGED: Booking routes inside auth middleware
 //         Route::prefix('booking')->group(function () {
 //             // UPDATED: Use AuthController instead of APIController
@@ -65,11 +65,11 @@ use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 //             Route::put('/cancel/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'cancelAppointment']);
 //             Route::put('/reschedule/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'rescheduleAppointment']);
 //         });
-        
+
 //         // Routes untuk pasien
 //         Route::get('/emr-pasien/{id}', [App\Http\Controllers\Auth\AuthController::class, 'getAllEmrPasien']);
 //         Route::get('/kunjungan-detail/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'getKunjunganDetail']);
-        
+
 //         // Routes untuk dokter
 //         Route::prefix('dokter')->group(function () {
 //             Route::get('/dashboard-stats', [App\Http\Controllers\Auth\AuthController::class, 'getDokterDashboardStats']);
@@ -93,14 +93,14 @@ use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 //     // Public API routes (these don't need authentication)
 //     Route::get('/getDataJadwalDokter', [APIController::class, 'getDataJadwalDokter']);
 //     Route::get('/getDataTestimoni', [APIController::class, 'getDataTestimoni']);
-    
+
 //     // UPDATED: Use AuthController for specialties to handle new database structure
 //     Route::get('/getDataSpesialisasiDokter', [App\Http\Controllers\Auth\AuthController::class, 'getDataSpesialisasiDokter']);
-    
+
 //     Route::get('/getDataPasien', [APIController::class, 'getDataPasien']);
 //     Route::get('/getDataKunjunganDokter', [APIController::class, 'getDataKunjunganDokter']);
 //     // Route::get('/getDataDokter', [APIController::class, 'getDataDokter']);
-    
+
 // });
 
 
@@ -120,12 +120,12 @@ Route::post('/testing-ubah-status-kunjungan', [TestingController::class, 'ubahSt
 Route::post('/testing-batalkan-status-kunjungan', [TestingController::class, 'batalkanStatusKunjungan'])->name('testing.batalkan.status.kunjungan');
 
 // // Public web routes for data access
-// Route::get('/getDataJadwalDokter', [APIController::class, 'getDataJadwalDokter'])->name('get.data.jadwal.dokter');
-// Route::get('/getDataKunjungan', [APIController::class, 'getDataKunjungan'])->name('getee.data.kunjungan');
-// Route::get('/getDataTestimoni', [APIController::class, 'getDataTestimoni'])->name('get.data.testimoni');
-// Route::get('/getDataDokter', [APIController::class, 'getDataDokter'])->name('get.data.dokter');
-// Route::get('/getDataSpesialisasiDokter', [APIController::class, 'getDataSpesialisasiDokter'])->name('get.data.spesialisasi.dokter');
-// Route::get('/getDataDokterSpesialisasi', [APIController::class, 'getDataDokterSpesialisasi'])->name('get.data.dokter.spesialisasi');
+Route::get('/getDataJadwalDokter', [APIController::class, 'getDataJadwalDokter'])->name('get.data.jadwal.dokter');
+Route::get('/getDataKunjungan', [APIController::class, 'getDataKunjungan'])->name('getee.data.kunjungan');
+Route::get('/getDataTestimoni', [APIController::class, 'getDataTestimoni'])->name('get.data.testimoni');
+Route::get('/getDataDokter', [APIController::class, 'getDataDokter'])->name('get.data.dokter');
+Route::get('/getDataSpesialisasiDokter', [APIController::class, 'getDataSpesialisasiDokter'])->name('get.data.spesialisasi.dokter');
+Route::get('/getDataDokterSpesialisasi', [APIController::class, 'getDataDokterSpesialisasi'])->name('get.data.dokter.spesialisasi');
 
 ////////// ROLE DOKTER ///////////
 Route::middleware('guest')->group(function () {
@@ -140,6 +140,7 @@ Route::middleware('auth')->group(function () {
     Route::middleware(['role:Dokter'])->group(function () {
         Route::prefix('dokter')->group(function () {
             Route::get('/dashboard', [DokterDokterController::class, 'index'])->name('dokter.dashboard');
+            Route::get('/logout-dokter', [DokterDokterController::class, 'logoutDokter'])->name('logout.dokter');
         });
     });
 });
