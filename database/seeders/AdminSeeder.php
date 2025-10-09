@@ -22,7 +22,6 @@ class AdminSeeder extends Seeder
             Admin::create([
                 'user_id' => $roleAdmin[$i]->id,
                 'nama_admin' => $faker->name,
-                'email_admin' => $faker->unique()->safeEmail,
                 'no_hp' => $faker->phoneNumber(),
             ]);
         }
