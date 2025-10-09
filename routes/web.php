@@ -20,22 +20,12 @@ use App\Http\Controllers\Management\PasienController;
 use App\Http\Controllers\Testing\TestingController;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
-<<<<<<< HEAD
-// API Routes - Tambahkan ini di bagian bawah file web.php sebelum require auth.php
-Route::prefix('api')->withoutMiddleware(['web'])->group(function () {
-    // Public routes (tidak perlu authentication)
-    Route::post('/check-availability',              [App\Http\Controllers\Auth\AuthController::class, 'checkAvailability']);
-    Route::post('/register',                        [App\Http\Controllers\Auth\AuthController::class, 'register']);
-    Route::post('/login',                           [App\Http\Controllers\Auth\AuthController::class, 'login']);
-    Route::post('/login-dokter', []);
-=======
 // API Routes - Enhanced for better booking functionality
 // Route::prefix('api')->withoutMiddleware(['web'])->group(function () {
 //     // Public routes (tidak perlu authentication)
 //     Route::post('/check-availability', [App\Http\Controllers\Auth\AuthController::class, 'checkAvailability']);
 //     Route::post('/register', [App\Http\Controllers\Auth\AuthController::class, 'register']);
 //     Route::post('/login', [App\Http\Controllers\Auth\AuthController::class, 'login']);
->>>>>>> b68be295ca67f5d8e05ff22dd72d770eb95159cc
 
 //     // ADD THESE NEW ROUTES - Place them before the middleware group
 //     Route::get('/doctors-with-specialties', [App\Http\Controllers\Auth\AuthController::class, 'getDoctorsWithSpecialties']);
