@@ -166,7 +166,7 @@ class APIController extends Controller
             // Mapping hari ke angka (untuk PHP date function)
             $hariMapping = [
                 'Senin' => 1,
-                'Selasa' => 2, 
+                'Selasa' => 2,
                 'Rabu' => 3,
                 'Kamis' => 4,
                 'Jumat' => 5,
@@ -178,7 +178,7 @@ class APIController extends Controller
             $jadwalWithDates = $jadwal->map(function ($item) use ($hariMapping) {
                 $hari = $item->hari;
                 $hariNumber = $hariMapping[$hari] ?? null;
-                
+
                 if ($hariNumber !== null) {
                     // Hitung tanggal terdekat untuk hari tersebut
                     $tanggalTerdekat = $this->getNextDateByDay($hariNumber);
@@ -190,7 +190,7 @@ class APIController extends Controller
                     $item->tanggal_terdekat_formatted = null;
                     $item->hari_selisih = 999; // Untuk sorting terakhir
                 }
-                
+
                 return $item;
             });
 
@@ -201,7 +201,6 @@ class APIController extends Controller
                 'success' => true,
                 'data' => $jadwalSorted,
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error getting jadwal dokter: ' . $e->getMessage());
             return response()->json([
@@ -218,19 +217,19 @@ class APIController extends Controller
     {
         $today = new \DateTime();
         $currentDayOfWeek = (int)$today->format('w'); // 0=Minggu, 1=Senin, dst
-        
+
         // Hitung selisih hari
         $daysUntilTarget = ($dayOfWeek - $currentDayOfWeek + 7) % 7;
-        
+
         // Jika hari ini sama dengan target, ambil hari ini
         if ($daysUntilTarget === 0) {
             return $today->format('Y-m-d');
         }
-        
+
         // Tambahkan hari ke tanggal sekarang
         $targetDate = clone $today;
         $targetDate->add(new \DateInterval("P{$daysUntilTarget}D"));
-        
+
         return $targetDate->format('Y-m-d');
     }
 
@@ -240,16 +239,25 @@ class APIController extends Controller
     private function formatTanggalIndonesia($date)
     {
         $bulanIndonesia = [
-            '01' => 'Jan', '02' => 'Feb', '03' => 'Mar', '04' => 'Apr',
-            '05' => 'Mei', '06' => 'Jun', '07' => 'Jul', '08' => 'Ags',
-            '09' => 'Sep', '10' => 'Okt', '11' => 'Nov', '12' => 'Des'
+            '01' => 'Jan',
+            '02' => 'Feb',
+            '03' => 'Mar',
+            '04' => 'Apr',
+            '05' => 'Mei',
+            '06' => 'Jun',
+            '07' => 'Jul',
+            '08' => 'Ags',
+            '09' => 'Sep',
+            '10' => 'Okt',
+            '11' => 'Nov',
+            '12' => 'Des'
         ];
-        
+
         $dateObj = new \DateTime($date);
         $hari = $dateObj->format('j');
         $bulan = $bulanIndonesia[$dateObj->format('m')];
         $tahun = $dateObj->format('Y');
-        
+
         return "{$hari} {$bulan} {$tahun}";
     }
 
@@ -261,7 +269,7 @@ class APIController extends Controller
         $today = new \DateTime();
         $target = new \DateTime($targetDate);
         $diff = $today->diff($target);
-        
+
         return $diff->days;
     }
 
@@ -323,14 +331,14 @@ class APIController extends Controller
             if ($action === 'delete') {
                 // HARD DELETE - Hapus dari database
                 Log::info("🗑️ Hard deleting kunjungan ID: {$request->id}");
-                
+
                 // Hapus data terkait dulu (jika ada)
                 // Misalnya: resep, tes lab, konsul, EMR
                 $dataKunjungan->resep()->delete();
                 $dataKunjungan->tesLab()->delete();
                 $dataKunjungan->konsul()->delete();
                 $dataKunjungan->emr()->delete();
-                
+
                 // Hapus kunjungan
                 $dataKunjungan->delete();
 
@@ -338,11 +346,10 @@ class APIController extends Controller
                     'success' => true,
                     'message' => 'Kunjungan berhasil dihapus permanen',
                 ], 200);
-
             } else {
                 // SOFT DELETE - Ubah status jadi Canceled
                 Log::info("❌ Canceling kunjungan ID: {$request->id}");
-                
+
                 $dataKunjungan->update([
                     'status' => 'Canceled',
                 ]);
@@ -354,7 +361,6 @@ class APIController extends Controller
                     'message' => 'Berhasil membatalkan kunjungan',
                 ], 200);
             }
-
         } catch (\Exception $e) {
             Log::error('Error in batalkanStatusKunjungan: ' . $e->getMessage());
             return response()->json([
@@ -401,7 +407,7 @@ class APIController extends Controller
 
             // Gunakan transaksi supaya aman dari race condition
             $result = DB::transaction(function () use ($tanggalKunjungan, $dokterId, $pasienId, $request) {
-                
+
                 // 🎯 LOGIC BENAR: Cari antrian terakhir berdasarkan DOKTER + TANGGAL
                 $lastKunjungan = Kunjungan::where('tanggal_kunjungan', $tanggalKunjungan)
                     ->where('dokter_id', $dokterId)
@@ -460,7 +466,6 @@ class APIController extends Controller
                 'Data Kunjungan' => $result['kunjungan'],
                 'Data No Antrian' => $result['no_antrian'],
             ], 200);
-
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error('❌ Validation error: ', $e->errors());
             return response()->json([
@@ -468,11 +473,10 @@ class APIController extends Controller
                 'message' => 'Validation error',
                 'errors' => $e->errors(),
             ], 422);
-
         } catch (\Exception $e) {
             Log::error('❌ Exception in bookingDokter: ' . $e->getMessage());
             Log::error('❌ Stack trace: ' . $e->getTraceAsString());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal membuat kunjungan: ' . $e->getMessage(),
@@ -495,7 +499,7 @@ class APIController extends Controller
 
             // Ambil semua kunjungan pasien dengan relasi dokter
             $riwayat = Kunjungan::where('pasien_id', $pasienId)
-                ->with(['dokter' => function($query) {
+                ->with(['dokter' => function ($query) {
                     $query->select('id', 'nama_dokter', 'email', 'no_hp', 'pengalaman', 'foto');
                 }])
                 ->orderByDesc('tanggal_kunjungan')
@@ -507,7 +511,6 @@ class APIController extends Controller
                 'message' => 'Riwayat kunjungan berhasil diambil',
                 'data' => $riwayat,
             ], 200);
-
         } catch (\Exception $e) {
             Log::error('Error getting riwayat kunjungan: ' . $e->getMessage());
             return response()->json([
@@ -517,7 +520,11 @@ class APIController extends Controller
         }
     }
 
-    public function getDataTestimoni() {
+
+    ///////////// Function untuk Testimoni //////////////////
+
+    public function getDataTestimoni()
+    {
         $dataTestimoni = Testimoni::all();
 
         return response()->json([
@@ -527,6 +534,47 @@ class APIController extends Controller
             'message' => 'Berhasil Meminta Data Testimoni',
         ]);
     }
- 
-    
+
+    public function createDataTestimomi(Request $request)
+    {
+        $request->validate([
+            'pasien_id' => ['required', 'exists:pasien,id'],
+            'nama_testimoni' => ['required'],
+            'umur' => ['required'],
+            'pekerjaan' => ['required'],
+            'isi_testimoni' => ['required'],
+            'foto' => ['nullable'],
+            'link_video' => ['nullable'],
+        ]);
+
+        $jalurFoto = null;
+        $jalurVideo = null;
+
+        if ($request->hasFile('foto')) {
+            $foto = $request->file('foto');
+            $jalurFoto = $foto->store('Foto-Testimoni', 'public');
+        }
+
+        if ($request->hasFile('video')) {
+            $video = $request->file('video');
+            $jalurVideo = $video->store('Video-Testimoni', 'public');
+        }
+
+        $dataTestimoni = Testimoni::create([
+            'pasien_id' => $request->pasien_id,
+            'nama_testimoni' => $request->nama_testimoni,
+            'umur' => $request->umur,
+            'pekerjaan' => $request->pekerjaan,
+            'isi_testimoni' => $request->isi_testimoni,
+            'foto' => $jalurFoto,
+            'link_video' => $jalurVideo,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'status' => 200,
+            'Data Testimoni' => $dataTestimoni,
+            'message' => 'Berhasil Membuat Testimoni',
+        ]);
+    }
 }

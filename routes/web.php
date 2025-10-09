@@ -127,6 +127,7 @@ Route::get('/getDataDokter', [APIController::class, 'getDataDokter'])->name('get
 Route::get('/getDataSpesialisasiDokter', [APIController::class, 'getDataSpesialisasiDokter'])->name('get.data.spesialisasi.dokter');
 Route::get('/getDataDokterSpesialisasi', [APIController::class, 'getDataDokterSpesialisasi'])->name('get.data.dokter.spesialisasi');
 
+
 ////////// ROLE DOKTER ///////////
 Route::middleware('guest')->group(function () {
     Route::prefix('dokter')->group(function () {
