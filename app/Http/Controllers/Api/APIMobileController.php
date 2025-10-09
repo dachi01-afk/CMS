@@ -312,63 +312,18 @@ class APIMobileController extends Controller
 
     public function batalkanStatusKunjungan(Request $request)
     {
-        try {
-            $request->validate([
-                'id' => 'required|exists:kunjungan,id',
-                'action' => 'nullable|string|in:cancel,delete' // cancel = soft delete, delete = hard delete
-            ]);
+        $dataKunjungan = Kunjungan::findOrFail($request->id);
 
-            $dataKunjungan = Kunjungan::findOrFail($request->id);
-            $action = $request->action ?? 'cancel'; // default ke cancel
+        $dataKunjungan->update([
+            'status' => 'Canceled',
+        ]);
 
-            // Cek apakah kunjungan bisa dibatalkan/dihapus
-            if (!in_array($dataKunjungan->status, ['Pending', 'Confirmed', 'Waiting'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Kunjungan dengan status "' . $dataKunjungan->status . '" tidak dapat dibatalkan',
-                ], 422);
-            }
-
-            if ($action === 'delete') {
-                // HARD DELETE - Hapus dari database
-                Log::info("🗑️ Hard deleting kunjungan ID: {$request->id}");
-
-                // Hapus data terkait dulu (jika ada)
-                // Misalnya: resep, tes lab, konsul, EMR
-                $dataKunjungan->resep()->delete();
-                $dataKunjungan->tesLab()->delete();
-                $dataKunjungan->konsul()->delete();
-                $dataKunjungan->emr()->delete();
-
-                // Hapus kunjungan
-                $dataKunjungan->delete();
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Kunjungan berhasil dihapus permanen',
-                ], 200);
-            } else {
-                // SOFT DELETE - Ubah status jadi Canceled
-                Log::info("❌ Canceling kunjungan ID: {$request->id}");
-
-                $dataKunjungan->update([
-                    'status' => 'Canceled',
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'status' => 200,
-                    'Data Kunjungan' => $dataKunjungan,
-                    'message' => 'Berhasil membatalkan kunjungan',
-                ], 200);
-            }
-        } catch (\Exception $e) {
-            Log::error('Error in batalkanStatusKunjungan: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal membatalkan kunjungan: ' . $e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'status' => 200,
+            'Data Kunjungan' => $dataKunjungan,
+            'message' => 'Berhasil Merubah Status Kunjungan Dari Pending Menjadi Canceled',
+        ]);
     }
 
     // 🔥 METHOD YANG DIPANGGIL DARI /api/kunjungan/create
