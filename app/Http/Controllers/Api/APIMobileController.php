@@ -712,52 +712,67 @@ class APIMobileController extends Controller
     }
 
     public function updateDataDokter(Request $request)
-{
-    // Ambil user_id dari token yang sudah diautentikasi
-    $login = Auth::user()->id;
-    
-    $dataDokter = Dokter::with('user')->where('user_id', $login)->first();
-    
-    if (!$dataDokter) {
+    {
+        // Ambil user_id dari token yang sudah diautentikasi
+        $login = Auth::user()->id;
+
+        $dataDokter = Dokter::with('user')->where('user_id', $login)->first();
+
+        if (!$dataDokter) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data dokter tidak ditemukan'
+            ], 404);
+        }
+
+        $request->validate([
+            // Hapus user_id dari validation karena kita ambil dari Auth
+            'nama_dokter' => ['required'],
+            'foto_dokter' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+            'deskripsi_dokter' => ['required'],
+            'pengalaman' => ['required'],
+            'jenis_spesialis_id' => ['required', 'exists:jenis_spesialis,id'],
+            'no_hp' => ['required'],
+        ]);
+
+        $pathFotoDokter = $dataDokter->foto_dokter;
+
+        if ($request->hasFile('foto_dokter')) {
+            $fileFoto = $request->file('foto_dokter');
+            $namaFoto = $request->nama_dokter . '_' . time() . '.' . $fileFoto->getClientOriginalExtension();
+            $pathFotoDokter = $fileFoto->storeAs('Foto-Dokter', $namaFoto, 'public');
+        }
+
+        $dataDokter->update([
+            'user_id' => $login, // ini pid Gunakan user_id dari Auth
+            'nama_dokter' => $request->nama_dokter,
+            'foto_dokter' => $pathFotoDokter,
+            'deskripsi_dokter' => $request->deskripsi_dokter,
+            'pengalaman' => $request->pengalaman,
+            'jenis_spesialis_id' => $request->jenis_spesialis_id,
+            'no_hp' => $request->no_hp,
+        ]);
+
         return response()->json([
-            'success' => false,
-            'message' => 'Data dokter tidak ditemukan'
-        ], 404);
+            'success' => true,
+            'status' => 200,
+            'Data Dokter' => $dataDokter->fresh(),
+            'message' => 'Berhasil Mengupdate Data Dokter'
+        ]);
     }
 
-    $request->validate([
-        // Hapus user_id dari validation karena kita ambil dari Auth
-        'nama_dokter' => ['required'],
-        'foto_dokter' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
-        'deskripsi_dokter' => ['required'],
-        'pengalaman' => ['required'],
-        'jenis_spesialis_id' => ['required', 'exists:jenis_spesialis,id'],
-        'no_hp' => ['required'],
-    ]);
+    public function getDataKunjunganBerdasarkanIdDokter()
+    {
+        $user_id = Auth::user()->id;
+        $dokter_id = Dokter::with('user')->where('user_id', $user_id)->get();
 
-    $pathFotoDokter = $dataDokter->foto_dokter;
+        $dataKunjungan = Kunjungan::with('dokter', 'pasien')->where('dokter_id', $dokter_id)->get();
 
-    if ($request->hasFile('foto_dokter')) {
-        $fileFoto = $request->file('foto_dokter');
-        $namaFoto = $request->nama_dokter . '_' . time() . '.' . $fileFoto->getClientOriginalExtension();
-        $pathFotoDokter = $fileFoto->storeAs('Foto-Dokter', $namaFoto, 'public');
+        return response()->json([
+            'success' => true,
+            'status' => 200,
+            'Data Kunjungan' => $dataKunjungan,
+            'message' => 'Berhasil Memunculkan Data Kunjungan Berdasarkan ID Dokter',
+        ]);
     }
-
-    $dataDokter->update([
-        'user_id' => $login, // ini pid Gunakan user_id dari Auth
-        'nama_dokter' => $request->nama_dokter,
-        'foto_dokter' => $pathFotoDokter,
-        'deskripsi_dokter' => $request->deskripsi_dokter,
-        'pengalaman' => $request->pengalaman,
-        'jenis_spesialis_id' => $request->jenis_spesialis_id,
-        'no_hp' => $request->no_hp,
-    ]);
-
-    return response()->json([
-        'success' => true,
-        'status' => 200,
-        'Data Dokter' => $dataDokter->fresh(),
-        'message' => 'Berhasil Mengupdate Data Dokter'
-    ]);
-}
 }

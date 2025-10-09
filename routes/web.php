@@ -150,6 +150,7 @@ Route::middleware('auth')->group(function () {
         Route::prefix('dokter')->group(function () {
             Route::get('/dashboard', [DokterDokterController::class, 'index'])->name('dokter.dashboard');
             Route::get('/logout-dokter', [DokterDokterController::class, 'logoutDokter'])->name('logout.dokter');
+            Route::get('/kunjungan', [DokterDokterController::class, 'kunjungan'])->name('dokter.kunjungan');
         });
     });
 });
