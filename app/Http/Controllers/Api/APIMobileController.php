@@ -153,7 +153,7 @@ class APIMobileController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan: '.$e->getMessage(),
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -202,11 +202,11 @@ class APIMobileController extends Controller
                 'data' => $jadwalSorted,
             ]);
         } catch (\Exception $e) {
-            Log::error('Error getting jadwal dokter: '.$e->getMessage());
+            Log::error('Error getting jadwal dokter: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil jadwal dokter: '.$e->getMessage(),
+                'message' => 'Gagal mengambil jadwal dokter: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -315,7 +315,7 @@ class APIMobileController extends Controller
         try {
             // Log untuk debugging
             Log::info('=== BATALKAN KUNJUNGAN START ===');
-            Log::info('Request method: '.$request->method());
+            Log::info('Request method: ' . $request->method());
             Log::info('Request data: ', $request->all());
 
             // Validasi input - cek apakah 'id' ada dalam request
@@ -324,7 +324,7 @@ class APIMobileController extends Controller
             ]);
 
             $kunjunganId = $request->input('id');
-            Log::info('Processing kunjungan ID: '.$kunjunganId);
+            Log::info('Processing kunjungan ID: ' . $kunjunganId);
 
             // Cari data kunjungan
             $dataKunjungan = Kunjungan::findOrFail($kunjunganId);
@@ -332,12 +332,12 @@ class APIMobileController extends Controller
 
             // Cek apakah status masih bisa dibatalkan
             if (! in_array($dataKunjungan->status, ['Pending', 'Confirmed', 'Waiting'])) {
-                Log::warning('Cannot cancel kunjungan with status: '.$dataKunjungan->status);
+                Log::warning('Cannot cancel kunjungan with status: ' . $dataKunjungan->status);
 
                 return response()->json([
                     'success' => false,
                     'status' => 400,
-                    'message' => 'Kunjungan dengan status "'.$dataKunjungan->status.'" tidak dapat dibatalkan',
+                    'message' => 'Kunjungan dengan status "' . $dataKunjungan->status . '" tidak dapat dibatalkan',
                     'Data Kunjungan' => $dataKunjungan,
                 ], 400);
             }
@@ -351,7 +351,7 @@ class APIMobileController extends Controller
                         'updated_at' => now(),
                     ]);
 
-                Log::info('Rows affected by update: '.$affected);
+                Log::info('Rows affected by update: ' . $affected);
 
                 if ($affected === 0) {
                     throw new \Exception('Gagal memperbarui data kunjungan');
@@ -365,7 +365,7 @@ class APIMobileController extends Controller
 
             // Verifikasi bahwa update berhasil
             if ($updatedKunjungan->status !== 'Canceled') {
-                Log::error('Status update failed - still: '.$updatedKunjungan->status);
+                Log::error('Status update failed - still: ' . $updatedKunjungan->status);
 
                 return response()->json([
                     'success' => false,
@@ -391,7 +391,7 @@ class APIMobileController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            Log::error('Kunjungan not found: '.$e->getMessage());
+            Log::error('Kunjungan not found: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -399,13 +399,13 @@ class APIMobileController extends Controller
                 'message' => 'Data kunjungan tidak ditemukan',
             ], 404);
         } catch (\Exception $e) {
-            Log::error('Exception in batalkanStatusKunjungan: '.$e->getMessage());
-            Log::error('Stack trace: '.$e->getTraceAsString());
+            Log::error('Exception in batalkanStatusKunjungan: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
 
             return response()->json([
                 'success' => false,
                 'status' => 500,
-                'message' => 'Terjadi kesalahan: '.$e->getMessage(),
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -516,12 +516,12 @@ class APIMobileController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('❌ Exception in bookingDokter: '.$e->getMessage());
-            Log::error('❌ Stack trace: '.$e->getTraceAsString());
+            Log::error('❌ Exception in bookingDokter: ' . $e->getMessage());
+            Log::error('❌ Stack trace: ' . $e->getTraceAsString());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membuat kunjungan: '.$e->getMessage(),
+                'message' => 'Gagal membuat kunjungan: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -554,11 +554,11 @@ class APIMobileController extends Controller
                 'data' => $riwayat,
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error getting riwayat kunjungan: '.$e->getMessage());
+            Log::error('Error getting riwayat kunjungan: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil riwayat kunjungan: '.$e->getMessage(),
+                'message' => 'Gagal mengambil riwayat kunjungan: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -577,11 +577,11 @@ class APIMobileController extends Controller
                 'message' => 'Berhasil Meminta Data Testimoni',
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error getting testimoni: '.$e->getMessage());
+            Log::error('Error getting testimoni: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil data testimoni: '.$e->getMessage(),
+                'message' => 'Gagal mengambil data testimoni: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -597,7 +597,7 @@ class APIMobileController extends Controller
                 'pekerjaan' => ['required', 'string', 'max:255'],
                 'isi_testimoni' => ['required', 'string'],
                 'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
-                'video' => ['nullable', 'mimetypes:video/mp4,video/avi,video/mpeg', 'max:51200'], // max 50MB
+                'video' => ['nullable', 'mimetypes:video/mp4,video/avi,video/mpeg'], // max 50MB
             ]);
 
             $jalurFoto = null;
@@ -606,14 +606,14 @@ class APIMobileController extends Controller
             // Upload foto jika ada
             if ($request->hasFile('foto')) {
                 $foto = $request->file('foto');
-                $namaFoto = time().'_'.$foto->getClientOriginalName();
+                $namaFoto = time() . '_' . $foto->getClientOriginalName();
                 $jalurFoto = $foto->storeAs('Foto-Testimoni', $namaFoto, 'public');
             }
 
             // Upload video jika ada
             if ($request->hasFile('video')) {
                 $video = $request->file('video');
-                $namaVideo = time().'_'.$video->getClientOriginalName();
+                $namaVideo = time() . '_' . $video->getClientOriginalName();
                 $jalurVideo = $video->storeAs('Video-Testimoni', $namaVideo, 'public');
             }
 
@@ -640,11 +640,11 @@ class APIMobileController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Error creating testimoni: '.$e->getMessage());
+            Log::error('Error creating testimoni: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membuat testimoni: '.$e->getMessage(),
+                'message' => 'Gagal membuat testimoni: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -664,11 +664,11 @@ class APIMobileController extends Controller
                 'message' => 'Berhasil Mengambil Data Dokter',
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error getting data dokter: '.$e->getMessage());
+            Log::error('Error getting data dokter: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil data dokter: '.$e->getMessage(),
+                'message' => 'Gagal mengambil data dokter: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -708,6 +708,65 @@ class APIMobileController extends Controller
                 'token' => $token,
                 'token_type' => 'Bearer',
             ],
+        ]);
+    }
+
+    public function updateDataDokter(Request $request)
+    {
+        $login = Auth::user()->id;
+
+        $dataDokter = Dokter::with('user')->where('user_id', $login)->get();
+
+        $request->validate([
+            'user_id' => ['required', 'exists:user,id'],
+            'nama_dokter' => ['required'],
+            'foto_dokter' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+            'deskripsi_dokter' => ['required'],
+            'pengalaman' => ['required'],
+            'jenis_spesialis_id' => ['required', 'exists:userjenis_spesialis,id'],
+            'no_hp' => ['required'],
+        ]);
+
+        $pathFotoDokter = null;
+
+        if ($request->hasFile('foto_dokter')) {
+            $fileFoto = $request->file('foto_dokter');
+            $namaFoto = $request->nama_dokter . '_' . $fileFoto->getClientOriginalName();
+            $pathFotoDokter = $fileFoto->storeAs('Foto-Testimoni', $namaFoto, 'public');
+
+            $dataDokter->update([
+                'user_id' => $request->user_id,
+                'nama_dokter' => $request->nama_dokter,
+                'foto_dokter' => $pathFotoDokter,
+                'deskripsi_dokter' => $request->deskripsi_dokter,
+                'pengalaman' => $request->pengalaman,
+                'jenis_spesialis_id' => $request->jenis_spesialis_id,
+                'no_hp' => $request->no_hp,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'status' => 200,
+                'Data Dokter' => $dataDokter,
+                'message' => 'Berhasil Mengupdate Data Dokter Beserta Foto Dokter'
+            ]);
+        }
+
+        $dataDokter->update([
+            'user_id' => $request->user_id,
+            'nama_dokter' => $request->nama_dokter,
+            'foto_dokter' => $pathFotoDokter,
+            'deskripsi_dokter' => $request->deskripsi_dokter,
+            'pengalaman' => $request->pengalaman,
+            'jenis_spesialis_id' => $request->jenis_spesialis_id,
+            'no_hp' => $request->no_hp,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'status' => 200,
+            'Data Dokter' => $dataDokter,
+            'message' => 'Berhasil Mengupdate Data Dokter Tanpa Ikut Mengupdate Data Foto Dokter'
         ]);
     }
 }
