@@ -33,10 +33,9 @@
                     <th class="px-6 py-3">No</th>
                     <th class="px-6 py-3">Nama Dokter</th>
                     <th class="px-6 py-3">Username</th>
-                    <th class="px-6 py-3">Email Akun</th>
+                    <th class="px-6 py-3">Email Dokter</th>
                     <th class="px-6 py-3">Role</th>
                     <th class="px-6 py-3">Spesialis</th>
-                    <th class="px-6 py-3">Email Dokter</th>
                     <th class="px-6 py-3">No HP</th>
                     <th class="px-6 py-3 text-center">Aksi</th>
                 </tr>
@@ -68,6 +67,19 @@
                 data-url="{{ route('manajemen_pengguna.add_dokter') }}" method="POST">
                 @csrf
 
+                {{-- username --}}
+                <div>
+                    <label for="username_dokter" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                        Username
+                    </label>
+                    <input type="text" name="username_dokter" id="username_dokter"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+                        focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 
+                        dark:border-gray-500 dark:text-white"
+                        placeholder="Username" required>
+                    <div id="username_dokter-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
                 {{-- Nama Dokter --}}
                 <div>
                     <label for="nama_dokter" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
@@ -81,29 +93,40 @@
                     <div id="nama_dokter-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
+                {{-- Email akun --}}
+                <div>
+                    <label for="email_akun_dokter"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email Akun</label>
+                    <input type="email" name="email_akun_dokter" id="email_akun_dokter"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+                        focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 
+                        dark:border-gray-500 dark:text-white"
+                        placeholder="dokter@example.com" required>
+                    <div id="email_akun_dokter-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
                 {{-- Spesialisasi --}}
                 <div>
-                    <label for="spesialisasi" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                        Spesialisasi
+                    <label for="spesialis_dokter" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                        Spesialis
                     </label>
-                    <select id="spesialisasi" name="spesialisasi" required
+                    <select id="spesialis_dokter" name="spesialis_dokter" required
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
                         focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 
                         dark:border-gray-500 dark:text-white">
                         <option value="" disabled selected>Select Spesialis</option>
-                        <option value="Determatologi">Determatologi</option>
-                        <option value="Psikiatri">Psikiatri</option>
-                        <option value="Onkologi">Onkologi</option>
-                        <option value="Kardiologi">Kardiologi</option>
+                        @foreach ($spesialis as $item)
+                            <option value="{{ $item->id }}">{{ $item->nama_spesialis }}</option>
+                        @endforeach
                     </select>
-                    <div id="spesialisasi-error" class="text-red-600 text-sm mt-1"></div>
+                    <div id="spesialis_dokter-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
                 {{-- Email --}}
                 <div>
                     <label for="email_dokter"
                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
-                    <input type="email" name="email" id="email_dokter"
+                    <input type="email" name="email_dokter" id="email_dokter"
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
                         focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 
                         dark:border-gray-500 dark:text-white"
@@ -111,16 +134,63 @@
                     <div id="email_dokter-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
+                {{-- Password --}}
+                <div>
+                    <label for="password_dokter"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
+                    <input type="password" name="password_dokter" id="password_dokter"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                        placeholder="••••••••" required>
+                    <div id="password_dokter-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
+                {{-- Confirm Password --}}
+                <div>
+                    <label for="password_dokter_confirmation"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Confirm Password</label>
+                    <input type="password" name="password_dokter_confirmation" id="password_dokter_confirmation"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                        placeholder="••••••••" required
+                        oninput="this.setCustomValidity(this.value !== password_dokter.value ? 'Password tidak sama!' : '')">
+                    <div id="password_dokter_confirmation-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
                 {{-- No HP --}}
                 <div>
-                    <label for="no_hp" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">No
+                    <label for="no_hp_dokter" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">No
                         HP</label>
-                    <input type="text" name="no_hp" id="no_hp"
+                    <input type="text" name="no_hp_dokter" id="no_hp_dokter"
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
                         focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 
                         dark:border-gray-500 dark:text-white"
                         placeholder="0812xxxxxxxx" required>
-                    <div id="no_hp-error" class="text-red-600 text-sm mt-1"></div>
+                    <div id="no_hp_dokter-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
+                {{-- deskripsi dokter --}}
+                <div>
+                    <label for="deskripsi_dokter"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                        Deskripsi
+                    </label>
+                    <input type="text" name="deskripsi_dokter" id="deskripsi_dokter"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+                        focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 
+                        dark:border-gray-500 dark:text-white">
+                    <div id="deskripsi_dokter-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
+                {{-- pengalaman --}}
+                <div>
+                    <label for="pengalaman_dokter"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                        Pengalaman
+                    </label>
+                    <input type="text" name="pengalaman_dokter" id="pengalaman_dokter"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+                        focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 
+                        dark:border-gray-500 dark:text-white">
+                    <div id="pengalaman_dokter-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
                 {{-- Buttons --}}
@@ -161,6 +231,19 @@
                 @method('PUT')
                 <input type="hidden" name="edit_dokter_id" id="edit_dokter_id">
 
+                <div>
+                    <label for="edit_username_dokter"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                        Username
+                    </label>
+                    <input type="text" name="edit_username_dokter" id="edit_username_dokter"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+                        focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 
+                        dark:border-gray-500 dark:text-white"
+                        placeholder="Username" required>
+                    <div id="edit_username_dokter-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
                 {{-- Nama Dokter --}}
                 <div>
                     <label for="edit_nama_dokter"
@@ -175,28 +258,41 @@
                     <div id="edit_nama_dokter-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
+                {{-- Email akun --}}
+                <div>
+                    <label for="edit_email_akun_dokter"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email Akun</label>
+                    <input type="email" name="edit_email_akun_dokter" id="edit_email_akun_dokter"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+                        focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 
+                        dark:border-gray-500 dark:text-white"
+                        placeholder="dokter@example.com" required>
+                    <div id="edit_email_akun_dokter-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
                 {{-- Spesialisasi --}}
                 <div>
-                    <label for="edit_spesialisasi"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Spesialisasi</label>
-                    <select id="edit_spesialisasi" name="edit_spesialisasi" required
+                    <label for="edit_spesialis_dokter"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                        Spesialis
+                    </label>
+                    <select id="edit_spesialis_dokter" name="edit_spesialis_dokter" required
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
                         focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 
                         dark:border-gray-500 dark:text-white">
                         <option value="" disabled selected>Select Spesialis</option>
-                        <option value="Determatologi">Determatologi</option>
-                        <option value="Psikiatri">Psikiatri</option>
-                        <option value="Onkologi">Onkologi</option>
-                        <option value="Kardiologi">Kardiologi</option>
+                        @foreach ($spesialis as $item)
+                            <option value="{{ $item->id }}">{{ $item->nama_spesialis }}</option>
+                        @endforeach
                     </select>
-                    <div id="edit_spesialisasi-error" class="text-red-600 text-sm mt-1"></div>
+                    <div id="edit_spesialis_dokter-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
                 {{-- Email --}}
                 <div>
                     <label for="edit_email_dokter"
                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
-                    <input type="email" id="edit_email_dokter" name="edit_email_dokter"
+                    <input type="email" name="edit_email_dokter" id="edit_email_dokter"
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
                         focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 
                         dark:border-gray-500 dark:text-white"
@@ -204,16 +300,65 @@
                     <div id="edit_email_dokter-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
+                {{-- Password --}}
+                <div>
+                    <label for="edit_password_dokter"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
+                    <input type="password" name="edit_password_dokter" id="edit_password_dokter"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                        placeholder="••••••••">
+                    <div id="edit_password_dokter-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
+                {{-- Confirm Password --}}
+                <div>
+                    <label for="edit_password_dokter_confirmation"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Confirm Password</label>
+                    <input type="password" name="edit_password_dokter_confirmation"
+                        id="edit_password_dokter_confirmation"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                        placeholder="••••••••"
+                        oninput="this.setCustomValidity(this.value !== password_dokter.value ? 'Password tidak sama!' : '')">
+                    <div id="edit_password_dokter_confirmation-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
                 {{-- No HP --}}
                 <div>
-                    <label for="edit_no_hp" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">No
+                    <label for="edit_no_hp_dokter"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">No
                         HP</label>
-                    <input type="text" id="edit_no_hp" name="edit_no_hp"
+                    <input type="text" name="edit_no_hp_dokter" id="edit_no_hp_dokter"
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
                         focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 
                         dark:border-gray-500 dark:text-white"
-                        placeholder="081234567890" required>
-                    <div id="edit_no_hp-error" class="text-red-600 text-sm mt-1"></div>
+                        placeholder="0812xxxxxxxx" required>
+                    <div id="edit_no_hp_dokter-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
+                {{-- deskripsi dokter --}}
+                <div>
+                    <label for="edit_deskripsi_dokter"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                        Deskripsi
+                    </label>
+                    <input type="text" name="edit_deskripsi_dokter" id="edit_deskripsi_dokter"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+                        focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 
+                        dark:border-gray-500 dark:text-white">
+                    <div id="edit_deskripsi_dokter-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
+                {{-- pengalaman --}}
+                <div>
+                    <label for="edit_pengalaman_dokter"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                        Pengalaman
+                    </label>
+                    <input type="text" name="edit_pengalaman_dokter" id="edit_pengalaman_dokter"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+                        focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 
+                        dark:border-gray-500 dark:text-white">
+                    <div id="edit_pengalaman_dokter-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
                 {{-- Buttons --}}

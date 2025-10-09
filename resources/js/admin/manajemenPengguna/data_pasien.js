@@ -92,6 +92,7 @@ $(function () {
     const addModalElement = document.getElementById('addPasienModal');
     const addModal = addModalElement ? new Modal(addModalElement) : null;
     const $formAdd = $('#formAddPasien');
+    
 
     function resetAddForm() {
         $formAdd[0].reset();
@@ -115,14 +116,13 @@ $(function () {
 
         const formData = {
             username: $('#username_pasien').val(),
-            password: $('#password').val(),
-            password_confirmation: $('#password_confirmation').val(),
+            password: $('#password_pasien').val(),
+            password_confirmation: $('#password_pasien_confirmation').val(),
             nama_pasien: $('#nama_pasien').val(),
-            alamat: $('#alamat').val(),
-            email_pasien: $('#alamat').val(),
+            alamat_pasien: $('#alamat_pasien').val(),
+            email_pasien: $('#email_pasien').val(),
             tanggal_lahir: $('#tanggal_lahir').val(),
             jenis_kelamin: $('#jenis_kelamin').val(),
-            role: 'Apoteker',
         };
 
         $('.text-red-600').empty();
@@ -167,12 +167,14 @@ $(function () {
     function resetEditForm() {
         $formEdit[0].reset();
         $formEdit.find('.is-invalid').removeClass('is-invalid');
-        $formEdit.find('.text-red-600').empty();
+        $formEdit.find('.text-red-600').html('');
+    
     }
 
     $('body').on('click', '.btn-edit-pasien', function() {
         resetEditForm();
         const pasienId = $(this).data('id');
+        
 
         axios.get(`/manajemen_pengguna/get_pasien_by_id/${pasienId}`)
             .then(response => {
@@ -182,12 +184,14 @@ $(function () {
                 $formEdit.data('url', finalUrl);
 
                 $('#edit_pasien_id').val(pasien.id);
+                $('#edit_username_pasien').val(pasien.user.username);
                 $('#edit_nama_pasien').val(pasien.nama_pasien);
-                $('#edit_alamat').val(pasien.alamat);
+                $('#edit_email_pasien').val(pasien.user.email);
+                $('#edit_alamat_pasien').val(pasien.alamat);
                 $('#edit_tanggal_lahir').val(pasien.tanggal_lahir);
                 $('#edit_jenis_kelamin').val(pasien.jenis_kelamin);
 
-                if(editModal) editModal.show();
+                 if (editModal) editModal.show();
             })
             .catch(() => {
                 Swal.fire({ icon: 'error', title: 'Gagal!', text: 'Tidak dapat memuat data pasien.' });
@@ -196,16 +200,29 @@ $(function () {
 
     $formEdit.on('submit', function(e) {
         e.preventDefault();
-        const url = $formEdit.data('url');
+         const url = $formEdit.data('url');
+
+        if (!url) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Kesalahan!',
+                text: 'URL tujuan tidak ditemukan.'
+            });
+            return;
+        }
 
         const formData = {
-            nama_pasien: $('#edit_nama_pasien').val(),
-            alamat: $('#edit_alamat').val(),
-            tanggal_lahir: $('#edit_tanggal_lahir').val(),
-            jenis_kelamin: $('#edit_jenis_kelamin').val(),
+            edit_username : $('#edit_username_pasien').val(),
+            edit_nama_pasien: $('#edit_nama_pasien').val(),
+            edit_email_pasien: $('#edit_email_pasien').val(),
+            edit_alamat: $('#edit_alamat_pasien').val(),
+            edit_tanggal_lahir: $('#edit_tanggal_lahir').val(),
+            edit_jenis_kelamin: $('#edit_jenis_kelamin').val(),
+            edit_password_pasien: $('#edit_password_pasien').val(),
+            edit_password_pasien_confirmation: $('#edit_password_pasien_confirmation').val(),
             _method: 'PUT'
         };
-
+        console.log(formData);
         axios.post(url, formData)
             .then(response => {
                 Swal.fire({
@@ -222,11 +239,16 @@ $(function () {
             .catch(error => {
                 if (error.response && error.response.status === 422) {
                     const errors = error.response.data.errors;
-                    Swal.fire({ icon: 'error', title: 'Validasi Gagal!' });
                     for (const field in errors) {
                         $(`#edit_${field}`).addClass('is-invalid');
                         $(`#edit_${field}-error`).html(errors[field][0]);
                     }
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: 'Terjadi kesalahan server.'
+                    });
                 }
             });
     });
@@ -259,7 +281,7 @@ $(function () {
                         Swal.fire({
                             icon: 'success',
                             title: 'Berhasil!',
-                            text: response.data.message,
+                            text: response.data.success,
                             showConfirmButton: false,
                             timer: 1500
                         }).then(() => {

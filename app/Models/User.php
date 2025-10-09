@@ -37,7 +37,7 @@ class User extends Authenticatable
 
     public function pasien()
     {
-        return $this->hasOne(Pasien::class); // FIX: ganti dari Dokter::class ke Pasien::class
+        return $this->hasOne(Pasien::class);
     }
 
     public function admin()

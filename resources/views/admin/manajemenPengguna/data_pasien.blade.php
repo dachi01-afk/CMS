@@ -87,14 +87,26 @@
                     <div id="nama_pasien-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
+
+                {{-- Email pasien --}}
                 <div>
-                    <label for="alamat" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                    <label for="email_pasien"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
+                    <input type="email" name="email_pasien" id="email_pasien"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500
+                        focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                        placeholder="pasien@example.com" required>
+                    <div id="email_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
+                <div>
+                    <label for="alamat_pasien" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
                         Alamat
                     </label>
-                    <input type="text" id="alamat" name="alamat"
+                    <input type="text" id="alamat_pasien" name="alamat_pasien"
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                         placeholder="Alamat Lengkap" required>
-                    <div id="alamat-error" class="text-red-600 text-sm mt-1"></div>
+                    <div id="alamat_pasien-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
                 {{-- Password --}}
@@ -172,6 +184,16 @@
                 @method('PUT')
                 <input type="hidden" id="edit_pasien_id" name="edit_pasien_id">
 
+                {{-- Username --}}
+                <div>
+                    <label for="edit_username_pasien"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Username</label>
+                    <input type="text" name="edit_username_pasien" id="edit_username_pasien"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                        placeholder="Username" required>
+                    <div id="edit_username_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
                 <div>
                     <label for="edit_nama_pasien"
                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama Pasien</label>
@@ -181,13 +203,46 @@
                     <div id="edit_nama_pasien-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
+                {{-- Email pasien --}}
                 <div>
-                    <label for="edit_alamat"
+                    <label for="edit_email_pasien"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
+                    <input type="email" name="edit_email_pasien" id="edit_email_pasien"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500
+                        focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                        placeholder="pasien@example.com" required>
+                    <div id="edit_email_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
+                <div>
+                    <label for="edit_alamat_pasien"
                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Alamat</label>
-                    <input type="text" id="edit_alamat" name="edit_alamat"
+                    <input type="text" id="edit_alamat_pasien" name="edit_alamat_pasien"
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                         required>
                     <div id="edit_alamat-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
+                {{-- Password --}}
+                <div>
+                    <label for="edit_password_pasien"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
+                    <input type="password" name="edit_password_pasien" id="edit_password_pasien"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                        placeholder="••••••••">
+                    <div id="edit_password_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
+                {{-- Confirm Password --}}
+                <div>
+                    <label for="edit_password_pasien_confirmation"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Confirm Password</label>
+                    <input type="password" name="edit_password_pasien_confirmation"
+                        id="edit_password_pasien_confirmation"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                        placeholder="••••••••"
+                        oninput="this.setCustomValidity(this.value !== edit_password_pasien.value ? 'Password tidak sama!' : '')">
+                    <div id="edit_password_pasien_confirmation-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
                 <div>

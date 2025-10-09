@@ -22,7 +22,6 @@ $(function () {
             { data: 'email_user', name: 'email_user' },
             { data: 'role', name: 'role' },
             { data: 'jenis_spesialis_id', name: 'jenis_spesialis_id' }, 
-            { data: 'email', name: 'email' },
             { data: 'no_hp', name: 'no_hp' },
             { 
                 data: 'action', 
@@ -150,18 +149,27 @@ $(function () {
         e.preventDefault();
         const url = $formAdd.data('url');
         const formData = {
+            username_dokter: $('#username_dokter').val(),
             nama_dokter: $('#nama_dokter').val(),
-            spesialisasi: $('#spesialisasi').val(),
-            email: $('#email_dokter').val(),
-            no_hp: $('#no_hp').val(),
+            email_akun_dokter: $('#email_akun_dokter').val(),
+            spesialis_dokter: $('#spesialis_dokter').val(),
+            email_dokter: $('#email_dokter').val(),
+            no_hp_dokter: $('#no_hp_dokter').val(),
+            deskripsi_dokter: $('#deskripsi_dokter').val(),
+            pengalaman_dokter: $('#pengalaman_dokter').val(),
+            password_dokter: $('#password_dokter').val(),
+            password_dokter_confirmation: $('#password_dokter_confirmation').val(),
         };
+
+        $('.text-red-600').empty();
+        $formAdd.find('.is-invalid').removeClass('is-invalid');
 
         axios.post(url, formData)
             .then(res => {
                 Swal.fire({
                     icon: 'success',
                     title: 'Berhasil!',
-                    text: res.data.message,
+                    text: res.data.success,
                     showConfirmButton: false,
                     timer: 2000
                 }).then(() => {
@@ -211,7 +219,7 @@ $(function () {
         resetEditForm();
         const dokterId = $(this).data('id');
 
-        axios.get(`/manajemen_pengguna/data_dokter/${dokterId}`)
+        axios.get(`/manajemen_pengguna/get_dokter_by_id/${dokterId}`)
             .then(res => {
                 const dokter = res.data.data;
                 const baseUrl = $formEdit.data('url');
@@ -219,12 +227,16 @@ $(function () {
                 $formEdit.data('url', finalUrl);
 
                 $('#edit_dokter_id').val(dokter.id);
+                $('#edit_username_dokter').val(dokter.user.username);
                 $('#edit_nama_dokter').val(dokter.nama_dokter);
-                $('#edit_spesialisasi').val(dokter.spesialisasi);
+                $('#edit_email_akun_dokter').val(dokter.user.email);
+                $('#edit_spesialis_dokter').val(dokter.jenis_spesialis_id);
                 $('#edit_email_dokter').val(dokter.email);
-                $('#edit_no_hp').val(dokter.no_hp);
+                $('#edit_no_hp_dokter').val(dokter.no_hp);
+                $('#edit_deskripsi_dokter').val(dokter.deskripsi_dokter);
+                $('#edit_pengalaman_dokter').val(dokter.pengalaman);
 
-                editModal?.show();
+                if (editModal) editModal.show();
             })
             .catch(err => {
                 console.error(err);
@@ -241,10 +253,16 @@ $(function () {
         e.preventDefault();
         const url = $formEdit.data('url');
         const formData = {
-            nama_dokter: $('#edit_nama_dokter').val(),
-            spesialisasi: $('#edit_spesialisasi').val(),
-            email: $('#edit_email_dokter').val(),
-            no_hp: $('#edit_no_hp').val(),
+            edit_username_dokter: $('#edit_username_dokter').val(),
+            edit_nama_dokter: $('#edit_nama_dokter').val(),
+            edit_email_akun_dokter: $('#edit_email_akun_dokter').val(),
+            edit_spesialis_dokter: $('#edit_spesialis_dokter').val(),
+            edit_email_dokter: $('#edit_email_dokter').val(),
+            edit_no_hp_dokter: $('#edit_no_hp_dokter').val(),
+            edit_deskripsi_dokter: $('#edit_deskripsi_dokter').val(),
+            edit_pengalaman_dokter: $('#edit_pengalaman_dokter').val(),
+            edit_password_dokter: $('#edit_password_dokter').val(),
+            edit_password_dokter_confirmation: $('#edit_password_dokter_confirmation').val(),
             _method: 'PUT'
         };
 
@@ -253,11 +271,11 @@ $(function () {
                 Swal.fire({
                     icon: 'success',
                     title: 'Berhasil!',
-                    text: res.data.message,
+                    text: res.data.success,
                     showConfirmButton: false,
                     timer: 2000
                 }).then(() => {
-                    editModal?.hide();
+                    editModal.hide();
                     $('#dokterTable').DataTable().ajax.reload(null, false);
                 });
             })
@@ -314,7 +332,7 @@ $(function () {
                         Swal.fire({
                             icon: 'success',
                             title: 'Berhasil!',
-                            text: response.data.message,
+                            text: response.data.success,
                             showConfirmButton: false,
                             timer: 1500
                         }).then(() => {

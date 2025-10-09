@@ -13,9 +13,9 @@ export default defineConfig({
                 
                 // manajemen-pengguna
                 'resources/js/admin/manajemenPengguna/data_pengguna.js',
-		'resources/js/admin/manajemenPengguna/data_dokter.js',
-		'resources/js/admin/manajemenPengguna/data_apoteker.js',
-		'resources/js/admin/manajemenPengguna/data_pasien.js',
+                // 'resources/js/admin/manajemenPengguna/data_dokter.js',
+                'resources/js/admin/manajemenPengguna/data_apoteker.js',
+                'resources/js/admin/manajemenPengguna/data_pasien.js',
 
 		// pengaturan klinik
 		'resources/js/admin/pengaturanKlinik/jadwal_dokter.js',
