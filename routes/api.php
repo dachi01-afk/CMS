@@ -9,7 +9,7 @@ Route::post('/login', [APIMobileController::class, 'login'])->name('api.login');
 Route::post('/logout', [APIMobileController::class, 'logout'])->name('api.logout');
 Route::post('/register', [APIMobileController::class, 'register'])->name('api.register');
 
-// API Untuk Login Pasien
+// API Untuk Login Dokter
 Route::post('/login-dokter', [APIMobileController::class, 'loginDokter']);
 
 
@@ -37,7 +37,7 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Route Untuk User Yang Login Sebagai Dokter 
-Route::middleware(['auth:sanctum', 'role:dokter'])->group(function () {
+Route::middleware(['auth:sanctum', 'role:Dokter'])->group(function () {
     Route::get('/get-data-dokter', [APIMobileController::class, 'getDataDokter']);
 });
 
