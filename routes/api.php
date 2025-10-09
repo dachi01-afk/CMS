@@ -24,7 +24,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/kunjungan/riwayat/{pasien_id}', [APIMobileController::class, 'getRiwayatKunjungan']); // 🔥 TAMBAH INI
 
     Route::get('/getDataJadwalDokter', [APIMobileController::class, 'getDataJadwalDokter']);
-    // Route::get('/getDataKunjungan', [APIMobileController::class, 'getDataKunjungan']);
+    Route::get('/getDataKunjungan', [APIMobileController::class, 'getDataKunjungan']);
     Route::get('/getDataTestimoni', [APIMobileController::class, 'getDataTestimoni']);
     Route::get('/getDataDokter', [APIMobileController::class, 'getDataDokter']);
     Route::get('/getDataSpesialisasiDokter', [APIMobileController::class, 'getDataSpesialisasiDokter']);
@@ -32,6 +32,3 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::post('/create-data-testimoni', [APIMobileController::class, 'createDataTestimomi'])->name('create.data.testimoni');
-Route::get('/getDataKunjungan', [APIMobileController::class, 'getDataKunjungan']);
-// Tidak butuh token login
-Route::get('/kunjungan/riwayat/{pasien_id}', [APIMobileController::class, 'getRiwayatKunjungan']);

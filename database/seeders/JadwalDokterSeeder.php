@@ -44,21 +44,21 @@ class JadwalDokterSeeder extends Seeder
 
         JadwalDokter::create([
             'dokter_id' => 1,
-            'hari' => json_encode('Senin'),
+            'hari' => 'Senin',
             'jam_awal' => '08:00:00',
             'jam_selesai' => '15:00:00',
         ]);
 
         JadwalDokter::create([
             'dokter_id' => 1,
-            'hari' => json_encode('Selasa'),
+            'hari' => 'Selasa',
             'jam_awal' => '09:00:00',
             'jam_selesai' => '12:00:00',
         ]);
 
         JadwalDokter::create([
             'dokter_id' => 1,
-            'hari' => json_encode('Rabu'),
+            'hari' => 'Rabu',
             'jam_awal' => '10:00:00',
             'jam_selesai' => '17:00:00',
         ]);

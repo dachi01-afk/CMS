@@ -442,127 +442,143 @@ class APIMobileController extends Controller
     }
 
     // Method untuk mengambil riwayat kunjungan pasien
-// Method untuk mengambil riwayat kunjungan pasien
-public function getRiwayatKunjungan($pasienId)
-{
-    try {
-        // Validasi apakah pasien ada
-        $pasien = Pasien::find($pasienId);
-        if (!$pasien) {
+    public function getRiwayatKunjungan($pasienId)
+    {
+        try {
+            // Validasi apakah pasien ada
+            $pasien = Pasien::find($pasienId);
+            if (!$pasien) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pasien tidak ditemukan',
+                ], 404);
+            }
+
+            // Ambil semua kunjungan pasien dengan relasi dokter
+            $riwayat = Kunjungan::where('pasien_id', $pasienId)
+                ->with(['dokter' => function ($query) {
+                    $query->select('id', 'nama_dokter', 'no_hp', 'pengalaman', 'foto_dokter');
+                }])
+                ->orderByDesc('tanggal_kunjungan')
+                ->orderByDesc('created_at')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Riwayat kunjungan berhasil diambil',
+                'data' => $riwayat,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error getting riwayat kunjungan: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Pasien tidak ditemukan',
-            ], 404);
+                'message' => 'Gagal mengambil riwayat kunjungan: ' . $e->getMessage(),
+            ], 500);
         }
-
-        // Ambil semua kunjungan pasien dengan relasi dokter
-        $riwayat = Kunjungan::where('pasien_id', $pasienId)
-            ->with(['dokter' => function ($query) {
-                $query->select('id', 'nama_dokter', 'foto_dokter', 'deskripsi_dokter', 'pengalaman', 'no_hp');
-            }])
-            ->orderByDesc('tanggal_kunjungan')
-            ->orderByDesc('created_at')
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Riwayat kunjungan berhasil diambil',
-            'data' => $riwayat,
-        ], 200);
-    } catch (\Exception $e) {
-        Log::error('Error getting riwayat kunjungan: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengambil riwayat kunjungan: ' . $e->getMessage(),
-        ], 500);
     }
-}
 
+    ///////////// Function untuk Testimoni //////////////////
 
-///////////// Function untuk Testimoni //////////////////
+    public function getDataTestimoni()
+    {
+        try {
+            $dataTestimoni = Testimoni::all();
 
-public function getDataTestimoni()
-{
-    try {
-        $dataTestimoni = Testimoni::all();
-
-        return response()->json([
-            'success' => true,
-            'status' => 200,
-            'Data Testimoni' => $dataTestimoni,
-            'message' => 'Berhasil Meminta Data Testimoni',
-        ], 200);
-    } catch (\Exception $e) {
-        Log::error('Error getting testimoni: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengambil data testimoni: ' . $e->getMessage(),
-        ], 500);
+            return response()->json([
+                'success' => true,
+                'status' => 200,
+                'Data Testimoni' => $dataTestimoni,
+                'message' => 'Berhasil Meminta Data Testimoni',
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error getting testimoni: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data testimoni: ' . $e->getMessage(),
+            ], 500);
+        }
     }
-}
 
-// 🔥 PERBAIKAN: Typo function name dari createDataTestimomi → createDataTestimoni
-public function createDataTestimoni(Request $request)
-{
-    try {
-        $request->validate([
-            'pasien_id' => ['required', 'exists:pasien,id'],
-            'nama_testimoni' => ['required', 'string', 'max:255'],
-            'umur' => ['required', 'numeric', 'min:1', 'max:150'],
-            'pekerjaan' => ['required', 'string', 'max:255'],
-            'isi_testimoni' => ['required', 'string'],
-            'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
-            'video' => ['nullable', 'mimetypes:video/mp4,video/avi,video/mpeg', 'max:51200'], // max 50MB
-        ]);
+    // 🔥 PERBAIKAN: Typo function name dari createDataTestimomi → createDataTestimoni
+    public function createDataTestimoni(Request $request)
+    {
+        try {
+            $request->validate([
+                'pasien_id' => ['required', 'exists:pasien,id'],
+                'nama_testimoni' => ['required', 'string', 'max:255'],
+                'umur' => ['required', 'numeric', 'min:1', 'max:150'],
+                'pekerjaan' => ['required', 'string', 'max:255'],
+                'isi_testimoni' => ['required', 'string'],
+                'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+                'video' => ['nullable', 'mimetypes:video/mp4,video/avi,video/mpeg', 'max:51200'], // max 50MB
+            ]);
 
-        $jalurFoto = null;
-        $jalurVideo = null;
+            $jalurFoto = null;
+            $jalurVideo = null;
 
-        // Upload foto jika ada
-        if ($request->hasFile('foto')) {
-            $foto = $request->file('foto');
-            $namaFoto = time() . '_' . $foto->getClientOriginalName();
-            $jalurFoto = $foto->storeAs('Foto-Testimoni', $namaFoto, 'public');
+            // Upload foto jika ada
+            if ($request->hasFile('foto')) {
+                $foto = $request->file('foto');
+                $namaFoto = time() . '_' . $foto->getClientOriginalName();
+                $jalurFoto = $foto->storeAs('Foto-Testimoni', $namaFoto, 'public');
+            }
+
+            // Upload video jika ada
+            if ($request->hasFile('video')) {
+                $video = $request->file('video');
+                $namaVideo = time() . '_' . $video->getClientOriginalName();
+                $jalurVideo = $video->storeAs('Video-Testimoni', $namaVideo, 'public');
+            }
+
+            $dataTestimoni = Testimoni::create([
+                'pasien_id' => $request->pasien_id,
+                'nama_testimoni' => $request->nama_testimoni,
+                'umur' => $request->umur,
+                'pekerjaan' => $request->pekerjaan,
+                'isi_testimoni' => $request->isi_testimoni,
+                'foto' => $jalurFoto,
+                'link_video' => $jalurVideo,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'status' => 200,
+                'Data Testimoni' => $dataTestimoni,
+                'message' => 'Berhasil Membuat Testimoni',
+            ], 201);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error creating testimoni: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membuat testimoni: ' . $e->getMessage(),
+            ], 500);
         }
-
-        // Upload video jika ada
-        if ($request->hasFile('video')) {
-            $video = $request->file('video');
-            $namaVideo = time() . '_' . $video->getClientOriginalName();
-            $jalurVideo = $video->storeAs('Video-Testimoni', $namaVideo, 'public');
-        }
-
-        $dataTestimoni = Testimoni::create([
-            'pasien_id' => $request->pasien_id,
-            'nama_testimoni' => $request->nama_testimoni,
-            'umur' => $request->umur,
-            'pekerjaan' => $request->pekerjaan,
-            'isi_testimoni' => $request->isi_testimoni,
-            'foto' => $jalurFoto,
-            'link_video' => $jalurVideo,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'status' => 200,
-            'Data Testimoni' => $dataTestimoni,
-            'message' => 'Berhasil Membuat Testimoni',
-        ], 201);
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Validation error',
-            'errors' => $e->errors(),
-        ], 422);
-    } catch (\Exception $e) {
-        Log::error('Error creating testimoni: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal membuat testimoni: ' . $e->getMessage(),
-        ], 500);
     }
 
     ////////////// Get Data Dokter ////////////
-
-}
+    public function getDataDokter()
+    {
+        try {
+            $dataDokter = Dokter::all();
+            
+            return response()->json([
+                'success' => true,
+                'status' => 200,
+                'Data Dokter' => $dataDokter,
+                'message' => 'Berhasil Mengambil Data Dokter',
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error getting data dokter: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data dokter: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }
