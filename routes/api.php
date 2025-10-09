@@ -17,7 +17,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // Kunjungan routes
     Route::post('/kunjungan/create', [APIMobileController::class, 'bookingDokter']);
     Route::put('/kunjungan/ubah-status', [APIMobileController::class, 'ubahStatusKunjungan']);
-    Route::put('/kunjungan/batalkan', [APIMobileController::class, 'batalkanStatusKunjungan']);
+    Route::post('/kunjungan/batalkan', [APIMobileController::class, 'batalkanStatusKunjungan']);
     Route::get('/kunjungan/riwayat/{pasien_id}', [APIMobileController::class, 'getRiwayatKunjungan']); // 🔥 TAMBAH INI
 
     Route::get('/getDataJadwalDokter', [APIMobileController::class, 'getDataJadwalDokter']);
