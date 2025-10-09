@@ -12,6 +12,6 @@ class Konsul extends Model
 
     public function kunjungan()
     {
-        return $this->belongsTo(Kunjungan::class, 'kunjungan_id');
+        return $this->belongsTo(Kunjungan::class);
     }
 }
