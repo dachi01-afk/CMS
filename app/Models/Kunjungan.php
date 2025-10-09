@@ -14,13 +14,10 @@ class Kunjungan extends Model
     // Ubah dari guarded ke fillable untuk security yang lebih baik katanya pid
     protected $fillable = [
         'dokter_id',
-        'pasien_id', 
+        'pasien_id',
         'tanggal_kunjungan',
-        'no_antrian',                
+        'no_antrian',
         'keluhan_awal',
-        'status',
-        'nama_rs_perujuk',
-        'nama_dokter_perujuk'
     ];
 
     // Cast untuk tipe data yang sesuai
@@ -31,33 +28,33 @@ class Kunjungan extends Model
     // Relasi yang sudah ada - tetap sama
     public function resep()
     {
-        return $this->hasMany(Resep::class, 'kunjungan_id', 'id');
+        return $this->hasMany(Resep::class);
     }
 
     public function tesLab()
     {
-        return $this->hasMany(TesLab::class, 'kunjungan_id', 'id');
+        return $this->hasMany(TesLab::class);
     }
 
     public function konsul()
     {
-        return $this->hasMany(Konsul::class, 'kunjungan_id', 'id');
+        return $this->hasMany(Konsul::class);
     }
 
     public function dokter()
     {
-        return $this->belongsTo(Dokter::class, 'dokter_id', 'id');
+        return $this->belongsTo(Dokter::class);
     }
 
     public function pasien()
     {
-        return $this->belongsTo(Pasien::class, 'pasien_id', 'id_pasien');
+        return $this->belongsTo(Pasien::class);
     }
 
     // Tambahkan relasi untuk EMR
     public function emr()
     {
-        return $this->hasMany(EMR::class, 'kunjungan_id', 'id');
+        return $this->hasMany(EMR::class);
     }
 
     // Scope untuk filter berdasarkan status

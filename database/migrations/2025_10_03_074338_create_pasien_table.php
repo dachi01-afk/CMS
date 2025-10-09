@@ -17,7 +17,7 @@ da<?php
                 $table->foreignId('user_id')->constrained('user', 'id', 'pasien_user_id')
                     ->cascadeOnDelete()
                     ->cascadeOnUpdate();
-                $table->string('nama_pasien');
+                $table->string('nama_pasien')->nullable();
                 $table->string('alamat')->nullable();
                 $table->date('tanggal_lahir')->nullable();
                 $table->enum('jenis_kelamin', ['Laki-laki', 'Perempuan'])->nullable();

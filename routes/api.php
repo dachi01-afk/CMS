@@ -2,38 +2,33 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\APIController;
+use App\Http\Controllers\Api\APIMobileController;
 
-// 🔓 PUBLIC ROUTES (tidak butuh login)
-Route::post('/login', [APIController::class, 'login'])->name('api.login');
-Route::post('/logout', [APIController::class, 'logout'])->name('api.logout');
-Route::post('/register', [APIController::class, 'register'])->name('api.register');
+Route::post('/login', [APIMobileController::class, 'login'])->name('api.login');
+Route::post('/logout', [APIMobileController::class, 'logout'])->name('api.logout');
+Route::post('/register', [APIMobileController::class, 'register'])->name('api.register');
 
 // 🌐 Testimoni bisa diakses publik (tidak perlu login untuk lihat testimoni)
 Route::get('/getDataTestimoni', [APIController::class, 'getDataTestimoni']);
 
 // 🔒 PROTECTED ROUTES (butuh autentikasi dengan token)
 Route::middleware('auth:sanctum')->group(function () {
-    // Profile routes
-    Route::get('/pasien/profile', [APIController::class, 'getProfile']);
-    Route::put('/pasien/update', [APIController::class, 'updateProfile']);
-    
-    // Jadwal Dokter routes
-    Route::get('/getJadwalDokter', [APIController::class, 'getJadwalDokter'])->name('getJadwalDokter');
+    Route::get('/pasien/profile', [APIMobileController::class, 'getProfile']);
+    Route::put('/pasien/update', [APIMobileController::class, 'updateProfile']);
+    Route::get('/getJadwalDokter', [APIMobileController::class, 'getJadwalDokter'])->name('getJadwalDokter');
 
     // Kunjungan routes
-    Route::post('/kunjungan/create', [APIController::class, 'bookingDokter']);
-    Route::put('/kunjungan/ubah-status', [APIController::class, 'ubahStatusKunjungan']);
-    Route::put('/kunjungan/batalkan', [APIController::class, 'batalkanStatusKunjungan']);
-    Route::get('/kunjungan/riwayat/{pasien_id}', [APIController::class, 'getRiwayatKunjungan']);
+    Route::post('/kunjungan/create', [APIMobileController::class, 'bookingDokter']);
+    Route::put('/kunjungan/ubah-status', [APIMobileController::class, 'ubahStatusKunjungan']);
+    Route::put('/kunjungan/batalkan', [APIMobileController::class, 'batalkanStatusKunjungan']);
+    Route::get('/kunjungan/riwayat/{pasien_id}', [APIMobileController::class, 'getRiwayatKunjungan']); // 🔥 TAMBAH INI
 
-    // Data routes (butuh auth)
-    Route::get('/getDataJadwalDokter', [APIController::class, 'getDataJadwalDokter']);
-    Route::get('/getDataKunjungan', [APIController::class, 'getDataKunjungan']);
-       Route::get('/getDataDokter', [APIController::class, 'getDataDokter']);
-          Route::get('/getDataSpesialisasiDokter', [APIController::class, 'getDataSpesialisasiDokter']);
-    Route::get('/getDataDokterSpesialisasi', [APIController::class, 'getDataDokterSpesialisasi']);
-    
-    // Testimoni create (butuh login untuk buat testimoni)
-    Route::post('/create-data-testimoni', [APIController::class, 'createDataTestimoni'])->name('create.data.testimoni');
+    Route::get('/getDataJadwalDokter', [APIMobileController::class, 'getDataJadwalDokter']);
+    Route::get('/getDataKunjungan', [APIMobileController::class, 'getDataKunjungan']);
+    Route::get('/getDataTestimoni', [APIMobileController::class, 'getDataTestimoni']);
+    Route::get('/getDataDokter', [APIMobileController::class, 'getDataDokter']);
+    Route::get('/getDataSpesialisasiDokter', [APIMobileController::class, 'getDataSpesialisasiDokter']);
+    Route::get('/getDataDokterSpesialisasi', [APIMobileController::class, 'getDataDokterSpesialisasi']);
 });
+
+Route::post('/create-data-testimoni', [APIMobileController::class, 'createDataTestimomi'])->name('create.data.testimoni');

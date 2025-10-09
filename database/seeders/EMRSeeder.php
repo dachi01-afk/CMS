@@ -16,6 +16,8 @@ class EMRSeeder extends Seeder
     public function run(): void
     {
         $dataKunjungan = Kunjungan::all();
+        $dataKunjungan = Kunjungan::all();
+        $dataKunjungan = Kunjungan::all();
         $faker = Faker::create('id_ID');
 
         foreach ($dataKunjungan as $kunjungan) {
