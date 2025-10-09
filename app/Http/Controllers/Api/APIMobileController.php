@@ -533,10 +533,4 @@ class APIMobileController extends Controller
             'message' => 'Berhasil Membuat Testimoni',
         ]);
     }
-
-    ////////////// Get Data Dokter ////////////
-    public function getDataDokter()
-    {
-        $dataDokter = Dokter::all();
-    }
 }
