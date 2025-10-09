@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('user_id')->constrained('user', 'id', 'admin_user_id')
                 ->cascadeOnDelete()->cascadeOnUpdate();
             $table->string('nama_admin');
-            $table->string('email_admin');
+            $table->string('foto_admin')->nullable();
             $table->string('no_hp');
             $table->timestamps();
         });

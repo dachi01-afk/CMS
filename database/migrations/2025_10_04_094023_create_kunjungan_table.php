@@ -18,8 +18,9 @@ return new class extends Migration
             $table->foreignId('pasien_id')->constrained('pasien', 'id', 'kunjungan_pasien_id')
                 ->cascadeOnDelete()->cascadeOnUpdate();
             $table->date('tanggal_kunjungan');
+            $table->string('no_antrian', 3)->nullable();
             $table->text('keluhan_awal');
-            $table->enum('status', ['Pending', 'Confirmed', 'Waiting', 'Engaged', 'Succeed'])->default('Pending');
+            $table->enum('status', ['Pending', 'Waiting', 'Engaged', 'Succeed', 'Canceled'])->default('Pending');
             $table->timestamps();
         });
     }

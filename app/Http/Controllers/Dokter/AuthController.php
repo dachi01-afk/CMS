@@ -11,6 +11,11 @@ use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    public function login()
+    {
+        return view('dokter.login');
+    }
+
     public function register(Request $request)
     {
         $request->validate([
@@ -26,29 +31,31 @@ class AuthController extends Controller
             'role' => 'Dokter',
         ]);
 
-        return response()->json(['status' => 200, 'data' => $dataDokter, 'message' => 'Anda Berhasil Mendaftar']);
+        return redirect()->route('dokter.login');
+
+        // return response()->json(['status' => 200, 'data' => $dataDokter, 'message' => 'Anda Berhasil Mendaftar']);
     }
-    
+
     public function prosesLogin(Request $request)
     {
-        $request->validate([
-            'username' => ['required'],
+        // return $request;
+        $credentials = $request->validate([
+            'email' => ['required'],
             'password' => ['required'],
         ]);
 
-        $user = User::where('username', $request->username)->firstOrFail();
+        if (Auth::attempt($credentials)) {
+            $request->session()->regenerate();
 
-        if (!$user || !Hash::check($request->password, $user->password)) {
-            throw ValidationException::withMessages([
-                'username' => ['Username yang Anda masukkan salah.'],
-                'password' => ['Password yang Anda masukkan salah.'],
-            ]);
-        }
+            $user = Auth::user();
 
-        if(!$user) {
-            return response()->json(['status' => 'Error', 'message' => 'Username Atau Password Anda Salah']);
-        } elseif($user){
-            return response()->json(['status', 200, 'message' => 'Login Berhasil']);
+            if ($user->role === 'Dokter') {
+                return redirect()->route('dokter.dashboard');
+            } else {
+                Auth::logout();
+                return redirect()->back();
+            }
         }
+        return redirect()->back();
     }
 }
