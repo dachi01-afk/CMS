@@ -20,8 +20,8 @@ return new class extends Migration
             $table->string('umur');
             $table->string('pekerjaan');
             $table->string('isi_testimoni');
-            $table->string('foto');
-            $table->string('link_video');
+            $table->string('foto')->nullable();
+            $table->string('link_video')->nullable();
             $table->timestamps();
         });
     }

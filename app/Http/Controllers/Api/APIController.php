@@ -166,7 +166,7 @@ class APIController extends Controller
             // Mapping hari ke angka (untuk PHP date function)
             $hariMapping = [
                 'Senin' => 1,
-                'Selasa' => 2, 
+                'Selasa' => 2,
                 'Rabu' => 3,
                 'Kamis' => 4,
                 'Jumat' => 5,
@@ -178,7 +178,7 @@ class APIController extends Controller
             $jadwalWithDates = $jadwal->map(function ($item) use ($hariMapping) {
                 $hari = $item->hari;
                 $hariNumber = $hariMapping[$hari] ?? null;
-                
+
                 if ($hariNumber !== null) {
                     // Hitung tanggal terdekat untuk hari tersebut
                     $tanggalTerdekat = $this->getNextDateByDay($hariNumber);
@@ -190,7 +190,7 @@ class APIController extends Controller
                     $item->tanggal_terdekat_formatted = null;
                     $item->hari_selisih = 999; // Untuk sorting terakhir
                 }
-                
+
                 return $item;
             });
 
@@ -201,7 +201,6 @@ class APIController extends Controller
                 'success' => true,
                 'data' => $jadwalSorted,
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error getting jadwal dokter: ' . $e->getMessage());
             return response()->json([
@@ -218,19 +217,19 @@ class APIController extends Controller
     {
         $today = new \DateTime();
         $currentDayOfWeek = (int)$today->format('w'); // 0=Minggu, 1=Senin, dst
-        
+
         // Hitung selisih hari
         $daysUntilTarget = ($dayOfWeek - $currentDayOfWeek + 7) % 7;
-        
+
         // Jika hari ini sama dengan target, ambil hari ini
         if ($daysUntilTarget === 0) {
             return $today->format('Y-m-d');
         }
-        
+
         // Tambahkan hari ke tanggal sekarang
         $targetDate = clone $today;
         $targetDate->add(new \DateInterval("P{$daysUntilTarget}D"));
-        
+
         return $targetDate->format('Y-m-d');
     }
 
@@ -240,16 +239,25 @@ class APIController extends Controller
     private function formatTanggalIndonesia($date)
     {
         $bulanIndonesia = [
-            '01' => 'Jan', '02' => 'Feb', '03' => 'Mar', '04' => 'Apr',
-            '05' => 'Mei', '06' => 'Jun', '07' => 'Jul', '08' => 'Ags',
-            '09' => 'Sep', '10' => 'Okt', '11' => 'Nov', '12' => 'Des'
+            '01' => 'Jan',
+            '02' => 'Feb',
+            '03' => 'Mar',
+            '04' => 'Apr',
+            '05' => 'Mei',
+            '06' => 'Jun',
+            '07' => 'Jul',
+            '08' => 'Ags',
+            '09' => 'Sep',
+            '10' => 'Okt',
+            '11' => 'Nov',
+            '12' => 'Des'
         ];
-        
+
         $dateObj = new \DateTime($date);
         $hari = $dateObj->format('j');
         $bulan = $bulanIndonesia[$dateObj->format('m')];
         $tahun = $dateObj->format('Y');
-        
+
         return "{$hari} {$bulan} {$tahun}";
     }
 
@@ -261,7 +269,7 @@ class APIController extends Controller
         $today = new \DateTime();
         $target = new \DateTime($targetDate);
         $diff = $today->diff($target);
-        
+
         return $diff->days;
     }
 
@@ -303,65 +311,19 @@ class APIController extends Controller
 
     public function batalkanStatusKunjungan(Request $request)
     {
-        try {
-            $request->validate([
-                'id' => 'required|exists:kunjungan,id',
-                'action' => 'nullable|string|in:cancel,delete' // cancel = soft delete, delete = hard delete
-            ]);
+        $dataKunjungan = Kunjungan::findOrFail($request->id);
 
-            $dataKunjungan = Kunjungan::findOrFail($request->id);
-            $action = $request->action ?? 'cancel'; // default ke cancel
+        $dataKunjungan->update([
+            'status' => 'Canceled',
+            'no_antrian' => null, 
+        ]);
 
-            // Cek apakah kunjungan bisa dibatalkan/dihapus
-            if (!in_array($dataKunjungan->status, ['Pending', 'Confirmed', 'Waiting'])) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Kunjungan dengan status "' . $dataKunjungan->status . '" tidak dapat dibatalkan',
-                ], 422);
-            }
-
-            if ($action === 'delete') {
-                // HARD DELETE - Hapus dari database
-                Log::info("🗑️ Hard deleting kunjungan ID: {$request->id}");
-                
-                // Hapus data terkait dulu (jika ada)
-                // Misalnya: resep, tes lab, konsul, EMR
-                $dataKunjungan->resep()->delete();
-                $dataKunjungan->tesLab()->delete();
-                $dataKunjungan->konsul()->delete();
-                $dataKunjungan->emr()->delete();
-                
-                // Hapus kunjungan
-                $dataKunjungan->delete();
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Kunjungan berhasil dihapus permanen',
-                ], 200);
-
-            } else {
-                // SOFT DELETE - Ubah status jadi Canceled
-                Log::info("❌ Canceling kunjungan ID: {$request->id}");
-                
-                $dataKunjungan->update([
-                    'status' => 'Canceled',
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'status' => 200,
-                    'Data Kunjungan' => $dataKunjungan,
-                    'message' => 'Berhasil membatalkan kunjungan',
-                ], 200);
-            }
-
-        } catch (\Exception $e) {
-            Log::error('Error in batalkanStatusKunjungan: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal membatalkan kunjungan: ' . $e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'status' => 200,
+            'Data Kunjungan' => $dataKunjungan,
+            'message' => 'Berhasil Merubah Status Kunjungan Dari Pending Menjadi Canceled',
+        ]);
     }
 
     // 🔥 METHOD YANG DIPANGGIL DARI /api/kunjungan/create
@@ -401,7 +363,7 @@ class APIController extends Controller
 
             // Gunakan transaksi supaya aman dari race condition
             $result = DB::transaction(function () use ($tanggalKunjungan, $dokterId, $pasienId, $request) {
-                
+
                 // 🎯 LOGIC BENAR: Cari antrian terakhir berdasarkan DOKTER + TANGGAL
                 $lastKunjungan = Kunjungan::where('tanggal_kunjungan', $tanggalKunjungan)
                     ->where('dokter_id', $dokterId)
@@ -460,7 +422,6 @@ class APIController extends Controller
                 'Data Kunjungan' => $result['kunjungan'],
                 'Data No Antrian' => $result['no_antrian'],
             ], 200);
-
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error('❌ Validation error: ', $e->errors());
             return response()->json([
@@ -468,11 +429,10 @@ class APIController extends Controller
                 'message' => 'Validation error',
                 'errors' => $e->errors(),
             ], 422);
-
         } catch (\Exception $e) {
             Log::error('❌ Exception in bookingDokter: ' . $e->getMessage());
             Log::error('❌ Stack trace: ' . $e->getTraceAsString());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal membuat kunjungan: ' . $e->getMessage(),
@@ -481,43 +441,48 @@ class APIController extends Controller
     }
 
     // Method untuk mengambil riwayat kunjungan pasien
-    public function getRiwayatKunjungan($pasienId)
-    {
-        try {
-            // Validasi apakah pasien ada
-            $pasien = Pasien::find($pasienId);
-            if (!$pasien) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Pasien tidak ditemukan',
-                ], 404);
-            }
-
-            // Ambil semua kunjungan pasien dengan relasi dokter
-            $riwayat = Kunjungan::where('pasien_id', $pasienId)
-                ->with(['dokter' => function($query) {
-                    $query->select('id', 'nama_dokter', 'email', 'no_hp', 'pengalaman', 'foto');
-                }])
-                ->orderByDesc('tanggal_kunjungan')
-                ->orderByDesc('created_at')
-                ->get();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Riwayat kunjungan berhasil diambil',
-                'data' => $riwayat,
-            ], 200);
-
-        } catch (\Exception $e) {
-            Log::error('Error getting riwayat kunjungan: ' . $e->getMessage());
+// Method untuk mengambil riwayat kunjungan pasien
+public function getRiwayatKunjungan($pasienId)
+{
+    try {
+        // Validasi apakah pasien ada
+        $pasien = Pasien::find($pasienId);
+        if (!$pasien) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil riwayat kunjungan: ' . $e->getMessage(),
-            ], 500);
+                'message' => 'Pasien tidak ditemukan',
+            ], 404);
         }
-    }
 
-    public function getDataTestimoni() {
+        // Ambil semua kunjungan pasien dengan relasi dokter
+        $riwayat = Kunjungan::where('pasien_id', $pasienId)
+            ->with(['dokter' => function ($query) {
+                $query->select('id', 'nama_dokter', 'foto_dokter', 'deskripsi_dokter', 'pengalaman', 'no_hp');
+            }])
+            ->orderByDesc('tanggal_kunjungan')
+            ->orderByDesc('created_at')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Riwayat kunjungan berhasil diambil',
+            'data' => $riwayat,
+        ], 200);
+    } catch (\Exception $e) {
+        Log::error('Error getting riwayat kunjungan: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil riwayat kunjungan: ' . $e->getMessage(),
+        ], 500);
+    }
+}
+
+
+///////////// Function untuk Testimoni //////////////////
+
+public function getDataTestimoni()
+{
+    try {
         $dataTestimoni = Testimoni::all();
 
         return response()->json([
@@ -525,8 +490,75 @@ class APIController extends Controller
             'status' => 200,
             'Data Testimoni' => $dataTestimoni,
             'message' => 'Berhasil Meminta Data Testimoni',
-        ]);
+        ], 200);
+    } catch (\Exception $e) {
+        Log::error('Error getting testimoni: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil data testimoni: ' . $e->getMessage(),
+        ], 500);
     }
- 
-    
+}
+
+// 🔥 PERBAIKAN: Typo function name dari createDataTestimomi → createDataTestimoni
+public function createDataTestimoni(Request $request)
+{
+    try {
+        $request->validate([
+            'pasien_id' => ['required', 'exists:pasien,id'],
+            'nama_testimoni' => ['required', 'string', 'max:255'],
+            'umur' => ['required', 'numeric', 'min:1', 'max:150'],
+            'pekerjaan' => ['required', 'string', 'max:255'],
+            'isi_testimoni' => ['required', 'string'],
+            'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+            'video' => ['nullable', 'mimetypes:video/mp4,video/avi,video/mpeg', 'max:51200'], // max 50MB
+        ]);
+
+        $jalurFoto = null;
+        $jalurVideo = null;
+
+        // Upload foto jika ada
+        if ($request->hasFile('foto')) {
+            $foto = $request->file('foto');
+            $namaFoto = time() . '_' . $foto->getClientOriginalName();
+            $jalurFoto = $foto->storeAs('Foto-Testimoni', $namaFoto, 'public');
+        }
+
+        // Upload video jika ada
+        if ($request->hasFile('video')) {
+            $video = $request->file('video');
+            $namaVideo = time() . '_' . $video->getClientOriginalName();
+            $jalurVideo = $video->storeAs('Video-Testimoni', $namaVideo, 'public');
+        }
+
+        $dataTestimoni = Testimoni::create([
+            'pasien_id' => $request->pasien_id,
+            'nama_testimoni' => $request->nama_testimoni,
+            'umur' => $request->umur,
+            'pekerjaan' => $request->pekerjaan,
+            'isi_testimoni' => $request->isi_testimoni,
+            'foto' => $jalurFoto,
+            'link_video' => $jalurVideo,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'status' => 200,
+            'Data Testimoni' => $dataTestimoni,
+            'message' => 'Berhasil Membuat Testimoni',
+        ], 201);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation error',
+            'errors' => $e->errors(),
+        ], 422);
+    } catch (\Exception $e) {
+        Log::error('Error creating testimoni: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal membuat testimoni: ' . $e->getMessage(),
+        ], 500);
+    }
+}
 }
