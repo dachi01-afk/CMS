@@ -131,6 +131,7 @@ Route::post('/testing-batalkan-status-kunjungan', [TestingController::class, 'ba
 // SIAPA YANG GANGGU PECAH KEPALANYA 
 // BY AURELIO
 Route::get('/getDataDokter', [APIWebController::class, 'getDataDokter']);
+Route::get('/getDataTestimoni', [APIWebController::class, 'getDataTestimoni']);
 // END API KHUSUS AURELIO
 
 
