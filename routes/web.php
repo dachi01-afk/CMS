@@ -20,65 +20,92 @@ use App\Http\Controllers\Management\PasienController;
 use App\Http\Controllers\Testing\TestingController;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 
-// API Routes - Tambahkan ini di bagian bawah file web.php sebelum require auth.php
-Route::prefix('api')->withoutMiddleware(['web'])->group(function () {
-    // Public routes (tidak perlu authentication)
-    Route::post('/check-availability', [App\Http\Controllers\Auth\AuthController::class, 'checkAvailability']);
-    Route::post('/register', [App\Http\Controllers\Auth\AuthController::class, 'register']);
-    Route::post('/login', [App\Http\Controllers\Auth\AuthController::class, 'login']);
-    Route::post('/login-dokter', []);
+// API Routes - Enhanced for better booking functionality
+// Route::prefix('api')->withoutMiddleware(['web'])->group(function () {
+//     // Public routes (tidak perlu authentication)
+//     Route::post('/check-availability', [App\Http\Controllers\Auth\AuthController::class, 'checkAvailability']);
+//     Route::post('/register', [App\Http\Controllers\Auth\AuthController::class, 'register']);
+//     Route::post('/login', [App\Http\Controllers\Auth\AuthController::class, 'login']);
+    
+//     // ADD THESE NEW ROUTES - Place them before the middleware group
+//     Route::get('/doctors-with-specialties', [App\Http\Controllers\Auth\AuthController::class, 'getDoctorsWithSpecialties']);
+//     Route::get('/specialties', [App\Http\Controllers\Auth\AuthController::class, 'getSpecialties']);
+//     Route::get('/doctor-schedules', [App\Http\Controllers\Auth\AuthController::class, 'getDoctorSchedules']);
+    
+//     // Forgot Password routes
+//     Route::prefix('forgot-password')->group(function () {
+//         Route::post('/send-otp', [App\Http\Controllers\Auth\AuthController::class, 'sendOTP']);
+//         Route::post('/verify-otp', [App\Http\Controllers\Auth\AuthController::class, 'verifyOTP']);
+//         Route::post('/reset', [App\Http\Controllers\Auth\AuthController::class, 'resetPassword']);
+//     });
 
-    // Forgot Password routes
-    Route::prefix('forgot-password')->group(function () {
-        Route::post('/send-otp', [App\Http\Controllers\Auth\AuthController::class, 'sendOTP']);
-        Route::post('/verify-otp', [App\Http\Controllers\Auth\AuthController::class, 'verifyOTP']);
-        Route::post('/reset', [App\Http\Controllers\Auth\AuthController::class, 'resetPassword']);
-    });
+//     // Forgot Username routes 
+//     Route::prefix('forgot-username')->group(function () {
+//         Route::post('/send-otp', [App\Http\Controllers\Auth\AuthController::class, 'sendUsernameOTP']);
+//         Route::post('/verify-otp', [App\Http\Controllers\Auth\AuthController::class, 'verifyUsernameOTP']);
+//         Route::post('/update', [App\Http\Controllers\Auth\AuthController::class, 'updateUsername']);
+//     });
 
-    // Forgot Username routes 
-    Route::prefix('forgot-username')->group(function () {
-        Route::post('/send-otp', [App\Http\Controllers\Auth\AuthController::class, 'sendUsernameOTP']);
-        Route::post('/verify-otp', [App\Http\Controllers\Auth\AuthController::class, 'verifyUsernameOTP']); // Fixed typo
-        Route::post('/update', [App\Http\Controllers\Auth\AuthController::class, 'updateUsername']);
-    });
+//     // Protected routes (perlu authentication)
+//     Route::middleware('auth:sanctum')->group(function () {
+//         Route::post('/logout', [App\Http\Controllers\Auth\AuthController::class, 'logout']);
+//         Route::get('/profile', [App\Http\Controllers\Auth\AuthController::class, 'profile']);
+//         Route::put('/profile', [App\Http\Controllers\Auth\AuthController::class, 'updateProfile']); 
+            
+//         // CHANGED: Booking routes inside auth middleware
+//         Route::prefix('booking')->group(function () {
+//             // UPDATED: Use AuthController instead of APIController
+//             Route::post('/schedule', [App\Http\Controllers\Auth\AuthController::class, 'createKunjungan']);
+//             Route::get('/check-availability/{dokterId}/{tanggal}', [App\Http\Controllers\Auth\AuthController::class, 'checkDoctorAvailability']);
+//             Route::get('/my-appointments', [App\Http\Controllers\Auth\AuthController::class, 'getMyAppointments']);
+//         });
 
-    // Protected routes (perlu authentication)
-    Route::middleware('auth:sanctum')->group(function () {
-        Route::post('/logout', [App\Http\Controllers\Auth\AuthController::class, 'logout']);
-        Route::get('/profile', [App\Http\Controllers\Auth\AuthController::class, 'profile']);
+//         // Appointment management routes
+//         Route::prefix('appointment')->group(function () {
+//             Route::put('/cancel/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'cancelAppointment']);
+//             Route::put('/reschedule/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'rescheduleAppointment']);
+//         });
+        
+//         // Routes untuk pasien
+//         Route::get('/emr-pasien/{id}', [App\Http\Controllers\Auth\AuthController::class, 'getAllEmrPasien']);
+//         Route::get('/kunjungan-detail/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'getKunjunganDetail']);
+        
+//         // Routes untuk dokter
+//         Route::prefix('dokter')->group(function () {
+//             Route::get('/dashboard-stats', [App\Http\Controllers\Auth\AuthController::class, 'getDokterDashboardStats']);
+//             Route::get('/today-patients', [App\Http\Controllers\Auth\AuthController::class, 'getTodayPatients']);
+//             Route::put('/patient-status/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'updatePatientStatus']);
+//             Route::post('/submit-examination/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'submitExamination']);
+//             Route::get('/obat-list', [App\Http\Controllers\Auth\AuthController::class, 'getObatList']);
+//             Route::post('/create-prescription/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'createPrescription']);
+//             Route::get('/prescriptions/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'getPrescriptions']);
+//             Route::get('/patient-history', [App\Http\Controllers\Auth\AuthController::class, 'getPatientHistory']);
+//             Route::get('/schedule', [App\Http\Controllers\Auth\AuthController::class, 'getDokterSchedule']);
+//             Route::get('/data-kunjungan-dokter', [APIController::class, 'indexDokter']);
+//         });
 
-        // Routes untuk pasien
-        Route::post('/book-schedule', [App\Http\Controllers\Auth\AuthController::class, 'bookSchedule']);
-        Route::get('/emr-pasien/{id}', [App\Http\Controllers\Auth\AuthController::class, 'getAllEmrPasien']);
-        Route::get('/initesyadariferdi/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'getEmrPasien']);
-        Route::patch('/profile/update', [App\Http\Controllers\Auth\AuthController::class, 'updateProfile']);
-        // Routes untuk dokter
-        Route::prefix('dokter')->group(function () {
-            Route::get('/dashboard-stats', [App\Http\Controllers\Auth\AuthController::class, 'getDokterDashboardStats']);
-            Route::get('/today-patients', [App\Http\Controllers\Auth\AuthController::class, 'getTodayPatients']);
-            Route::put('/patient-status/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'updatePatientStatus']);
-            Route::post('/submit-examination/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'submitExamination']);
-            Route::get('/obat-list', [App\Http\Controllers\Auth\AuthController::class, 'getObatList']);
-            Route::post('/create-prescription/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'createPrescription']);
-            Route::get('/prescriptions/{kunjunganId}', [App\Http\Controllers\Auth\AuthController::class, 'getPrescriptions']);
-            Route::get('/patient-history', [App\Http\Controllers\Auth\AuthController::class, 'getPatientHistory']);
-            Route::get('/data-kunjungan-dokter', [APIController::class, 'indexDokter']);
-        });
+//         // Testimoni routes
+//         Route::prefix('testimoni')->group(function () {
+//             Route::post('/store', [App\Http\Controllers\Auth\AuthController::class, 'submitTestimoni']);
+//         });
+//     });
 
-        // Testimoni routes
-        Route::prefix('testimoni')->group(function () {
-            Route::post('/store', [App\Http\Controllers\Auth\AuthController::class, 'submitTestimoni']);
-        });
-    });
+//     // Public API routes (these don't need authentication)
+//     Route::get('/getDataJadwalDokter', [APIController::class, 'getDataJadwalDokter']);
+//     Route::get('/getDataTestimoni', [APIController::class, 'getDataTestimoni']);
+    
+//     // UPDATED: Use AuthController for specialties to handle new database structure
+//     Route::get('/getDataSpesialisasiDokter', [App\Http\Controllers\Auth\AuthController::class, 'getDataSpesialisasiDokter']);
+    
+//     Route::get('/getDataPasien', [APIController::class, 'getDataPasien']);
+//     Route::get('/getDataKunjunganDokter', [APIController::class, 'getDataKunjunganDokter']);
+//     // Route::get('/getDataDokter', [APIController::class, 'getDataDokter']);
+    
+// });
 
-    // Public API routes yang sudah ada (tidak perlu auth) - alias untuk yang sudah ada
-    Route::get('/getDataJadwalDokter', [APIController::class, 'getDataJadwalDokter']);
-    Route::get('/getDataTestimoni', [APIController::class, 'getDataTestimoni']);
-    Route::get('/getDataSpesialisasiDokter', [APIController::class, 'getDataSpesialisasiDokter']);
-    Route::get('/getDataPasien', [APIController::class, 'getDataPasien']);
-    Route::get('/getDataKunjunganDokter', [APIController::class, 'getDataKunjunganDokter']);
-});
 
+
+// Rest of your web routes remain the same...
 Route::get('/', function () {
     return redirect()->route('login');
 });
@@ -92,12 +119,13 @@ Route::post('/testing-create-kunjungan', [TestingController::class, 'testingCrea
 Route::post('/testing-ubah-status-kunjungan', [TestingController::class, 'ubahStatusKunjungan'])->name('testing.ubah.status.kunjungan');
 Route::post('/testing-batalkan-status-kunjungan', [TestingController::class, 'batalkanStatusKunjungan'])->name('testing.batalkan.status.kunjungan');
 
-Route::get('/getDataJadwalDokter', [APIController::class, 'getDataJadwalDokter'])->name('get.data.jadwal.dokter');
-Route::get('/getDataKunjungan', [APIController::class, 'getDataKunjungan'])->name('getee.data.kunjungan');
-Route::get('/getDataTestimoni', [APIController::class, 'getDataTestimoni'])->name('get.data.testimoni');
-Route::get('/getDataDokter', [APIController::class, 'getDataDokter'])->name('get.data.dokter');
-Route::get('/getDataSpesialisasiDokter', [APIController::class, 'getDataSpesialisasiDokter'])->name('get.data.spesialisasi.dokter');
-Route::get('/getDataDokterSpesialisasi', [APIController::class, 'getDataDokterSpesialisasi'])->name('get.data.dokter.spesialisasi');
+// // Public web routes for data access
+// Route::get('/getDataJadwalDokter', [APIController::class, 'getDataJadwalDokter'])->name('get.data.jadwal.dokter');
+// Route::get('/getDataKunjungan', [APIController::class, 'getDataKunjungan'])->name('getee.data.kunjungan');
+// Route::get('/getDataTestimoni', [APIController::class, 'getDataTestimoni'])->name('get.data.testimoni');
+// Route::get('/getDataDokter', [APIController::class, 'getDataDokter'])->name('get.data.dokter');
+// Route::get('/getDataSpesialisasiDokter', [APIController::class, 'getDataSpesialisasiDokter'])->name('get.data.spesialisasi.dokter');
+// Route::get('/getDataDokterSpesialisasi', [APIController::class, 'getDataDokterSpesialisasi'])->name('get.data.dokter.spesialisasi');
 
 ////////// ROLE DOKTER ///////////
 Route::middleware('guest')->group(function () {
@@ -182,30 +210,16 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('laporan')->name('laporan.')->group(function () {
         Route::get('/', [LaporanController::class, 'index'])->name('index');
-
-        // laporan kunjungna
         Route::get('/laporan_kunjungan', [LaporanController::class, 'dataKunjungan'])->name('laporan_kunjungan');
-
-        // laporan keuangan
         Route::get('/laporan_keuangan', [LaporanController::class, 'dataPembayaran'])->name('laporan_keuangan');
-
-        // laporan transaksi apt
         Route::get('/laporan_transaksi_apoteker', [LaporanController::class, 'dataTransaksiApoteker'])->name('laporan_transaksi_apoteker');
-
-        // laporan administrasi
         Route::get('/laporan_administrasi', [LaporanController::class, 'dataAdministrasi'])->name('laporan_administrasi');
     });
 
     Route::prefix('data_medis_pasien')->name('data_medis_pasien.')->group(function () {
         Route::get('/', [DataMedisPasienController::class, 'index'])->name('index');
-
-        // laporan emr
         Route::get('/laporan_rekam_medis', [DataMedisPasienController::class, 'dataRekamMedis'])->name('laporan_rekam_medis');
-
-        // data diagnosa dan konsultasi
         Route::get('/diagnosa_dan_konsultasi', [DataMedisPasienController::class, 'dataKonsultasi'])->name('diagnosa_dan_konsultasi');
-
-        // data hasil lab
         Route::get('/hasil_lab', [DataMedisPasienController::class, 'dataLab'])->name('hasil_lab');
     });
 
