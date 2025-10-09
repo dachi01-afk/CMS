@@ -563,9 +563,6 @@ public function createDataTestimoni(Request $request)
     }
 
     ////////////// Get Data Dokter ////////////
-    public function getDataDokter() {
-        $dataDokter = Dokter::all();
-        
-    }
+
 }
 }
