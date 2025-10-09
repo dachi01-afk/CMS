@@ -16,14 +16,23 @@ class RoleMiddleware
      */
     public function handle(Request $request, Closure $next, $role): Response
     {
-        if(!Auth::check()) {
-            return redirect()->back();
-        } 
+        // if (!Auth::check()) {
+        //     return redirect()->back();
+        // }
 
-        $user = Auth::user();
+        // $user = Auth::user();
 
-        if($user->role !== $role) {
-            abort(404, "FORBIDDEN");
+        // if ($user->role !== $role) {
+        //     abort(404, "FORBIDDEN");
+        // }
+
+        $user = $request->user();
+
+        if (!$user || $user->role !== $role) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Akses ditolak. Hanya ' . ucfirst($role) . ' yang boleh mengakses endpoint ini.',
+            ], 403);
         }
 
         return $next($request);

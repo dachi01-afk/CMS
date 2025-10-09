@@ -4,9 +4,14 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\APIMobileController;
 
+// API Untuk Login Pasien
 Route::post('/login', [APIMobileController::class, 'login'])->name('api.login');
 Route::post('/logout', [APIMobileController::class, 'logout'])->name('api.logout');
 Route::post('/register', [APIMobileController::class, 'register'])->name('api.register');
+
+// API Untuk Login Pasien
+Route::post('/login-dokter', [APIMobileController::class, 'loginDokter']);
+
 
 // 🌐 Testimoni bisa diakses publik (tidak perlu login untuk lihat testimoni)
 Route::get('/getDataTestimoni', [APIMobileController::class, 'getDataTestimoni']); // PINDAHKAN KE SINI
@@ -30,3 +35,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/getDataSpesialisasiDokter', [APIMobileController::class, 'getDataSpesialisasiDokter']);
     Route::get('/getDataDokterSpesialisasi', [APIMobileController::class, 'getDataDokterSpesialisasi']);
 });
+
+// Route Untuk User Yang Login Sebagai Dokter 
+Route::middleware(['auth:sanctum', 'role:dokter'])->group(function () {
+    Route::get('/get-data-dokter', [APIMobileController::class, 'getDataDokter']);
+});
+
+Route::post('/create-data-testimoni', [APIMobileController::class, 'createDataTestimomi']);
+
