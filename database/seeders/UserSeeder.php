@@ -43,7 +43,7 @@ class UserSeeder extends Seeder
         // Seeder 1 Data User Dengan Role Pasien. 
         User::create([
             'username' => 'Pasien',
-            'email' => 'apoteker@gmail.com',
+            'email' => 'pasien@gmail.com',
             'password' => Hash::make('passwordPasien'),
             'role' => 'Pasien',
         ]);

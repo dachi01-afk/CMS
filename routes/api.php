@@ -4,15 +4,15 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\APIMobileController;
 
-Route::post('/login', [APIMobileController::class, 'login'])->name('api.login');
-Route::post('/logout', [APIMobileController::class, 'logout'])->name('api.logout');
-Route::post('/register', [APIMobileController::class, 'register'])->name('api.register');
+Route::post('/login', [APIMobileController::class, 'login']);
+Route::post('/register', [APIMobileController::class, 'register']);
+Route::post('/logout', [APIMobileController::class, 'logout']);
 
 // Protected routes (butuh autentikasi)
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/pasien/profile', [APIMobileController::class, 'getProfile']);
     Route::put('/pasien/update', [APIMobileController::class, 'updateProfile']);
-    Route::get('/getJadwalDokter', [APIMobileController::class, 'getJadwalDokter'])->name('getJadwalDokter');
+    Route::get('/getJadwalDokter', [APIMobileController::class, 'getJadwalDokter']);
 
     // Kunjungan routes
     Route::post('/kunjungan/create', [APIMobileController::class, 'bookingDokter']);
@@ -28,4 +28,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/getDataDokterSpesialisasi', [APIMobileController::class, 'getDataDokterSpesialisasi']);
 });
 
-Route::post('/create-data-testimoni', [APIMobileController::class, 'createDataTestimomi'])->name('create.data.testimoni');
+Route::post('/create-data-testimoni', [APIMobileController::class, 'createDataTestimomi']);

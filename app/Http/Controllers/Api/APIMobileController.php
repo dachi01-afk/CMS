@@ -501,7 +501,7 @@ class APIMobileController extends Controller
             // Ambil semua kunjungan pasien dengan relasi dokter
             $riwayat = Kunjungan::where('pasien_id', $pasienId)
                 ->with(['dokter' => function ($query) {
-                    $query->select('id', 'nama_dokter', 'email', 'no_hp', 'pengalaman', 'foto');
+                    $query->select('id', 'nama_dokter', 'no_hp', 'pengalaman', 'foto');
                 }])
                 ->orderByDesc('tanggal_kunjungan')
                 ->orderByDesc('created_at')
