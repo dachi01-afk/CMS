@@ -315,14 +315,14 @@ class APIMobileController extends Controller
         $dataKunjungan = Kunjungan::findOrFail($request->id);
 
         $dataKunjungan->update([
-            'status' => 'Canceled',
+            'status' => 'Cancle',
         ]);
 
         return response()->json([
             'success' => true,
             'status' => 200,
             'Data Kunjungan' => $dataKunjungan,
-            'message' => 'Berhasil Merubah Status Kunjungan Dari Pending Menjadi Canceled',
+            'message' => 'Berhasil Merubah Status Kunjungan Dari Pending Menjadi Cancle',
         ]);
     }
 
