@@ -10,7 +10,7 @@ use App\Http\Controllers\Management\UserController;
 use App\Http\Controllers\Admin\DataMedisPasienController;
 use App\Http\Controllers\Admin\PengaturanKlinikController;
 use App\Http\Controllers\Admin\ManajemenPenggunaController;
-use App\Http\Controllers\API\APIWebController;
+use App\Http\Controllers\Api\APIWebController;
 use App\Http\Controllers\Dokter\DokterController as DokterDokterController;
 use App\Http\Controllers\Management\ApotekerController;
 use App\Http\Controllers\Management\DokterController;
@@ -130,7 +130,7 @@ Route::post('/testing-batalkan-status-kunjungan', [TestingController::class, 'ba
 // API KHUSUS UNTUK AURELIO 
 // SIAPA YANG GANGGU PECAH KEPALANYA 
 // BY AURELIO
-Route::get('/getDataDokter', [APIWebController::class,'getDataDokter']);
+Route::get('/getDataDokter', [APIWebController::class, 'getDataDokter']);
 // END API KHUSUS AURELIO
 
 
