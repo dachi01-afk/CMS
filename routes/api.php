@@ -19,4 +19,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/kunjungan/ubah-status', [APIController::class, 'ubahStatusKunjungan']);
     Route::put('/kunjungan/batalkan', [APIController::class, 'batalkanStatusKunjungan']);
     Route::get('/kunjungan/riwayat/{pasien_id}', [APIController::class, 'getRiwayatKunjungan']); // 🔥 TAMBAH INI
+
+    Route::get('/getDataJadwalDokter', [APIController::class, 'getDataJadwalDokter'])->name('get.data.jadwal.dokter');
+    Route::get('/getDataKunjungan', [APIController::class, 'getDataKunjungan'])->name('getee.data.kunjungan');
+    Route::get('/getDataTestimoni', [APIController::class, 'getDataTestimoni'])->name('get.data.testimoni');
+    Route::get('/getDataDokter', [APIController::class, 'getDataDokter'])->name('get.data.dokter');
+    Route::get('/getDataSpesialisasiDokter', [APIController::class, 'getDataSpesialisasiDokter'])->name('get.data.spesialisasi.dokter');
+    Route::get('/getDataDokterSpesialisasi', [APIController::class, 'getDataDokterSpesialisasi'])->name('get.data.dokter.spesialisasi');
 });
