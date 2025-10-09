@@ -311,101 +311,100 @@ class APIMobileController extends Controller
     }
 
     public function batalkanStatusKunjungan(Request $request)
-{
-    try {
-        // Log untuk debugging
-        Log::info('=== BATALKAN KUNJUNGAN START ===');
-        Log::info('Request method: ' . $request->method());
-        Log::info('Request data: ', $request->all());
-        
-        // Validasi input - cek apakah 'id' ada dalam request
-        $request->validate([
-            'id' => 'required|integer|exists:kunjungan,id'
-        ]);
-        
-        $kunjunganId = $request->input('id');
-        Log::info('Processing kunjungan ID: ' . $kunjunganId);
-        
-        // Cari data kunjungan
-        $dataKunjungan = Kunjungan::findOrFail($kunjunganId);
-        Log::info('Found kunjungan before update: ', $dataKunjungan->toArray());
-        
-        // Cek apakah status masih bisa dibatalkan
-        if (!in_array($dataKunjungan->status, ['Pending', 'Confirmed', 'Waiting'])) {
-            Log::warning('Cannot cancel kunjungan with status: ' . $dataKunjungan->status);
+    {
+        try {
+            // Log untuk debugging
+            Log::info('=== BATALKAN KUNJUNGAN START ===');
+            Log::info('Request method: ' . $request->method());
+            Log::info('Request data: ', $request->all());
+
+            // Validasi input - cek apakah 'id' ada dalam request
+            $request->validate([
+                'id' => 'required|integer|exists:kunjungan,id'
+            ]);
+
+            $kunjunganId = $request->input('id');
+            Log::info('Processing kunjungan ID: ' . $kunjunganId);
+
+            // Cari data kunjungan
+            $dataKunjungan = Kunjungan::findOrFail($kunjunganId);
+            Log::info('Found kunjungan before update: ', $dataKunjungan->toArray());
+
+            // Cek apakah status masih bisa dibatalkan
+            if (!in_array($dataKunjungan->status, ['Pending', 'Confirmed', 'Waiting'])) {
+                Log::warning('Cannot cancel kunjungan with status: ' . $dataKunjungan->status);
+                return response()->json([
+                    'success' => false,
+                    'status' => 400,
+                    'message' => 'Kunjungan dengan status "' . $dataKunjungan->status . '" tidak dapat dibatalkan',
+                    'Data Kunjungan' => $dataKunjungan,
+                ], 400);
+            }
+
+            $updatedKunjungan = DB::transaction(function () use ($dataKunjungan, $kunjunganId) {
+                $affected = DB::table('kunjungan')
+                    ->where('id', $kunjunganId)
+                    ->update([
+                        'status' => 'Canceled',
+                        'no_antrian' => null,
+                        'updated_at' => now(),
+                    ]);
+
+                Log::info('Rows affected by update: ' . $affected);
+
+                if ($affected === 0) {
+                    throw new \Exception('Gagal memperbarui data kunjungan');
+                }
+
+                // Ambil data yang sudah diupdate
+                return Kunjungan::find($kunjunganId);
+            });
+
+            Log::info('Updated kunjungan after transaction: ', $updatedKunjungan->toArray());
+
+            // Verifikasi bahwa update berhasil
+            if ($updatedKunjungan->status !== 'Canceled') {
+                Log::error('Status update failed - still: ' . $updatedKunjungan->status);
+                return response()->json([
+                    'success' => false,
+                    'status' => 500,
+                    'message' => 'Gagal mengubah status kunjungan',
+                    'Data Kunjungan' => $updatedKunjungan,
+                ], 500);
+            }
+
+            return response()->json([
+                'success' => true,
+                'status' => 200,
+                'Data Kunjungan' => $updatedKunjungan,
+                'message' => 'Berhasil membatalkan kunjungan. Status diubah menjadi Canceled dan nomor antrian dihapus.',
+            ], 200);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Validation error: ', $e->errors());
             return response()->json([
                 'success' => false,
-                'status' => 400,
-                'message' => 'Kunjungan dengan status "' . $dataKunjungan->status . '" tidak dapat dibatalkan',
-                'Data Kunjungan' => $dataKunjungan,
-            ], 400);
-        }
-        
-        $updatedKunjungan = DB::transaction(function () use ($dataKunjungan, $kunjunganId) {
-            $affected = DB::table('kunjungan')
-                ->where('id', $kunjunganId)
-                ->update([
-                    'status' => 'Canceled',
-                    'no_antrian' => null,
-                    'updated_at' => now(),
-                ]);
-            
-            Log::info('Rows affected by update: ' . $affected);
-            
-            if ($affected === 0) {
-                throw new \Exception('Gagal memperbarui data kunjungan');
-            }
-            
-            // Ambil data yang sudah diupdate
-            return Kunjungan::find($kunjunganId);
-        });
-        
-        Log::info('Updated kunjungan after transaction: ', $updatedKunjungan->toArray());
-        
-        // Verifikasi bahwa update berhasil
-        if ($updatedKunjungan->status !== 'Canceled') {
-            Log::error('Status update failed - still: ' . $updatedKunjungan->status);
+                'status' => 422,
+                'message' => 'Validation error',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            Log::error('Kunjungan not found: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'status' => 404,
+                'message' => 'Data kunjungan tidak ditemukan',
+            ], 404);
+        } catch (\Exception $e) {
+            Log::error('Exception in batalkanStatusKunjungan: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+
             return response()->json([
                 'success' => false,
                 'status' => 500,
-                'message' => 'Gagal mengubah status kunjungan',
-                'Data Kunjungan' => $updatedKunjungan,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
             ], 500);
         }
-        
-        return response()->json([
-            'success' => true,
-            'status' => 200,
-            'Data Kunjungan' => $updatedKunjungan,
-            'message' => 'Berhasil membatalkan kunjungan. Status diubah menjadi Canceled dan nomor antrian dihapus.',
-        ], 200);
-        
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        Log::error('Validation error: ', $e->errors());
-        return response()->json([
-            'success' => false,
-            'status' => 422,
-            'message' => 'Validation error',
-            'errors' => $e->errors(),
-        ], 422);
-    } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-        Log::error('Kunjungan not found: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'status' => 404,
-            'message' => 'Data kunjungan tidak ditemukan',
-        ], 404);
-    } catch (\Exception $e) {
-        Log::error('Exception in batalkanStatusKunjungan: ' . $e->getMessage());
-        Log::error('Stack trace: ' . $e->getTraceAsString());
-        
-        return response()->json([
-            'success' => false,
-            'status' => 500,
-            'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
-        ], 500);
     }
-}
 
     // 🔥 METHOD YANG DIPANGGIL DARI /api/kunjungan/create
     public function bookingDokter(Request $request)
@@ -646,7 +645,7 @@ class APIMobileController extends Controller
     {
         try {
             $dataDokter = Dokter::all();
-            
+
             return response()->json([
                 'success' => true,
                 'status' => 200,
