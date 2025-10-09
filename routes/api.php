@@ -32,3 +32,4 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 Route::post('/create-data-testimoni', [APIMobileController::class, 'createDataTestimomi'])->name('create.data.testimoni');
+Route::get('/getDataTestimoni', [APIMobileController::class, 'getDataTestimoni']);
