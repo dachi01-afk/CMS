@@ -3,24 +3,21 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\ValidationException;
-use App\Models\User;
-use App\Models\Pasien;
 use App\Models\Dokter;
+use App\Models\EMR;
+use App\Models\JadwalDokter;
+use App\Models\Kunjungan;
+use App\Models\Pasien;
 use App\Models\Testimoni;
-use App\Models\Kunjungan;  
-use App\Models\EMR;        
-use App\Models\JadwalDokter; 
-use Illuminate\Support\Str; 
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
-use App\Mail\OtpMail;
-use Illuminate\Validation\Rule;
+use App\Models\User;
 use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Validation\Rule;
 
 class AuthController extends Controller
 {
@@ -36,10 +33,10 @@ class AuthController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'available' => !$exists,
+            'available' => ! $exists,
             'message' => $exists
-                ? ucfirst($request->type) . ' sudah digunakan'
-                : ucfirst($request->type) . ' tersedia'
+                ? ucfirst($request->type).' sudah digunakan'
+                : ucfirst($request->type).' tersedia',
         ]);
     }
 
@@ -88,7 +85,7 @@ class AuthController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Akun berhasil didaftarkan.',
-            'data' => $responseData
+            'data' => $responseData,
         ], 201);
     }
 
@@ -103,20 +100,20 @@ class AuthController extends Controller
         // Cek apakah username ada
         $user = User::where('username', $request->username)->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Username tidak ditemukan. Silakan periksa kembali atau daftar akun baru.',
-                'error_type' => 'username_not_found'
+                'error_type' => 'username_not_found',
             ], 401);
         }
 
         // Cek apakah password benar
-        if (!Hash::check($request->password, $user->password)) {
+        if (! Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Password yang Anda masukkan salah. Silakan coba lagi.',
-                'error_type' => 'wrong_password'
+                'error_type' => 'wrong_password',
             ], 401);
         }
 
@@ -137,15 +134,15 @@ class AuthController extends Controller
         if ($user->role === 'Pasien') {
             $pasien = Pasien::where('user_id', $user->id)->first();
 
-            if (!$pasien) {
+            if (! $pasien) {
                 // Try alternative approach - find by email
                 $pasien = Pasien::where('email', $user->email)->first();
 
-                if (!$pasien) {
+                if (! $pasien) {
                     return response()->json([
                         'status' => 'error',
                         'message' => 'Data pasien tidak ditemukan.',
-                        'error_type' => 'patient_data_missing'
+                        'error_type' => 'patient_data_missing',
                     ], 404);
                 }
             }
@@ -156,7 +153,7 @@ class AuthController extends Controller
         if ($user->role === 'Dokter') {
             $dokter = Dokter::where('user_id', $user->id)->first();
 
-            if (!$dokter) {
+            if (! $dokter) {
                 // Try alternative approach - find by email
                 $dokter = Dokter::where('email', $user->email)->first();
             }
@@ -169,7 +166,7 @@ class AuthController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Login berhasil.',
-            'data' => $responseData
+            'data' => $responseData,
         ], 200);
     }
 
@@ -180,7 +177,7 @@ class AuthController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Logout berhasil.'
+            'message' => 'Logout berhasil.',
         ]);
     }
 
@@ -199,7 +196,7 @@ class AuthController extends Controller
         if ($user->role === 'Pasien') {
             $pasien = Pasien::where('user_id', $user->id)->first();
 
-            if (!$pasien) {
+            if (! $pasien) {
                 $pasien = Pasien::where('email', $user->email)->first();
             }
 
@@ -216,7 +213,7 @@ class AuthController extends Controller
         if ($user->role === 'Dokter') {
             $dokter = Dokter::where('user_id', $user->id)->first();
 
-            if (!$dokter) {
+            if (! $dokter) {
                 $dokter = Dokter::where('email', $user->email)->first();
             }
 
@@ -235,9 +232,221 @@ class AuthController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'data' => $profileData
+            'data' => $profileData,
         ]);
     }
+
+    public function getDataSpesialisasiDokter()
+{
+    try {
+        // Get specialties from jenis_spesialis table
+        $dataSpesialis = DB::table('jenis_spesialis')
+            ->select('id', 'nama_spesialis as spesialisasi')
+            ->orderBy('nama_spesialis')
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'Data Spesialis Dokter' => $dataSpesialis,
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error fetching specialties: '.$e->getMessage());
+
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Failed to fetch specialties: '.$e->getMessage(),
+        ], 500);
+    }
+}
+
+    public function getDoctorsWithSpecialties()
+    {
+        try {
+            $doctors = DB::table('dokter')
+                ->leftJoin('jenis_spesialis', 'dokter.jenis_spesialis_id', '=', 'jenis_spesialis.id')
+                ->select(
+                    'dokter.id',
+                    'dokter.nama_dokter',
+                    'dokter.foto',
+                    'dokter.deskripsi_dokter',
+                    'dokter.pengalaman',
+                    'dokter.jenis_spesialis_id',
+                    'jenis_spesialis.nama_spesialis',
+                    'jenis_spesialis.id as specialty_id'
+                )
+                ->get();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $doctors,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching doctors with specialties: '.$e->getMessage());
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch doctors: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function getSpecialties()
+    {
+        try {
+            $specialties = DB::table('jenis_spesialis')
+                ->select('id', 'nama_spesialis')
+                ->orderBy('nama_spesialis')
+                ->get();
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $specialties,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching specialties: '.$e->getMessage());
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch specialties: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+public function getDoctorSchedules()
+{
+    try {
+        $schedules = DB::table('jadwal_dokter')
+            ->join('dokter', 'jadwal_dokter.dokter_id', '=', 'dokter.id')
+            ->leftJoin('jenis_spesialis', 'dokter.jenis_spesialis_id', '=', 'jenis_spesialis.id')
+            ->select(
+                'jadwal_dokter.*',
+                'dokter.nama_dokter',
+                'jenis_spesialis.nama_spesialis'
+            )
+            ->get();
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $schedules
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error fetching doctor schedules: ' . $e->getMessage());
+        
+        return response()->json([
+            'status' => 'error',
+            'message' => 'Failed to fetch doctor schedules: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
+public function createKunjungan(Request $request)
+{
+    // Log incoming request for debugging
+    Log::info('=== CREATE KUNJUNGAN AUTH CONTROLLER DEBUG ===', [
+        'request_data' => $request->all(),
+        'headers' => $request->headers->all()
+    ]);
+
+    $request->validate([
+        'pasien_id' => 'required|integer',
+        'dokter_id' => 'required|integer', 
+        'tanggal_kunjungan' => 'required|date',
+        'keluhan_awal' => 'required|string',
+    ]);
+
+    try {
+        $user = $request->user();
+        
+        // Verify user is authenticated
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'status' => 'error',
+                'message' => 'User tidak terautentikasi'
+            ], 401);
+        }
+
+        // Verify pasien exists and belongs to user
+        $pasien = Pasien::find($request->pasien_id);
+        if (!$pasien) {
+            return response()->json([
+                'success' => false,
+                'status' => 'error',
+                'message' => 'Data pasien tidak ditemukan'
+            ], 404);
+        }
+
+        // For additional security, verify pasien belongs to authenticated user
+        if ($user->role === 'Pasien') {
+            $userPasien = Pasien::where('user_id', $user->id)->first();
+            if (!$userPasien) {
+                $userPasien = Pasien::where('email', $user->email)->first();
+            }
+            
+            if (!$userPasien || $userPasien->id !== $request->pasien_id) {
+                return response()->json([
+                    'success' => false,
+                    'status' => 'error',
+                    'message' => 'Akses ditolak. Pasien tidak sesuai dengan user yang login.'
+                ], 403);
+            }
+        }
+
+        // Verify dokter exists
+        $dokter = Dokter::find($request->dokter_id);
+        if (!$dokter) {
+            return response()->json([
+                'success' => false,
+                'status' => 'error',
+                'message' => 'Data dokter tidak ditemukan'
+            ], 404);
+        }
+
+        // Create kunjungan
+        $kunjungan = Kunjungan::create([
+            'pasien_id' => $request->pasien_id,
+            'dokter_id' => $request->dokter_id,
+            'tanggal_kunjungan' => $request->tanggal_kunjungan,
+            'keluhan_awal' => $request->keluhan_awal,
+            'status' => 'menunggu',
+        ]);
+
+        Log::info('Kunjungan created successfully', [
+            'kunjungan_id' => $kunjungan->id,
+            'pasien_id' => $request->pasien_id,
+            'dokter_id' => $request->dokter_id
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'status' => 'success',
+            'message' => 'Kunjungan berhasil dibuat',
+            'data' => [
+                'kunjungan_id' => $kunjungan->id,
+                'pasien_id' => $kunjungan->pasien_id,
+                'dokter_id' => $kunjungan->dokter_id,
+                'tanggal_kunjungan' => $kunjungan->tanggal_kunjungan,
+                'keluhan_awal' => $kunjungan->keluhan_awal,
+                'status' => $kunjungan->status,
+                'dokter_nama' => $dokter->nama_dokter,
+                'pasien_nama' => $pasien->nama_pasien,
+            ]
+        ], 201);
+
+    } catch (\Exception $e) {
+        Log::error('Error creating kunjungan', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'request_data' => $request->all()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'status' => 'error',
+            'message' => 'Gagal membuat kunjungan: ' . $e->getMessage()
+        ], 500);
+    }
+}
+
 
     // UpdateProfile - FIXED
     public function updateProfile(Request $request)
@@ -253,17 +462,18 @@ class AuthController extends Controller
 
         Log::info('Update Profile Request', [
             'user_id' => $user->id,
-            'request_data' => $request->all()
+            'request_data' => $request->all(),
         ]);
 
         if ($user->role === 'Pasien') {
             $pasien = Pasien::where('user_id', $user->id)->first();
 
-            if (!$pasien) {
+            if (! $pasien) {
                 Log::error('Pasien not found', ['user_id' => $user->id]);
+
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Data pasien tidak ditemukan.'
+                    'message' => 'Data pasien tidak ditemukan.',
                 ], 404);
             }
 
@@ -279,7 +489,7 @@ class AuthController extends Controller
 
             Log::info('Profile Updated Successfully', [
                 'pasien_id' => $pasien->id_pasien, // ✅ Gunakan id_pasien
-                'updated_data' => $updateData
+                'updated_data' => $updateData,
             ]);
 
             // Refresh data
@@ -294,7 +504,7 @@ class AuthController extends Controller
                     'alamat' => $pasien->alamat,
                     'tanggal_lahir' => $pasien->tanggal_lahir,
                     'jenis_kelamin' => $pasien->jenis_kelamin,
-                ]
+                ],
             ]);
         }
 
@@ -309,11 +519,11 @@ class AuthController extends Controller
     public function sendOTP(Request $request)
     {
         $request->validate([
-            'email' => 'required|email|exists:user,email'
+            'email' => 'required|email|exists:user,email',
         ]);
 
         $otp = sprintf('%06d', mt_rand(0, 999999));
-        
+
         // Simpan OTP ke cache selama 10 menit
         Cache::put("forgot_password_otp_{$request->email}", $otp, 600);
 
@@ -322,19 +532,19 @@ class AuthController extends Controller
             Mail::send('emails.otp_notification', [
                 'otp' => $otp,
                 'type' => 'Lupa Password',
-                'expiration_minutes' => 10
+                'expiration_minutes' => 10,
             ], function ($message) use ($request) {
                 $message->to($request->email)
-                        ->subject('Kode OTP untuk Lupa Password');
+                    ->subject('Kode OTP untuk Lupa Password');
             });
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Kode OTP telah dikirim ke email Anda. Silakan cek kotak masuk atau folder spam.'
+                'message' => 'Kode OTP telah dikirim ke email Anda. Silakan cek kotak masuk atau folder spam.',
             ]);
         } catch (\Exception $e) {
             Log::error('Gagal Kirim OTP Lupa Password', ['error' => $e->getMessage()]);
-            
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'OTP berhasil dibuat tapi gagal dikirim via email. Silakan coba lagi nanti.',
@@ -346,21 +556,21 @@ class AuthController extends Controller
     {
         $request->validate([
             'email' => 'required|email',
-            'otp' => 'required|string|size:6'
+            'otp' => 'required|string|size:6',
         ]);
 
         $cachedOtp = Cache::get("forgot_password_otp_{$request->email}");
 
-        if (!$cachedOtp || $cachedOtp !== $request->otp) {
+        if (! $cachedOtp || $cachedOtp !== $request->otp) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'OTP tidak valid atau sudah kedaluwarsa.'
+                'message' => 'OTP tidak valid atau sudah kedaluwarsa.',
             ], 400);
         }
 
         return response()->json([
             'status' => 'success',
-            'message' => 'OTP berhasil diverifikasi.'
+            'message' => 'OTP berhasil diverifikasi.',
         ]);
     }
 
@@ -369,29 +579,29 @@ class AuthController extends Controller
         $request->validate([
             'email' => 'required|email',
             'otp' => 'required|string|size:6',
-            'password' => 'required|string|min:8|confirmed'
+            'password' => 'required|string|min:8|confirmed',
         ]);
 
         $cachedOtp = Cache::get("forgot_password_otp_{$request->email}");
 
-        if (!$cachedOtp || $cachedOtp !== $request->otp) {
+        if (! $cachedOtp || $cachedOtp !== $request->otp) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'OTP tidak valid atau sudah kedaluwarsa.'
+                'message' => 'OTP tidak valid atau sudah kedaluwarsa.',
             ], 400);
         }
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Email tidak ditemukan.'
+                'message' => 'Email tidak ditemukan.',
             ], 404);
         }
 
         $user->update([
-            'password' => Hash::make($request->password)
+            'password' => Hash::make($request->password),
         ]);
 
         // Clear OTP cache
@@ -399,19 +609,19 @@ class AuthController extends Controller
 
         return response()->json([
             'status' => 'success',
-            'message' => 'Password berhasil direset.'
+            'message' => 'Password berhasil direset.',
         ]);
     }
 
     // ========== FORGOT USERNAME METHODS ==========
-    
+
     public function sendUsernameOTP(Request $request)
     {
         $request->validate(['email' => 'required|email|exists:user,email']);
-        
+
         $user = User::where('email', $request->email)->first();
-        
-        if (!$user) {
+
+        if (! $user) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Email tidak ditemukan.',
@@ -424,11 +634,11 @@ class AuthController extends Controller
         try {
             Mail::send('emails.otp_notification', [
                 'otp' => $otp,
-                'type' => 'Lupa Username', 
-                'expiration_minutes' => 5
+                'type' => 'Lupa Username',
+                'expiration_minutes' => 5,
             ], function ($message) use ($request) {
                 $message->to($request->email)
-                        ->subject('Kode Verifikasi untuk Lupa Username');
+                    ->subject('Kode Verifikasi untuk Lupa Username');
             });
 
             return response()->json([
@@ -437,11 +647,11 @@ class AuthController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Gagal Kirim OTP Username', ['error' => $e->getMessage()]);
-            
+
             return response()->json([
                 'status' => 'error',
                 'message' => 'OTP berhasil dibuat, namun gagal dikirim via email. Silakan coba verifikasi.',
-            ], 500); 
+            ], 500);
         }
     }
 
@@ -449,15 +659,15 @@ class AuthController extends Controller
     {
         $request->validate([
             'email' => 'required|email',
-            'otp' => 'required|string|size:6'
+            'otp' => 'required|string|size:6',
         ]);
 
         $cachedOtp = Cache::get("forgot_username_otp_{$request->email}");
-        
-        if (!$cachedOtp || $cachedOtp !== $request->otp) {
+
+        if (! $cachedOtp || $cachedOtp !== $request->otp) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'OTP tidak valid atau sudah kedaluwarsa.'
+                'message' => 'OTP tidak valid atau sudah kedaluwarsa.',
             ], 400);
         }
 
@@ -467,8 +677,8 @@ class AuthController extends Controller
             'status' => 'success',
             'message' => 'OTP berhasil diverifikasi. Username Anda adalah: '.$user->username,
             'data' => [
-                'username' => $user->username
-            ]
+                'username' => $user->username,
+            ],
         ]);
     }
 
@@ -486,20 +696,20 @@ class AuthController extends Controller
         ]);
 
         $cachedOtp = Cache::get("forgot_username_otp_{$request->email}");
-        
-        if (!$cachedOtp || $cachedOtp !== $request->otp) {
+
+        if (! $cachedOtp || $cachedOtp !== $request->otp) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'OTP belum diverifikasi atau sudah kedaluwarsa.'
+                'message' => 'OTP belum diverifikasi atau sudah kedaluwarsa.',
             ], 400);
         }
 
         $user = User::where('email', $request->email)->first();
-        
-        if (!$user) {
+
+        if (! $user) {
             return response()->json([
                 'status' => 'error',
-                'message' => 'Email tidak ditemukan.'
+                'message' => 'Email tidak ditemukan.',
             ], 404);
         }
 
@@ -511,7 +721,7 @@ class AuthController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Username berhasil diperbarui.',
-            'data' => ['username' => $user->username]
+            'data' => ['username' => $user->username],
         ]);
     }
 
@@ -523,7 +733,7 @@ class AuthController extends Controller
             'nama_testimoni' => 'required|string|max:255',
             'umur' => 'required|string|max:10',
             'pekerjaan' => 'required|string|max:255',
-            'isi_testimoni' => 'required|string'
+            'isi_testimoni' => 'required|string',
         ]);
 
         $testimoni = Testimoni::create([
@@ -536,110 +746,113 @@ class AuthController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Testimoni berhasil disimpan.',
-            'data' => $testimoni
+            'data' => $testimoni,
         ], 201);
     }
 
     // ========== BOOKING SCHEDULE METHOD - FIXED ==========
-    
+
     public function bookSchedule(Request $request)
-{
-    $request->validate([
-        'doctor_id' => 'required|integer',
-        'day' => 'required|string',
-        'time' => 'required|string',
-        'keluhan' => 'required|string',
-    ]);
-
-    Log::info('=== BOOKING SCHEDULE START ===', [
-        'request_data' => $request->all()
-    ]);
-
-    $user = $request->user();
-    if (!$user) {
-        Log::error('User is null');
-        return response()->json([
-            'status' => 'error',
-            'message' => 'User tidak valid'
-        ], 401);
-    }
-
-    Log::info('User found:', ['user_id' => $user->id, 'email' => $user->email]);
-
-    $pasien = Pasien::where('user_id', $user->id)->first();
-    if (!$pasien) {
-        $pasien = Pasien::where('email', $user->email)->first();
-    }
-
-    if (!$pasien) {
-        Log::error('Pasien not found, creating new one');
-        try {
-            $pasien = Pasien::create([
-                'user_id' => $user->id,
-                'nama_pasien' => $user->username,
-                'email' => $user->email,
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Failed to create pasien: ' . $e->getMessage());
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Data pasien tidak ditemukan dan gagal dibuat'
-            ], 404);
-        }
-    }
-
-    Log::info('Pasien found:', ['pasien_id' => $pasien->id]);
-
-    $dokter = Dokter::find($request->doctor_id);
-    if (!$dokter) {
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Dokter tidak ditemukan'
-        ], 404);
-    }
-
-    $tanggalKunjungan = $this->getNextDateForDay($request->day);
-
-    try {
-        $kunjungan = Kunjungan::create([
-            'dokter_id' => $request->doctor_id,
-            'pasien_id' => $pasien->id,
-            'tanggal_kunjungan' => $tanggalKunjungan,
-            'keluhan_awal' => $request->keluhan,
-            'status' => 'menunggu',
+    {
+        $request->validate([
+            'doctor_id' => 'required|integer',
+            'day' => 'required|string',
+            'time' => 'required|string',
+            'keluhan' => 'required|string',
         ]);
 
-        Log::info('Kunjungan created successfully:', ['kunjungan_id' => $kunjungan->id]);
+        Log::info('=== BOOKING SCHEDULE START ===', [
+            'request_data' => $request->all(),
+        ]);
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Jadwal berhasil dipesan.',
-            'data' => [
-                'kunjungan' => [
-                    'id' => $kunjungan->id,
-                    'dokter_id' => $kunjungan->dokter_id,
-                    'pasien_id' => $kunjungan->pasien_id,
-                    'tanggal_kunjungan' => $kunjungan->tanggal_kunjungan,
-                    'keluhan_awal' => $kunjungan->keluhan_awal,
-                    'status' => $kunjungan->status,
-                    'dokter_nama' => $dokter->nama_dokter ?? 'Unknown',
-                    'jadwal' => $request->day . ', ' . $request->time,
+        $user = $request->user();
+        if (! $user) {
+            Log::error('User is null');
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'User tidak valid',
+            ], 401);
+        }
+
+        Log::info('User found:', ['user_id' => $user->id, 'email' => $user->email]);
+
+        $pasien = Pasien::where('user_id', $user->id)->first();
+        if (! $pasien) {
+            $pasien = Pasien::where('email', $user->email)->first();
+        }
+
+        if (! $pasien) {
+            Log::error('Pasien not found, creating new one');
+            try {
+                $pasien = Pasien::create([
+                    'user_id' => $user->id,
+                    'nama_pasien' => $user->username,
+                    'email' => $user->email,
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Failed to create pasien: '.$e->getMessage());
+
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Data pasien tidak ditemukan dan gagal dibuat',
+                ], 404);
+            }
+        }
+
+        Log::info('Pasien found:', ['pasien_id' => $pasien->id]);
+
+        $dokter = Dokter::find($request->doctor_id);
+        if (! $dokter) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Dokter tidak ditemukan',
+            ], 404);
+        }
+
+        $tanggalKunjungan = $this->getNextDateForDay($request->day);
+
+        try {
+            $kunjungan = Kunjungan::create([
+                'dokter_id' => $request->doctor_id,
+                'pasien_id' => $pasien->id,
+                'tanggal_kunjungan' => $tanggalKunjungan,
+                'keluhan_awal' => $request->keluhan,
+                'status' => 'menunggu',
+            ]);
+
+            Log::info('Kunjungan created successfully:', ['kunjungan_id' => $kunjungan->id]);
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Jadwal berhasil dipesan.',
+                'data' => [
+                    'kunjungan' => [
+                        'id' => $kunjungan->id,
+                        'dokter_id' => $kunjungan->dokter_id,
+                        'pasien_id' => $kunjungan->pasien_id,
+                        'tanggal_kunjungan' => $kunjungan->tanggal_kunjungan,
+                        'keluhan_awal' => $kunjungan->keluhan_awal,
+                        'status' => $kunjungan->status,
+                        'dokter_nama' => $dokter->nama_dokter ?? 'Unknown',
+                        'jadwal' => $request->day.', '.$request->time,
+                    ],
+                    'emr' => [
+                        'pasien_id' => $kunjungan->pasien_id,
+                        'kunjungan_id' => $kunjungan->id,
+                    ],
                 ],
-                'emr' => [
-                    'pasien_id' => $kunjungan->pasien_id,
-                    'kunjungan_id' => $kunjungan->id,
-                ]
-            ]
-        ], 201);
+            ], 201);
 
-    } catch (\Exception $e) {
-        Log::error('Error creating kunjungan: ' . $e->getMessage());
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Gagal memesan jadwal: ' . $e->getMessage()
-        ], 500);
+        } catch (\Exception $e) {
+            Log::error('Error creating kunjungan: '.$e->getMessage());
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal memesan jadwal: '.$e->getMessage(),
+            ], 500);
+        }
     }
-}
 
     private function getNextDateForDay($dayName)
     {
@@ -650,21 +863,21 @@ class AuthController extends Controller
             'Kamis' => 4,
             'Jumat' => 5,
             'Sabtu' => 6,
-            'Minggu' => 0
+            'Minggu' => 0,
         ];
 
         $targetDay = $dayMapping[$dayName] ?? 1;
         $today = Carbon::now();
-        
+
         if ($today->dayOfWeek == $targetDay) {
             return $today->addWeek()->format('Y-m-d H:i:s');
         }
-        
+
         $daysToAdd = ($targetDay - $today->dayOfWeek + 7) % 7;
         if ($daysToAdd == 0) {
             $daysToAdd = 7;
         }
-        
+
         return $today->addDays($daysToAdd)->format('Y-m-d H:i:s');
     }
 
@@ -686,11 +899,11 @@ class AuthController extends Controller
                 return response()->json([
                     'status' => 'success',
                     'message' => 'Belum ada data kunjungan',
-                    'data' => []
+                    'data' => [],
                 ]);
             }
 
-            $emrData = $kunjunganList->map(function($kunjungan) {
+            $emrData = $kunjunganList->map(function ($kunjungan) {
                 $data = [
                     'id' => $kunjungan->id,
                     'kunjungan_id' => $kunjungan->id,
@@ -738,26 +951,27 @@ class AuthController extends Controller
                 }
 
                 $data['resep_obat'] = $resepObat;
+
                 return $data;
             });
 
             return response()->json([
                 'status' => 'success',
                 'message' => 'Data EMR berhasil diambil',
-                'data' => $emrData->values()
+                'data' => $emrData->values(),
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error fetching EMR data', [
                 'pasien_id' => $id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal mengambil data EMR: ' . $e->getMessage(),
-                'data' => []
+                'message' => 'Gagal mengambil data EMR: '.$e->getMessage(),
+                'data' => [],
             ], 500);
         }
     }
@@ -770,14 +984,14 @@ class AuthController extends Controller
             $user = $request->user();
             if ($user->role === 'Pasien') {
                 $pasien = Pasien::where('user_id', $user->id)->first();
-                if (!$pasien) {
+                if (! $pasien) {
                     $pasien = Pasien::where('email', $user->email)->first();
                 }
-                
-                if (!$pasien || $kunjungan->pasien_id !== $pasien->id_pasien) { // ✅ Gunakan id_pasien
+
+                if (! $pasien || $kunjungan->pasien_id !== $pasien->id_pasien) { // ✅ Gunakan id_pasien
                     return response()->json([
                         'status' => 'error',
-                        'message' => 'Akses ditolak'
+                        'message' => 'Akses ditolak',
                     ], 403);
                 }
             }
@@ -792,7 +1006,7 @@ class AuthController extends Controller
                     'spesialisasi' => $kunjungan->dokter->spesialis ?? '-',
                 ],
                 'emr' => null,
-                'resep_obat' => []
+                'resep_obat' => [],
             ];
 
             $emr = EMR::where('kunjungan_id', $kunjungan->id)->first();
@@ -823,30 +1037,30 @@ class AuthController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $data
+                'data' => $data,
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error fetching kunjungan detail', [
                 'kunjungan_id' => $kunjunganId,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Data kunjungan tidak ditemukan'
+                'message' => 'Data kunjungan tidak ditemukan',
             ], 404);
         }
     }
 
     // ========== APPOINTMENT MANAGEMENT - FIXED ==========
-    
+
     public function checkDoctorAvailability(Request $request, $dokterId, $tanggal)
     {
         return response()->json([
             'status' => 'success',
             'available' => true,
-            'message' => 'Dokter tersedia'
+            'message' => 'Dokter tersedia',
         ]);
     }
 
@@ -854,23 +1068,23 @@ class AuthController extends Controller
     {
         try {
             $user = $request->user();
-            
+
             if ($user->role !== 'Pasien') {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Akses ditolak. Hanya pasien yang dapat melihat appointment.'
+                    'message' => 'Akses ditolak. Hanya pasien yang dapat melihat appointment.',
                 ], 403);
             }
 
             $pasien = Pasien::where('user_id', $user->id)->first();
-            if (!$pasien) {
+            if (! $pasien) {
                 $pasien = Pasien::where('email', $user->email)->first();
             }
-            
-            if (!$pasien) {
+
+            if (! $pasien) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Data pasien tidak ditemukan.'
+                    'message' => 'Data pasien tidak ditemukan.',
                 ], 404);
             }
 
@@ -878,7 +1092,7 @@ class AuthController extends Controller
                 ->where('pasien_id', $pasien->id_pasien) // ✅ Gunakan id_pasien
                 ->orderBy('tanggal_kunjungan', 'desc')
                 ->get()
-                ->map(function($kunjungan) {
+                ->map(function ($kunjungan) {
                     return [
                         'id' => $kunjungan->id,
                         'tanggal_kunjungan' => $kunjungan->tanggal_kunjungan,
@@ -892,18 +1106,18 @@ class AuthController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $appointments
+                'data' => $appointments,
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error fetching appointments', [
                 'error' => $e->getMessage(),
-                'user_id' => $request->user()->id ?? null
+                'user_id' => $request->user()->id ?? null,
             ]);
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal mengambil data appointment'
+                'message' => 'Gagal mengambil data appointment',
             ], 500);
         }
     }
@@ -912,23 +1126,23 @@ class AuthController extends Controller
     {
         try {
             $user = $request->user();
-            
+
             if ($user->role !== 'Pasien') {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Akses ditolak.'
+                    'message' => 'Akses ditolak.',
                 ], 403);
             }
 
             $pasien = Pasien::where('user_id', $user->id)->first();
-            if (!$pasien) {
+            if (! $pasien) {
                 $pasien = Pasien::where('email', $user->email)->first();
             }
-            
-            if (!$pasien) {
+
+            if (! $pasien) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Data pasien tidak ditemukan.'
+                    'message' => 'Data pasien tidak ditemukan.',
                 ], 404);
             }
 
@@ -936,17 +1150,17 @@ class AuthController extends Controller
                 ->where('pasien_id', $pasien->id_pasien) // ✅ Gunakan id_pasien
                 ->first();
 
-            if (!$kunjungan) {
+            if (! $kunjungan) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Data kunjungan tidak ditemukan.'
+                    'message' => 'Data kunjungan tidak ditemukan.',
                 ], 404);
             }
 
-            if (!in_array($kunjungan->status ?? 'menunggu', ['menunggu'])) {
+            if (! in_array($kunjungan->status ?? 'menunggu', ['menunggu'])) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Kunjungan tidak dapat dibatalkan. Status saat ini: ' . ($kunjungan->status ?? 'menunggu')
+                    'message' => 'Kunjungan tidak dapat dibatalkan. Status saat ini: '.($kunjungan->status ?? 'menunggu'),
                 ], 400);
             }
 
@@ -957,19 +1171,19 @@ class AuthController extends Controller
                 'message' => 'Kunjungan berhasil dibatalkan.',
                 'data' => [
                     'id' => $kunjungan->id,
-                    'status' => $kunjungan->status
-                ]
+                    'status' => $kunjungan->status,
+                ],
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error cancelling appointment', [
                 'error' => $e->getMessage(),
-                'kunjungan_id' => $kunjunganId
+                'kunjungan_id' => $kunjunganId,
             ]);
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal membatalkan kunjungan'
+                'message' => 'Gagal membatalkan kunjungan',
             ], 500);
         }
     }
@@ -978,28 +1192,28 @@ class AuthController extends Controller
     {
         $request->validate([
             'tanggal_kunjungan_baru' => 'required|date|after:today',
-            'alasan' => 'nullable|string|max:500'
+            'alasan' => 'nullable|string|max:500',
         ]);
 
         try {
             $user = $request->user();
-            
+
             if ($user->role !== 'Pasien') {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Akses ditolak.'
+                    'message' => 'Akses ditolak.',
                 ], 403);
             }
 
             $pasien = Pasien::where('user_id', $user->id)->first();
-            if (!$pasien) {
+            if (! $pasien) {
                 $pasien = Pasien::where('email', $user->email)->first();
             }
-            
-            if (!$pasien) {
+
+            if (! $pasien) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Data pasien tidak ditemukan.'
+                    'message' => 'Data pasien tidak ditemukan.',
                 ], 404);
             }
 
@@ -1007,17 +1221,17 @@ class AuthController extends Controller
                 ->where('pasien_id', $pasien->id_pasien) // ✅ Gunakan id_pasien
                 ->first();
 
-            if (!$kunjungan) {
+            if (! $kunjungan) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Data kunjungan tidak ditemukan.'
+                    'message' => 'Data kunjungan tidak ditemukan.',
                 ], 404);
             }
 
-            if (!in_array($kunjungan->status ?? 'menunggu', ['menunggu'])) {
+            if (! in_array($kunjungan->status ?? 'menunggu', ['menunggu'])) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Jadwal kunjungan tidak dapat diubah. Status saat ini: ' . ($kunjungan->status ?? 'menunggu')
+                    'message' => 'Jadwal kunjungan tidak dapat diubah. Status saat ini: '.($kunjungan->status ?? 'menunggu'),
                 ], 400);
             }
 
@@ -1025,7 +1239,7 @@ class AuthController extends Controller
 
             $kunjungan->update([
                 'tanggal_kunjungan' => $request->tanggal_kunjungan_baru,
-                'status' => 'menunggu'
+                'status' => 'menunggu',
             ]);
 
             Log::info('Appointment rescheduled', [
@@ -1033,7 +1247,7 @@ class AuthController extends Controller
                 'pasien_id' => $pasien->id_pasien, // ✅ Gunakan id_pasien
                 'tanggal_lama' => $tanggalLama,
                 'tanggal_baru' => $request->tanggal_kunjungan_baru,
-                'alasan' => $request->alasan
+                'alasan' => $request->alasan,
             ]);
 
             return response()->json([
@@ -1043,19 +1257,19 @@ class AuthController extends Controller
                     'id' => $kunjungan->id,
                     'tanggal_kunjungan_lama' => $tanggalLama,
                     'tanggal_kunjungan_baru' => $kunjungan->tanggal_kunjungan,
-                    'status' => $kunjungan->status
-                ]
+                    'status' => $kunjungan->status,
+                ],
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error rescheduling appointment', [
                 'error' => $e->getMessage(),
-                'kunjungan_id' => $kunjunganId
+                'kunjungan_id' => $kunjunganId,
             ]);
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal mengubah jadwal kunjungan'
+                'message' => 'Gagal mengubah jadwal kunjungan',
             ], 500);
         }
     }
@@ -1066,23 +1280,23 @@ class AuthController extends Controller
     {
         try {
             $user = $request->user();
-            
+
             if ($user->role !== 'Dokter') {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Akses ditolak. Hanya dokter yang dapat mengakses endpoint ini.'
+                    'message' => 'Akses ditolak. Hanya dokter yang dapat mengakses endpoint ini.',
                 ], 403);
             }
 
             $dokter = Dokter::where('user_id', $user->id)->first();
-            if (!$dokter) {
+            if (! $dokter) {
                 $dokter = Dokter::where('email', $user->email)->first();
             }
-            
-            if (!$dokter) {
+
+            if (! $dokter) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Data dokter tidak ditemukan.'
+                    'message' => 'Data dokter tidak ditemukan.',
                 ], 404);
             }
 
@@ -1108,18 +1322,18 @@ class AuthController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $stats
+                'data' => $stats,
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error fetching doctor dashboard stats', [
                 'error' => $e->getMessage(),
-                'user_id' => $request->user()->id ?? null
+                'user_id' => $request->user()->id ?? null,
             ]);
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal mengambil statistik dashboard'
+                'message' => 'Gagal mengambil statistik dashboard',
             ], 500);
         }
     }
@@ -1128,23 +1342,23 @@ class AuthController extends Controller
     {
         try {
             $user = $request->user();
-            
+
             if ($user->role !== 'Dokter') {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Akses ditolak. Hanya dokter yang dapat mengakses endpoint ini.'
+                    'message' => 'Akses ditolak. Hanya dokter yang dapat mengakses endpoint ini.',
                 ], 403);
             }
 
             $dokter = Dokter::where('user_id', $user->id)->first();
-            if (!$dokter) {
+            if (! $dokter) {
                 $dokter = Dokter::where('email', $user->email)->first();
             }
-            
-            if (!$dokter) {
+
+            if (! $dokter) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Data dokter tidak ditemukan.'
+                    'message' => 'Data dokter tidak ditemukan.',
                 ], 404);
             }
 
@@ -1156,10 +1370,10 @@ class AuthController extends Controller
                 ->whereDate('tanggal_kunjungan', $today)
                 ->orderBy('tanggal_kunjungan', 'asc')
                 ->get()
-                ->map(function($kunjungan, $index) {
-                    $noAntrian = 'A' . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
+                ->map(function ($kunjungan, $index) {
+                    $noAntrian = 'A'.str_pad($index + 1, 3, '0', STR_PAD_LEFT);
                     $waktu = Carbon::parse($kunjungan->tanggal_kunjungan)->format('H:i');
-                    
+
                     return [
                         'id_kunjungan' => $kunjungan->id,
                         'id_pasien' => $kunjungan->pasien_id,
@@ -1180,18 +1394,18 @@ class AuthController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $todayPatients
+                'data' => $todayPatients,
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error fetching today patients', [
                 'error' => $e->getMessage(),
-                'user_id' => $request->user()->id ?? null
+                'user_id' => $request->user()->id ?? null,
             ]);
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal mengambil data pasien hari ini'
+                'message' => 'Gagal mengambil data pasien hari ini',
             ], 500);
         }
     }
@@ -1199,28 +1413,28 @@ class AuthController extends Controller
     public function updatePatientStatus(Request $request, $kunjunganId)
     {
         $request->validate([
-            'status' => 'required|string|in:Pending,Engaged,Completed,Succeed'
+            'status' => 'required|string|in:Pending,Engaged,Completed,Succeed',
         ]);
 
         try {
             $user = $request->user();
-            
+
             if ($user->role !== 'Dokter') {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Akses ditolak.'
+                    'message' => 'Akses ditolak.',
                 ], 403);
             }
 
             $dokter = Dokter::where('user_id', $user->id)->first();
-            if (!$dokter) {
+            if (! $dokter) {
                 $dokter = Dokter::where('email', $user->email)->first();
             }
-            
-            if (!$dokter) {
+
+            if (! $dokter) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Data dokter tidak ditemukan.'
+                    'message' => 'Data dokter tidak ditemukan.',
                 ], 404);
             }
 
@@ -1230,10 +1444,10 @@ class AuthController extends Controller
                 ->where('dokter_id', $dokterId)
                 ->first();
 
-            if (!$kunjungan) {
+            if (! $kunjungan) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Data kunjungan tidak ditemukan atau bukan milik Anda.'
+                    'message' => 'Data kunjungan tidak ditemukan atau bukan milik Anda.',
                 ], 404);
             }
 
@@ -1242,7 +1456,7 @@ class AuthController extends Controller
             Log::info('Patient status updated', [
                 'kunjungan_id' => $kunjunganId,
                 'dokter_id' => $dokterId,
-                'new_status' => $request->status
+                'new_status' => $request->status,
             ]);
 
             return response()->json([
@@ -1250,19 +1464,19 @@ class AuthController extends Controller
                 'message' => 'Status pasien berhasil diperbarui',
                 'data' => [
                     'kunjungan_id' => $kunjungan->id,
-                    'status' => $kunjungan->status
-                ]
+                    'status' => $kunjungan->status,
+                ],
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error updating patient status', [
                 'error' => $e->getMessage(),
-                'kunjungan_id' => $kunjunganId
+                'kunjungan_id' => $kunjunganId,
             ]);
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal memperbarui status pasien'
+                'message' => 'Gagal memperbarui status pasien',
             ], 500);
         }
     }
@@ -1271,28 +1485,28 @@ class AuthController extends Controller
     {
         $request->validate([
             'prosedur' => 'required|string',
-            'informasi_kondisi' => 'required|string'
+            'informasi_kondisi' => 'required|string',
         ]);
 
         try {
             $user = $request->user();
-            
+
             if ($user->role !== 'Dokter') {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Akses ditolak.'
+                    'message' => 'Akses ditolak.',
                 ], 403);
             }
 
             $dokter = Dokter::where('user_id', $user->id)->first();
-            if (!$dokter) {
+            if (! $dokter) {
                 $dokter = Dokter::where('email', $user->email)->first();
             }
-            
-            if (!$dokter) {
+
+            if (! $dokter) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Data dokter tidak ditemukan.'
+                    'message' => 'Data dokter tidak ditemukan.',
                 ], 404);
             }
 
@@ -1302,10 +1516,10 @@ class AuthController extends Controller
                 ->where('dokter_id', $dokterId)
                 ->first();
 
-            if (!$kunjungan) {
+            if (! $kunjungan) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Data kunjungan tidak ditemukan.'
+                    'message' => 'Data kunjungan tidak ditemukan.',
                 ], 404);
             }
 
@@ -1325,7 +1539,7 @@ class AuthController extends Controller
             Log::info('Examination submitted', [
                 'kunjungan_id' => $kunjunganId,
                 'dokter_id' => $dokterId,
-                'emr_id' => $emr->id
+                'emr_id' => $emr->id,
             ]);
 
             return response()->json([
@@ -1334,19 +1548,19 @@ class AuthController extends Controller
                 'data' => [
                     'kunjungan_id' => $kunjungan->id,
                     'status' => $kunjungan->status,
-                    'emr_id' => $emr->id
-                ]
+                    'emr_id' => $emr->id,
+                ],
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error submitting examination', [
                 'error' => $e->getMessage(),
-                'kunjungan_id' => $kunjunganId
+                'kunjungan_id' => $kunjunganId,
             ]);
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal menyimpan pemeriksaan'
+                'message' => 'Gagal menyimpan pemeriksaan',
             ], 500);
         }
     }
@@ -1355,11 +1569,11 @@ class AuthController extends Controller
     {
         try {
             $user = $request->user();
-            
+
             if ($user->role !== 'Dokter') {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Akses ditolak.'
+                    'message' => 'Akses ditolak.',
                 ], 403);
             }
 
@@ -1371,17 +1585,17 @@ class AuthController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $obatList
+                'data' => $obatList,
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error fetching obat list', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal mengambil data obat'
+                'message' => 'Gagal mengambil data obat',
             ], 500);
         }
     }
@@ -1392,28 +1606,28 @@ class AuthController extends Controller
             'resep' => 'required|array',
             'resep.*.obat_id' => 'required|integer',
             'resep.*.jumlah_obat' => 'required|integer|min:1',
-            'resep.*.aturan_pakai' => 'required|string'
+            'resep.*.aturan_pakai' => 'required|string',
         ]);
 
         try {
             $user = $request->user();
-            
+
             if ($user->role !== 'Dokter') {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Akses ditolak.'
+                    'message' => 'Akses ditolak.',
                 ], 403);
             }
 
             $dokter = Dokter::where('user_id', $user->id)->first();
-            if (!$dokter) {
+            if (! $dokter) {
                 $dokter = Dokter::where('email', $user->email)->first();
             }
 
-            if (!$dokter) {
+            if (! $dokter) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Data dokter tidak ditemukan.'
+                    'message' => 'Data dokter tidak ditemukan.',
                 ], 404);
             }
 
@@ -1423,17 +1637,17 @@ class AuthController extends Controller
                 ->where('dokter_id', $dokterId)
                 ->first();
 
-            if (!$kunjungan) {
+            if (! $kunjungan) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Data kunjungan tidak ditemukan.'
+                    'message' => 'Data kunjungan tidak ditemukan.',
                 ], 404);
             }
 
             foreach ($request->resep as $resepItem) {
                 $obat = DB::table('obat')->where('id', $resepItem['obat_id'])->first();
-                
-                if (!$obat) {
+
+                if (! $obat) {
                     continue;
                 }
 
@@ -1456,23 +1670,23 @@ class AuthController extends Controller
             Log::info('Prescription created', [
                 'kunjungan_id' => $kunjunganId,
                 'dokter_id' => $dokterId,
-                'resep_count' => count($request->resep)
+                'resep_count' => count($request->resep),
             ]);
 
             return response()->json([
                 'status' => 'success',
-                'message' => 'Resep obat berhasil dibuat'
+                'message' => 'Resep obat berhasil dibuat',
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error creating prescription', [
                 'error' => $e->getMessage(),
-                'kunjungan_id' => $kunjunganId
+                'kunjungan_id' => $kunjunganId,
             ]);
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal membuat resep obat'
+                'message' => 'Gagal membuat resep obat',
             ], 500);
         }
     }
@@ -1481,18 +1695,18 @@ class AuthController extends Controller
     {
         try {
             $user = $request->user();
-            
+
             if ($user->role !== 'Dokter') {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Akses ditolak.'
+                    'message' => 'Akses ditolak.',
                 ], 403);
             }
 
             $prescriptions = DB::table('resep')
                 ->where('kunjungan_id', $kunjunganId)
                 ->get()
-                ->map(function($resep) {
+                ->map(function ($resep) {
                     return [
                         'id' => $resep->id,
                         'nama_obat' => $resep->nama_obat,
@@ -1504,18 +1718,18 @@ class AuthController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $prescriptions
+                'data' => $prescriptions,
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error fetching prescriptions', [
                 'error' => $e->getMessage(),
-                'kunjungan_id' => $kunjunganId
+                'kunjungan_id' => $kunjunganId,
             ]);
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal mengambil data resep'
+                'message' => 'Gagal mengambil data resep',
             ], 500);
         }
     }
@@ -1524,23 +1738,23 @@ class AuthController extends Controller
     {
         try {
             $user = $request->user();
-            
+
             if ($user->role !== 'Dokter') {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Akses ditolak.'
+                    'message' => 'Akses ditolak.',
                 ], 403);
             }
 
             $dokter = Dokter::where('user_id', $user->id)->first();
-            if (!$dokter) {
+            if (! $dokter) {
                 $dokter = Dokter::where('email', $user->email)->first();
             }
-            
-            if (!$dokter) {
+
+            if (! $dokter) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Data dokter tidak ditemukan.'
+                    'message' => 'Data dokter tidak ditemukan.',
                 ], 404);
             }
 
@@ -1551,10 +1765,10 @@ class AuthController extends Controller
                 ->where('dokter_id', $dokterId)
                 ->whereDate('tanggal_kunjungan', '<', Carbon::today());
 
-            if (!empty($search)) {
-                $query->whereHas('pasien', function($q) use ($search) {
+            if (! empty($search)) {
+                $query->whereHas('pasien', function ($q) use ($search) {
                     $q->where('nama_pasien', 'like', "%{$search}%")
-                      ->orWhere('nomor_rm', 'like', "%{$search}%");
+                        ->orWhere('nomor_rm', 'like', "%{$search}%");
                 });
             }
             $kunjunganList = $query->orderBy('tanggal_kunjungan', 'desc')->get();
@@ -1563,12 +1777,12 @@ class AuthController extends Controller
             $groupedHistory = [];
             foreach ($kunjunganList as $kunjungan) {
                 $date = Carbon::parse($kunjungan->tanggal_kunjungan)->format('Y-m-d');
-                
-                if (!isset($groupedHistory[$date])) {
+
+                if (! isset($groupedHistory[$date])) {
                     $groupedHistory[$date] = [
                         'tanggal' => $date,
                         'jumlah' => 0,
-                        'pasien' => []
+                        'pasien' => [],
                     ];
                 }
 
@@ -1590,18 +1804,18 @@ class AuthController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $result
+                'data' => $result,
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error fetching patient history', [
                 'error' => $e->getMessage(),
-                'user_id' => $request->user()->id ?? null
+                'user_id' => $request->user()->id ?? null,
             ]);
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal mengambil riwayat pasien'
+                'message' => 'Gagal mengambil riwayat pasien',
             ], 500);
         }
     }
@@ -1611,24 +1825,24 @@ class AuthController extends Controller
     {
         try {
             $user = $request->user();
-            
+
             if ($user->role !== 'Dokter') {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Akses ditolak.'
+                    'message' => 'Akses ditolak.',
                 ], 403);
             }
 
             // Cari data dokter
             $dokter = Dokter::where('user_id', $user->id)->first();
-            if (!$dokter) {
+            if (! $dokter) {
                 $dokter = Dokter::where('email', $user->email)->first();
             }
-            
-            if (!$dokter) {
+
+            if (! $dokter) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Data dokter tidak ditemukan.'
+                    'message' => 'Data dokter tidak ditemukan.',
                 ], 404);
             }
 
@@ -1637,7 +1851,7 @@ class AuthController extends Controller
             // Ambil jadwal dokter
             $schedules = JadwalDokter::where('dokter_id', $dokterId)
                 ->get()
-                ->map(function($jadwal) {
+                ->map(function ($jadwal) {
                     return [
                         'id' => $jadwal->id,
                         'hari' => trim($jadwal->hari, '"\''), // Clean quotes
@@ -1648,18 +1862,18 @@ class AuthController extends Controller
 
             return response()->json([
                 'status' => 'success',
-                'data' => $schedules
+                'data' => $schedules,
             ]);
 
         } catch (\Exception $e) {
             Log::error('Error fetching doctor schedule', [
                 'error' => $e->getMessage(),
-                'user_id' => $request->user()->id ?? null
+                'user_id' => $request->user()->id ?? null,
             ]);
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal mengambil jadwal dokter'
+                'message' => 'Gagal mengambil jadwal dokter',
             ], 500);
         }
     }
@@ -1669,13 +1883,14 @@ class AuthController extends Controller
     {
         try {
             $jadwal = JadwalDokter::where('dokter_id', $dokterId)->first();
-            
+
             if ($jadwal) {
                 $jamMulai = $jadwal->jam_mulai ?? $jadwal->jam_awal ?? '08:00';
                 $jamSelesai = $jadwal->jam_selesai ?? '17:00';
-                return $jamMulai . ' - ' . $jamSelesai;
+
+                return $jamMulai.' - '.$jamSelesai;
             }
-            
+
             return '08:00 - 17:00'; // Default
         } catch (\Exception $e) {
             return '08:00 - 17:00'; // Fallback
@@ -1725,7 +1940,7 @@ class AuthController extends Controller
         return response()->json([
             'status' => 'success',
             'message' => 'Akun berhasil didaftarkan.',
-            'data' => $responseData
+            'data' => $responseData,
         ], 201);
     }
 
@@ -1751,7 +1966,7 @@ class AuthController extends Controller
             'success' => true,
             'status' => 200,
             'Data EMR' => $dataEMR,
-            'message' => 'Data EMR Berhasil Ditambahkan'
+            'message' => 'Data EMR Berhasil Ditambahkan',
         ]);
     }
 
@@ -1767,7 +1982,7 @@ class AuthController extends Controller
             return response()->json([
                 'success' => true,
                 'Data Kunjungan' => $dataKunjungan,
-                'message' => 'Berhasil mengubah status kunjungan menjadi Succeed'
+                'message' => 'Berhasil mengubah status kunjungan menjadi Succeed',
             ]);
         }
     }

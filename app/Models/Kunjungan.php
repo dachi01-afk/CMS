@@ -11,11 +11,12 @@ class Kunjungan extends Model
 
     protected $table = 'kunjungan';
 
-    // Ubah dari guarded ke fillable untuk security yang lebih baik
+    // Ubah dari guarded ke fillable untuk security yang lebih baik katanya pid
     protected $fillable = [
         'dokter_id',
         'pasien_id', 
         'tanggal_kunjungan',
+        'no_antrian',                
         'keluhan_awal',
         'status',
         'nama_rs_perujuk',
