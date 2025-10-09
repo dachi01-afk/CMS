@@ -9,7 +9,7 @@ Route::post('/logout', [APIMobileController::class, 'logout'])->name('api.logout
 Route::post('/register', [APIMobileController::class, 'register'])->name('api.register');
 
 // 🌐 Testimoni bisa diakses publik (tidak perlu login untuk lihat testimoni)
-Route::get('/getDataTestimoni', [APIController::class, 'getDataTestimoni']);
+Route::get('/getDataTestimoni', [APIMobileController::class, 'getDataTestimoni']);
 
 // 🔒 PROTECTED ROUTES (butuh autentikasi dengan token)
 Route::middleware('auth:sanctum')->group(function () {
