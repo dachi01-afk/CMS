@@ -12,10 +12,9 @@ Route::post('/register', [APIMobileController::class, 'register'])->name('api.re
 // API Untuk Login Dokter
 Route::post('/login-dokter', [APIMobileController::class, 'loginDokter']);
 
-
 // 🌐 Testimoni bisa diakses publik (tidak perlu login untuk lihat testimoni)
-Route::get('/getDataTestimoni', [APIMobileController::class, 'getDataTestimoni']); // PINDAHKAN KE SINI
-Route::post('/create-data-testimoni', [APIMobileController::class, 'createDataTestimoni']); // HAPUS SPASI
+Route::get('/getDataTestimoni', [APIMobileController::class, 'getDataTestimoni']);
+Route::post('/create-data-testimoni', [APIMobileController::class, 'createDataTestimoni']);
 
 // 🔒 PROTECTED ROUTES (butuh autentikasi dengan token)
 Route::middleware('auth:sanctum')->group(function () {
@@ -39,7 +38,6 @@ Route::middleware('auth:sanctum')->group(function () {
 // Route Untuk User Yang Login Sebagai Dokter 
 Route::middleware(['auth:sanctum', 'role:Dokter'])->group(function () {
     Route::get('/get-data-dokter', [APIMobileController::class, 'getDataDokter']);
+    // Tambahkan route untuk update profile dokter
+    Route::put('/dokter/update-profile', [APIMobileController::class, 'updateDataDokter']);
 });
-
-Route::post('/create-data-testimoni', [APIMobileController::class, 'createDataTestimomi']);
-
