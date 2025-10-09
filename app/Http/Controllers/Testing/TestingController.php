@@ -72,7 +72,6 @@ class TestingController extends Controller
         ]);
     }
 
-
     public function testingCreateKunjungan(Request $request)
     {
         $request->validate([

@@ -11,6 +11,7 @@ use App\Http\Controllers\Admin\DataMedisPasienController;
 use App\Http\Controllers\Admin\PengaturanKlinikController;
 use App\Http\Controllers\Admin\ManajemenPenggunaController;
 use App\Http\Controllers\Api\APIController;
+use App\Http\Controllers\Dokter\DokterController as DokterDokterController;
 use App\Http\Controllers\Management\ApotekerController;
 use App\Http\Controllers\Management\DokterController;
 use App\Http\Controllers\Management\JadwalDokterController;
@@ -98,6 +99,22 @@ Route::get('/getDataDokter', [APIController::class, 'getDataDokter'])->name('get
 Route::get('/getDataSpesialisasiDokter', [APIController::class, 'getDataSpesialisasiDokter'])->name('get.data.spesialisasi.dokter');
 Route::get('/getDataDokterSpesialisasi', [APIController::class, 'getDataDokterSpesialisasi'])->name('get.data.dokter.spesialisasi');
 
+////////// ROLE DOKTER ///////////
+Route::middleware('guest')->group(function () {
+    Route::prefix('dokter')->group(function () {
+        Route::get('/login', [AuthController::class, 'login'])->name('dokter.login');
+        Route::post('/register', [AuthController::class, 'register'])->name('dokter.register');
+        Route::post('/proses-login', [AuthController::class, 'prosesLogin'])->name('dokter.proses.login');
+    });
+});
+
+Route::middleware('auth')->group(function () {
+    Route::middleware(['role:Dokter'])->group(function () {
+        Route::prefix('dokter')->group(function () {
+            Route::get('/dashboard', [DokterDokterController::class, 'index'])->name('dokter.dashboard');
+        });
+    });
+});
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
