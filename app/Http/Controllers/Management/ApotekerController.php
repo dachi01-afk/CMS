@@ -16,7 +16,7 @@ class ApotekerController extends Controller
     public function createApoteker(Request $request)
     {
         $request->validate([
-            'username'         => 'required|string|max:255',
+            'username'         => 'required|string|max:255|unique:user,username',
             'email_apoteker'   => 'required|email|unique:user,email',
             'password'         => 'nullable|string|min:6|confirmed',
             'nama_apoteker'    => 'required|string|max:255',

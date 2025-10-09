@@ -22,9 +22,9 @@ use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 // API Routes - Tambahkan ini di bagian bawah file web.php sebelum require auth.php
 Route::prefix('api')->withoutMiddleware(['web'])->group(function () {
     // Public routes (tidak perlu authentication)
-    Route::post('/check-availability', [App\Http\Controllers\Auth\AuthController::class, 'checkAvailability']);
-    Route::post('/register', [App\Http\Controllers\Auth\AuthController::class, 'register']);
-    Route::post('/login', [App\Http\Controllers\Auth\AuthController::class, 'login']);
+    Route::post('/check-availability',              [App\Http\Controllers\Auth\AuthController::class, 'checkAvailability']);
+    Route::post('/register',                        [App\Http\Controllers\Auth\AuthController::class, 'register']);
+    Route::post('/login',                           [App\Http\Controllers\Auth\AuthController::class, 'login']);
     Route::post('/login-dokter', []);
 
     // Forgot Password routes
@@ -191,8 +191,6 @@ Route::middleware('auth')->group(function () {
     Route::prefix('settings')->name('settings.')->group(function () {
         Route::get('/', [SettingsController::class, 'index'])->name('index');
     });
-
-    
 });
 
 Route::get('/login-dokter', [AuthController::class, 'login'])->name('login.dokter');

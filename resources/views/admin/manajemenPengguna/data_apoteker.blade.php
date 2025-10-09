@@ -90,20 +90,6 @@
                     <div id="nama_apoteker-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
-                {{-- Role --}}
-                {{-- <div>
-                    <label for="role_apoteker"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Role</label>
-                    <select id="role_apoteker" name="role_apoteker" required
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
-                        <option value="" disabled selected>Select role</option>
-                        <option value="admin">Admin</option>
-                        <option value="dokter">Dokter</option>
-                        <option value="apoteker">Apoteker</option>
-                        <option value="pasien">Pasien</option>
-                    </select>
-                    <div id="role_apoteker-error" class="text-red-600 text-sm mt-1"></div>
-                </div> --}}
 
                 {{-- Password --}}
                 <div>

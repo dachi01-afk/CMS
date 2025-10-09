@@ -18,17 +18,17 @@ class PasienController extends Controller
     {
         $request->validate([
             'username'       => 'required|string|max:255',
-            'email_pasien'          => 'required|email|unique:user,email',
+            'email_pasien'   => 'required|email|unique:user,email',
             'password'       => 'required|string|min:6',
             'nama_pasien'    => 'required|string|max:255',
-            'alamat'         => 'nullable|string|max:255',
+            'alamat_pasien'  => 'nullable|string|max:255',
             'tanggal_lahir'  => 'nullable|date',
             'jenis_kelamin'  => 'nullable|in:Laki-laki,Perempuan',
         ]);
 
         $user = User::create([
             'username' => $request->username,
-            'email'    => $request->email,
+            'email'    => $request->email_pasien,
             'password' => Hash::make($request->password),
             'role'     => 'Pasien',
         ]);
@@ -36,18 +36,19 @@ class PasienController extends Controller
         Pasien::create([
             'user_id'       => $user->id,
             'nama_pasien'   => $request->nama_pasien,
-            'alamat'        => $request->alamat,
+            'alamat'        => $request->alamat_pasien,
             'tanggal_lahir' => $request->tanggal_lahir,
             'jenis_kelamin' => $request->jenis_kelamin,
         ]);
 
-        return response()->json(['success' => 'Data pasien berhasil ditambahkan.']);
+        return response()->json(['message' => 'Data pasien berhasil ditambahkan.']);
     }
 
     public function getPasienById($id)
     {
+        // dd($id);
         $data = Pasien::with('user')->findOrFail($id);
-        return response()->json($data);
+        return response()->json(['data' => $data]);
     }
 
     public function updatePasien(Request $request, $id)
@@ -56,27 +57,31 @@ class PasienController extends Controller
         $user = $pasien->user;
 
         $request->validate([
-            'username'       => 'required|string|max:255',
-            'email'          => 'required|email|unique:user,email,' . $user->id,
-            'nama_pasien'    => 'required|string|max:255',
-            'alamat'         => 'nullable|string|max:255',
-            'tanggal_lahir'  => 'nullable|date',
-            'jenis_kelamin'  => 'nullable|in:Laki-laki,Perempuan',
+            'edit_username'       => 'required|string|max:255|unique:user,username,' . $user->id,
+            'edit_nama_pasien'    => 'required|string|max:255',
+            'edit_email_pasien'   => 'required|email|unique:user,email,' . $user->id,
+            'edit_alamat'         => 'nullable|string|max:255',
+            'edit_tanggal_lahir'  => 'nullable|date',
+            'edit_jenis_kelamin'  => 'nullable|in:Laki-laki,Perempuan',
+            'edit_password_pasien'  => 'nullable|string|min:6|confirmed',
         ]);
 
-        $user->update([
-            'username' => $request->username,
-            'email'    => $request->email,
-        ]);
+        // Update user
+        $user->username = $request->edit_username;
+        $user->email    = $request->edit_email_pasien;
 
+        if ($request->filled('edit_password_pasien')) {
+            $user->password = Hash::make($request->edit_password_pasien);
+        }
+        // update pasien
         $pasien->update([
-            'nama_pasien'   => $request->nama_pasien,
-            'alamat'        => $request->alamat,
-            'tanggal_lahir' => $request->tanggal_lahir,
-            'jenis_kelamin' => $request->jenis_kelamin,
+            'nama_pasien'   => $request->edit_nama_pasien,
+            'alamat'        => $request->edit_alamat,
+            'tanggal_lahir' => $request->edit_tanggal_lahir,
+            'jenis_kelamin' => $request->edit_jenis_kelamin,
         ]);
 
-        return response()->json(['success' => 'Data pasien berhasil diperbarui.']);
+        return response()->json(['message' => 'Data pasien berhasil diperbarui.']);
     }
 
     public function deletePasien($id)
