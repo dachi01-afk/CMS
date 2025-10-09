@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Dokter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
@@ -14,7 +15,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
-class APIController extends Controller
+class APIMobileController extends Controller
 {
     /** LOGIN */
     public function login(Request $request)
@@ -576,5 +577,11 @@ class APIController extends Controller
             'Data Testimoni' => $dataTestimoni,
             'message' => 'Berhasil Membuat Testimoni',
         ]);
+    }
+
+    ////////////// Get Data Dokter ////////////
+    public function getDataDokter() {
+        $dataDokter = Dokter::all();
+        
     }
 }

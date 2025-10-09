@@ -10,7 +10,7 @@ use App\Http\Controllers\Management\UserController;
 use App\Http\Controllers\Admin\DataMedisPasienController;
 use App\Http\Controllers\Admin\PengaturanKlinikController;
 use App\Http\Controllers\Admin\ManajemenPenggunaController;
-use App\Http\Controllers\Api\APIController;
+use App\Http\Controllers\API\APIWebController;
 use App\Http\Controllers\Dokter\DokterController as DokterDokterController;
 use App\Http\Controllers\Management\ApotekerController;
 use App\Http\Controllers\Management\DokterController;
@@ -120,12 +120,19 @@ Route::post('/testing-ubah-status-kunjungan', [TestingController::class, 'ubahSt
 Route::post('/testing-batalkan-status-kunjungan', [TestingController::class, 'batalkanStatusKunjungan'])->name('testing.batalkan.status.kunjungan');
 
 // // Public web routes for data access
-Route::get('/getDataJadwalDokter', [APIController::class, 'getDataJadwalDokter'])->name('get.data.jadwal.dokter');
-Route::get('/getDataKunjungan', [APIController::class, 'getDataKunjungan'])->name('getee.data.kunjungan');
-Route::get('/getDataTestimoni', [APIController::class, 'getDataTestimoni'])->name('get.data.testimoni');
-Route::get('/getDataDokter', [APIController::class, 'getDataDokter'])->name('get.data.dokter');
-Route::get('/getDataSpesialisasiDokter', [APIController::class, 'getDataSpesialisasiDokter'])->name('get.data.spesialisasi.dokter');
-Route::get('/getDataDokterSpesialisasi', [APIController::class, 'getDataDokterSpesialisasi'])->name('get.data.dokter.spesialisasi');
+// Route::get('/getDataJadwalDokter', [APIController::class, 'getDataJadwalDokter'])->name('get.data.jadwal.dokter');
+// Route::get('/getDataKunjungan', [APIController::class, 'getDataKunjungan'])->name('getee.data.kunjungan');
+// Route::get('/getDataTestimoni', [APIController::class, 'getDataTestimoni'])->name('get.data.testimoni');
+// Route::get('/getDataDokter', [APIController::class, 'getDataDokter'])->name('get.data.dokter');
+// Route::get('/getDataSpesialisasiDokter', [APIController::class, 'getDataSpesialisasiDokter'])->name('get.data.spesialisasi.dokter');
+// Route::get('/getDataDokterSpesialisasi', [APIController::class, 'getDataDokterSpesialisasi'])->name('get.data.dokter.spesialisasi');
+
+// API KHUSUS UNTUK AURELIO 
+// SIAPA YANG GANGGU PECAH KEPALANYA 
+// BY AURELIO
+Route::get('/getDataDokter', [APIWebController::class,'getDataDokter']);
+// END API KHUSUS AURELIO
+
 
 
 ////////// ROLE DOKTER ///////////

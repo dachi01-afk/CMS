@@ -15,6 +15,10 @@ return new class extends Migration
             $table->id();
             $table->foreignId('kunjungan_id')->constrained('kunjungan', 'id', 'emr_kunjungan_id')
                 ->cascadeOnDelete()->cascadeOnUpdate();
+            $table->foreignId('resep_id')->constrained('resep', 'id', 'emr_resep_id')
+                ->cascadeOnDelete()->cascadeOnUpdate();
+            $table->foreignId('teslab_id')->constrained('teslab', 'id', 'emr_teslab_id')
+                ->cascadeOnDelete()->cascadeOnUpdate();
             $table->text('riwayat_penyakit');
             $table->text('alergi');
             $table->text('hasil_periksa');
