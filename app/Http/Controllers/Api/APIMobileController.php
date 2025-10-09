@@ -660,4 +660,42 @@ class APIMobileController extends Controller
             ], 500);
         }
     }
+
+    public function loginDokter(Request $request)
+    {
+        $request->validate([
+            'username' => ['required'],
+            'password' => ['required'],
+        ]);
+
+        $user = User::where('username', $request->username)->first();
+
+        if (!$user || !Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Username atau password salah',
+            ], 401);
+        }
+
+        // 🧩 Tambahkan pengecekan role dokter
+        if ($user->role !== 'dokter') { // atau cek role_id jika pakai ID
+            return response()->json([
+                'success' => false,
+                'message' => 'Akun ini bukan akun dokter',
+            ], 403);
+        }
+
+        $user->tokens()->delete();
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Login berhasil',
+            'data' => [
+                'user' => $user,
+                'token' => $token,
+                'token_type' => 'Bearer',
+            ],
+        ]);
+    }
 }
