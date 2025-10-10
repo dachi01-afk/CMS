@@ -19,6 +19,7 @@ return new class extends Migration
                 ->cascadeOnDelete()->cascadeOnUpdate();
             $table->unsignedInteger('jumlah');
             $table->decimal('dosis', 8, 2);
+            $table->enum('status', ['Belum Diambil', 'Sudah Diambil'])->default('Belum Diambil');
             $table->timestamps();
         });
     }
