@@ -18,7 +18,7 @@ class ApotekerController extends Controller
     public function createApoteker(Request $request)
     {
         $request->validate([
-            'foto_apoteker'     => 'nullable|file|mimetypes:image/jpeg,image/png,image/gif,image/webp,image/svg+xml|max:5120',
+            'foto_apoteker'     => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
             'username_apoteker' => 'required|string|max:255|unique:user,username',
             'nama_apoteker'     => 'required|string|max:255',
             'email_apoteker'    => 'required|email|unique:user,email',
@@ -84,7 +84,7 @@ class ApotekerController extends Controller
             'edit_username_apoteker'    => 'required|string|max:255|unique:user,username,' . $user->id,
             'edit_nama_apoteker'        => 'required|string|max:255',
             'edit_email_apoteker'       => 'required|email|unique:user,email,' . $user->id,
-            'edit_foto_apoteker'        => 'nullable|file|mimetypes:image/jpeg,image/png,image/gif,image/webp,image/svg+xml|max:5120',
+            'edit_foto_apoteker'        => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
             'edit_no_hp_apoteker'       => 'nullable|string|max:20',
             'edit_password_apoteker'    => 'nullable|string|min:8|confirmed',
         ]);
