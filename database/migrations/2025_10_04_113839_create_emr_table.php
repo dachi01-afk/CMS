@@ -20,7 +20,7 @@ return new class extends Migration
             $table->text('keluhan_utama')->nullable();
             $table->text('riwayat_penyakit_sekarang')->nullable();
             $table->text('riwayat_penyakit_dahulu')->nullable();
-            $table->text('riwayat_keluarga')->nullable();
+            $table->text('riwayat_penyakit_keluarga')->nullable();
             $table->string('tekanan_darah', 10)->nullable();
             $table->decimal('suhu_tubuh', 4, 1)->nullable();
             $table->integer('nadi')->nullable();

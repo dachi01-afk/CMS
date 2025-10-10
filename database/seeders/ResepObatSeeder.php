@@ -26,6 +26,7 @@ class ResepObatSeeder extends Seeder
                 'obat_id' => $dataObat->random()->id,
                 'jumlah' => $faker->numberBetween(30, 100),
                 'dosis' => $faker->randomFloat(2, 1, 100),
+                'status' => 'Belum Diambil',
             ]);
         }
     }

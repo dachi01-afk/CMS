@@ -60,7 +60,7 @@ class KunjunganController extends Controller
                 'tanggal_kunjungan' => $tanggalKunjungan,
                 'no_antrian' => $formattedNumber,
                 'keluhan_awal' => $request->keluhan_awal,
-                'status' => 'Pending', // contoh default status
+                'status' => 'Waiting', // contoh default status
                 // tambahkan kolom lain sesuai struktur tabel kamu
             ]);
 
