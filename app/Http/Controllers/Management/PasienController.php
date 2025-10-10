@@ -19,7 +19,7 @@ class PasienController extends Controller
     public function createPasien(Request $request)
     {
         $request->validate([
-            'foto_pasien'       => 'nullable|file|mimetypes:image/jpeg,image/png,image/gif,image/webp,image/svg+xml|max:5120',
+            'foto_pasien'       => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
             'username_pasien'   => 'required|string|max:255',
             'nama_pasien'       => 'required|string|max:255',
             'email_pasien'      => 'required|email|unique:user,email',
@@ -87,7 +87,7 @@ class PasienController extends Controller
         $user = $pasien->user;
 
         $request->validate([
-            'edit_foto_pasien'          => 'nullable|file|mimetypes:image/jpeg,image/png,image/gif,image/webp,image/svg+xml|max:5120',
+            'edit_foto_pasien'          => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
             'edit_username_pasien'      => 'required|string|max:255|unique:user,username,' . $user->id,
             'edit_nama_pasien'          => 'required|string|max:255',
             'edit_email_pasien'         => 'required|email|unique:user,email,' . $user->id,

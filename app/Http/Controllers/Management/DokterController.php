@@ -96,7 +96,7 @@ class DokterController extends Controller
             'edit_nama_dokter'        => 'required|string|max:255',
             'edit_email_akun_dokter'  => 'required|email|max:255|unique:user,email,' . $user->id,
             'edit_spesialis_dokter'   => 'required|integer|exists:jenis_spesialis,id',
-            'edit_foto_dokter'        => 'nullable|file|mimetypes:image/jpeg,image/png,image/gif,image/webp,image/svg+xml|max:5120',
+            'edit_foto_dokter'        => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
             'edit_no_hp_dokter'       => 'nullable|string|max:20',
             'edit_deskripsi_dokter'   => 'nullable|string',
             'edit_pengalaman_dokter'  => 'nullable|string|max:255',
