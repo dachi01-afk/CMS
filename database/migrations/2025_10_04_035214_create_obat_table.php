@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('nama_obat');
             $table->unsignedInteger('jumlah');
+            $table->unsignedInteger('jumlah');
             $table->decimal('dosis', 8, 2);
             $table->timestamps();
         });
