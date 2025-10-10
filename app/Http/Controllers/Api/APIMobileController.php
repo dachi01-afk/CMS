@@ -8,10 +8,11 @@ use App\Models\EMR;
 use App\Models\Kunjungan;
 use App\Models\Obat;
 use App\Models\Pasien;
+use App\Models\Pembayaran;
 use App\Models\Resep;
 use App\Models\Testimoni;
 use App\Models\User;
-use App\Models\Pembayaran;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -160,7 +161,7 @@ class APIMobileController extends Controller
 
                 // Upload new photo
                 $fileFoto = $request->file('foto_pasien');
-                $namaFoto = 'pasien_' . $user->id . '_' . time() . '.' . $fileFoto->getClientOriginalExtension();
+                $namaFoto = 'pasien_'.$user->id.'_'.time().'.'.$fileFoto->getClientOriginalExtension();
                 $pathFotoPasien = $fileFoto->storeAs('Foto-Pasien', $namaFoto, 'public');
             }
 
@@ -185,11 +186,11 @@ class APIMobileController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Error updating profile: ' . $e->getMessage());
+            Log::error('Error updating profile: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'message' => 'Terjadi kesalahan: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -197,10 +198,8 @@ class APIMobileController extends Controller
     public function getJadwalDokter(Request $request)
     {
         try {
-            // Gunakan nama relasi yang benar sesuai model
             $jadwal = \App\Models\JadwalDokter::with(['dokter.jenisSpesialis'])->get();
 
-            // Mapping hari ke angka (untuk PHP date function)
             $hariMapping = [
                 'Senin' => 1,
                 'Selasa' => 2,
@@ -211,27 +210,35 @@ class APIMobileController extends Controller
                 'Minggu' => 0,
             ];
 
-            // Tambahkan tanggal terdekat untuk setiap jadwal
-            $jadwalWithDates = $jadwal->map(function ($item) use ($hariMapping) {
+            $tz = config('app.timezone') ?: 'Asia/Jakarta';
+            $today = Carbon::now($tz)->startOfDay();
+            $todayNumber = $today->dayOfWeek; // 0 = Minggu, 6 = Sabtu
+
+            $jadwalWithDates = $jadwal->map(function ($item) use ($hariMapping, $today) {
                 $hari = $item->hari;
                 $hariNumber = $hariMapping[$hari] ?? null;
 
                 if ($hariNumber !== null) {
-                    // Hitung tanggal terdekat untuk hari tersebut
-                    $tanggalTerdekat = $this->getNextDateByDay($hariNumber);
-                    $item->tanggal_terdekat = $tanggalTerdekat;
+                    // ambil next date sebagai Carbon (dari helper)
+                    $tanggalTerdekat = $this->getNextDateByDay($hariNumber, $today);
+
+                    // Pastikan jika target masih < hari ini (mis. karena perbedaan waktu) -> lompat satu minggu
+                    if ($tanggalTerdekat->lt($today)) {
+                        $tanggalTerdekat = $tanggalTerdekat->addWeek();
+                    }
+
+                    $item->tanggal_terdekat = $tanggalTerdekat->toDateString();
                     $item->tanggal_terdekat_formatted = $this->formatTanggalIndonesia($tanggalTerdekat);
                     $item->hari_selisih = $this->getDayDifference($tanggalTerdekat);
                 } else {
                     $item->tanggal_terdekat = null;
                     $item->tanggal_terdekat_formatted = null;
-                    $item->hari_selisih = 999; // Untuk sorting terakhir
+                    $item->hari_selisih = 999;
                 }
 
                 return $item;
             });
 
-            // Urutkan berdasarkan tanggal terdekat
             $jadwalSorted = $jadwalWithDates->sortBy('hari_selisih')->values();
 
             return response()->json([
@@ -239,76 +246,68 @@ class APIMobileController extends Controller
                 'data' => $jadwalSorted,
             ]);
         } catch (\Exception $e) {
-            Log::error('Error getting jadwal dokter: ' . $e->getMessage());
+            \Log::error('Error getting jadwal dokter: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil jadwal dokter: ' . $e->getMessage(),
+                'message' => 'Gagal mengambil jadwal dokter: '.$e->getMessage(),
             ], 500);
         }
     }
 
     /**
-     * Hitung tanggal terdekat berdasarkan hari dalam minggu
+     * Kembalikan Carbon instance tanggal terdekat untuk $dayOfWeek,
+     * relatif terhadap $from (jika diberikan) atau sekarang (dengan timezone app).
      */
-    private function getNextDateByDay($dayOfWeek)
+    private function getNextDateByDay(int $dayOfWeek, ?Carbon $from = null): Carbon
     {
-        $today = new \DateTime;
-        $currentDayOfWeek = (int) $today->format('w'); // 0=Minggu, 1=Senin, dst
+        $tz = config('app.timezone') ?: 'Asia/Jakarta';
 
-        // Hitung selisih hari
-        $daysUntilTarget = ($dayOfWeek - $currentDayOfWeek + 7) % 7;
+        $from = $from ? $from->copy()->startOfDay() : Carbon::now($tz)->startOfDay();
+        $daysUntilTarget = ($dayOfWeek - $from->dayOfWeek + 7) % 7;
 
-        // Jika hari ini sama dengan target, ambil hari ini
+        // 🔥 kalau hasilnya 0 (berarti hari ini), loncat ke minggu depan
         if ($daysUntilTarget === 0) {
-            return $today->format('Y-m-d');
+            $daysUntilTarget = 7;
         }
 
-        // Tambahkan hari ke tanggal sekarang
-        $targetDate = clone $today;
-        $targetDate->add(new \DateInterval("P{$daysUntilTarget}D"));
+        $target = $from->copy()->addDays($daysUntilTarget);
 
-        return $targetDate->format('Y-m-d');
+        return $target;
     }
 
-    /**
-     * Format tanggal ke bahasa Indonesia
-     */
+    /** Format tanggal (terima Carbon atau string) */
     private function formatTanggalIndonesia($date)
     {
+        if (! $date instanceof Carbon) {
+            $date = Carbon::parse($date);
+        }
+
         $bulanIndonesia = [
-            '01' => 'Jan',
-            '02' => 'Feb',
-            '03' => 'Mar',
-            '04' => 'Apr',
-            '05' => 'Mei',
-            '06' => 'Jun',
-            '07' => 'Jul',
-            '08' => 'Ags',
-            '09' => 'Sep',
-            '10' => 'Okt',
-            '11' => 'Nov',
-            '12' => 'Des',
+            '01' => 'Jan', '02' => 'Feb', '03' => 'Mar', '04' => 'Apr',
+            '05' => 'Mei', '06' => 'Jun', '07' => 'Jul', '08' => 'Ags',
+            '09' => 'Sep', '10' => 'Okt', '11' => 'Nov', '12' => 'Des',
         ];
 
-        $dateObj = new \DateTime($date);
-        $hari = $dateObj->format('j');
-        $bulan = $bulanIndonesia[$dateObj->format('m')];
-        $tahun = $dateObj->format('Y');
+        $hari = $date->format('j');
+        $bulan = $bulanIndonesia[$date->format('m')];
+        $tahun = $date->format('Y');
 
         return "{$hari} {$bulan} {$tahun}";
     }
 
-    /**
-     * Hitung selisih hari dari sekarang
-     */
+    /** Hitung selisih hari dari sekarang (pakai timezone app) */
     private function getDayDifference($targetDate)
     {
-        $today = new \DateTime;
-        $target = new \DateTime($targetDate);
-        $diff = $today->diff($target);
+        $tz = config('app.timezone') ?: 'Asia/Jakarta';
 
-        return $diff->days;
+        if (! $targetDate instanceof Carbon) {
+            $targetDate = Carbon::parse($targetDate);
+        }
+
+        $today = Carbon::now($tz)->startOfDay();
+
+        return $today->diffInDays($targetDate);
     }
 
     public function ubahStatusKunjungan(Request $request)
@@ -419,11 +418,11 @@ class APIMobileController extends Controller
                 'message' => "Berhasil mengambil daftar dokter spesialisasi {$spesialisasi->nama_spesialis}",
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error getting dokter by spesialisasi: ' . $e->getMessage());
+            Log::error('Error getting dokter by spesialisasi: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil data dokter: ' . $e->getMessage(),
+                'message' => 'Gagal mengambil data dokter: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -433,7 +432,7 @@ class APIMobileController extends Controller
         try {
             // Log untuk debugging
             Log::info('=== BATALKAN KUNJUNGAN START ===');
-            Log::info('Request method: ' . $request->method());
+            Log::info('Request method: '.$request->method());
             Log::info('Request data: ', $request->all());
 
             // Validasi input - cek apakah 'id' ada dalam request
@@ -442,7 +441,7 @@ class APIMobileController extends Controller
             ]);
 
             $kunjunganId = $request->input('id');
-            Log::info('Processing kunjungan ID: ' . $kunjunganId);
+            Log::info('Processing kunjungan ID: '.$kunjunganId);
 
             // Cari data kunjungan
             $dataKunjungan = Kunjungan::findOrFail($kunjunganId);
@@ -450,12 +449,12 @@ class APIMobileController extends Controller
 
             // Cek apakah status masih bisa dibatalkan
             if (! in_array($dataKunjungan->status, ['Pending', 'Confirmed', 'Waiting'])) {
-                Log::warning('Cannot cancel kunjungan with status: ' . $dataKunjungan->status);
+                Log::warning('Cannot cancel kunjungan with status: '.$dataKunjungan->status);
 
                 return response()->json([
                     'success' => false,
                     'status' => 400,
-                    'message' => 'Kunjungan dengan status "' . $dataKunjungan->status . '" tidak dapat dibatalkan',
+                    'message' => 'Kunjungan dengan status "'.$dataKunjungan->status.'" tidak dapat dibatalkan',
                     'Data Kunjungan' => $dataKunjungan,
                 ], 400);
             }
@@ -469,7 +468,7 @@ class APIMobileController extends Controller
                         'updated_at' => now(),
                     ]);
 
-                Log::info('Rows affected by update: ' . $affected);
+                Log::info('Rows affected by update: '.$affected);
 
                 if ($affected === 0) {
                     throw new \Exception('Gagal memperbarui data kunjungan');
@@ -483,7 +482,7 @@ class APIMobileController extends Controller
 
             // Verifikasi bahwa update berhasil
             if ($updatedKunjungan->status !== 'Canceled') {
-                Log::error('Status update failed - still: ' . $updatedKunjungan->status);
+                Log::error('Status update failed - still: '.$updatedKunjungan->status);
 
                 return response()->json([
                     'success' => false,
@@ -509,7 +508,7 @@ class APIMobileController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            Log::error('Kunjungan not found: ' . $e->getMessage());
+            Log::error('Kunjungan not found: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -517,13 +516,13 @@ class APIMobileController extends Controller
                 'message' => 'Data kunjungan tidak ditemukan',
             ], 404);
         } catch (\Exception $e) {
-            Log::error('Exception in batalkanStatusKunjungan: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
+            Log::error('Exception in batalkanStatusKunjungan: '.$e->getMessage());
+            Log::error('Stack trace: '.$e->getTraceAsString());
 
             return response()->json([
                 'success' => false,
                 'status' => 500,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'message' => 'Terjadi kesalahan: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -634,12 +633,12 @@ class APIMobileController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('❌ Exception in bookingDokter: ' . $e->getMessage());
-            Log::error('❌ Stack trace: ' . $e->getTraceAsString());
+            Log::error('❌ Exception in bookingDokter: '.$e->getMessage());
+            Log::error('❌ Stack trace: '.$e->getTraceAsString());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membuat kunjungan: ' . $e->getMessage(),
+                'message' => 'Gagal membuat kunjungan: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -672,11 +671,11 @@ class APIMobileController extends Controller
                 'data' => $riwayat,
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error getting riwayat kunjungan: ' . $e->getMessage());
+            Log::error('Error getting riwayat kunjungan: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil riwayat kunjungan: ' . $e->getMessage(),
+                'message' => 'Gagal mengambil riwayat kunjungan: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -695,11 +694,11 @@ class APIMobileController extends Controller
                 'message' => 'Berhasil Meminta Data Testimoni',
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error getting testimoni: ' . $e->getMessage());
+            Log::error('Error getting testimoni: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil data testimoni: ' . $e->getMessage(),
+                'message' => 'Gagal mengambil data testimoni: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -724,14 +723,14 @@ class APIMobileController extends Controller
             // Upload foto jika ada
             if ($request->hasFile('foto')) {
                 $foto = $request->file('foto');
-                $namaFoto = time() . '_' . $foto->getClientOriginalName();
+                $namaFoto = time().'_'.$foto->getClientOriginalName();
                 $jalurFoto = $foto->storeAs('Foto-Testimoni', $namaFoto, 'public');
             }
 
             // Upload video jika ada
             if ($request->hasFile('video')) {
                 $video = $request->file('video');
-                $namaVideo = time() . '_' . $video->getClientOriginalName();
+                $namaVideo = time().'_'.$video->getClientOriginalName();
                 $jalurVideo = $video->storeAs('Video-Testimoni', $namaVideo, 'public');
             }
 
@@ -758,11 +757,11 @@ class APIMobileController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Error creating testimoni: ' . $e->getMessage());
+            Log::error('Error creating testimoni: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membuat testimoni: ' . $e->getMessage(),
+                'message' => 'Gagal membuat testimoni: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -782,11 +781,11 @@ class APIMobileController extends Controller
                 'message' => 'Berhasil Mengambil Data Dokter',
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error getting data dokter: ' . $e->getMessage());
+            Log::error('Error getting data dokter: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil data dokter: ' . $e->getMessage(),
+                'message' => 'Gagal mengambil data dokter: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -857,7 +856,7 @@ class APIMobileController extends Controller
 
         if ($request->hasFile('foto_dokter')) {
             $fileFoto = $request->file('foto_dokter');
-            $namaFoto = $request->nama_dokter . '_' . time() . '.' . $fileFoto->getClientOriginalExtension();
+            $namaFoto = $request->nama_dokter.'_'.time().'.'.$fileFoto->getClientOriginalExtension();
             $pathFotoDokter = $fileFoto->storeAs('Foto-Dokter', $namaFoto, 'public');
         }
 
@@ -914,11 +913,11 @@ class APIMobileController extends Controller
                 'message' => 'Berhasil mengambil data kunjungan dokter',
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error getting kunjungan by dokter ID: ' . $e->getMessage());
+            Log::error('Error getting kunjungan by dokter ID: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil data kunjungan: ' . $e->getMessage(),
+                'message' => 'Gagal mengambil data kunjungan: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -938,11 +937,11 @@ class APIMobileController extends Controller
                 'message' => 'Berhasil Mengambil Data Spesialisasi Dokter',
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error getting spesialisasi dokter: ' . $e->getMessage());
+            Log::error('Error getting spesialisasi dokter: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil data spesialisasi: ' . $e->getMessage(),
+                'message' => 'Gagal mengambil data spesialisasi: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -984,11 +983,11 @@ class APIMobileController extends Controller
                 $resepId = null;
 
                 // Jika dokter menambahkan obat
-                if (!empty($request->resep)) {
+                if (! empty($request->resep)) {
                     // Buat data resep terlebih dahulu (tanpa obat)
                     $resep = Resep::create([
                         'kunjungan_id' => $kunjungan->id,
-                        'keterangan' => 'Resep dari EMR #' . $kunjungan->id,
+                        'keterangan' => 'Resep dari EMR #'.$kunjungan->id,
                     ]);
                     $resepId = $resep->id;
 
@@ -1014,16 +1013,16 @@ class APIMobileController extends Controller
                     'riwayat_penyakit_dahulu' => $request->riwayat_penyakit_dahulu,
                     'riwayat_penyakit_keluarga' => $request->riwayat_penyakit_keluarga,
                     'tekanan_darah' => $request->tanda_vital['tekanan_darah'] ?? null,
-                    'suhu_tubuh' => !empty($request->tanda_vital['suhu_tubuh'])
+                    'suhu_tubuh' => ! empty($request->tanda_vital['suhu_tubuh'])
                         ? (float) $request->tanda_vital['suhu_tubuh']
                         : null,
-                    'nadi' => !empty($request->tanda_vital['nadi'])
+                    'nadi' => ! empty($request->tanda_vital['nadi'])
                         ? (int) $request->tanda_vital['nadi']
                         : null,
-                    'pernapasan' => !empty($request->tanda_vital['pernapasan'])
+                    'pernapasan' => ! empty($request->tanda_vital['pernapasan'])
                         ? (int) $request->tanda_vital['pernapasan']
                         : null,
-                    'saturasi_oksigen' => !empty($request->tanda_vital['saturasi_oksigen'])
+                    'saturasi_oksigen' => ! empty($request->tanda_vital['saturasi_oksigen'])
                         ? (int) $request->tanda_vital['saturasi_oksigen']
                         : null,
                     'diagnosis' => $request->diagnosis,
@@ -1058,19 +1057,24 @@ class APIMobileController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'EMR dan resep berhasil disimpan. Pembayaran masih pending.',
+                'message' => 'EMR dan resep berhasil disimpan.',
                 'data' => $result,
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error saving EMR: ' . $e->getMessage());
+            Log::error('Error saving EMR: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal menyimpan EMR: ' . $e->getMessage(),
+                'message' => 'Gagal menyimpan EMR: '.$e->getMessage(),
             ], 500);
         }
     }
+
     // tampilkan dia riwayat pasien yg diperiksa dokter
+    // Ganti method getRiwayatPasienDiperiksa() di APIMobileController.php
+
+    // Perbaiki method getRiwayatPasienDiperiksa() di APIMobileController.php
+
     public function getRiwayatPasienDiperiksa()
     {
         try {
@@ -1078,14 +1082,14 @@ class APIMobileController extends Controller
 
             $dokter = Dokter::with('user')->where('user_id', $user_id)->firstOrFail();
 
-            if (!$dokter) {
+            if (! $dokter) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Data dokter tidak ditemukan'
+                    'message' => 'Data dokter tidak ditemukan',
                 ], 404);
             }
 
-            // Ambil semua kunjungan yang sudah completed (sudah diperiksa)
+            // 🔥 PERBAIKAN: Specify kolom dengan nama tabel untuk menghindari ambiguous column
             $riwayatPasien = Kunjungan::with([
                 'pasien' => function ($query) {
                     $query->select('id', 'nama_pasien', 'alamat', 'tanggal_lahir', 'jenis_kelamin', 'foto_pasien');
@@ -1094,11 +1098,12 @@ class APIMobileController extends Controller
                     $query->select('id', 'kunjungan_id', 'keluhan_utama', 'diagnosis', 'created_at');
                 },
                 'resep.obat' => function ($query) {
-                    $query->select('id', 'nama_obat', 'dosis');
-                }
+                    // 🔥 PERBAIKAN: Specify tabel untuk kolom id
+                    $query->select('obat.id', 'obat.nama_obat', 'obat.dosis');
+                },
             ])
                 ->where('dokter_id', $dokter->id)
-                ->where('status', 'Completed')
+                ->whereIn('status', ['Succeed', 'Canceled'])
                 ->orderBy('updated_at', 'desc')
                 ->get();
 
@@ -1110,20 +1115,21 @@ class APIMobileController extends Controller
                 'dokter_info' => [
                     'id' => $dokter->id,
                     'nama_dokter' => $dokter->nama_dokter,
-                    'user_id' => $user_id
+                    'user_id' => $user_id,
                 ],
                 'message' => 'Berhasil mengambil riwayat pasien yang diperiksa',
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error getting riwayat pasien diperiksa: ' . $e->getMessage());
+            Log::error('Error getting riwayat pasien diperiksa: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil riwayat pasien: ' . $e->getMessage(),
+                'message' => 'Gagal mengambil riwayat pasien: '.$e->getMessage(),
             ], 500);
         }
     }
 
+    // Juga perbaiki method getDetailRiwayatPasien()
     public function getDetailRiwayatPasien($kunjunganId)
     {
         try {
@@ -1133,11 +1139,14 @@ class APIMobileController extends Controller
             $detailRiwayat = Kunjungan::with([
                 'pasien',
                 'emr',
-                'resep.obat'
+                'resep.obat' => function ($query) {
+                    // 🔥 PERBAIKAN: Specify tabel untuk kolom id
+                    $query->select('obat.id', 'obat.nama_obat', 'obat.dosis');
+                },
             ])
                 ->where('id', $kunjunganId)
                 ->where('dokter_id', $dokter->id)
-                ->where('status', 'Completed')
+                ->whereIn('status', ['Succeed', 'Canceled'])
                 ->firstOrFail();
 
             return response()->json([
@@ -1147,11 +1156,11 @@ class APIMobileController extends Controller
                 'message' => 'Berhasil mengambil detail riwayat pasien',
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error getting detail riwayat pasien: ' . $e->getMessage());
+            Log::error('Error getting detail riwayat pasien: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil detail riwayat: ' . $e->getMessage(),
+                'message' => 'Gagal mengambil detail riwayat: '.$e->getMessage(),
             ], 500);
         }
     }
