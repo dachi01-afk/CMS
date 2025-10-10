@@ -997,7 +997,7 @@ class APIMobileController extends Controller
                         $resep->obat()->attach($obat->id, [
                             'jumlah' => $obatResep['jumlah'] ?? 1,
                             'dosis' => $obatResep['dosis'] ?? null,
-                            'keterangan' => $request->ketarangan,
+                            'keterangan' => $obatResep['keterangan'],
                             'created_at' => now(),
                             'updated_at' => now(),
                         ]);
@@ -1131,37 +1131,38 @@ class APIMobileController extends Controller
 
     // Juga perbaiki method getDetailRiwayatPasien()
     public function getDetailRiwayatPasien($kunjunganId)
-    {
-        try {
-            $user_id = Auth::user()->id;
-            $dokter = Dokter::where('user_id', $user_id)->firstOrFail();
+{
+    try {
+        $user_id = Auth::user()->id;
+        $dokter = Dokter::where('user_id', $user_id)->firstOrFail();
 
-            $detailRiwayat = Kunjungan::with([
-                'pasien',
-                'emr',
-                'resep.obat' => function ($query) {
-                    // 🔥 PERBAIKAN: Specify tabel untuk kolom id
-                    $query->select('obat.id', 'obat.nama_obat', 'obat.dosis');
-                },
-            ])
-                ->where('id', $kunjunganId)
-                ->where('dokter_id', $dokter->id)
-                ->whereIn('status', ['Succeed', 'Canceled'])
-                ->firstOrFail();
+        $detailRiwayat = Kunjungan::with([
+            'pasien',
+            'emr',
+            'resep.obat' => function ($query) {
+                // 🔥 TAMBAHKAN withPivot untuk keterangan
+                $query->select('obat.id', 'obat.nama_obat', 'obat.dosis')
+                      ->withPivot('jumlah', 'dosis', 'keterangan'); // ← TAMBAH keterangan
+            },
+        ])
+            ->where('id', $kunjunganId)
+            ->where('dokter_id', $dokter->id)
+            ->whereIn('status', ['Succeed', 'Canceled'])
+            ->firstOrFail();
 
-            return response()->json([
-                'success' => true,
-                'status' => 200,
-                'data' => $detailRiwayat,
-                'message' => 'Berhasil mengambil detail riwayat pasien',
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error getting detail riwayat pasien: '.$e->getMessage());
+        return response()->json([
+            'success' => true,
+            'status' => 200,
+            'data' => $detailRiwayat,
+            'message' => 'Berhasil mengambil detail riwayat pasien',
+        ], 200);
+    } catch (\Exception $e) {
+        Log::error('Error getting detail riwayat pasien: '.$e->getMessage());
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengambil detail riwayat: '.$e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil detail riwayat: '.$e->getMessage(),
+        ], 500);
     }
+}
 }
