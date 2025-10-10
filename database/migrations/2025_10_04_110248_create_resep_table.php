@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('kunjungan_id')->constrained('kunjungan','id', 'resep_kunjungan_id')
                 ->cascadeOnDelete()->cascadeOnUpdate();
-            $table->foreignId('apoteker_id')->constrained('apoteker','id', 'resep_apoteker_id')
+            $table->foreignId('obat_id')->constrained('obat','id', 'resep_obat_id')
                 ->cascadeOnDelete()->cascadeOnUpdate();
             $table->timestamps();
         });
