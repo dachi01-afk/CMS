@@ -15,12 +15,12 @@ $(function () {
         info: false,
         ajax: "/manajemen_pengguna/data_apoteker",
         columns: [
-            { data: 'id', name: 'id' },
+            { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+            { data: 'foto', name: 'foto', orderable: false, searchable: false, className: 'text-center' },
             { data: 'nama_apoteker', name: 'nama_apoteker' },
             { data: 'username', name: 'username' },
             { data: 'email_user', name: 'email_user' },
             { data: 'role', name: 'role' },
-            { data: 'email_apoteker', name: 'email_apoteker' },
             { data: 'no_hp_apoteker', name: 'no_hp_apoteker' },
             { data: 'action', name: 'action', orderable: false, searchable: false, className: 'text-center whitespace-nowrap' },
         ],
@@ -107,25 +107,19 @@ $(function () {
     $formAdd.on('submit', function(e) {
         e.preventDefault();
         const url = $formAdd.data('url');
-        const formData = {
-            username: $('#username_apoteker').val(),
-            password: $('#password').val(),
-            password_confirmation: $('#password_confirmation').val(),
-            nama_apoteker: $('#nama_apoteker').val(),
-            email_apoteker: $('#email_apoteker').val(),
-            no_hp_apoteker: $('#no_hp_apoteker').val(),
-            role: 'Apoteker',
-        };
+        const formData = new FormData($formAdd[0]);
 
         $('.text-red-600').empty();
         $formAdd.find('.is-invalid').removeClass('is-invalid');
 
-        axios.post(url, formData)
+        axios.post(url, formData, {
+                headers: { 'Content-Type': 'multipart/form-data' }
+            })
             .then(response => {
                 Swal.fire({
                     icon: 'success',
                     title: 'Berhasil!',
-                    text: response.data.message,
+                    text: response.data.success,
                     showConfirmButton: false,
                     timer: 2000
                 }).then(() => {
@@ -161,18 +155,27 @@ $(function () {
     });
 });
 
-
 // edit data apoteker
 $(function () {
     const editModalElement = document.getElementById('editApotekerModal');
     const editModal = editModalElement ? new Modal(editModalElement) : null;
     const $formEdit = $('#formEditApoteker');
+    const initialEditUrl = $formEdit.data('url');
 
     function resetEditForm() {
         $formEdit[0].reset();
         $formEdit.find('.is-invalid').removeClass('is-invalid');
         $formEdit.find('.text-red-600').empty();
-    }
+
+        // reset URL ke awal
+        $formEdit.data('url', initialEditUrl);
+        $formEdit.attr('action', initialEditUrl);
+
+        // Reset preview foto
+        $('#edit_preview_foto_apoteker').addClass('hidden').attr('src', '');
+        $('#edit_placeholder_foto_apoteker').removeClass('hidden');
+        $('#edit_foto_drop_area_apoteker').removeClass('border-solid border-gray-300').addClass('border-dashed border-gray-400');
+}
 
     $('body').on('click', '.btn-edit-apoteker', function() {
         resetEditForm();
@@ -181,16 +184,25 @@ $(function () {
         axios.get(`/manajemen_pengguna/get_apoteker_by_id/${id}`)
             .then(response => {
                 const data = response.data.data;
-                console.log(data);
+                
                 const baseUrl = $formEdit.data('url');
                 const finalUrl = baseUrl.replace('/0', '/' + data.id);
                 $formEdit.data('url', finalUrl);
+                $formEdit.attr('action', finalUrl);
 
                 $('#edit_apoteker_id').val(data.id);
                 $('#edit_username_apoteker').val(data.user.username);
+                $('#edit_email_apoteker').val(data.user.email);
                 $('#edit_nama_apoteker').val(data.nama_apoteker);
-                $('#edit_email_apoteker').val(data.email_apoteker);
                 $('#edit_no_hp_apoteker').val(data.no_hp_apoteker);
+
+                 // Tampilkan foto existing jika ada
+                if (data.foto_apoteker) {
+                    const fotoUrl = `/storage/${data.foto_apoteker}`;
+                    $('#edit_preview_foto_apoteker').attr('src', fotoUrl).removeClass('hidden');
+                    $('#edit_placeholder_foto_apoteker').addClass('hidden');
+                    $('#edit_foto_drop_area_apoteker').removeClass('border-dashed border-gray-400').addClass('border-solid border-gray-300');
+                }
 
                 if (editModal) editModal.show();
             })
@@ -206,16 +218,8 @@ $(function () {
     $formEdit.on('submit', function(e) {
         e.preventDefault();
         const url = $formEdit.data('url');
-
-        const formData = {
-            edit_username_apoteker: $('#edit_username_apoteker').val(),
-            edit_nama_apoteker: $('#edit_nama_apoteker').val(),
-            edit_email_apoteker: $('#edit_email_apoteker').val(),
-            edit_no_hp_apoteker: $('#edit_no_hp_apoteker').val(),
-            edit_password_apoteker: $('#edit_password_apoteker').val(),
-            edit_password_apoteker_confirmation: $('#edit_password_apoteker_confirmation').val(),
-            _method: 'PUT'
-        };
+        const formData = new FormData($formEdit[0]);
+            if (!formData.has('_method')) formData.append('_method', 'PUT');
 
         axios.post(url, formData)
             .then(response => {
@@ -226,8 +230,9 @@ $(function () {
                     showConfirmButton: false,
                     timer: 2000
                 }).then(() => {
-                    editModal.hide();
-                    $('#apotekerTable').DataTable().ajax.reload(null, false);
+                     editModal.hide();
+                    $('#userApoteker').DataTable().ajax.reload(null, false);
+                    resetEditForm();
                 });
             })
             .catch(error => {
@@ -252,8 +257,6 @@ $(function () {
         if (editModal) editModal.hide();
     });
 });
-
-
 
 
 // delete data dokter
@@ -299,6 +302,120 @@ $(function () {
                     });
             }
         });
+    });
+});
+
+// pasfoto
+document.addEventListener('DOMContentLoaded', function () {
+    const fileInput = document.getElementById('foto_apoteker');
+    const previewImg = document.getElementById('preview_foto_apoteker');
+    const placeholder = document.getElementById('placeholder_foto_apoteker');
+    const dropArea = document.getElementById('foto_drop_area_apoteker');
+    const modalElement = document.getElementById('addApotekerModal');
+    const closeButton = document.getElementById('closeAddApotekerModal');
+
+    // Tampilkan preview foto saat upload
+    fileInput.addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                previewImg.src = event.target.result;
+                previewImg.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                dropArea.classList.remove('border-dashed', 'border-gray-400');
+                dropArea.classList.add('border-solid', 'border-gray-300');
+            };
+            reader.readAsDataURL(file);
+        } else {
+            resetFotoPreview();
+        }
+    });
+
+    // Fungsi reset foto
+    function resetFotoPreview() {
+        fileInput.value = '';
+        previewImg.src = '';
+        previewImg.classList.add('hidden');
+        placeholder.classList.remove('hidden');
+        dropArea.classList.add('border-dashed', 'border-gray-400');
+        dropArea.classList.remove('border-solid', 'border-gray-300');
+    }
+
+    // Reset foto ketika modal ditutup (klik tombol close)
+    closeButton.addEventListener('click', function () {
+        modalElement.classList.add('hidden'); // sembunyikan modal
+        resetFotoPreview();
+        document.getElementById('formAddDokter').reset(); // reset seluruh form juga
+    });
+
+    // Reset ketika klik di luar modal (backdrop)
+    modalElement.addEventListener('click', function (e) {
+        // jika klik di luar konten (div bg putih)
+        if (e.target === modalElement) {
+            modalElement.classList.add('hidden');
+            resetFotoPreview();
+            formAdd.reset();
+        }
+    });
+});
+
+
+// edit foto
+document.addEventListener('DOMContentLoaded', function () {
+    const fileInput = document.getElementById('edit_foto_apoteker');
+    const previewImg = document.getElementById('edit_preview_foto_apoteker');
+    const placeholder = document.getElementById('edit_placeholder_foto_apoteker');
+    const dropArea = document.getElementById('edit_foto_drop_area_apoteker');
+    const closeButton = document.getElementById('closeEditApotekerModal');
+    const formEdit = document.getElementById('formEditApoteker');
+
+    function resetFotoPreview() {
+        if (fileInput) fileInput.value = '';
+        if (previewImg) {
+            previewImg.src = '';
+            previewImg.classList.add('hidden');
+        }
+        if (placeholder) placeholder.classList.remove('hidden');
+        if (dropArea) {
+            dropArea.classList.add('border-dashed', 'border-gray-400');
+            dropArea.classList.remove('border-solid', 'border-gray-300');
+        }
+    }
+
+    // Saat user pilih file baru
+    if (fileInput) {
+        fileInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    previewImg.src = event.target.result;
+                    previewImg.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+                    dropArea.classList.remove('border-dashed', 'border-gray-400');
+                    dropArea.classList.add('border-solid', 'border-gray-300');
+                };
+                reader.readAsDataURL(file);
+            }
+            // ❌ jangan reset kalau batal pilih file (biar foto lama tetap tampil)
+        });
+    }
+
+    // Tutup modal via tombol X
+    closeButton?.addEventListener('click', function () {
+        resetFotoPreview();
+        formEdit.reset();
+    });
+
+    // Tutup modal via backdrop klik (optional)
+    const modalElement = document.getElementById('editDokterModal');
+    modalElement?.addEventListener('click', function (e) {
+        if (e.target === modalElement) {
+            modalElement.classList.add('hidden');
+            resetFotoPreview();
+            formEdit.reset();
+        }
     });
 });
 

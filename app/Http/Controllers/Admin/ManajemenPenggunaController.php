@@ -41,12 +41,22 @@ class ManajemenPenggunaController extends Controller
 
     public function dataDokter()
     {
-        $query = Dokter::with('user')->select('dokter.*');
+        $query = Dokter::with(['user', 'jenisSpesialis'])->select('dokter.*');
 
         return DataTables::of($query)
+            ->addIndexColumn()
+            ->addColumn('foto', function ($row) {
+                if ($row->foto_dokter) {
+                    $url = asset('storage/' . $row->foto_dokter);
+                    return '<img src="' . $url . '" alt="Foto Dokter" class="w-12 h-12 rounded-lg object-cover mx-auto shadow">';
+                } else {
+                    return '<span class="text-gray-400 italic">Tidak ada</span>';
+                }
+            })
             ->addColumn('username', fn($row) => $row->user->username ?? '-')
             ->addColumn('email_user', fn($row) => $row->user->email ?? '-')
             ->addColumn('role', fn($row) => $row->user->role ?? '-')
+            ->addColumn('nama_spesialis', fn($row) => $row->jenisSpesialis->nama_spesialis ?? '-')
             ->addColumn('action', function ($dokter) {
                 return '
                 <button class="btn-edit-dokter text-blue-600 hover:text-blue-800 mr-2" data-id="' . $dokter->id . '"  title="Edit">
@@ -57,7 +67,7 @@ class ManajemenPenggunaController extends Controller
                 </button>
             ';
             })
-            ->rawColumns(['action'])
+            ->rawColumns(['foto', 'action'])
             ->make(true);
     }
 
@@ -66,6 +76,15 @@ class ManajemenPenggunaController extends Controller
         $query = Pasien::with('user')->select('pasien.*');
 
         return DataTables::of($query)
+            ->addIndexColumn()
+            ->addColumn('foto', function ($row) {
+                if ($row->foto_pasien) {
+                    $url = asset('storage/' . $row->foto_pasien);
+                    return '<img src="' . $url . '" alt="Foto Pasien" class="w-12 h-12 rounded-lg object-cover mx-auto shadow">';
+                } else {
+                    return '<span class="text-gray-400 italic">Tidak ada</span>';
+                }
+            })
             ->addColumn('username', fn($row) => $row->user->username ?? '-')
             ->addColumn('email_user', fn($row) => $row->user->email ?? '-')
             ->addColumn('role', fn($row) => $row->user->role ?? '-')
@@ -79,7 +98,7 @@ class ManajemenPenggunaController extends Controller
             </button>
             ';
             })
-            ->rawColumns(['action'])
+            ->rawColumns(['foto', 'action'])
             ->make(true);
     }
 
@@ -88,6 +107,15 @@ class ManajemenPenggunaController extends Controller
         $query = Apoteker::with('user')->select('apoteker.*');
 
         return DataTables::of($query)
+            ->addIndexColumn()
+            ->addColumn('foto', function ($row) {
+                if ($row->foto_apoteker) {
+                    $url = asset('storage/' . $row->foto_apoteker);
+                    return '<img src="' . $url . '" alt="Foto Apoteker" class="w-12 h-12 rounded-lg object-cover mx-auto shadow">';
+                } else {
+                    return '<span class="text-gray-400 italic">Tidak ada</span>';
+                }
+            })
             ->addColumn('username', fn($row) => $row->user->username ?? '-')
             ->addColumn('email_user', fn($row) => $row->user->email ?? '-')
             ->addColumn('role', fn($row) => $row->user->role ?? '-')
@@ -101,7 +129,7 @@ class ManajemenPenggunaController extends Controller
             </button>
             ';
             })
-            ->rawColumns(['action'])
+            ->rawColumns(['foto', 'action'])
             ->make(true);
     }
 }

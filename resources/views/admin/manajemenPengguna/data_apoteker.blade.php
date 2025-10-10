@@ -33,11 +33,11 @@
             <thead class="text-xs uppercase bg-sky-500 text-white">
                 <tr>
                     <th class="px-6 py-3">No</th>
+                    <th class="px-6 py-3">Profile</th>
                     <th class="px-6 py-3">Nama Apoteker</th>
                     <th class="px-6 py-3">Username</th>
                     <th class="px-6 py-3">Email Akun</th>
                     <th class="px-6 py-3">Role</th>
-                    <th class="px-6 py-3">Email Apoteker</th>
                     <th class="px-6 py-3">No HP</th>
                     <th class="px-6 py-3 text-center">Aksi</th>
                 </tr>
@@ -65,73 +65,107 @@
 
             {{-- Form --}}
             <form id="formAddApoteker" class="p-5 flex flex-col gap-4"
-                data-url="{{ route('manajemen_pengguna.add_apoteker') }}" method="POST">
+                data-url="{{ route('manajemen_pengguna.add_apoteker') }}" method="POST" enctype="multipart/form-data">
                 @csrf
 
-                {{-- Username --}}
-                <div>
-                    <label for="username"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Username</label>
-                    <input type="text" name="username" id="username_apoteker"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="Nama Apoteker" required>
-                    <div id="username-error_apoteker" class="text-red-600 text-sm mt-1"></div>
+                {{-- Foto --}}
+                <div class="col-span-full flex justify-center">
+                    <div id="foto_drop_area_apoteker"
+                        class="relative w-36 aspect-[3/4] rounded-lg border-2 border-dashed border-gray-400 
+                        flex items-center justify-center cursor-pointer overflow-hidden bg-gray-50 transition">
+
+                        <!-- Preview -->
+                        <img id="preview_foto_apoteker" src="" alt="Preview Foto"
+                            class="hidden w-full h-full object-cover">
+
+                        <!-- Placeholder -->
+                        <div id="placeholder_foto_apoteker"
+                            class="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
+                            upload profile
+                        </div>
+
+                        <!-- Input File -->
+                        <input type="file" name="foto_apoteker" id="foto_apoteker" accept="image/*"
+                            class="absolute inset-0 opacity-0 cursor-pointer" required>
+                    </div>
+                    <div id="foto_apoteker-error" class="text-red-600 text-sm mt-1 text-center"></div>
                 </div>
 
-                {{-- Nama Apoteker --}}
-                <div>
-                    <label for="nama" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                        Nama Apoteker
-                    </label>
-                    <input type="text" name="nama" id="nama_apoteker"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500
-                        focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="Nama Apoteker" required>
-                    <div id="nama_apoteker-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
+                <!-- Grid Form -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
+                    {{-- Username --}}
+                    <div>
+                        <label for="username_apoteker"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Username</label>
+                        <input type="text" name="username_apoteker" id="username_apoteker"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
+                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="Username" required>
+                        <div id="username_apoteker-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- Nama Apoteker --}}
+                    <div>
+                        <label for="nama_apoteker"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama Apoteker</label>
+                        <input type="text" name="nama_apoteker" id="nama_apoteker"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500
+                            w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="Nama Apoteker" required>
+                        <div id="nama_apoteker-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- Email --}}
+                    <div>
+                        <label for="email_apoteker"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
+                        <input type="email" name="email_apoteker" id="email_apoteker"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500
+                            w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="apoteker@example.com" required>
+                        <div id="email_apoteker-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- No HP --}}
+                    <div>
+                        <label for="no_hp_apoteker"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">No HP</label>
+                        <input type="text" name="no_hp_apoteker" id="no_hp_apoteker"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500
+                            w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="0812xxxxxxxx" required>
+                        <div id="no_hp_apoteker-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+                </div>
 
                 {{-- Password --}}
-                <div>
-                    <label for="password"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
-                    <input type="password" name="password" id="password"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="••••••••" required>
-                    <div id="password-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
+                <div class="pt-2 border-t border-gray-200 dark:border-gray-600">
+                    {{-- Password Baru --}}
+                    <div>
+                        <label for="password_apoteker"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password
+                            </_apotekerlabel>
+                            <input type="password" name="password_apoteker" id="password_apoteker"
+                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
+                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                                placeholder="••••••••" required>
+                            <div id="password_apoteker-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
 
-                {{-- Confirm Password --}}
-                <div>
-                    <label for="password_confirmation"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Confirm Password</label>
-                    <input type="password" name="password_confirmation" id="password_confirmation"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="••••••••" required
-                        oninput="this.setCustomValidity(this.value !== password.value ? 'Password tidak sama!' : '')">
-                    <div id="password_confirmation-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
-
-                {{-- Email Apoteker --}}
-                <div>
-                    <label for="email"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
-                    <input type="email" name="email" id="email_apoteker"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500
-                        focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="apoteker@example.com" required>
-                    <div id="email_apoteker-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
-
-                {{-- No HP --}}
-                <div>
-                    <label for="no_hp_apoteker" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">No
-                        HP</label>
-                    <input type="text" name="no_hp_apoteker" id="no_hp_apoteker"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500
-                        focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="0812xxxxxxxx" required>
-                    <div id="no_hp_apoteker-error" class="text-red-600 text-sm mt-1"></div>
+                    {{-- Konfirmasi Password --}}
+                    <div>
+                        <label for="password_apoteker_confirmation"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Konfirmasi
+                            Password</label>
+                        <input type="password" name="password_apoteker_confirmation"
+                            id="password_apoteker_confirmation"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
+                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="••••••••" required
+                            oninput="this.setCustomValidity(this.value !== password_apoteker.value ? 'Password tidak sama!' : '')">
+                        <div id="password_apoteker_confirmation-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
                 </div>
 
                 {{-- Buttons --}}
@@ -153,6 +187,7 @@
     </div>
 </div>
 
+
 {{-- Modal Edit Apoteker --}}
 <div id="editApotekerModal" aria-hidden="true"
     class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4">
@@ -166,60 +201,85 @@
 
             {{-- Form --}}
             <form id="formEditApoteker" class="p-5 flex flex-col gap-4"
-                data-url="{{ route('manajemen_pengguna.update_apoteker', ['id' => 0]) }}" method="POST">
+                data-url="{{ route('manajemen_pengguna.update_apoteker', ['id' => 0]) }}" method="POST"
+                enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
                 <input type="hidden" name="apoteker_id" id="edit_apoteker_id">
 
+                {{-- Foto --}}
+                <div class="col-span-full flex justify-center">
+                    <div id="edit_foto_drop_area_apoteker"
+                        class="relative w-36 aspect-[3/4] rounded-lg border-2 border-dashed border-gray-400 
+                        flex items-center justify-center cursor-pointer overflow-hidden bg-gray-50 transition">
 
-                {{-- Username --}}
-                <div>
-                    <label for="edit_username_apoteker"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Username</label>
-                    <input type="text" name="edit_username_apoteker" id="edit_username_apoteker"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
-                        focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="Username" required>
-                    <div id="edit_username-error" class="text-red-600 text-sm mt-1"></div>
+                        <!-- Preview -->
+                        <img id="edit_preview_foto_apoteker" src="" alt="Preview Foto"
+                            class="hidden w-full h-full object-cover">
+
+                        <!-- Placeholder -->
+                        <div id="edit_placeholder_foto_apoteker"
+                            class="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
+                            upload profile
+                        </div>
+
+                        <!-- Input File -->
+                        <input type="file" name="edit_foto_apoteker" id="edit_foto_apoteker" accept="image/*"
+                            class="absolute inset-0 opacity-0 cursor-pointer">
+                    </div>
+                    <div id="edit_foto_apoteker-error" class="text-red-600 text-sm mt-1 text-center"></div>
                 </div>
 
-                {{-- Nama --}}
-                <div>
-                    <label for="edit_nama_apoteker"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama Apoteker</label>
-                    <input type="text" name="edit_nama_apoteker" id="edit_nama_apoteker"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500
-                        w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="Nama Apoteker" required>
-                    <div id="edit_nama_apoteker-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
+                <!-- Grid Form -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                {{-- Email --}}
-                <div>
-                    <label for="edit_email_apoteker"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
-                    <input type="email" name="edit_email_apoteker" id="edit_email_apoteker"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500
-                        w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="apoteker@example.com" required>
-                    <div id="edit_email_apoteker-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
+                    {{-- Username --}}
+                    <div>
+                        <label for="edit_username_apoteker"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Username</label>
+                        <input type="text" name="edit_username_apoteker" id="edit_username_apoteker"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
+                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="Username" required>
+                        <div id="edit_username-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
 
-                {{-- No HP --}}
-                <div>
-                    <label for="edit_no_hp_apoteker"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">No HP</label>
-                    <input type="text" name="edit_no_hp_apoteker" id="edit_no_hp_apoteker"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500
-                        w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="081234567890" required>
-                    <div id="edit_no_hp_apoteker-error" class="text-red-600 text-sm mt-1"></div>
+                    {{-- Nama --}}
+                    <div>
+                        <label for="edit_nama_apoteker"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama Apoteker</label>
+                        <input type="text" name="edit_nama_apoteker" id="edit_nama_apoteker"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500
+                            w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="Nama Apoteker" required>
+                        <div id="edit_nama_apoteker-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- Email --}}
+                    <div>
+                        <label for="edit_email_apoteker"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
+                        <input type="email" name="edit_email_apoteker" id="edit_email_apoteker"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500
+                            w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="apoteker@example.com" required>
+                        <div id="edit_email_apoteker-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- No HP --}}
+                    <div>
+                        <label for="edit_no_hp_apoteker"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">No HP</label>
+                        <input type="text" name="edit_no_hp_apoteker" id="edit_no_hp_apoteker"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500
+                            w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="081234567890" required>
+                        <div id="edit_no_hp_apoteker-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
                 </div>
 
                 {{-- Password (Opsional) --}}
                 <div class="pt-2 border-t border-gray-200 dark:border-gray-600">
-                    <h4 class="text-md font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                    </h4>
 
                     {{-- Password baru --}}
                     <div>
@@ -264,6 +324,7 @@
         </div>
     </div>
 </div>
+
 
 
 

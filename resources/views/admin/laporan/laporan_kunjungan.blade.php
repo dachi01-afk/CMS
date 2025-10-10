@@ -31,10 +31,12 @@
             <thead class="text-xs uppercase bg-sky-500 text-white">
                 <tr>
                     <th class="px-6 py-3">No</th>
+                    <th class="px-6 py-3">No. Antrian</th>
                     <th class="px-6 py-3">Nama Dokter</th>
                     <th class="px-6 py-3">Nama Pasien</th>
                     <th class="px-6 py-3">Tanggal Kunjungan</th>
                     <th class="px-6 py-3">Keluhan Awal</th>
+                    <th class="px-6 py-3">Status</th>
                     {{-- <th class="px-6 py-3 text-center">Aksi</th> --}}
                 </tr>
             </thead>

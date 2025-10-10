@@ -33,6 +33,7 @@
             <thead class="text-xs uppercase bg-sky-500 text-white">
                 <tr>
                     <th class="px-6 py-3">No</th>
+                    <th class="px-6 py-3">Profile</th>
                     <th class="px-6 py-3">Nama Pasien</th>
                     <th class="px-6 py-3">Username</th>
                     <th class="px-6 py-3">Email Akun</th>
@@ -57,109 +58,144 @@
 <div id="addPasienModal" aria-hidden="true"
     class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4">
     <div class="relative w-full max-w-xl max-h-full">
-        <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
+        <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700 flex flex-col">
 
+            <!-- Header -->
             <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-600">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white">Tambah Data Pasien</h3>
             </div>
 
-            <form id="formAddPasien" class="p-5 flex flex-col gap-4"
-                data-url="{{ route('manajemen_pengguna.add_pasien') }}" method="POST">
+            <!-- Form -->
+            <form id="formAddPasien" class="flex-1 overflow-y-auto p-5 flex flex-col gap-4"
+                data-url="{{ route('manajemen_pengguna.add_pasien') }}" method="POST" enctype="multipart/form-data">
                 @csrf
 
-                {{-- Username --}}
-                <div>
-                    <label for="username_pasien"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Username</label>
-                    <input type="text" name="username_pasien" id="username_pasien"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="Username" required>
-                    <div id="username_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                {{-- Foto --}}
+                <div class="col-span-full flex justify-center">
+                    <div id="foto_drop_area_pasien"
+                        class="relative w-36 aspect-[3/4] rounded-lg border-2 border-dashed border-gray-400 
+                        flex items-center justify-center cursor-pointer overflow-hidden bg-gray-50 transition">
+                        <img id="preview_foto_pasien" src="" alt="Preview Foto"
+                            class="hidden w-full h-full object-cover">
+                        <div id="placeholder_foto_pasien"
+                            class="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
+                            upload profile
+                        </div>
+                        <input type="file" name="foto_pasien" id="foto_pasien" accept="image/*"
+                            class="absolute inset-0 opacity-0 cursor-pointer" required>
+                    </div>
+                    <div id="foto_pasien-error" class="text-red-600 text-sm mt-1 text-center"></div>
                 </div>
 
-                <div>
-                    <label for="nama_pasien" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                        Nama Pasien
-                    </label>
-                    <input type="text" id="nama_pasien" name="nama_pasien"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="Nama Pasien" required>
-                    <div id="nama_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                <!-- Grid Form -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {{-- Username --}}
+                    <div>
+                        <label for="username_pasien"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Username</label>
+                        <input type="text" name="username_pasien" id="username_pasien"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 
+                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="Username" required>
+                        <div id="username_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- Nama Pasien --}}
+                    <div>
+                        <label for="nama_pasien"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama Pasien</label>
+                        <input type="text" id="nama_pasien" name="nama_pasien"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 
+                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="Nama Pasien" required>
+                        <div id="nama_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- Email --}}
+                    <div>
+                        <label for="email_pasien"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
+                        <input type="email" name="email_pasien" id="email_pasien"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 
+                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="pasien@example.com" required>
+                        <div id="email_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- Alamat --}}
+                    <div>
+                        <label for="alamat_pasien"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Alamat</label>
+                        <input type="text" id="alamat_pasien" name="alamat_pasien"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 
+                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="Alamat Lengkap" required>
+                        <div id="alamat_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- Password --}}
+                    <div>
+                        <label for="password_pasien"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
+                        <input type="password" name="password_pasien" id="password_pasien"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 
+                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="••••••••" required>
+                        <div id="password_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- Confirm Password --}}
+                    <div>
+                        <label for="password_pasien_confirmation"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Konfirmasi
+                            Password</label>
+                        <input type="password" name="password_pasien_confirmation" id="password_pasien_confirmation"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 
+                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="••••••••" required
+                            oninput="this.setCustomValidity(this.value !== password_pasien.value ? 'Password tidak sama!' : '')">
+                        <div id="password_pasien_confirmation-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- Tanggal Lahir --}}
+                    <div>
+                        <label for="tanggal_lahir_pasien"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Tanggal Lahir</label>
+                        <input type="date" id="tanggal_lahir_pasien" name="tanggal_lahir_pasien"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 
+                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            required>
+                        <div id="tanggal_lahir_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- Jenis Kelamin --}}
+                    <div>
+                        <label for="jenis_kelamin_pasien"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Jenis Kelamin</label>
+                        <select id="jenis_kelamin_pasien" name="jenis_kelamin_pasien"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 
+                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                            <option value="" disabled selected>Pilih Jenis Kelamin</option>
+                            <option value="Laki-laki">Laki-laki</option>
+                            <option value="Perempuan">Perempuan</option>
+                        </select>
+                        <div id="jenis_kelamin_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
                 </div>
 
 
-                {{-- Email pasien --}}
-                <div>
-                    <label for="email_pasien"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
-                    <input type="email" name="email_pasien" id="email_pasien"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500
-                        focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="pasien@example.com" required>
-                    <div id="email_pasien-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
-
-                <div>
-                    <label for="alamat_pasien" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                        Alamat
-                    </label>
-                    <input type="text" id="alamat_pasien" name="alamat_pasien"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="Alamat Lengkap" required>
-                    <div id="alamat_pasien-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
-
-                {{-- Password --}}
-                <div>
-                    <label for="password_pasien"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
-                    <input type="password" name="password_pasien" id="password_pasien"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="••••••••" required>
-                    <div id="password_pasien-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
-
-                {{-- Confirm Password --}}
-                <div>
-                    <label for="password_pasien_confirmation"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Confirm Password</label>
-                    <input type="password" name="password_pasien_confirmation" id="password_pasien_confirmation"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="••••••••" required
-                        oninput="this.setCustomValidity(this.value !== password_pasien.value ? 'Password tidak sama!' : '')">
-                    <div id="password_pasien_confirmation-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
-
-                <div>
-                    <label for="tanggal_lahir" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                        Tanggal Lahir
-                    </label>
-                    <input type="date" id="tanggal_lahir" name="tanggal_lahir"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        required>
-                    <div id="tanggal_lahir-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
-
-                <div>
-                    <label for="jenis_kelamin" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                        Jenis Kelamin
-                    </label>
-                    <select id="jenis_kelamin" name="jenis_kelamin"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
-                        <option value="" disabled selected>Pilih Jenis Kelamin</option>
-                        <option value="Laki-laki">Laki-laki</option>
-                        <option value="Perempuan">Perempuan</option>
-                    </select>
-                    <div id="jenis_kelamin-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
-
-                <div class="flex justify-end gap-3 mt-5 border-t border-gray-200 pt-4 dark:border-gray-600">
+                <!-- Sticky Footer Buttons -->
+                <div
+                    class="flex justify-end gap-3 p-4 border-t border-gray-200 bg-white sticky bottom-0 rounded-b-lg dark:bg-gray-700 dark:border-gray-600">
                     <button type="button" id="closeAddPasienModal"
-                        class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500">
+                        class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 
+                    dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500">
                         Close
                     </button>
-                    <button type="submit" id="savePasienButton"
-                        class="px-5 py-2.5 text-sm font-medium text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+                    <button type="submit" form="formAddPasien" id="savePasienButton"
+                        class="px-5 py-2.5 text-sm font-medium text-white bg-blue-700 rounded-lg hover:bg-blue-800 
+                    focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 
+                    dark:focus:ring-blue-800">
                         Save
                     </button>
                 </div>
@@ -168,118 +204,167 @@
     </div>
 </div>
 
+
 <!-- Modal Edit Pasien -->
 <div id="editPasienModal" aria-hidden="true"
     class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4">
-    <div class="relative w-full max-w-xl max-h-full">
-        <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
+    <div class="relative w-full max-w-xl max-h-[90vh]">
+        <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700 flex flex-col h-full">
 
+            <!-- Header -->
             <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-600">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white">Edit Data Pasien</h3>
             </div>
 
-            <form id="formEditPasien" class="p-5 flex flex-col gap-4"
+            <!-- Form -->
+            <form id="formEditPasien" class="flex-1 overflow-y-auto p-5 flex flex-col gap-4"
                 data-url="{{ route('manajemen_pengguna.update_pasien', ['id' => 0]) }}" method="POST">
                 @csrf
                 @method('PUT')
                 <input type="hidden" id="edit_pasien_id" name="edit_pasien_id">
 
-                {{-- Username --}}
-                <div>
-                    <label for="edit_username_pasien"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Username</label>
-                    <input type="text" name="edit_username_pasien" id="edit_username_pasien"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="Username" required>
-                    <div id="edit_username_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                {{-- Foto --}}
+                <div class="col-span-full flex justify-center">
+                    <div id="edit_foto_drop_area_pasien"
+                        class="relative w-36 aspect-[3/4] rounded-lg border-2 border-dashed border-gray-400 
+                        flex items-center justify-center cursor-pointer overflow-hidden bg-gray-50 transition">
+                        <img id="edit_preview_foto_pasien" src="" alt="Preview Foto"
+                            class="hidden w-full h-full object-cover">
+                        <div id="edit_placeholder_foto_pasien"
+                            class="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
+                            upload profile
+                        </div>
+                        <input type="file" name="edit_foto_pasien" id="edit_foto_pasien" accept="image/*"
+                            class="absolute inset-0 opacity-0 cursor-pointer" required>
+                    </div>
+                    <div id="edit_foto_pasien-error" class="text-red-600 text-sm mt-1 text-center"></div>
                 </div>
 
-                <div>
-                    <label for="edit_nama_pasien"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama Pasien</label>
-                    <input type="text" id="edit_nama_pasien" name="edit_nama_pasien"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        required>
-                    <div id="edit_nama_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                <!-- Grid Form -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                    {{-- Username --}}
+                    <div>
+                        <label for="edit_username_pasien"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Username</label>
+                        <input type="text" name="edit_username_pasien" id="edit_username_pasien"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+                            focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 
+                            dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="Username" required>
+                        <div id="edit_username_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- Nama Pasien --}}
+                    <div>
+                        <label for="edit_nama_pasien"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama Pasien</label>
+                        <input type="text" id="edit_nama_pasien" name="edit_nama_pasien"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 
+                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            required>
+                        <div id="edit_nama_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- Email Pasien --}}
+                    <div>
+                        <label for="edit_email_pasien"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
+                        <input type="email" name="edit_email_pasien" id="edit_email_pasien"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+                            focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 
+                            dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="pasien@example.com" required>
+                        <div id="edit_email_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- Alamat --}}
+                    <div>
+                        <label for="edit_alamat_pasien"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Alamat</label>
+                        <input type="text" id="edit_alamat_pasien" name="edit_alamat_pasien"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 
+                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            required>
+                        <div id="edit_alamat_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- Password --}}
+                    <div>
+                        <label for="edit_password_pasien"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
+                        <input type="password" name="edit_password_pasien" id="edit_password_pasien"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+                            focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 
+                            dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="••••••••">
+                        <div id="edit_password_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- Confirm Password --}}
+                    <div>
+                        <label for="edit_password_pasien_confirmation"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Confirm
+                            Password</label>
+                        <input type="password" name="edit_password_pasien_confirmation"
+                            id="edit_password_pasien_confirmation"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+                            focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 
+                            dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="••••••••"
+                            oninput="this.setCustomValidity(this.value !== edit_password_pasien.value ? 'Password tidak sama!' : '')">
+                        <div id="edit_password_pasien_confirmation-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- Tanggal Lahir --}}
+                    <div>
+                        <label for="edit_tanggal_lahir_pasien"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Tanggal Lahir</label>
+                        <input type="date" id="edit_tanggal_lahir_pasien" name="edit_tanggal_lahir_pasien"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 
+                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            required>
+                        <div id="edit_tanggal_lahir-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- Jenis Kelamin --}}
+                    <div>
+                        <label for="edit_jenis_kelamin_pasien"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Jenis Kelamin</label>
+                        <select id="edit_jenis_kelamin_pasien" name="edit_jenis_kelamin_pasien"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 
+                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                            <option value="" disabled selected>Pilih Jenis Kelamin</option>
+                            <option value="Laki-laki">Laki-laki</option>
+                            <option value="Perempuan">Perempuan</option>
+                        </select>
+                        <div id="edit_jenis_kelamin-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
                 </div>
 
-                {{-- Email pasien --}}
-                <div>
-                    <label for="edit_email_pasien"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
-                    <input type="email" name="edit_email_pasien" id="edit_email_pasien"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500
-                        focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="pasien@example.com" required>
-                    <div id="edit_email_pasien-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
 
-                <div>
-                    <label for="edit_alamat_pasien"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Alamat</label>
-                    <input type="text" id="edit_alamat_pasien" name="edit_alamat_pasien"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        required>
-                    <div id="edit_alamat-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
-
-                {{-- Password --}}
-                <div>
-                    <label for="edit_password_pasien"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
-                    <input type="password" name="edit_password_pasien" id="edit_password_pasien"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="••••••••">
-                    <div id="edit_password_pasien-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
-
-                {{-- Confirm Password --}}
-                <div>
-                    <label for="edit_password_pasien_confirmation"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Confirm Password</label>
-                    <input type="password" name="edit_password_pasien_confirmation"
-                        id="edit_password_pasien_confirmation"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="••••••••"
-                        oninput="this.setCustomValidity(this.value !== edit_password_pasien.value ? 'Password tidak sama!' : '')">
-                    <div id="edit_password_pasien_confirmation-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
-
-                <div>
-                    <label for="edit_tanggal_lahir"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Tanggal Lahir</label>
-                    <input type="date" id="edit_tanggal_lahir" name="edit_tanggal_lahir"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        required>
-                    <div id="edit_tanggal_lahir-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
-
-                <div>
-                    <label for="edit_jenis_kelamin"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Jenis Kelamin</label>
-                    <select id="edit_jenis_kelamin" name="edit_jenis_kelamin"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
-                        <option value="" disabled selected>Pilih Jenis Kelamin</option>
-                        <option value="Laki-laki">Laki-laki</option>
-                        <option value="Perempuan">Perempuan</option>
-                    </select>
-                    <div id="edit_jenis_kelamin-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
-
-                <div class="flex justify-end gap-3 mt-5 border-t border-gray-200 pt-4 dark:border-gray-600">
+                <!-- Sticky Footer Buttons -->
+                <div
+                    class="flex justify-end gap-3 p-4 border-t border-gray-200 bg-white sticky bottom-0 rounded-b-lg 
+                dark:bg-gray-700 dark:border-gray-600">
                     <button type="button" id="closeEditPasienModal"
-                        class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500">
+                        class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg 
+                    hover:bg-gray-300 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500">
                         Close
                     </button>
-                    <button type="submit" id="updatePasienButton"
-                        class="px-5 py-2.5 text-sm font-medium text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+                    <button type="submit" form="formEditPasien" id="updatePasienButton"
+                        class="px-5 py-2.5 text-sm font-medium text-white bg-blue-700 rounded-lg hover:bg-blue-800 
+                    focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 
+                    dark:focus:ring-blue-800">
                         Save
                     </button>
                 </div>
             </form>
+
         </div>
     </div>
 </div>
+
 
 
 

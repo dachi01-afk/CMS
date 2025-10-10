@@ -15,7 +15,8 @@ $(function () {
         info: false,
         ajax: "/manajemen_pengguna/data_pasien",
         columns: [
-            { data: 'id', name: 'id' },
+            { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+            { data: 'foto', name: 'foto', orderable: false, searchable: false, className: 'text-center' },
             { data: 'nama_pasien', name: 'nama_pasien' },
             { data: 'username', name: 'username' },
             { data: 'email_user', name: 'email_user' },
@@ -113,22 +114,14 @@ $(function () {
     $formAdd.on('submit', function(e) {
         e.preventDefault();
         const url = $formAdd.data('url');
-
-        const formData = {
-            username: $('#username_pasien').val(),
-            password: $('#password_pasien').val(),
-            password_confirmation: $('#password_pasien_confirmation').val(),
-            nama_pasien: $('#nama_pasien').val(),
-            alamat_pasien: $('#alamat_pasien').val(),
-            email_pasien: $('#email_pasien').val(),
-            tanggal_lahir: $('#tanggal_lahir').val(),
-            jenis_kelamin: $('#jenis_kelamin').val(),
-        };
+        const formData = new FormData($formAdd[0]);
 
         $('.text-red-600').empty();
         $formAdd.find('.is-invalid').removeClass('is-invalid');
 
-        axios.post(url, formData)
+        axios.post(url, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        })
             .then(response => {
                 Swal.fire({
                     icon: 'success',
@@ -163,11 +156,21 @@ $(function () {
     const editModalElement = document.getElementById('editPasienModal');
     const editModal = editModalElement ? new Modal(editModalElement) : null;
     const $formEdit = $('#formEditPasien');
+    const initialEditUrl = $formEdit.data('url');
 
     function resetEditForm() {
         $formEdit[0].reset();
         $formEdit.find('.is-invalid').removeClass('is-invalid');
         $formEdit.find('.text-red-600').html('');
+
+        // reset URL ke awal
+        $formEdit.data('url', initialEditUrl);
+        $formEdit.attr('action', initialEditUrl);
+
+        // Reset preview foto
+        $('#edit_preview_foto_pasien').addClass('hidden').attr('src', '');
+        $('#edit_placeholder_foto_pasien').removeClass('hidden');
+        $('#edit_foto_drop_area_pasien').removeClass('border-solid border-gray-300').addClass('border-dashed border-gray-400');
     
     }
 
@@ -182,15 +185,23 @@ $(function () {
                 const baseUrl = $formEdit.data('url');
                 const finalUrl = baseUrl.replace('/0', '/' + pasien.id);
                 $formEdit.data('url', finalUrl);
+                $formEdit.attr('action', finalUrl);
 
                 $('#edit_pasien_id').val(pasien.id);
                 $('#edit_username_pasien').val(pasien.user.username);
                 $('#edit_nama_pasien').val(pasien.nama_pasien);
                 $('#edit_email_pasien').val(pasien.user.email);
                 $('#edit_alamat_pasien').val(pasien.alamat);
-                $('#edit_tanggal_lahir').val(pasien.tanggal_lahir);
-                $('#edit_jenis_kelamin').val(pasien.jenis_kelamin);
+                $('#edit_tanggal_lahir_pasien').val(pasien.tanggal_lahir);
+                $('#edit_jenis_kelamin_pasien').val(pasien.jenis_kelamin);
 
+                // Tampilkan foto existing jika ada
+                if (pasien.foto_pasien) {
+                    const fotoUrl = `/storage/${pasien.foto_pasien}`;
+                    $('#edit_preview_foto_pasien').attr('src', fotoUrl).removeClass('hidden');
+                    $('#edit_placeholder_foto_pasien').addClass('hidden');
+                    $('#edit_foto_drop_area_pasien').removeClass('border-dashed border-gray-400').addClass('border-solid border-gray-300');
+                }
                  if (editModal) editModal.show();
             })
             .catch(() => {
@@ -201,28 +212,9 @@ $(function () {
     $formEdit.on('submit', function(e) {
         e.preventDefault();
          const url = $formEdit.data('url');
+         const formData = new FormData($formEdit[0]);
+        if (!formData.has('_method')) formData.append('_method', 'PUT');
 
-        if (!url) {
-            Swal.fire({
-                icon: 'error',
-                title: 'Kesalahan!',
-                text: 'URL tujuan tidak ditemukan.'
-            });
-            return;
-        }
-
-        const formData = {
-            edit_username : $('#edit_username_pasien').val(),
-            edit_nama_pasien: $('#edit_nama_pasien').val(),
-            edit_email_pasien: $('#edit_email_pasien').val(),
-            edit_alamat: $('#edit_alamat_pasien').val(),
-            edit_tanggal_lahir: $('#edit_tanggal_lahir').val(),
-            edit_jenis_kelamin: $('#edit_jenis_kelamin').val(),
-            edit_password_pasien: $('#edit_password_pasien').val(),
-            edit_password_pasien_confirmation: $('#edit_password_pasien_confirmation').val(),
-            _method: 'PUT'
-        };
-        console.log(formData);
         axios.post(url, formData)
             .then(response => {
                 Swal.fire({
@@ -234,6 +226,7 @@ $(function () {
                 }).then(() => {
                     editModal.hide();
                     $('#pasienTable').DataTable().ajax.reload(null, false);
+                    resetEditForm();
                 });
             })
             .catch(error => {
@@ -302,6 +295,121 @@ $(function () {
                     });
             }
         });
+    });
+});
+
+
+// pasfoto
+document.addEventListener('DOMContentLoaded', function () {
+    const fileInput = document.getElementById('foto_pasien');
+    const previewImg = document.getElementById('preview_foto_pasien');
+    const placeholder = document.getElementById('placeholder_foto_pasien');
+    const dropArea = document.getElementById('foto_drop_area_pasien');
+    const modalElement = document.getElementById('addPasienModal');
+    const closeButton = document.getElementById('closeAddPasienModal');
+
+    // Tampilkan preview foto saat upload
+    fileInput.addEventListener('change', function (e) {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                previewImg.src = event.target.result;
+                previewImg.classList.remove('hidden');
+                placeholder.classList.add('hidden');
+                dropArea.classList.remove('border-dashed', 'border-gray-400');
+                dropArea.classList.add('border-solid', 'border-gray-300');
+            };
+            reader.readAsDataURL(file);
+        } else {
+            resetFotoPreview();
+        }
+    });
+
+    // Fungsi reset foto
+    function resetFotoPreview() {
+        fileInput.value = '';
+        previewImg.src = '';
+        previewImg.classList.add('hidden');
+        placeholder.classList.remove('hidden');
+        dropArea.classList.add('border-dashed', 'border-gray-400');
+        dropArea.classList.remove('border-solid', 'border-gray-300');
+    }
+
+    // Reset foto ketika modal ditutup (klik tombol close)
+    closeButton.addEventListener('click', function () {
+        modalElement.classList.add('hidden'); // sembunyikan modal
+        resetFotoPreview();
+        document.getElementById('formAddDokter').reset(); // reset seluruh form juga
+    });
+
+    // Reset ketika klik di luar modal (backdrop)
+    modalElement.addEventListener('click', function (e) {
+        // jika klik di luar konten (div bg putih)
+        if (e.target === modalElement) {
+            modalElement.classList.add('hidden');
+            resetFotoPreview();
+            formAdd.reset();
+        }
+    });
+});
+
+
+// edit foto
+document.addEventListener('DOMContentLoaded', function () {
+    const fileInput = document.getElementById('edit_foto_pasien');
+    const previewImg = document.getElementById('edit_preview_foto_pasien');
+    const placeholder = document.getElementById('edit_placeholder_foto_pasien');
+    const dropArea = document.getElementById('edit_foto_drop_area_pasien');
+    const closeButton = document.getElementById('closeEditPasienModal');
+    const formEdit = document.getElementById('formEditPasien');
+
+    function resetFotoPreview() {
+        if (fileInput) fileInput.value = '';
+        if (previewImg) {
+            previewImg.src = '';
+            previewImg.classList.add('hidden');
+        }
+        if (placeholder) placeholder.classList.remove('hidden');
+        if (dropArea) {
+            dropArea.classList.add('border-dashed', 'border-gray-400');
+            dropArea.classList.remove('border-solid', 'border-gray-300');
+        }
+    }
+
+    // Saat user pilih file baru
+    if (fileInput) {
+        fileInput.addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function (event) {
+                    previewImg.src = event.target.result;
+                    previewImg.classList.remove('hidden');
+                    placeholder.classList.add('hidden');
+                    dropArea.classList.remove('border-dashed', 'border-gray-400');
+                    dropArea.classList.add('border-solid', 'border-gray-300');
+                };
+                reader.readAsDataURL(file);
+            }
+            // ❌ jangan reset kalau batal pilih file (biar foto lama tetap tampil)
+        });
+    }
+
+    // Tutup modal via tombol X
+    closeButton?.addEventListener('click', function () {
+        resetFotoPreview();
+        formEdit.reset();
+    });
+
+    // Tutup modal via backdrop klik (optional)
+    const modalElement = document.getElementById('editDokterModal');
+    modalElement?.addEventListener('click', function (e) {
+        if (e.target === modalElement) {
+            modalElement.classList.add('hidden');
+            resetFotoPreview();
+            formEdit.reset();
+        }
     });
 });
 

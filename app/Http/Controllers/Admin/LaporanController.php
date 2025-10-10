@@ -20,21 +20,28 @@ class LaporanController extends Controller
     public function dataKunjungan()
     {
         $query = Kunjungan::with(['dokter:id,nama_dokter', 'pasien:id,nama_pasien'])
-            ->select(['id', 'dokter_id', 'pasien_id', 'tanggal_kunjungan', 'keluhan_awal']);
+            ->select(['id', 'dokter_id', 'pasien_id', 'tanggal_kunjungan', 'no_antrian', 'status', 'keluhan_awal']);
 
         return DataTables::of($query)
-            ->addColumn('dokter', fn($kunjungan) => $kunjungan->dokter->nama_dokter ?? '-')
-            ->addColumn('pasien', fn($kunjungan) => $kunjungan->pasien->nama_pasien ?? '-')
-            // ->addColumn('action', function ($kunjungan) {
-            //     return '
-            // <button class="btn-edit-kunjungan text-blue-600 hover:text-blue-800 mr-2" data-id="' . $kunjungan->id . '" title="Edit">
-            //     <i class="fa-regular fa-pen-to-square text-lg"></i>
-            // </button>
-            // <button class="btn-delete-kunjungan text-red-600 hover:text-red-800" data-id="' . $kunjungan->id . '" title="Hapus">
-            //     <i class="fa-regular fa-trash-can text-lg"></i>
-            // </button>';
-            // })
-            // ->rawColumns(['action'])
+            ->addIndexColumn()
+            ->addColumn('nama_dokter', fn($row) => $row->dokter->nama_dokter ?? '-')
+            ->addColumn('nama_pasien', fn($row) => $row->pasien->nama_pasien ?? '-')
+            ->editColumn('tanggal_kunjungan', function ($row) {
+                return $row->tanggal_kunjungan
+                    ? \Carbon\Carbon::parse($row->tanggal_kunjungan)->format('d/m/Y')
+                    : '-';
+            })
+            ->editColumn('status', function ($row) {
+                return match ($row->status) {
+                    'Pending'  => '<span class="px-2 py-1 text-xs font-semibold text-yellow-700 bg-yellow-100 rounded">Pending</span>',
+                    'Waiting'  => '<span class="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded">Waiting</span>',
+                    'Engaged'  => '<span class="px-2 py-1 text-xs font-semibold text-sky-700 bg-sky-100 rounded">Engaged</span>',
+                    'Succeed'  => '<span class="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded">Succeed</span>',
+                    'Canceled' => '<span class="px-2 py-1 text-xs font-semibold text-red-700 bg-red-100 rounded">Canceled</span>',
+                    default    => '<span class="px-2 py-1 text-xs font-semibold text-gray-700 bg-gray-100 rounded">-</span>',
+                };
+            })
+            ->rawColumns(['status'])
             ->make(true);
     }
 

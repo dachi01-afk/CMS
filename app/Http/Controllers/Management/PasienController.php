@@ -8,6 +8,8 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Intervention\Image\Laravel\Facades\Image;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 
@@ -17,28 +19,54 @@ class PasienController extends Controller
     public function createPasien(Request $request)
     {
         $request->validate([
-            'username'       => 'required|string|max:255',
-            'email_pasien'   => 'required|email|unique:user,email',
-            'password'       => 'required|string|min:6',
-            'nama_pasien'    => 'required|string|max:255',
-            'alamat_pasien'  => 'nullable|string|max:255',
-            'tanggal_lahir'  => 'nullable|date',
-            'jenis_kelamin'  => 'nullable|in:Laki-laki,Perempuan',
+            'foto_pasien'       => 'nullable|file|image|mimes:jpeg,jpg,png,gif,webp,jfif|max:5120',
+            'username_pasien'   => 'required|string|max:255',
+            'nama_pasien'       => 'required|string|max:255',
+            'email_pasien'      => 'required|email|unique:user,email',
+            'alamat_pasien'     => 'nullable|string|max:255',
+            'password_pasien'       => 'required|string|min:8|confirmed',
+            'tanggal_lahir_pasien'  => 'nullable|date',
+            'jenis_kelamin_pasien'  => 'nullable|in:Laki-laki,Perempuan',
         ]);
 
         $user = User::create([
-            'username' => $request->username,
+            'username' => $request->username_pasien,
             'email'    => $request->email_pasien,
-            'password' => Hash::make($request->password),
+            'password' => Hash::make($request->password_pasien),
             'role'     => 'Pasien',
         ]);
 
+        // 2️⃣ Upload + Kompres Foto
+        $fotoPath = null;
+        if ($request->hasFile('foto_pasien')) {
+            $file = $request->file('foto_pasien');
+
+            // ubah jfif ke jpg agar bisa di-encode
+            $extension = strtolower($file->getClientOriginalExtension());
+            if ($extension === 'jfif') {
+                $extension = 'jpg';
+            }
+
+            $fileName = 'pasien_' . time() . '.' . $extension;
+            $path = 'pasien/' . $fileName;
+
+            // Baca & kompres
+            $image = Image::read($file);
+            $image->scale(width: 800);
+
+            // Simpan hasil kompres ke storage/public/dokter
+            Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+
+            $fotoPath = $path;
+        }
+
         Pasien::create([
             'user_id'       => $user->id,
+            'foto_pasien'   => $fotoPath,
             'nama_pasien'   => $request->nama_pasien,
             'alamat'        => $request->alamat_pasien,
-            'tanggal_lahir' => $request->tanggal_lahir,
-            'jenis_kelamin' => $request->jenis_kelamin,
+            'tanggal_lahir' => $request->tanggal_lahir_pasien,
+            'jenis_kelamin' => $request->jenis_kelamin_pasien,
         ]);
 
         return response()->json(['message' => 'Data pasien berhasil ditambahkan.']);
@@ -57,29 +85,63 @@ class PasienController extends Controller
         $user = $pasien->user;
 
         $request->validate([
-            'edit_username'       => 'required|string|max:255|unique:user,username,' . $user->id,
-            'edit_nama_pasien'    => 'required|string|max:255',
-            'edit_email_pasien'   => 'required|email|unique:user,email,' . $user->id,
-            'edit_alamat'         => 'nullable|string|max:255',
-            'edit_tanggal_lahir'  => 'nullable|date',
-            'edit_jenis_kelamin'  => 'nullable|in:Laki-laki,Perempuan',
-            'edit_password_pasien'  => 'nullable|string|min:6|confirmed',
+            'edit_foto_pasien'          => 'nullable|file|image|mimes:jpeg,jpg,png,gif,webp,jfif|max:5120',
+            'edit_username_pasien'      => 'required|string|max:255|unique:user,username,' . $user->id,
+            'edit_nama_pasien'          => 'required|string|max:255',
+            'edit_email_pasien'         => 'required|email|unique:user,email,' . $user->id,
+            'edit_alamat_pasien'        => 'nullable|string|max:255',
+            'edit_tanggal_lahir_pasien' => 'nullable|date',
+            'edit_jenis_kelamin_pasien' => 'nullable|in:Laki-laki,Perempuan',
+            'edit_password_pasien'      => 'nullable|string|min:8|confirmed',
         ]);
 
-        // Update user
-        $user->username = $request->edit_username;
-        $user->email    = $request->edit_email_pasien;
+        // Update user account
+        $user->username = $request->input('edit_username_pasien');
+        $user->email    = $request->input('edit_email_pasien');
 
         if ($request->filled('edit_password_pasien')) {
-            $user->password = Hash::make($request->edit_password_pasien);
+            $user->password = Hash::make($request->input('edit_password_pasien'));
         }
+
+        // Handle foto upload (jika ada)
+        $fotoPath = null;
+        if ($request->hasFile('edit_foto_pasien')) {
+            $file = $request->file('edit_foto_pasien');
+
+            $extension = strtolower($file->getClientOriginalExtension());
+            if ($extension === 'jfif') {
+                $extension = 'jpg';
+            }
+
+            $fileName = 'pasien_' . time() . '.' . $extension;
+            $path = 'pasien/' . $fileName;
+
+            // Kompres / resize (sesuaikan method Image sesuai package yang Anda pakai)
+            $image = Image::read($file);
+            $image->scale(width: 800);
+
+            Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+
+            $fotoPath = $path;
+
+            // opsional: hapus foto lama jika ada
+            if ($pasien->foto_pasien && Storage::disk('public')->exists($pasien->foto_pasien)) {
+                Storage::disk('public')->delete($pasien->foto_pasien);
+            }
+        }
+
         // update pasien
-        $pasien->update([
+        $updateData = [
             'nama_pasien'   => $request->edit_nama_pasien,
-            'alamat'        => $request->edit_alamat,
-            'tanggal_lahir' => $request->edit_tanggal_lahir,
-            'jenis_kelamin' => $request->edit_jenis_kelamin,
-        ]);
+            'alamat'        => $request->edit_alamat_pasien,
+            'tanggal_lahir' => $request->edit_tanggal_lahir_pasien,
+            'jenis_kelamin' => $request->edit_jenis_kelamin_pasien,
+        ];
+
+        if ($fotoPath) {
+            $updateData['foto_pasien'] = $fotoPath;
+        }
+        $pasien->update($updateData);
 
         return response()->json(['message' => 'Data pasien berhasil diperbarui.']);
     }
@@ -87,6 +149,11 @@ class PasienController extends Controller
     public function deletePasien($id)
     {
         $pasien = Pasien::findOrFail($id);
+        // Hapus foto jika ada
+        if ($pasien->foto_pasien && Storage::disk('public')->exists($pasien->foto_pasien)) {
+            Storage::disk('public')->delete($pasien->foto_pasien);
+        }
+
         $pasien->user->delete();
         $pasien->delete();
 

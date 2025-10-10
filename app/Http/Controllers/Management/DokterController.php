@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Intervention\Image\Laravel\Facades\Image;
 
 
 class DokterController extends Controller
@@ -22,9 +23,8 @@ class DokterController extends Controller
             'nama_dokter'        => 'required|string|max:255',
             'email_akun_dokter'  => 'required|email|max:255|unique:user,email',
             'spesialis_dokter'   => 'required|integer|exists:jenis_spesialis,id',
-            'email_dokter'       => 'required|email|max:255|unique:dokter,email',
             'password_dokter'    => 'required|string|min:8|confirmed',
-            // 'foto'               => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'foto_dokter'        => 'nullable|file|image|mimes:jpeg,jpg,png,gif,webp,jfif|max:5120',
             'deskripsi_dokter'   => 'nullable|string',
             'pengalaman_dokter'  => 'nullable|string|max:255',
             'no_hp_dokter'       => 'nullable|string|max:20',
@@ -38,19 +38,36 @@ class DokterController extends Controller
             'role'     => 'Dokter',
         ]);
 
-        // // 2️⃣ Upload foto (jika ada)
-        // $fotoPath = null;
-        // if ($request->hasFile('foto')) {
-        //     $fotoPath = $request->file('foto')->store('dokter', 'public');
-        // }
+        // 2️⃣ Upload + Kompres Foto
+        $fotoPath = null;
+        if ($request->hasFile('foto_dokter')) {
+            $file = $request->file('foto_dokter');
+
+            // ubah jfif ke jpg agar bisa di-encode
+            $extension = strtolower($file->getClientOriginalExtension());
+            if ($extension === 'jfif') {
+                $extension = 'jpg';
+            }
+
+            $fileName = 'dokter_' . time() . '.' . $extension;
+            $path = 'dokter/' . $fileName;
+
+            // Baca & kompres
+            $image = Image::read($file);
+            $image->scale(width: 800);
+
+            // Simpan hasil kompres ke storage/public/dokter
+            Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+
+            $fotoPath = $path;
+        }
 
         // 3️⃣ Simpan ke tabel dokter
         Dokter::create([
             'user_id'            => $user->id,
             'nama_dokter'        => $request->nama_dokter,
             'jenis_spesialis_id' => $request->spesialis_dokter,
-            'email'              => $request->email_dokter,
-            // 'foto'               => $fotoPath,
+            'foto_dokter'        => $fotoPath,
             'deskripsi_dokter'   => $request->deskripsi_dokter,
             'pengalaman'         => $request->pengalaman_dokter,
             'no_hp'              => $request->no_hp_dokter,
@@ -77,8 +94,7 @@ class DokterController extends Controller
             'edit_nama_dokter'        => 'required|string|max:255',
             'edit_email_akun_dokter'  => 'required|email|max:255|unique:user,email,' . $user->id,
             'edit_spesialis_dokter'   => 'required|integer|exists:jenis_spesialis,id',
-            'edit_email_dokter'       => 'required|email|max:255|unique:dokter,email,' . $dokter->id,
-            // 'edit_foto'               => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'edit_foto_dokter'        => 'nullable|file|image|mimes:jpeg,jpg,png,gif,webp,jfif|max:5120',
             'edit_no_hp_dokter'       => 'nullable|string|max:20',
             'edit_deskripsi_dokter'   => 'nullable|string',
             'edit_pengalaman_dokter'  => 'nullable|string|max:255',
@@ -86,34 +102,55 @@ class DokterController extends Controller
         ]);;
 
 
-        // Update user
-        $user->username = $request->edit_username_dokter;
-        $user->email    = $request->edit_email_akun_dokter;
+        // Update user account
+        $user->username = $request->input('edit_username_dokter');
+        $user->email    = $request->input('edit_email_akun_dokter');
 
         if ($request->filled('edit_password_dokter')) {
-            $user->password = Hash::make($request->edit_password_dokter);
+            $user->password = Hash::make($request->input('edit_password_dokter'));
         }
 
-        // // 2️⃣ Handle foto
-        // $fotoPath = $dokter->foto;
-        // if ($request->hasFile('foto')) {
-        //     // hapus foto lama jika ada
-        //     if ($dokter->foto && Storage::disk('public')->exists($dokter->foto)) {
-        //         Storage::disk('public')->delete($dokter->foto);
-        //     }
-        //     $fotoPath = $request->file('foto')->store('dokter', 'public');
-        // }
+        // Handle foto upload (jika ada)
+        $fotoPath = null;
+        if ($request->hasFile('edit_foto_dokter')) {
+            $file = $request->file('edit_foto_dokter');
+
+            $extension = strtolower($file->getClientOriginalExtension());
+            if ($extension === 'jfif') {
+                $extension = 'jpg';
+            }
+
+            $fileName = 'dokter_' . time() . '.' . $extension;
+            $path = 'dokter/' . $fileName;
+
+            // Kompres / resize (sesuaikan method Image sesuai package yang Anda pakai)
+            $image = Image::read($file);
+            $image->scale(width: 800);
+
+            Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+
+            $fotoPath = $path;
+
+            // opsional: hapus foto lama jika ada
+            if ($dokter->foto_dokter && Storage::disk('public')->exists($dokter->foto_dokter)) {
+                Storage::disk('public')->delete($dokter->foto_dokter);
+            }
+        }
+
 
         // 3️⃣ Update dokter
-        $dokter->update([
+        $updateData = [
             'nama_dokter'        => $request->edit_nama_dokter,
             'jenis_spesialis_id' => $request->edit_spesialis_dokter,
-            'email'              => $request->edit_email_dokter,
-            // 'foto'               => $fotoPath,
             'deskripsi_dokter'   => $request->edit_deskripsi_dokter,
             'pengalaman'         => $request->edit_pengalaman_dokter,
             'no_hp'              => $request->edit_no_hp_dokter,
-        ]);
+        ];
+
+        if ($fotoPath) {
+            $updateData['foto_dokter'] = $fotoPath;
+        }
+        $dokter->update($updateData);
 
         return response()->json(['success' => 'Data dokter berhasil diperbarui.']);
     }
@@ -125,8 +162,8 @@ class DokterController extends Controller
         $user = $dokter->user;
 
         // Hapus foto jika ada
-        if ($dokter->foto && Storage::disk('public')->exists($dokter->foto)) {
-            Storage::disk('public')->delete($dokter->foto);
+        if ($dokter->foto_dokter && Storage::disk('public')->exists($dokter->foto_dokter)) {
+            Storage::disk('public')->delete($dokter->foto_dokter);
         }
 
         $dokter->delete();
