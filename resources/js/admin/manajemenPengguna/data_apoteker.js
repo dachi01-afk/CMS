@@ -92,6 +92,11 @@ $(function () {
         $formAdd[0].reset();
         $formAdd.find('.is-invalid').removeClass('is-invalid');
         $formAdd.find('.text-red-600').empty();
+
+        // Reset preview foto
+        $('#preview_foto_apoteker').addClass('hidden').attr('src', '');
+        $('#placeholder_foto_apoteker').removeClass('hidden');
+        $('#foto_drop_area_apoteker').removeClass('border-solid border-gray-300').addClass('border-dashed border-gray-400');
     }
 
     $('#btnAddApoteker').on('click', function() {
@@ -126,6 +131,7 @@ $(function () {
                     if ($('#userApoteker').length) {
                         addModal.hide();
                         $('#userApoteker').DataTable().ajax.reload(null, false);
+                        resetAddForm();
                     } else {
                         window.location.reload();
                     }
@@ -175,7 +181,7 @@ $(function () {
         $('#edit_preview_foto_apoteker').addClass('hidden').attr('src', '');
         $('#edit_placeholder_foto_apoteker').removeClass('hidden');
         $('#edit_foto_drop_area_apoteker').removeClass('border-solid border-gray-300').addClass('border-dashed border-gray-400');
-}
+    }
 
     $('body').on('click', '.btn-edit-apoteker', function() {
         resetEditForm();
@@ -281,7 +287,7 @@ $(function () {
                         Swal.fire({
                             icon: 'success',
                             title: 'Berhasil!',
-                            text: response.data.message,
+                            text: response.data.success,
                             showConfirmButton: false,
                             timer: 1500
                         }).then(() => {

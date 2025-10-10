@@ -27,13 +27,10 @@ class DatabaseSeeder extends Seeder
             // KunjunganSeeder::class,
             // TestimoniSeeder::class,
             // ResepSeeder::class,
-            // ResepObatSeeder::class,
             // TesLabSeeder::class,
-            // KonsulSeeder::class,
             // PembayaranSeeder::class,
             // AdministrasiSeeder::class,
-            // EMRSeeder::class,
-            // TransaksiApotekerSeeder::class,
+            EMRSeeder::class,
         ]);
     }
 }
