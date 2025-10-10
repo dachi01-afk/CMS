@@ -40,8 +40,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware(['auth:sanctum', 'role:Dokter'])->group(function () {
     Route::prefix('dokter')->group(function () {
         Route::get('/get-data-dokter', [APIMobileController::class, 'getDataDokter']);
-        // Tambahkan route untuk update profile dokter
-        Route::put('/update-profile', [APIMobileController::class, 'updateDataDokter']);
-        Route::put('/get-data-kunjungan-by-id-dokter', [APIMobileController::class, 'getDataKunjunganBerdasarkanIdDokter']);
+        Route::post('/update-profile', [APIMobileController::class, 'updateDataDokter']);
+        Route::get('/get-data-kunjungan-by-id-dokter', [APIMobileController::class, 'getDataKunjunganBerdasarkanIdDokter']);
     });
 });

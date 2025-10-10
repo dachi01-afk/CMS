@@ -875,20 +875,57 @@ class APIMobileController extends Controller
         ]);
     }
 
-    public function getDataKunjunganBerdasarkanIdDokter()
-    {
+public function getDataKunjunganBerdasarkanIdDokter()
+{
+    try {
         $user_id = Auth::user()->id;
-        $dokter_id = Dokter::with('user')->where('user_id', $user_id)->get();
+        
+        // ini Ambil data dokter yang login
+        $dokter = Dokter::where('user_id', $user_id)->first();
+        
+        if (!$dokter) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data dokter tidak ditemukan'
+            ], 404);
+        }
 
-        $dataKunjungan = Kunjungan::with('dokter', 'pasien')->where('dokter_id', $dokter_id)->get();
+        // Pakai ID dokter untuk filter kunjungan
+        $dataKunjungan = Kunjungan::with(['dokter', 'pasien'])
+            ->where('dokter_id', $dokter->id)
+            ->orderBy('tanggal_kunjungan', 'desc')
+            ->orderBy('no_antrian', 'asc')
+            ->get();
+
+        // Filter kunjungan hari ini jika diperlukan
+        $kunjunganHariIni = Kunjungan::with(['dokter', 'pasien'])
+            ->where('dokter_id', $dokter->id)
+            ->whereDate('tanggal_kunjungan', now()->toDateString())
+            ->orderBy('no_antrian', 'asc')
+            ->get();
 
         return response()->json([
             'success' => true,
             'status' => 200,
-            'Data Kunjungan' => $dataKunjungan,
-            'message' => 'Berhasil Memunculkan Data Kunjungan Berdasarkan ID Dokter',
-        ]);
+            'data' => $dataKunjungan,
+            'kunjungan_hari_ini' => $kunjunganHariIni,
+            'dokter_info' => [
+                'id' => $dokter->id,
+                'nama_dokter' => $dokter->nama_dokter,
+                'user_id' => $user_id
+            ],
+            'message' => 'Berhasil mengambil data kunjungan dokter',
+        ], 200);
+
+    } catch (\Exception $e) {
+        Log::error('Error getting kunjungan by dokter ID: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil data kunjungan: ' . $e->getMessage(),
+        ], 500);
     }
+}
 
     public function getDataSpesialisasiDokter()
     {
