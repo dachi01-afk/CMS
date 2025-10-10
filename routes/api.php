@@ -12,14 +12,16 @@ Route::post('/register', [APIMobileController::class, 'register'])->name('api.re
 // API Untuk Login Dokter
 Route::post('/login-dokter', [APIMobileController::class, 'loginDokter']);
 
-// 🌐 Testimoni bisa diakses publik (tidak perlu login untuk lihat testimoni)
+// 🌐 PUBLIC ROUTES (tidak perlu login)
 Route::get('/getDataTestimoni', [APIMobileController::class, 'getDataTestimoni']);
 Route::post('/create-data-testimoni', [APIMobileController::class, 'createDataTestimoni']);
+Route::get('/getDataSpesialisasiDokter', [APIMobileController::class, 'getDataSpesialisasiDokter']);
+Route::get('/getDokterBySpesialisasi/{spesialisasi_id}', [APIMobileController::class, 'getDokterBySpesialisasi']);
 
 // 🔒 PROTECTED ROUTES (butuh autentikasi dengan token)
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/pasien/profile', [APIMobileController::class, 'getProfile']);
-    Route::put('/pasien/update', [APIMobileController::class, 'updateProfile']);
+    Route::post('/pasien/update', [APIMobileController::class, 'updateProfile']); 
     Route::get('/getJadwalDokter', [APIMobileController::class, 'getJadwalDokter'])->name('getJadwalDokter');
 
     // Kunjungan routes
@@ -31,13 +33,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/getDataJadwalDokter', [APIMobileController::class, 'getDataJadwalDokter']);
     Route::get('/getDataKunjungan', [APIMobileController::class, 'getDataKunjungan']);
     Route::get('/getDataDokter', [APIMobileController::class, 'getDataDokter']);
-    Route::get('/getDataSpesialisasiDokter', [APIMobileController::class, 'getDataSpesialisasiDokter']);
     Route::get('/getDataDokterSpesialisasi', [APIMobileController::class, 'getDataDokterSpesialisasi']);
 });
 
 // Route Untuk User Yang Login Sebagai Dokter 
 Route::middleware(['auth:sanctum', 'role:Dokter'])->group(function () {
     Route::get('/get-data-dokter', [APIMobileController::class, 'getDataDokter']);
-    // Tambahkan route untuk update profile dokter
-    Route::put('/dokter/update-profile', [APIMobileController::class, 'updateDataDokter']);
+    Route::post('/dokter/update-profile', [APIMobileController::class, 'updateDataDokter']);
 });

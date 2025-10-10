@@ -79,138 +79,169 @@ class APIMobileController extends Controller
         ]);
     }
 
-    public function getProfile(Request $request)
-    {
-        $user = $request->user();
+public function getProfile(Request $request)
+{
+    $user = $request->user();
 
-        if (! $user) {
+    if (!$user) {
+        return response()->json([
+            'success' => false,
+            'message' => 'User tidak ditemukan',
+        ], 404);
+    }
+
+    $pasien = $user->pasien;
+
+    if (!$pasien) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Data pasien tidak ditemukan',
+        ], 404);
+    }
+
+    return response()->json([
+        'success' => true,
+        'data' => [
+            'id' => $pasien->id,
+            'nama_pasien' => $pasien->nama_pasien,
+            'alamat' => $pasien->alamat,
+            'tanggal_lahir' => $pasien->tanggal_lahir,
+            'jenis_kelamin' => $pasien->jenis_kelamin,
+            'foto_pasien' => $pasien->foto_pasien, 
+            'created_at' => $user->created_at,
+            'email' => $user->email,
+            'username' => $user->username,
+            'role' => $user->role,
+        ],
+    ]);
+}
+
+public function updateProfile(Request $request)
+{
+    try {
+        $user = Auth::user();
+        if (!$user) {
             return response()->json([
                 'success' => false,
-                'message' => 'User tidak ditemukan',
-            ], 404);
+                'message' => 'Unauthorized',
+            ], 401);
         }
 
-        $pasien = $user->pasien;
-
-        if (! $pasien) {
+        $pasien = Pasien::where('user_id', $user->id)->first();
+        if (!$pasien) {
             return response()->json([
                 'success' => false,
                 'message' => 'Data pasien tidak ditemukan',
             ], 404);
         }
 
+        // Validasi input
+        $validated = $request->validate([
+            'nama_pasien' => 'required|string|max:255',
+            'alamat' => 'nullable|string|max:255',
+            'tanggal_lahir' => 'nullable|date',
+            'jenis_kelamin' => 'nullable|string|in:Laki-laki,Perempuan',
+            'foto_pasien' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // 🔥 TAMBAH VALIDASI FOTO
+        ]);
+
+        // Handle foto upload
+        $pathFotoPasien = $pasien->foto_pasien; // Keep existing photo if no new upload
+        
+        if ($request->hasFile('foto_pasien')) {
+            // Delete old photo if exists
+            if ($pasien->foto_pasien && \Storage::disk('public')->exists($pasien->foto_pasien)) {
+                \Storage::disk('public')->delete($pasien->foto_pasien);
+            }
+            
+            // Upload new photo
+            $fileFoto = $request->file('foto_pasien');
+            $namaFoto = 'pasien_' . $user->id . '_' . time() . '.' . $fileFoto->getClientOriginalExtension();
+            $pathFotoPasien = $fileFoto->storeAs('Foto-Pasien', $namaFoto, 'public');
+        }
+
+        // Update data pasien
+        $pasien->update([
+            'nama_pasien' => $validated['nama_pasien'],
+            'alamat' => $validated['alamat'],
+            'tanggal_lahir' => $validated['tanggal_lahir'],
+            'jenis_kelamin' => $validated['jenis_kelamin'],
+            'foto_pasien' => $pathFotoPasien, // 🔥 UPDATE FOTO
+        ]);
+
         return response()->json([
             'success' => true,
-            'data' => [
-                'id' => $pasien->id,
-                'nama_pasien' => $pasien->nama_pasien,
-                'alamat' => $pasien->alamat,
-                'tanggal_lahir' => $pasien->tanggal_lahir,
-                'jenis_kelamin' => $pasien->jenis_kelamin,
-                'created_at' => $user->created_at,
-                'email' => $user->email,
-                'username' => $user->username,
-                'role' => $user->role,
-            ],
+            'message' => 'Profil berhasil diperbarui',
+            'data' => $pasien->fresh(), // Return fresh data
         ]);
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation error',
+            'errors' => $e->errors(),
+        ], 422);
+    } catch (\Exception $e) {
+        Log::error('Error updating profile: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+        ], 500);
     }
-
-    public function updateProfile(Request $request)
-    {
-        try {
-            $user = Auth::user();
-            if (! $user) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Unauthorized',
-                ], 401);
-            }
-
-            $pasien = Pasien::where('user_id', $user->id)->first();
-            if (! $pasien) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data pasien tidak ditemukan',
-                ], 404);
-            }
-
-            // Validasi input
-            $validated = $request->validate([
-                'nama_pasien' => 'required|string|max:255',
-                'alamat' => 'nullable|string|max:255',
-                'tanggal_lahir' => 'nullable|date',
-                'jenis_kelamin' => 'nullable|string|in:Laki-laki,Perempuan',
-            ]);
-
-            // Update data pasien
-            $pasien->update($validated);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Profil berhasil diperbarui',
-                'data' => $pasien,
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
+}
 
     public function getJadwalDokter(Request $request)
-    {
-        try {
-            $jadwal = \App\Models\JadwalDokter::with('dokter')->get();
+{
+    try {
+        // Gunakan nama relasi yang benar sesuai model
+        $jadwal = \App\Models\JadwalDokter::with(['dokter.jenisSpesialis'])->get();
 
-            // Mapping hari ke angka (untuk PHP date function)
-            $hariMapping = [
-                'Senin' => 1,
-                'Selasa' => 2,
-                'Rabu' => 3,
-                'Kamis' => 4,
-                'Jumat' => 5,
-                'Sabtu' => 6,
-                'Minggu' => 0,
-            ];
+        // Mapping hari ke angka (untuk PHP date function)
+        $hariMapping = [
+            'Senin' => 1,
+            'Selasa' => 2,
+            'Rabu' => 3,
+            'Kamis' => 4,
+            'Jumat' => 5,
+            'Sabtu' => 6,
+            'Minggu' => 0,
+        ];
 
-            // Tambahkan tanggal terdekat untuk setiap jadwal
-            $jadwalWithDates = $jadwal->map(function ($item) use ($hariMapping) {
-                $hari = $item->hari;
-                $hariNumber = $hariMapping[$hari] ?? null;
+        // Tambahkan tanggal terdekat untuk setiap jadwal
+        $jadwalWithDates = $jadwal->map(function ($item) use ($hariMapping) {
+            $hari = $item->hari;
+            $hariNumber = $hariMapping[$hari] ?? null;
 
-                if ($hariNumber !== null) {
-                    // Hitung tanggal terdekat untuk hari tersebut
-                    $tanggalTerdekat = $this->getNextDateByDay($hariNumber);
-                    $item->tanggal_terdekat = $tanggalTerdekat;
-                    $item->tanggal_terdekat_formatted = $this->formatTanggalIndonesia($tanggalTerdekat);
-                    $item->hari_selisih = $this->getDayDifference($tanggalTerdekat);
-                } else {
-                    $item->tanggal_terdekat = null;
-                    $item->tanggal_terdekat_formatted = null;
-                    $item->hari_selisih = 999; // Untuk sorting terakhir
-                }
+            if ($hariNumber !== null) {
+                // Hitung tanggal terdekat untuk hari tersebut
+                $tanggalTerdekat = $this->getNextDateByDay($hariNumber);
+                $item->tanggal_terdekat = $tanggalTerdekat;
+                $item->tanggal_terdekat_formatted = $this->formatTanggalIndonesia($tanggalTerdekat);
+                $item->hari_selisih = $this->getDayDifference($tanggalTerdekat);
+            } else {
+                $item->tanggal_terdekat = null;
+                $item->tanggal_terdekat_formatted = null;
+                $item->hari_selisih = 999; // Untuk sorting terakhir
+            }
 
-                return $item;
-            });
+            return $item;
+        });
 
-            // Urutkan berdasarkan tanggal terdekat
-            $jadwalSorted = $jadwalWithDates->sortBy('hari_selisih')->values();
+        // Urutkan berdasarkan tanggal terdekat
+        $jadwalSorted = $jadwalWithDates->sortBy('hari_selisih')->values();
 
-            return response()->json([
-                'success' => true,
-                'data' => $jadwalSorted,
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error getting jadwal dokter: ' . $e->getMessage());
+        return response()->json([
+            'success' => true,
+            'data' => $jadwalSorted,
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error getting jadwal dokter: ' . $e->getMessage());
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengambil jadwal dokter: ' . $e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil jadwal dokter: ' . $e->getMessage(),
+        ], 500);
     }
-
+}
     /**
      * Hitung tanggal terdekat berdasarkan hari dalam minggu
      */
@@ -309,6 +340,89 @@ class APIMobileController extends Controller
             'Data Kunjungan' => $dataKunjungan,
         ]);
     }
+
+
+public function getDokterBySpesialisasi($spesialisasiId)
+{
+    try {
+        // Validasi apakah spesialisasi ada
+        $spesialisasi = DB::table('jenis_spesialis')
+            ->where('id', $spesialisasiId)
+            ->first();
+
+        if (!$spesialisasi) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Spesialisasi tidak ditemukan'
+            ], 404);
+        }
+
+        // Ambil dokter berdasarkan spesialisasi dengan jadwal mereka
+        $dokterList = Dokter::with([
+            'jenisSpesialis',
+            'jadwalDokter' => function($query) {
+                $query->orderBy('hari');
+            }
+        ])
+        ->where('jenis_spesialis_id', $spesialisasiId)
+        ->get();
+
+        // Mapping hari ke angka untuk perhitungan tanggal
+        $hariMapping = [
+            'Senin' => 1,
+            'Selasa' => 2,
+            'Rabu' => 3,
+            'Kamis' => 4,
+            'Jumat' => 5,
+            'Sabtu' => 6,
+            'Minggu' => 0,
+        ];
+
+        // Tambahkan tanggal terdekat untuk setiap jadwal dokter
+        $dokterWithSchedules = $dokterList->map(function ($dokter) use ($hariMapping) {
+            $jadwalWithDates = $dokter->jadwalDokter->map(function ($jadwal) use ($hariMapping) {
+                $hari = $jadwal->hari;
+                $hariNumber = $hariMapping[$hari] ?? null;
+
+                if ($hariNumber !== null) {
+                    $tanggalTerdekat = $this->getNextDateByDay($hariNumber);
+                    $jadwal->tanggal_terdekat = $tanggalTerdekat;
+                    $jadwal->tanggal_terdekat_formatted = $this->formatTanggalIndonesia($tanggalTerdekat);
+                    $jadwal->hari_selisih = $this->getDayDifference($tanggalTerdekat);
+                } else {
+                    $jadwal->tanggal_terdekat = null;
+                    $jadwal->tanggal_terdekat_formatted = null;
+                    $jadwal->hari_selisih = 999;
+                }
+
+                return $jadwal;
+            });
+
+            // Urutkan jadwal berdasarkan tanggal terdekat
+            $dokter->jadwalDokter = $jadwalWithDates->sortBy('hari_selisih')->values();
+            
+            return $dokter;
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'spesialisasi' => $spesialisasi,
+                'dokter_list' => $dokterWithSchedules,
+                'total_dokter' => $dokterWithSchedules->count()
+            ],
+            'message' => "Berhasil mengambil daftar dokter spesialisasi {$spesialisasi->nama_spesialis}"
+        ], 200);
+
+    } catch (\Exception $e) {
+        Log::error('Error getting dokter by spesialisasi: ' . $e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil data dokter: ' . $e->getMessage(),
+        ], 500);
+    }
+}
 
     public function batalkanStatusKunjungan(Request $request)
     {
@@ -759,5 +873,28 @@ class APIMobileController extends Controller
         'Data Dokter' => $dataDokter->fresh(),
         'message' => 'Berhasil Mengupdate Data Dokter'
     ]);
+}
+public function getDataSpesialisasiDokter()
+{
+    try {
+        $spesialis = DB::table('jenis_spesialis')
+            ->select('id', 'nama_spesialis')
+            ->orderBy('nama_spesialis', 'asc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'status' => 200,
+            'data' => $spesialis,
+            'message' => 'Berhasil Mengambil Data Spesialisasi Dokter'
+        ], 200);
+    } catch (\Exception $e) {
+        Log::error('Error getting spesialisasi dokter: '.$e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil data spesialisasi: '.$e->getMessage(),
+        ], 500);
+    }
 }
 }
