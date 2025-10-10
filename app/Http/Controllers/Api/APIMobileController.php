@@ -11,6 +11,7 @@ use App\Models\Pasien;
 use App\Models\Resep;
 use App\Models\Testimoni;
 use App\Models\User;
+use App\Models\Pembayaran;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -959,93 +960,117 @@ class APIMobileController extends Controller
     }
 
     public function saveEMR(Request $request)
-    {
-        try {
-            $request->validate([
-                'kunjungan_id' => 'required|exists:kunjungan,id',
-                'keluhan_utama' => 'required|string',
-                'riwayat_penyakit_sekarang' => 'nullable|string',
-                'riwayat_penyakit_dahulu' => 'nullable|string',
-                'riwayat_keluarga' => 'nullable|string',
-                'tanda_vital' => 'nullable|array',
-                'diagnosis' => 'required|string',
-                'resep' => 'nullable|array',
+{
+    try {
+        $request->validate([
+            'kunjungan_id' => 'required|exists:kunjungan,id',
+            'keluhan_utama' => 'required|string',
+            'riwayat_penyakit_sekarang' => 'nullable|string',
+            'riwayat_penyakit_dahulu' => 'nullable|string',
+            'riwayat_penyakit_keluarga' => 'nullable|string',
+            'tanda_vital' => 'nullable|array',
+            'diagnosis' => 'required|string',
+            'resep' => 'nullable|array', // [{obat_id, jumlah, dosis, keterangan}]
+        ]);
+
+        $user_id = Auth::id();
+        $dokter = Dokter::where('user_id', $user_id)->firstOrFail();
+
+        $kunjungan = Kunjungan::where('id', $request->kunjungan_id)
+            ->where('dokter_id', $dokter->id)
+            ->firstOrFail();
+
+        $result = DB::transaction(function () use ($request, $kunjungan) {
+            $resepId = null;
+
+            // Jika dokter menambahkan obat
+            if (!empty($request->resep)) {
+                // Buat data resep terlebih dahulu (tanpa obat)
+                $resep = Resep::create([
+                    'kunjungan_id' => $kunjungan->id,
+                    'keterangan' => 'Resep dari EMR #' . $kunjungan->id,
+                ]);
+                $resepId = $resep->id;
+
+                // Tambahkan obat ke resep_obat (pivot)
+                foreach ($request->resep as $obatResep) {
+                    $obat = Obat::findOrFail($obatResep['obat_id']);
+
+                    $resep->obat()->attach($obat->id, [
+                        'jumlah' => $obatResep['jumlah'] ?? 1,
+                        'dosis' => $obatResep['dosis'] ?? null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
+
+            // Buat EMR
+            $emr = EMR::create([
+                'kunjungan_id' => $kunjungan->id,
+                'resep_id' => $resepId,
+                'keluhan_utama' => $request->keluhan_utama,
+                'riwayat_penyakit_sekarang' => $request->riwayat_penyakit_sekarang,
+                'riwayat_penyakit_dahulu' => $request->riwayat_penyakit_dahulu,
+                'riwayat_penyakit_keluarga' => $request->riwayat_penyakit_keluarga,
+                'tekanan_darah' => $request->tanda_vital['tekanan_darah'] ?? null,
+                'suhu_tubuh' => !empty($request->tanda_vital['suhu_tubuh'])
+                    ? (float) $request->tanda_vital['suhu_tubuh']
+                    : null,
+                'nadi' => !empty($request->tanda_vital['nadi'])
+                    ? (int) $request->tanda_vital['nadi']
+                    : null,
+                'pernapasan' => !empty($request->tanda_vital['pernapasan'])
+                    ? (int) $request->tanda_vital['pernapasan']
+                    : null,
+                'saturasi_oksigen' => !empty($request->tanda_vital['saturasi_oksigen'])
+                    ? (int) $request->tanda_vital['saturasi_oksigen']
+                    : null,
+                'diagnosis' => $request->diagnosis,
             ]);
 
-            // Verifikasi dokter
-            $user_id = Auth::user()->id;
-            $dokter = Dokter::where('user_id', $user_id)->firstOrFail();
+            // Buat data pembayaran (belum bayar)
+            // $pembayaran = Pembayaran::create([
+            //     'emr_id' => $emr->id,
+            //     'total_tagihan' => 0, // sementara 0, nanti dihitung berdasarkan harga obat
+            //     'jumlah_bayar' => 0,
+            //     'kembalian' => 0,
+            //     'status' => 'Pending', // atau 'Belum Bayar'
+            //     'metode_pembayaran' => null,
+            //     'tanggal_pembayaran' => null,
+            // ]);
 
-            $kunjungan = Kunjungan::where('id', $request->kunjungan_id)
-                ->where('dokter_id', $dokter->id)
-                ->firstOrFail();
+            // // Opsional: hitung total tagihan berdasarkan resep
+            // if (!empty($resepId)) {
+            //     $totalTagihan = 0;
+            //     foreach ($resep->obat as $obat) {
+            //         $totalTagihan += $obat->total_harga * $obat->pivot->jumlah;
+            //     }
+            //     $pembayaran->update(['total_tagihan' => $totalTagihan]);
+            // }
 
-            return DB::transaction(function () use ($request, $kunjungan) {
-                $resepId = null;
+            return [
+                'emr' => $emr,
+                'resep' => $resep ?? null,
+                'kunjungan' => $kunjungan->fresh(),
+            ];
+        });
 
-                // Buat resep jika ada obat yang dipilih
-                if (! empty($request->resep)) {
-                    foreach ($request->resep as $obatResep) {
-                        $obat = Obat::findOrFail($obatResep['obat_id']);
-                        $resep = Resep::create([
-                            'kunjungan_id' => $request->kunjungan_id,
-                            'obat_id' => $obatResep['obat_id'],
-                            'keterangan' => $obatResep['keterangan'],
-                        ]);
+        return response()->json([
+            'success' => true,
+            'message' => 'EMR dan resep berhasil disimpan. Pembayaran masih pending.',
+            'data' => $result,
+        ], 200);
 
-                        // Simpan ID resep pertama untuk EMR
-                        if ($resepId === null) {
-                            $resepId = $resep->id;
-                        }
-                    }
-                }
+    } catch (\Exception $e) {
+        Log::error('Error saving EMR: ' . $e->getMessage());
 
-                // Buat EMR
-                $emr = EMR::create([
-                    'kunjungan_id' => $request->kunjungan_id,
-                    'resep_id' => $resepId,
-                    'keluhan_utama' => $request->keluhan_utama,
-                    'riwayat_penyakit_sekarang' => $request->riwayat_penyakit_sekarang,
-                    'riwayat_penyakit_dahulu' => $request->riwayat_penyakit_dahulu,
-                    'riwayat_keluarga' => $request->riwayat_keluarga,
-                    'tekanan_darah' => $request->tanda_vital['tekanan_darah'] ?? null,
-                    'suhu_tubuh' => ! empty($request->tanda_vital['suhu_tubuh']) ?
-                        (float) $request->tanda_vital['suhu_tubuh'] : null,
-                    'nadi' => ! empty($request->tanda_vital['nadi']) ?
-                        (int) $request->tanda_vital['nadi'] : null,
-                    'pernapasan' => ! empty($request->tanda_vital['pernapasan']) ?
-                        (int) $request->tanda_vital['pernapasan'] : null,
-                    'saturasi_oksigen' => ! empty($request->tanda_vital['saturasi_oksigen']) ?
-                        (int) $request->tanda_vital['saturasi_oksigen'] : null,
-                    'diagnosis' => $request->diagnosis,
-                ]);
-
-                // Update status kunjungan
-                $kunjungan->update([
-                    'status' => 'Completed',
-                ]);
-
-                return [
-                    'emr' => $emr,
-                    'kunjungan' => $kunjungan->fresh(),
-                ];
-            });
-
-            return response()->json([
-                'success' => true,
-                'message' => 'EMR berhasil disimpan',
-                'data' => $result,
-            ], 200);
-
-        } catch (\Exception $e) {
-            Log::error('Error saving EMR: '.$e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal menyimpan EMR: '.$e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal menyimpan EMR: ' . $e->getMessage(),
+        ], 500);
     }
+}
     // tampilkan dia riwayat pasien yg diperiksa dokter
     public function getRiwayatPasienDiperiksa()
 {
@@ -1133,4 +1158,6 @@ public function getDetailRiwayatPasien($kunjunganId)
         ], 500);
     }
 }
+
+
 }
