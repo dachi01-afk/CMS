@@ -25,15 +25,15 @@ class DatabaseSeeder extends Seeder
             ObatSeeder::class,
             JadwalDokterSeeder::class,
             KunjunganSeeder::class,
-            ResepSeeder::class,
-            ResepObatSeeder::class,
-            TesLabSeeder::class,
-            KonsulSeeder::class,
-            PembayaranSeeder::class,
-            AdministrasiSeeder::class,
-            // EMRSeeder::class,
-            TransaksiApotekerSeeder::class,
             TestimoniSeeder::class,
+            // ResepSeeder::class,
+            // ResepObatSeeder::class,
+            // TesLabSeeder::class,
+            // KonsulSeeder::class,
+            // PembayaranSeeder::class,
+            // AdministrasiSeeder::class,
+            // EMRSeeder::class,
+            // TransaksiApotekerSeeder::class,
         ]);
     }
 }
