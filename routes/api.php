@@ -21,7 +21,7 @@ Route::get('/getDokterBySpesialisasi/{spesialisasi_id}', [APIMobileController::c
 // 🔒 PROTECTED ROUTES (butuh autentikasi dengan token)
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/pasien/profile', [APIMobileController::class, 'getProfile']);
-    Route::post('/pasien/update', [APIMobileController::class, 'updateProfile']); 
+    Route::post('/pasien/update', [APIMobileController::class, 'updateProfile']);
     Route::get('/getJadwalDokter', [APIMobileController::class, 'getJadwalDokter'])->name('getJadwalDokter');
 
     // Kunjungan routes
@@ -42,5 +42,6 @@ Route::middleware(['auth:sanctum', 'role:Dokter'])->group(function () {
         Route::get('/get-data-dokter', [APIMobileController::class, 'getDataDokter']);
         Route::post('/update-profile', [APIMobileController::class, 'updateDataDokter']);
         Route::get('/get-data-kunjungan-by-id-dokter', [APIMobileController::class, 'getDataKunjunganBerdasarkanIdDokter']);
+        Route::get('/get-data-obat', [APIMobileController::class, 'getDataObat']);
     });
 });

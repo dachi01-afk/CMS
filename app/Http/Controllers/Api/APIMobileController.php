@@ -9,6 +9,7 @@ use App\Models\Kunjungan;
 use App\Models\Pasien;
 use App\Models\Testimoni;
 use App\Models\User;
+use App\Models\Obat;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -878,49 +879,48 @@ class APIMobileController extends Controller
     }
 
     public function getDataKunjunganBerdasarkanIdDokter()
-{
-    try {
-        $user_id = Auth::user()->id;
+    {
+        try {
+            $user_id = Auth::user()->id;
 
-        $dokter = Dokter::with('user')->where('user_id', $user_id)->firstOrFail();
+            $dokter = Dokter::with('user')->where('user_id', $user_id)->firstOrFail();
 
-        if (!$dokter) {
+            if (!$dokter) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data dokter tidak ditemukan'
+                ], 404);
+            }
+
+            // Hanya ambil kunjungan dengan status Engaged
+            $dataKunjungan = Kunjungan::with(['dokter', 'pasien'])
+                ->where('dokter_id', $dokter->id)
+                ->where('status', 'Engaged') // Filter hanya Engaged
+                ->orderBy('tanggal_kunjungan', 'desc')
+                ->orderBy('no_antrian', 'asc')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'status' => 200,
+                'data' => $dataKunjungan,
+                'kunjungan_hari_ini' => $dataKunjungan,
+                'dokter_info' => [
+                    'id' => $dokter->id,
+                    'nama_dokter' => $dokter->nama_dokter,
+                    'user_id' => $user_id
+                ],
+                'message' => 'Berhasil mengambil data kunjungan dokter',
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error getting kunjungan by dokter ID: ' . $e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Data dokter tidak ditemukan'
-            ], 404);
+                'message' => 'Gagal mengambil data kunjungan: ' . $e->getMessage(),
+            ], 500);
         }
-
-        // Hanya ambil kunjungan dengan status Engaged
-        $dataKunjungan = Kunjungan::with(['dokter', 'pasien'])
-            ->where('dokter_id', $dokter->id)
-            ->where('status', 'Engaged') // Filter hanya Engaged
-            ->orderBy('tanggal_kunjungan', 'desc')
-            ->orderBy('no_antrian', 'asc')
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'status' => 200,
-            'data' => $dataKunjungan,
-            'kunjungan_hari_ini' => $dataKunjungan,
-            'dokter_info' => [
-                'id' => $dokter->id,
-                'nama_dokter' => $dokter->nama_dokter,
-                'user_id' => $user_id
-            ],
-            'message' => 'Berhasil mengambil data kunjungan dokter',
-        ], 200);
-
-    } catch (\Exception $e) {
-        Log::error('Error getting kunjungan by dokter ID: ' . $e->getMessage());
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengambil data kunjungan: ' . $e->getMessage(),
-        ], 500);
     }
-}
 
     public function getDataSpesialisasiDokter()
     {
@@ -944,5 +944,17 @@ class APIMobileController extends Controller
                 'message' => 'Gagal mengambil data spesialisasi: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function getDataObat()
+    {
+        $dataObat = Obat::all();
+
+        return response()->json([
+            'success' => true,
+            'status' => 200,
+            'Data Obat' => $dataObat,
+            'message' => 'Berhasil Memunculkan Data Obat',
+        ]);
     }
 }
