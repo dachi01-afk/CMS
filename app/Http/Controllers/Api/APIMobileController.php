@@ -987,7 +987,6 @@ class APIMobileController extends Controller
                     // Buat data resep terlebih dahulu (tanpa obat)
                     $resep = Resep::create([
                         'kunjungan_id' => $kunjungan->id,
-                        'keterangan' => 'Resep dari EMR #'.$kunjungan->id,
                     ]);
                     $resepId = $resep->id;
 
@@ -998,6 +997,7 @@ class APIMobileController extends Controller
                         $resep->obat()->attach($obat->id, [
                             'jumlah' => $obatResep['jumlah'] ?? 1,
                             'dosis' => $obatResep['dosis'] ?? null,
+                            'keterangan' => $request->ketarangan,
                             'created_at' => now(),
                             'updated_at' => now(),
                         ]);
