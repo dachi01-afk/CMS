@@ -10,7 +10,8 @@ class Obat extends Model
 
     protected $guarded = [];
 
-    public function resepObat() {
-        return $this->hasMany(ResepObat::class);
+    public function resep()
+    {
+        return $this->hasMany(Resep::class);
     }
 }

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('nama_obat');
             $table->unsignedInteger('jumlah');
-            $table->decimal('dosis', 8, 20);
+            $table->decimal('dosis', 8, 2);
             $table->decimal('total_harga', 8, 2);
             $table->timestamps();
         });

@@ -19,8 +19,8 @@ class Resep extends Model
         return $this->belongsTo(Apoteker::class);
     }
 
-    public function resepObat()
+    public function obat()
     {
-        return $this->hasMany(ResepObat::class);
+        return $this->belongsTo(Obat::class);
     }
 }

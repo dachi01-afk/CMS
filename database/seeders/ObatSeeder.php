@@ -2,9 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Models\Obat;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Faker\Factory as Faker;
 
 class ObatSeeder extends Seeder
 {
@@ -13,12 +15,24 @@ class ObatSeeder extends Seeder
      */
     public function run(): void
     {
-        DB::table('obat')->insert([
-            ['nama_obat' => 'Paracetamol', 'jumlah' => 100, 'dosis' => 500.00, 'created_at' => now(), 'updated_at' => now()],
-            ['nama_obat' => 'Amoxicillin', 'jumlah' => 75, 'dosis' => 250.00, 'created_at' => now(), 'updated_at' => now()],
-            ['nama_obat' => 'Vitamin C', 'jumlah' => 200, 'dosis' => 1000.00, 'created_at' => now(), 'updated_at' => now()],
-            ['nama_obat' => 'Ibuprofen', 'jumlah' => 150, 'dosis' => 200.50, 'created_at' => now(), 'updated_at' => now()],
-            ['nama_obat' => 'Cefixime Syrup', 'jumlah' => 50, 'dosis' => 62.50, 'created_at' => now(), 'updated_at' => now()],
-        ]);
+        $faker = Faker::create('id_ID');
+
+
+        $listNamaObat = [
+            'Paracetamol',
+            'Amoxicillin',
+            'Vitamin C',
+            'Ibuprofen',
+            'Cefixime Syrup',
+        ];
+
+        foreach ($listNamaObat as $nama) {
+            Obat::create([
+                'nama_obat'   => $nama,
+                'jumlah'      => $faker->numberBetween(50, 200),
+                'dosis'       => $faker->randomFloat(2, 50, 1000), // contoh: 500.00 mg
+                'total_harga' => $faker->numberBetween(50000, 1000000),
+            ]);
+        }
     }
 }
