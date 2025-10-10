@@ -30,42 +30,41 @@
                     <tr class="">
                         <th class="px-4 py-3 lg:p-4 ">No</th>
                         <th class="px-4 py-3 lg:p-4 ">Nama Pasien</th>
-                        <th class="px-4 py-3 lg:p-4 ">Nama Dokter</th>
-                        <th class="px-4 py-3 lg:p-4 ">Tanggal Kunjungan</th>
-                        <th class="px-4 py-3 lg:p-4 ">Nomor Antrian</th>
-                        <th class="px-4 py-3 lg:p-4 ">Keluhan Awal</th>
+                        <th class="px-4 py-3 lg:p-4 ">Nama Pasien</th>
+                        <th class="px-4 py-3 lg:p-4 ">Resep</th>
+                        <th class="px-4 py-3 lg:p-4 ">Obat</th>
                         <th class="px-4 py-3 lg:p-4 ">Status</th>
                         <th class="mx-4 py-3 lg:p-4 ">Action</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($dataKunjungan as $kunjungan)
+                    @foreach ($dataResepObat as $resepObat)
                         <tr class="xl:text-base">
-                            <td class="px-4 py-3 lg:px-8">{{ $dataKunjungan->firstItem() + $loop->index }}
+                            <td class="px-4 py-3 lg:px-8">{{ $dataResepObat->firstItem() + $loop->index }}
                             </td>
                             <td class="px-4 py-3 lg:py-4 text-center">
-                                {{ $kunjungan->pasien->nama_pasien }}
+                                {{ $resepObat->kunjungan->pasien->nama_pasien }}
                             </td>
                             <td class="px-4 py-3 lg:p-4">
-                                {{ $kunjungan->dokter->nama_dokter }}
+                                {{ $resepObat->kunjungan->dokter->nama_dokter }}
                             </td>
                             <td class="px-4 py-3 lg:p-4">
-                                {{ $kunjungan->tanggal_kunjungan }}
+                                {{ $resepObat->tanggal_kunjungan }}
                             </td>
                             <td class="px-4 py-3 lg:p-4">
-                                {{ $kunjungan->no_antrian }}
+                                {{ $resepObat->no_antrian }}
                             </td>
                             <td class="px-4 py-3 lg:p-4">
-                                {{ $kunjungan->keluhan_awal }}
+                                {{ $resepObat->keluhan_awal }}
                             </td>
                             <td class="px-4 py-3 lg:p-4 text-center">
-                                {{ $kunjungan->status ?? 'Tidak Ada' }}
+                                {{ $resepObat->status ?? 'Tidak Ada' }}
                             </td>
 
                             <td class="px-4 py-3 lg:py-4 flex items-center justify-center ">
                                 <div class="grid gap-4 w-44">
                                     <button type="button"
-                                        @click="openModalUbahStatusKunjungan = !openModalUbahStatusKunjungan; idKunjungan={{ $kunjungan->id }};"
+                                        @click="openModalUbahStatusKunjungan = !openModalUbahStatusKunjungan; idKunjungan={{ $resepObat->id }};"
                                         class="flex items-center gap-2 justify-center px-5 py-2.5 bg-green-700 text-white rounded-lg hover:bg-green-800 focus:ring-4 focus:ring-green-300 font-medium text-sm dark:bg-green-600 dark:hover:bg-green-700 dark:focus:ring-green-800 w-full">
                                         <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
                                             width="24px" fill="#FFFFFF">
@@ -76,7 +75,7 @@
                                     </button>
 
                                     <button type="button"
-                                        @click="openModalTolakStatusKunjungan = !openModalTolakStatusKunjungan; idKunjungan={{ $kunjungan->id }};"
+                                        @click="openModalTolakStatusKunjungan = !openModalTolakStatusKunjungan; idKunjungan={{ $resepObat->id }};"
                                         class="py-3 px-6 bg-red-500 text-white rounded-lg flex items-center justify-center gap-4 hover:bg-red-600 focus:ring-4 focus:ring-red-300">
                                         <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
                                             width="24px" fill="#FFFFFF">
@@ -92,7 +91,7 @@
                 </tbody>
             </table>
         </div>
-        {{ $dataKunjungan->links() }}
+        {{ $dataResepObat->links() }}
 
         <!-- Modal Setujui Tugas -->
         <div x-show="openModalUbahStatusKunjungan" x-cloak
@@ -160,8 +159,8 @@
                         </button>
 
                         <svg class="text-gray-400 dark:text-gray-500 w-11 h-11 mb-3.5 mx-auto"
-                            xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960" width="24px"
-                            fill="#000000">
+                            xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 -960 960 960"
+                            width="24px" fill="#000000">
                             <path
                                 d="m388-212-56-56 92-92-92-92 56-56 92 92 92-92 56 56-92 92 92 92-56 56-92-92-92 92ZM200-80q-33 0-56.5-23.5T120-160v-560q0-33 23.5-56.5T200-800h40v-80h80v80h320v-80h80v80h40q33 0 56.5 23.5T840-720v560q0 33-23.5 56.5T760-80H200Zm0-80h560v-400H200v400Zm0-480h560v-80H200v80Zm0 0v-80 80Z" />
                         </svg>

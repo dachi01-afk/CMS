@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Testing;
 
 use App\Http\Controllers\Controller;
 use App\Models\Dokter;
+use App\Models\EMR;
 use App\Models\JadwalDokter;
 use App\Models\Kunjungan;
 use App\Models\Pasien;
@@ -16,8 +17,7 @@ class TestingController extends Controller
 {
     public function testing()
     {
-        // $dataKunjungan = Kunjungan::with('dokter', 'pasien')->paginate(10);
-        $dataResepObat = Resep::with('obat', 'resep.kunjungan')->get();
+        $dataResepObat = Resep::with('obat', 'kunjungan.pasien', 'kunjungan.dokter')->paginate(10);
 
         dd($dataResepObat);
 

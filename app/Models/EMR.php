@@ -20,4 +20,17 @@ class EMR extends Model
     {
         return $this->belongsTo(Resep::class);
     }
+
+    public function pasien()
+    {
+        // Relasi ini “menelusuri” dari EMR → Kunjungan → Pasien
+        return $this->hasOneThrough(
+            Pasien::class,
+            Kunjungan::class,
+            'id',          // Foreign key di tabel kunjungan
+            'id',          // Foreign key di tabel pasien
+            'kunjungan_id', // Foreign key di tabel EMR
+            'pasien_id'    // Kolom pasien_id di tabel kunjungan
+        );
+    }
 }
