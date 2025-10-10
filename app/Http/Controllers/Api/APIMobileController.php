@@ -890,19 +890,7 @@ public function getDataKunjunganBerdasarkanIdDokter()
             ], 404);
         }
 
-        // Pakai ID dokter untuk filter kunjungan
-        $dataKunjungan = Kunjungan::with(['dokter', 'pasien'])
-            ->where('dokter_id', $dokter->id)
-            ->orderBy('tanggal_kunjungan', 'desc')
-            ->orderBy('no_antrian', 'asc')
-            ->get();
-
-        // Filter kunjungan hari ini jika diperlukan
-        $kunjunganHariIni = Kunjungan::with(['dokter', 'pasien'])
-            ->where('dokter_id', $dokter->id)
-            ->whereDate('tanggal_kunjungan', now()->toDateString())
-            ->orderBy('no_antrian', 'asc')
-            ->get();
+        $dataKunjungan = Kunjungan::with('dokter', 'pasien')->where('dokter_id', $dokter_id->id)->where('status', 'Engaged')->get();
 
         return response()->json([
             'success' => true,
