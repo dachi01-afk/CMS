@@ -880,7 +880,7 @@ class APIMobileController extends Controller
         $user_id = Auth::user()->id;
         $dokter_id = Dokter::with('user')->where('user_id', $user_id)->get();
 
-        $dataKunjungan = Kunjungan::with('dokter', 'pasien')->where('dokter_id', $dokter_id)->get();
+        $dataKunjungan = Kunjungan::with('dokter', 'pasien')->where('dokter_id', $dokter_id->id)->where('status', 'Engaged')->get();
 
         return response()->json([
             'success' => true,
