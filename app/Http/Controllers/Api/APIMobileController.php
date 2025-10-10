@@ -160,7 +160,7 @@ class APIMobileController extends Controller
 
                 // Upload new photo
                 $fileFoto = $request->file('foto_pasien');
-                $namaFoto = 'pasien_'.$user->id.'_'.time().'.'.$fileFoto->getClientOriginalExtension();
+                $namaFoto = 'pasien_' . $user->id . '_' . time() . '.' . $fileFoto->getClientOriginalExtension();
                 $pathFotoPasien = $fileFoto->storeAs('Foto-Pasien', $namaFoto, 'public');
             }
 
@@ -185,11 +185,11 @@ class APIMobileController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Error updating profile: '.$e->getMessage());
+            Log::error('Error updating profile: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan: '.$e->getMessage(),
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -239,11 +239,11 @@ class APIMobileController extends Controller
                 'data' => $jadwalSorted,
             ]);
         } catch (\Exception $e) {
-            Log::error('Error getting jadwal dokter: '.$e->getMessage());
+            Log::error('Error getting jadwal dokter: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil jadwal dokter: '.$e->getMessage(),
+                'message' => 'Gagal mengambil jadwal dokter: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -419,11 +419,11 @@ class APIMobileController extends Controller
                 'message' => "Berhasil mengambil daftar dokter spesialisasi {$spesialisasi->nama_spesialis}",
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error getting dokter by spesialisasi: '.$e->getMessage());
+            Log::error('Error getting dokter by spesialisasi: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil data dokter: '.$e->getMessage(),
+                'message' => 'Gagal mengambil data dokter: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -433,7 +433,7 @@ class APIMobileController extends Controller
         try {
             // Log untuk debugging
             Log::info('=== BATALKAN KUNJUNGAN START ===');
-            Log::info('Request method: '.$request->method());
+            Log::info('Request method: ' . $request->method());
             Log::info('Request data: ', $request->all());
 
             // Validasi input - cek apakah 'id' ada dalam request
@@ -442,7 +442,7 @@ class APIMobileController extends Controller
             ]);
 
             $kunjunganId = $request->input('id');
-            Log::info('Processing kunjungan ID: '.$kunjunganId);
+            Log::info('Processing kunjungan ID: ' . $kunjunganId);
 
             // Cari data kunjungan
             $dataKunjungan = Kunjungan::findOrFail($kunjunganId);
@@ -450,12 +450,12 @@ class APIMobileController extends Controller
 
             // Cek apakah status masih bisa dibatalkan
             if (! in_array($dataKunjungan->status, ['Pending', 'Confirmed', 'Waiting'])) {
-                Log::warning('Cannot cancel kunjungan with status: '.$dataKunjungan->status);
+                Log::warning('Cannot cancel kunjungan with status: ' . $dataKunjungan->status);
 
                 return response()->json([
                     'success' => false,
                     'status' => 400,
-                    'message' => 'Kunjungan dengan status "'.$dataKunjungan->status.'" tidak dapat dibatalkan',
+                    'message' => 'Kunjungan dengan status "' . $dataKunjungan->status . '" tidak dapat dibatalkan',
                     'Data Kunjungan' => $dataKunjungan,
                 ], 400);
             }
@@ -469,7 +469,7 @@ class APIMobileController extends Controller
                         'updated_at' => now(),
                     ]);
 
-                Log::info('Rows affected by update: '.$affected);
+                Log::info('Rows affected by update: ' . $affected);
 
                 if ($affected === 0) {
                     throw new \Exception('Gagal memperbarui data kunjungan');
@@ -483,7 +483,7 @@ class APIMobileController extends Controller
 
             // Verifikasi bahwa update berhasil
             if ($updatedKunjungan->status !== 'Canceled') {
-                Log::error('Status update failed - still: '.$updatedKunjungan->status);
+                Log::error('Status update failed - still: ' . $updatedKunjungan->status);
 
                 return response()->json([
                     'success' => false,
@@ -509,7 +509,7 @@ class APIMobileController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            Log::error('Kunjungan not found: '.$e->getMessage());
+            Log::error('Kunjungan not found: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -517,13 +517,13 @@ class APIMobileController extends Controller
                 'message' => 'Data kunjungan tidak ditemukan',
             ], 404);
         } catch (\Exception $e) {
-            Log::error('Exception in batalkanStatusKunjungan: '.$e->getMessage());
-            Log::error('Stack trace: '.$e->getTraceAsString());
+            Log::error('Exception in batalkanStatusKunjungan: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
 
             return response()->json([
                 'success' => false,
                 'status' => 500,
-                'message' => 'Terjadi kesalahan: '.$e->getMessage(),
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -634,12 +634,12 @@ class APIMobileController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('❌ Exception in bookingDokter: '.$e->getMessage());
-            Log::error('❌ Stack trace: '.$e->getTraceAsString());
+            Log::error('❌ Exception in bookingDokter: ' . $e->getMessage());
+            Log::error('❌ Stack trace: ' . $e->getTraceAsString());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membuat kunjungan: '.$e->getMessage(),
+                'message' => 'Gagal membuat kunjungan: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -672,11 +672,11 @@ class APIMobileController extends Controller
                 'data' => $riwayat,
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error getting riwayat kunjungan: '.$e->getMessage());
+            Log::error('Error getting riwayat kunjungan: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil riwayat kunjungan: '.$e->getMessage(),
+                'message' => 'Gagal mengambil riwayat kunjungan: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -695,11 +695,11 @@ class APIMobileController extends Controller
                 'message' => 'Berhasil Meminta Data Testimoni',
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error getting testimoni: '.$e->getMessage());
+            Log::error('Error getting testimoni: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil data testimoni: '.$e->getMessage(),
+                'message' => 'Gagal mengambil data testimoni: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -724,14 +724,14 @@ class APIMobileController extends Controller
             // Upload foto jika ada
             if ($request->hasFile('foto')) {
                 $foto = $request->file('foto');
-                $namaFoto = time().'_'.$foto->getClientOriginalName();
+                $namaFoto = time() . '_' . $foto->getClientOriginalName();
                 $jalurFoto = $foto->storeAs('Foto-Testimoni', $namaFoto, 'public');
             }
 
             // Upload video jika ada
             if ($request->hasFile('video')) {
                 $video = $request->file('video');
-                $namaVideo = time().'_'.$video->getClientOriginalName();
+                $namaVideo = time() . '_' . $video->getClientOriginalName();
                 $jalurVideo = $video->storeAs('Video-Testimoni', $namaVideo, 'public');
             }
 
@@ -758,11 +758,11 @@ class APIMobileController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            Log::error('Error creating testimoni: '.$e->getMessage());
+            Log::error('Error creating testimoni: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membuat testimoni: '.$e->getMessage(),
+                'message' => 'Gagal membuat testimoni: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -782,11 +782,11 @@ class APIMobileController extends Controller
                 'message' => 'Berhasil Mengambil Data Dokter',
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error getting data dokter: '.$e->getMessage());
+            Log::error('Error getting data dokter: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil data dokter: '.$e->getMessage(),
+                'message' => 'Gagal mengambil data dokter: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -857,7 +857,7 @@ class APIMobileController extends Controller
 
         if ($request->hasFile('foto_dokter')) {
             $fileFoto = $request->file('foto_dokter');
-            $namaFoto = $request->nama_dokter.'_'.time().'.'.$fileFoto->getClientOriginalExtension();
+            $namaFoto = $request->nama_dokter . '_' . time() . '.' . $fileFoto->getClientOriginalExtension();
             $pathFotoDokter = $fileFoto->storeAs('Foto-Dokter', $namaFoto, 'public');
         }
 
@@ -914,11 +914,11 @@ class APIMobileController extends Controller
                 'message' => 'Berhasil mengambil data kunjungan dokter',
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error getting kunjungan by dokter ID: '.$e->getMessage());
+            Log::error('Error getting kunjungan by dokter ID: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil data kunjungan: '.$e->getMessage(),
+                'message' => 'Gagal mengambil data kunjungan: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -938,11 +938,11 @@ class APIMobileController extends Controller
                 'message' => 'Berhasil Mengambil Data Spesialisasi Dokter',
             ], 200);
         } catch (\Exception $e) {
-            Log::error('Error getting spesialisasi dokter: '.$e->getMessage());
+            Log::error('Error getting spesialisasi dokter: ' . $e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil data spesialisasi: '.$e->getMessage(),
+                'message' => 'Gagal mengambil data spesialisasi: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -960,204 +960,199 @@ class APIMobileController extends Controller
     }
 
     public function saveEMR(Request $request)
-{
-    try {
-        $request->validate([
-            'kunjungan_id' => 'required|exists:kunjungan,id',
-            'keluhan_utama' => 'required|string',
-            'riwayat_penyakit_sekarang' => 'nullable|string',
-            'riwayat_penyakit_dahulu' => 'nullable|string',
-            'riwayat_penyakit_keluarga' => 'nullable|string',
-            'tanda_vital' => 'nullable|array',
-            'diagnosis' => 'required|string',
-            'resep' => 'nullable|array', // [{obat_id, jumlah, dosis, keterangan}]
-        ]);
-
-        $user_id = Auth::id();
-        $dokter = Dokter::where('user_id', $user_id)->firstOrFail();
-
-        $kunjungan = Kunjungan::where('id', $request->kunjungan_id)
-            ->where('dokter_id', $dokter->id)
-            ->firstOrFail();
-
-        $result = DB::transaction(function () use ($request, $kunjungan) {
-            $resepId = null;
-
-            // Jika dokter menambahkan obat
-            if (!empty($request->resep)) {
-                // Buat data resep terlebih dahulu (tanpa obat)
-                $resep = Resep::create([
-                    'kunjungan_id' => $kunjungan->id,
-                    'keterangan' => 'Resep dari EMR #' . $kunjungan->id,
-                ]);
-                $resepId = $resep->id;
-
-                // Tambahkan obat ke resep_obat (pivot)
-                foreach ($request->resep as $obatResep) {
-                    $obat = Obat::findOrFail($obatResep['obat_id']);
-
-                    $resep->obat()->attach($obat->id, [
-                        'jumlah' => $obatResep['jumlah'] ?? 1,
-                        'dosis' => $obatResep['dosis'] ?? null,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                }
-            }
-
-            // Buat EMR
-            $emr = EMR::create([
-                'kunjungan_id' => $kunjungan->id,
-                'resep_id' => $resepId,
-                'keluhan_utama' => $request->keluhan_utama,
-                'riwayat_penyakit_sekarang' => $request->riwayat_penyakit_sekarang,
-                'riwayat_penyakit_dahulu' => $request->riwayat_penyakit_dahulu,
-                'riwayat_penyakit_keluarga' => $request->riwayat_penyakit_keluarga,
-                'tekanan_darah' => $request->tanda_vital['tekanan_darah'] ?? null,
-                'suhu_tubuh' => !empty($request->tanda_vital['suhu_tubuh'])
-                    ? (float) $request->tanda_vital['suhu_tubuh']
-                    : null,
-                'nadi' => !empty($request->tanda_vital['nadi'])
-                    ? (int) $request->tanda_vital['nadi']
-                    : null,
-                'pernapasan' => !empty($request->tanda_vital['pernapasan'])
-                    ? (int) $request->tanda_vital['pernapasan']
-                    : null,
-                'saturasi_oksigen' => !empty($request->tanda_vital['saturasi_oksigen'])
-                    ? (int) $request->tanda_vital['saturasi_oksigen']
-                    : null,
-                'diagnosis' => $request->diagnosis,
+    {
+        try {
+            $request->validate([
+                'kunjungan_id' => 'required|exists:kunjungan,id',
+                'keluhan_utama' => 'required|string',
+                'riwayat_penyakit_sekarang' => 'nullable|string',
+                'riwayat_penyakit_dahulu' => 'nullable|string',
+                'riwayat_penyakit_keluarga' => 'nullable|string',
+                'tanda_vital' => 'nullable|array',
+                'diagnosis' => 'required|string',
+                'resep' => 'nullable|array', // [{obat_id, jumlah, dosis, keterangan}]
             ]);
 
-            // Buat data pembayaran (belum bayar)
-            // $pembayaran = Pembayaran::create([
-            //     'emr_id' => $emr->id,
-            //     'total_tagihan' => 0, // sementara 0, nanti dihitung berdasarkan harga obat
-            //     'jumlah_bayar' => 0,
-            //     'kembalian' => 0,
-            //     'status' => 'Pending', // atau 'Belum Bayar'
-            //     'metode_pembayaran' => null,
-            //     'tanggal_pembayaran' => null,
-            // ]);
+            $user_id = Auth::id();
+            $dokter = Dokter::where('user_id', $user_id)->firstOrFail();
 
-            // // Opsional: hitung total tagihan berdasarkan resep
-            // if (!empty($resepId)) {
-            //     $totalTagihan = 0;
-            //     foreach ($resep->obat as $obat) {
-            //         $totalTagihan += $obat->total_harga * $obat->pivot->jumlah;
-            //     }
-            //     $pembayaran->update(['total_tagihan' => $totalTagihan]);
-            // }
+            $kunjungan = Kunjungan::where('id', $request->kunjungan_id)
+                ->where('dokter_id', $dokter->id)
+                ->firstOrFail();
 
-            return [
-                'emr' => $emr,
-                'resep' => $resep ?? null,
-                'kunjungan' => $kunjungan->fresh(),
-            ];
-        });
+            $result = DB::transaction(function () use ($request, $kunjungan) {
+                $resepId = null;
 
-        return response()->json([
-            'success' => true,
-            'message' => 'EMR dan resep berhasil disimpan. Pembayaran masih pending.',
-            'data' => $result,
-        ], 200);
+                // Jika dokter menambahkan obat
+                if (!empty($request->resep)) {
+                    // Buat data resep terlebih dahulu (tanpa obat)
+                    $resep = Resep::create([
+                        'kunjungan_id' => $kunjungan->id,
+                        'keterangan' => 'Resep dari EMR #' . $kunjungan->id,
+                    ]);
+                    $resepId = $resep->id;
 
-    } catch (\Exception $e) {
-        Log::error('Error saving EMR: ' . $e->getMessage());
+                    // Tambahkan obat ke resep_obat (pivot)
+                    foreach ($request->resep as $obatResep) {
+                        $obat = Obat::findOrFail($obatResep['obat_id']);
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal menyimpan EMR: ' . $e->getMessage(),
-        ], 500);
-    }
-}
-    // tampilkan dia riwayat pasien yg diperiksa dokter
-    public function getRiwayatPasienDiperiksa()
-{
-    try {
-        $user_id = Auth::user()->id;
+                        $resep->obat()->attach($obat->id, [
+                            'jumlah' => $obatResep['jumlah'] ?? 1,
+                            'dosis' => $obatResep['dosis'] ?? null,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+                }
 
-        $dokter = Dokter::with('user')->where('user_id', $user_id)->firstOrFail();
+                // Buat EMR
+                $emr = EMR::create([
+                    'kunjungan_id' => $kunjungan->id,
+                    'resep_id' => $resepId,
+                    'keluhan_utama' => $request->keluhan_utama,
+                    'riwayat_penyakit_sekarang' => $request->riwayat_penyakit_sekarang,
+                    'riwayat_penyakit_dahulu' => $request->riwayat_penyakit_dahulu,
+                    'riwayat_penyakit_keluarga' => $request->riwayat_penyakit_keluarga,
+                    'tekanan_darah' => $request->tanda_vital['tekanan_darah'] ?? null,
+                    'suhu_tubuh' => !empty($request->tanda_vital['suhu_tubuh'])
+                        ? (float) $request->tanda_vital['suhu_tubuh']
+                        : null,
+                    'nadi' => !empty($request->tanda_vital['nadi'])
+                        ? (int) $request->tanda_vital['nadi']
+                        : null,
+                    'pernapasan' => !empty($request->tanda_vital['pernapasan'])
+                        ? (int) $request->tanda_vital['pernapasan']
+                        : null,
+                    'saturasi_oksigen' => !empty($request->tanda_vital['saturasi_oksigen'])
+                        ? (int) $request->tanda_vital['saturasi_oksigen']
+                        : null,
+                    'diagnosis' => $request->diagnosis,
+                ]);
 
-        if (!$dokter) {
+                // Buat data pembayaran (belum bayar)
+                // $pembayaran = Pembayaran::create([
+                //     'emr_id' => $emr->id,
+                //     'total_tagihan' => 0, // sementara 0, nanti dihitung berdasarkan harga obat
+                //     'jumlah_bayar' => 0,
+                //     'kembalian' => 0,
+                //     'status' => 'Pending', // atau 'Belum Bayar'
+                //     'metode_pembayaran' => null,
+                //     'tanggal_pembayaran' => null,
+                // ]);
+
+                // // Opsional: hitung total tagihan berdasarkan resep
+                // if (!empty($resepId)) {
+                //     $totalTagihan = 0;
+                //     foreach ($resep->obat as $obat) {
+                //         $totalTagihan += $obat->total_harga * $obat->pivot->jumlah;
+                //     }
+                //     $pembayaran->update(['total_tagihan' => $totalTagihan]);
+                // }
+
+                return [
+                    'emr' => $emr,
+                    'resep' => $resep ?? null,
+                    'kunjungan' => $kunjungan->fresh(),
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'EMR dan resep berhasil disimpan. Pembayaran masih pending.',
+                'data' => $result,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error saving EMR: ' . $e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Data dokter tidak ditemukan'
-            ], 404);
+                'message' => 'Gagal menyimpan EMR: ' . $e->getMessage(),
+            ], 500);
         }
+    }
+    // tampilkan dia riwayat pasien yg diperiksa dokter
+    public function getRiwayatPasienDiperiksa()
+    {
+        try {
+            $user_id = Auth::user()->id;
 
-        // Ambil semua kunjungan yang sudah completed (sudah diperiksa)
-        $riwayatPasien = Kunjungan::with([
-            'pasien' => function($query) {
-                $query->select('id', 'nama_pasien', 'alamat', 'tanggal_lahir', 'jenis_kelamin', 'foto_pasien');
-            },
-            'emr' => function($query) {
-                $query->select('id', 'kunjungan_id', 'keluhan_utama', 'diagnosis', 'created_at');
-            },
-            'resep.obat' => function($query) {
-                $query->select('id', 'nama_obat', 'dosis');
+            $dokter = Dokter::with('user')->where('user_id', $user_id)->firstOrFail();
+
+            if (!$dokter) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data dokter tidak ditemukan'
+                ], 404);
             }
-        ])
-        ->where('dokter_id', $dokter->id)
-        ->where('status', 'Completed')
-        ->orderBy('updated_at', 'desc')
-        ->get();
 
-        return response()->json([
-            'success' => true,
-            'status' => 200,
-            'data' => $riwayatPasien,
-            'total_pasien' => $riwayatPasien->count(),
-            'dokter_info' => [
-                'id' => $dokter->id,
-                'nama_dokter' => $dokter->nama_dokter,
-                'user_id' => $user_id
-            ],
-            'message' => 'Berhasil mengambil riwayat pasien yang diperiksa',
-        ], 200);
+            // Ambil semua kunjungan yang sudah completed (sudah diperiksa)
+            $riwayatPasien = Kunjungan::with([
+                'pasien' => function ($query) {
+                    $query->select('id', 'nama_pasien', 'alamat', 'tanggal_lahir', 'jenis_kelamin', 'foto_pasien');
+                },
+                'emr' => function ($query) {
+                    $query->select('id', 'kunjungan_id', 'keluhan_utama', 'diagnosis', 'created_at');
+                },
+                'resep.obat' => function ($query) {
+                    $query->select('id', 'nama_obat', 'dosis');
+                }
+            ])
+                ->where('dokter_id', $dokter->id)
+                ->where('status', 'Completed')
+                ->orderBy('updated_at', 'desc')
+                ->get();
 
-    } catch (\Exception $e) {
-        Log::error('Error getting riwayat pasien diperiksa: ' . $e->getMessage());
+            return response()->json([
+                'success' => true,
+                'status' => 200,
+                'data' => $riwayatPasien,
+                'total_pasien' => $riwayatPasien->count(),
+                'dokter_info' => [
+                    'id' => $dokter->id,
+                    'nama_dokter' => $dokter->nama_dokter,
+                    'user_id' => $user_id
+                ],
+                'message' => 'Berhasil mengambil riwayat pasien yang diperiksa',
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error getting riwayat pasien diperiksa: ' . $e->getMessage());
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengambil riwayat pasien: ' . $e->getMessage(),
-        ], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil riwayat pasien: ' . $e->getMessage(),
+            ], 500);
+        }
     }
-}
 
-public function getDetailRiwayatPasien($kunjunganId)
-{
-    try {
-        $user_id = Auth::user()->id;
-        $dokter = Dokter::where('user_id', $user_id)->firstOrFail();
+    public function getDetailRiwayatPasien($kunjunganId)
+    {
+        try {
+            $user_id = Auth::user()->id;
+            $dokter = Dokter::where('user_id', $user_id)->firstOrFail();
 
-        $detailRiwayat = Kunjungan::with([
-            'pasien',
-            'emr',
-            'resep.obat'
-        ])
-        ->where('id', $kunjunganId)
-        ->where('dokter_id', $dokter->id)
-        ->where('status', 'Completed')
-        ->firstOrFail();
+            $detailRiwayat = Kunjungan::with([
+                'pasien',
+                'emr',
+                'resep.obat'
+            ])
+                ->where('id', $kunjunganId)
+                ->where('dokter_id', $dokter->id)
+                ->where('status', 'Completed')
+                ->firstOrFail();
 
-        return response()->json([
-            'success' => true,
-            'status' => 200,
-            'data' => $detailRiwayat,
-            'message' => 'Berhasil mengambil detail riwayat pasien',
-        ], 200);
+            return response()->json([
+                'success' => true,
+                'status' => 200,
+                'data' => $detailRiwayat,
+                'message' => 'Berhasil mengambil detail riwayat pasien',
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error getting detail riwayat pasien: ' . $e->getMessage());
 
-    } catch (\Exception $e) {
-        Log::error('Error getting detail riwayat pasien: ' . $e->getMessage());
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengambil detail riwayat: ' . $e->getMessage(),
-        ], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil detail riwayat: ' . $e->getMessage(),
+            ], 500);
+        }
     }
-}
-
-
 }

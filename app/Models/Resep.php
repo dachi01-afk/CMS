@@ -19,6 +19,11 @@ class Resep extends Model
         return $this->belongsTo(Apoteker::class);
     }
 
+    public function emr()
+    {
+        return $this->hasOne(Emr::class);
+    }
+
     public function obat()
     {
         return $this->belongsToMany(Obat::class, 'resep_obat', 'resep_id', 'obat_id')->withPivot('jumlah', 'dosis');

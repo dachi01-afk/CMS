@@ -15,4 +15,9 @@ class EMR extends Model
     {
         return $this->belongsTo(Kunjungan::class);
     }
+
+    public function resep()
+    {
+        return $this->belongsTo(Resep::class);
+    }
 }
