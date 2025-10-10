@@ -878,43 +878,49 @@ class APIMobileController extends Controller
     }
 
     public function getDataKunjunganBerdasarkanIdDokter()
-    {
-        try {
-            $user_id = Auth::user()->id;
+{
+    try {
+        $user_id = Auth::user()->id;
 
-            // ini Ambil data dokter yang login
-            $dokter = Dokter::with('user')->where('user_id', $user_id)->firstOfFail();
+        $dokter = Dokter::with('user')->where('user_id', $user_id)->firstOrFail();
 
-            if (!$dokter) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data dokter tidak ditemukan'
-                ], 404);
-            }
-
-            $dataKunjungan = Kunjungan::with('dokter', 'pasien')->where('dokter_id', $dokter->id)->where('status', 'Engaged')->get();
-
-            return response()->json([
-                'success' => true,
-                'status' => 200,
-                'data' => $dataKunjungan,
-                'kunjungan_hari_ini' => $dataKunjungan,
-                'dokter_info' => [
-                    'id' => $dokter->id,
-                    'nama_dokter' => $dokter->nama_dokter,
-                    'user_id' => $user_id
-                ],
-                'message' => 'Berhasil mengambil data kunjungan dokter',
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error getting kunjungan by dokter ID: ' . $e->getMessage());
-
+        if (!$dokter) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil data kunjungan: ' . $e->getMessage(),
-            ], 500);
+                'message' => 'Data dokter tidak ditemukan'
+            ], 404);
         }
+
+        // Hanya ambil kunjungan dengan status Engaged
+        $dataKunjungan = Kunjungan::with(['dokter', 'pasien'])
+            ->where('dokter_id', $dokter->id)
+            ->where('status', 'Engaged') // Filter hanya Engaged
+            ->orderBy('tanggal_kunjungan', 'desc')
+            ->orderBy('no_antrian', 'asc')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'status' => 200,
+            'data' => $dataKunjungan,
+            'kunjungan_hari_ini' => $dataKunjungan,
+            'dokter_info' => [
+                'id' => $dokter->id,
+                'nama_dokter' => $dokter->nama_dokter,
+                'user_id' => $user_id
+            ],
+            'message' => 'Berhasil mengambil data kunjungan dokter',
+        ], 200);
+
+    } catch (\Exception $e) {
+        Log::error('Error getting kunjungan by dokter ID: ' . $e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil data kunjungan: ' . $e->getMessage(),
+        ], 500);
     }
+}
 
     public function getDataSpesialisasiDokter()
     {

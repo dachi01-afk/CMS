@@ -31,7 +31,7 @@ class DatabaseSeeder extends Seeder
             KonsulSeeder::class,
             PembayaranSeeder::class,
             AdministrasiSeeder::class,
-            EMRSeeder::class,
+            // EMRSeeder::class,
             TransaksiApotekerSeeder::class,
             TestimoniSeeder::class,
         ]);
