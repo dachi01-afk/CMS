@@ -99,6 +99,11 @@ $(function () {
         $formAdd[0].reset();
         $formAdd.find('.is-invalid').removeClass('is-invalid');
         $formAdd.find('.text-red-600').empty();
+
+        // Reset preview foto
+        $('#preview_foto_pasien').addClass('hidden').attr('src', '');
+        $('#placeholder_foto_pasien').removeClass('hidden');
+        $('#foto_drop_area_pasien').removeClass('border-solid border-gray-300').addClass('border-dashed border-gray-400');
     }
 
     $('#btnAddPasien').on('click', function() {
@@ -132,6 +137,7 @@ $(function () {
                 }).then(() => {
                     addModal.hide();
                     $('#pasienTable').DataTable().ajax.reload(null, false);
+                    resetAddForm();
                 });
             })
             .catch(error => {

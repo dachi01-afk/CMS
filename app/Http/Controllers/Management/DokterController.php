@@ -24,7 +24,7 @@ class DokterController extends Controller
             'email_akun_dokter'  => 'required|email|max:255|unique:user,email',
             'spesialis_dokter'   => 'required|integer|exists:jenis_spesialis,id',
             'password_dokter'    => 'required|string|min:8|confirmed',
-            'foto_dokter'        => 'nullable|file|image|mimes:jpeg,jpg,png,gif,webp,jfif|max:5120',
+            'foto_dokter'        => 'nullable|file|mimetypes:image/jpeg,image/png,image/gif,image/webp,image/svg+xml|max:5120',
             'deskripsi_dokter'   => 'nullable|string',
             'pengalaman_dokter'  => 'nullable|string|max:255',
             'no_hp_dokter'       => 'nullable|string|max:20',
@@ -52,12 +52,14 @@ class DokterController extends Controller
             $fileName = 'dokter_' . time() . '.' . $extension;
             $path = 'dokter/' . $fileName;
 
-            // Baca & kompres
-            $image = Image::read($file);
-            $image->scale(width: 800);
-
-            // Simpan hasil kompres ke storage/public/dokter
-            Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+            if ($extension === 'svg') {
+                Storage::disk('public')->put($path, file_get_contents($file));
+            } else {
+                // ✅ Gambar raster → resize & kompres
+                $image = Image::read($file);
+                $image->scale(width: 800);
+                Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+            }
 
             $fotoPath = $path;
         }
@@ -94,7 +96,7 @@ class DokterController extends Controller
             'edit_nama_dokter'        => 'required|string|max:255',
             'edit_email_akun_dokter'  => 'required|email|max:255|unique:user,email,' . $user->id,
             'edit_spesialis_dokter'   => 'required|integer|exists:jenis_spesialis,id',
-            'edit_foto_dokter'        => 'nullable|file|image|mimes:jpeg,jpg,png,gif,webp,jfif|max:5120',
+            'edit_foto_dokter'        => 'nullable|file|mimetypes:image/jpeg,image/png,image/gif,image/webp,image/svg+xml|max:5120',
             'edit_no_hp_dokter'       => 'nullable|string|max:20',
             'edit_deskripsi_dokter'   => 'nullable|string',
             'edit_pengalaman_dokter'  => 'nullable|string|max:255',
@@ -123,11 +125,14 @@ class DokterController extends Controller
             $fileName = 'dokter_' . time() . '.' . $extension;
             $path = 'dokter/' . $fileName;
 
-            // Kompres / resize (sesuaikan method Image sesuai package yang Anda pakai)
-            $image = Image::read($file);
-            $image->scale(width: 800);
-
-            Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+            if ($extension === 'svg') {
+                Storage::disk('public')->put($path, file_get_contents($file));
+            } else {
+                // ✅ Gambar raster → resize & kompres
+                $image = Image::read($file);
+                $image->scale(width: 800);
+                Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+            }
 
             $fotoPath = $path;
 

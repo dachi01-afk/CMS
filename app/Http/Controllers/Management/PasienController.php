@@ -19,7 +19,7 @@ class PasienController extends Controller
     public function createPasien(Request $request)
     {
         $request->validate([
-            'foto_pasien'       => 'nullable|file|image|mimes:jpeg,jpg,png,gif,webp,jfif|max:5120',
+            'foto_pasien'       => 'nullable|file|mimetypes:image/jpeg,image/png,image/gif,image/webp,image/svg+xml|max:5120',
             'username_pasien'   => 'required|string|max:255',
             'nama_pasien'       => 'required|string|max:255',
             'email_pasien'      => 'required|email|unique:user,email',
@@ -50,12 +50,14 @@ class PasienController extends Controller
             $fileName = 'pasien_' . time() . '.' . $extension;
             $path = 'pasien/' . $fileName;
 
-            // Baca & kompres
-            $image = Image::read($file);
-            $image->scale(width: 800);
-
-            // Simpan hasil kompres ke storage/public/dokter
-            Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+            if ($extension === 'svg') {
+                Storage::disk('public')->put($path, file_get_contents($file));
+            } else {
+                // ✅ Gambar raster → resize & kompres
+                $image = Image::read($file);
+                $image->scale(width: 800);
+                Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+            }
 
             $fotoPath = $path;
         }
@@ -85,7 +87,7 @@ class PasienController extends Controller
         $user = $pasien->user;
 
         $request->validate([
-            'edit_foto_pasien'          => 'nullable|file|image|mimes:jpeg,jpg,png,gif,webp,jfif|max:5120',
+            'edit_foto_pasien'          => 'nullable|file|mimetypes:image/jpeg,image/png,image/gif,image/webp,image/svg+xml|max:5120',
             'edit_username_pasien'      => 'required|string|max:255|unique:user,username,' . $user->id,
             'edit_nama_pasien'          => 'required|string|max:255',
             'edit_email_pasien'         => 'required|email|unique:user,email,' . $user->id,
@@ -116,11 +118,14 @@ class PasienController extends Controller
             $fileName = 'pasien_' . time() . '.' . $extension;
             $path = 'pasien/' . $fileName;
 
-            // Kompres / resize (sesuaikan method Image sesuai package yang Anda pakai)
-            $image = Image::read($file);
-            $image->scale(width: 800);
-
-            Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+            if ($extension === 'svg') {
+                Storage::disk('public')->put($path, file_get_contents($file));
+            } else {
+                // ✅ Gambar raster → resize & kompres
+                $image = Image::read($file);
+                $image->scale(width: 800);
+                Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+            }
 
             $fotoPath = $path;
 

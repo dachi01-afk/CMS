@@ -134,6 +134,11 @@ $(function () {
         $formAdd[0].reset();
         $formAdd.find('.is-invalid').removeClass('is-invalid');
         $formAdd.find('.text-red-600').empty();
+
+        // Reset preview foto
+        $('#preview_foto_dokter').addClass('hidden').attr('src', '');
+        $('#placeholder_foto_dokter').removeClass('hidden');
+        $('#foto_drop_area').removeClass('border-solid border-gray-300').addClass('border-dashed border-gray-400');
     }
 
     $('#btnAddDokter').on('click', function() {
@@ -167,6 +172,7 @@ $(function () {
                 }).then(() => {
                     addModal?.hide();
                     $('#dokterTable').DataTable().ajax.reload(null, false);
+                    resetAddForm();
                 });
             })
             .catch(err => {
