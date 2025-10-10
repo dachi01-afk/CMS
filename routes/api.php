@@ -37,11 +37,15 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Route Untuk User Yang Login Sebagai Dokter 
+// Route Untuk User Yang Login Sebagai Dokter 
 Route::middleware(['auth:sanctum', 'role:Dokter'])->group(function () {
     Route::prefix('dokter')->group(function () {
         Route::get('/get-data-dokter', [APIMobileController::class, 'getDataDokter']);
         Route::post('/update-profile', [APIMobileController::class, 'updateDataDokter']);
         Route::get('/get-data-kunjungan-by-id-dokter', [APIMobileController::class, 'getDataKunjunganBerdasarkanIdDokter']);
         Route::get('/get-data-obat', [APIMobileController::class, 'getDataObat']);
+        Route::post('/save-emr', [APIMobileController::class, 'saveEMR']);         
+        Route::get('/riwayat-pasien-diperiksa', [APIMobileController::class, 'getRiwayatPasienDiperiksa']);
+        Route::get('/detail-riwayat-pasien/{kunjunganId}', [APIMobileController::class, 'getDetailRiwayatPasien']);
     });
 });
