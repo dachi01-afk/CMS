@@ -54,7 +54,7 @@ class Kunjungan extends Model
     // Tambahkan relasi untuk EMR
     public function emr()
     {
-        return $this->hasMany(EMR::class);
+        return $this->hasOne(EMR::class);
     }
 
     // Scope untuk filter berdasarkan status

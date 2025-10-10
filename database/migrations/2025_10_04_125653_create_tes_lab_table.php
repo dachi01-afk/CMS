@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('tes_lab', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('kunjungan_id')->constrained('kunjungan', 'id', 'tes_lab_kunjungan_id')
+            $table->foreignId('emr_id')->constrained('emr', 'id', 'tes_lab_emr_id')
                 ->cascadeOnDelete()->cascadeOnUpdate();
             $table->json('jenis_tes');
             $table->string('hasil_tes');

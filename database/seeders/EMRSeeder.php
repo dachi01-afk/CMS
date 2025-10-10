@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\EMR;
 use App\Models\Kunjungan;
+use App\Models\Resep;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Faker\Factory as Faker;
@@ -16,8 +17,7 @@ class EMRSeeder extends Seeder
     public function run(): void
     {
         $dataKunjungan = Kunjungan::all();
-        $dataKunjungan = Kunjungan::all();
-        $dataKunjungan = Kunjungan::all();
+        $dataResep = Resep::all();
         $faker = Faker::create('id_ID');
 
         foreach ($dataKunjungan as $kunjungan) {
@@ -25,9 +25,7 @@ class EMRSeeder extends Seeder
             for ($i = 0; $i < $banyakNyaKunjungan; $i++) {
                 EMR::create([
                     'kunjungan_id' => $kunjungan->id,
-                    'riwayat_penyakit' => $faker->sentence(),
-                    'alergi' => $faker->sentence(),
-                    'hasil_periksa' => $faker->sentence(),
+                    'resep_id' => $dataResep->random()->id,
                 ]);
             }
         }
