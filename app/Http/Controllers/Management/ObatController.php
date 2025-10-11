@@ -14,12 +14,14 @@ class ObatController extends Controller
             'nama_obat' => ['required'],
             'jumlah' => ['required', 'integer', 'min:1'],
             'dosis' => ['required', 'numeric', 'min:0', 'max:999999999'],
+            'total_harga' => ['required', 'numeric', 'min:0', 'max:999999999'],
         ]);
 
         $dataObat = Obat::create([
             'nama_obat' => $request->nama_obat,
             'jumlah' => $request->jumlah,
             'dosis' => $request->dosis,
+            'total_harga' => $request->total_harga,
         ]);
 
         return response()->json(['status' => 200, 'data' => $dataObat, 'message' => 'Data Berhasil Di Tambahkan']);
@@ -43,6 +45,7 @@ class ObatController extends Controller
             'nama_obat' => ['required'],
             'jumlah' => ['required', 'integer', 'min:1'],
             'dosis' => ['required', 'numeric', 'min:0', 'max:999999999'],
+            'total_harga' => ['required', 'numeric', 'min:0', 'max:999999999'],
         ]);
 
 
@@ -50,6 +53,7 @@ class ObatController extends Controller
             'nama_obat' => $request->nama_obat,
             'jumlah' => $request->jumlah,
             'dosis' => $request->dosis,
+            'total_harga' => $request->total_harga,
         ]);
 
         return response()->json(['status' => 200, 'data' => $dataObat, 'massage' => 'Data Berhasil Di Update']);

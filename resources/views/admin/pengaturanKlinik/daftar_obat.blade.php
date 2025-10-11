@@ -36,6 +36,7 @@
                     <th class="px-6 py-3">Nama Obat</th>
                     <th class="px-6 py-3">Jumlah</th>
                     <th class="px-6 py-3">Dosis</th>
+                    <th class="px-6 py-3">Harga</th>
                     <th class="px-6 py-3 text-center">Aksi</th>
                 </tr>
             </thead>
@@ -93,6 +94,16 @@
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                         placeholder="Masukkan Dosis" required>
                     <div id="dosis-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
+                <!-- Harga -->
+                <div>
+                    <label for="total_harga"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Harga</label>
+                    <input type="number" step="0.01" name="total_harga" id="total_harga"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                        placeholder="Masukkan Harga" required>
+                    <div id="total_harga-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
                 <!-- Buttons -->
@@ -158,6 +169,16 @@
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                         placeholder="Masukkan Dosis" required>
                     <div id="dosis_edit-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
+                <!-- Harga -->
+                <div>
+                    <label for="total_harga_edit"
+                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Harga</label>
+                    <input type="number" step="0.01" name="total_harga_edit" id="total_harga_edit"
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                        placeholder="Masukkan Harga" required>
+                    <div id="total_harga_edit-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
                 <!-- Buttons -->

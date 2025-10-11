@@ -19,7 +19,7 @@ class PengaturanKlinikController extends Controller
 
     public function dataObat()
     {
-        $query = Obat::select(['id', 'nama_obat', 'jumlah', 'dosis']);
+        $query = Obat::select(['id', 'nama_obat', 'jumlah', 'dosis', 'total_harga']);
 
         return DataTables::of($query)
             ->addColumn('action', function ($obat) {
