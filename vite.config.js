@@ -18,6 +18,7 @@ export default defineConfig({
                 "resources/js/admin/manajemenPengguna/data_pasien.js",
                 "resources/js/admin/pengambilanObat/pengambilan_obat.js",
                 "resources/js/admin/jadwalKunjungan/jadwal_kunjungan.js",
+                "resources/js/admin/jadwalKunjungan/proses_kunjungan.js",
 
                 // pengaturan klinik
                 "resources/js/admin/pengaturanKlinik/jadwal_dokter.js",
