@@ -195,4 +195,49 @@ class TestingController extends Controller
         $dataKunjungan = Kunjungan::with('dokter', 'pasien')->paginate(10);
         return view('admin.kunjungan', compact('dataKunjungan'));
     }
+
+    public function updateStatusResepObat(Request $request)
+    {
+        $request->validate([
+            'resep_id' => ['required', 'exists:resep,id'],
+            'obat_id' => ['required', 'exists:obat,id'],
+            'status' => ['required', 'string'], // contoh: 'belum bayar' / 'sudah bayar'
+        ]);
+
+        try {
+            DB::transaction(function () use ($request) {
+                // Ambil resep
+                $resep = Resep::findOrFail($request->resep_id);
+
+                // Cek apakah obat ada di dalam resep ini
+                $obat = $resep->obat()->where('obat_id', $request->obat_id)->firstOrFail();
+
+                // Update status di tabel pivot resep_obat
+                $resep->obat()->updateExistingPivot($request->obat_id, [
+                    'status' => $request->status,
+                ]);
+
+                // Jika status berubah jadi "sudah bayar", kurangi stok obat
+                if ($request->status === 'sudah bayar') {
+                    $jumlahObat = $obat->pivot->jumlah;
+
+                    if ($obat->jumlah < $jumlahObat) {
+                        throw new \Exception('Stok obat tidak mencukupi.');
+                    }
+
+                    $obat->decrement('jumlah', $jumlahObat);
+                }
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Status resep obat berhasil diperbarui.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memperbarui status resep obat: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }

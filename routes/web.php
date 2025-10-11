@@ -122,6 +122,7 @@ Route::get('/testing', [TestingController::class, 'testing'])->name('testing');
 Route::post('/testing-create-kunjungan', [TestingController::class, 'testingCreateKunjungan'])->name('testing.create.kunjungan');
 Route::post('/testing-ubah-status-kunjungan', [TestingController::class, 'ubahStatusKunjungan'])->name('testing.ubah.status.kunjungan');
 Route::post('/testing-batalkan-status-kunjungan', [TestingController::class, 'batalkanStatusKunjungan'])->name('testing.batalkan.status.kunjungan');
+Route::post('/testing-update-status-resep-obat', [TestingController::class, 'batalkanStatusKunjungan'])->name('testing.update.status.resep.obat');
 
 // // Public web routes for data access
 // Route::get('/getDataJadwalDokter', [APIController::class, 'getDataJadwalDokter'])->name('get.data.jadwal.dokter');
