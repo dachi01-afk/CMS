@@ -14,7 +14,8 @@ class DataMedisPasienController extends Controller
 {
     public function index()
     {
-        return view('admin.data_medis_pasien');
+        $dataEMR = EMR::with('kunjungan.pasien', 'kunjungan.dokter', 'kunjungan', 'resep.obat')->paginate(10);
+        return view('admin.data_medis_pasien', compact('dataEMR'));
     }
 
     public function dataRekamMedis()

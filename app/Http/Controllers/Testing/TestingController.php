@@ -17,11 +17,16 @@ class TestingController extends Controller
 {
     public function testing()
     {
-        $dataResepObat = Resep::with('obat', 'kunjungan.pasien', 'kunjungan.dokter')->paginate(10);
+        // $dataResepObat = Resep::with('obat', 'kunjungan.pasien', 'kunjungan.dokter')->paginate(10);
 
-        dd($dataResepObat);
+        // dd($dataResepObat);
 
-        return view('testing.index', compact('dataResepObat'));
+        $dataEMR = EMR::with('kunjungan.pasien', 'kunjungan.dokter', 'kunjungan', 'resep.obat')->paginate(10);
+
+
+        // dd($dataEMR);
+
+        return view('testing.index', compact('dataEMR'));
     }
 
     public function ubahStatusKunjungan(Request $request)

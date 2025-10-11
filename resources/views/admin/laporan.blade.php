@@ -44,13 +44,13 @@
                 </li>
 
 
-                <li class="me-2" role="presentation">
+                {{-- <li class="me-2" role="presentation">
                     <button class="inline-block p-4 border-b-2 rounded-t-lg" id="laporan-resep-dan-apotek-tab"
                         data-tabs-target="#data-laporan-resep-dan-apotek" type="button" role="tab"
                         aria-controls="data-laporan-resep-dan-apotek" aria-selected="false">
                         Laporan Resep & Transaksi Apotek
                     </button>
-                </li>
+                </li> --}}
 
                 <li role="presentation">
                     <button class="inline-block p-4 border-b-2 rounded-t-lg" id="laporan-administrasi-tab"
