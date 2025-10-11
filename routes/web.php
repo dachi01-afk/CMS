@@ -19,6 +19,7 @@ use App\Http\Controllers\Admin\DataMedisPasienController;
 use App\Http\Controllers\Admin\JadwalKunjunganController;
 use App\Http\Controllers\Admin\PengaturanKlinikController;
 use App\Http\Controllers\Admin\ManajemenPenggunaController;
+use App\Http\Controllers\Admin\PengambilanObatController;
 use App\Http\Controllers\Management\JadwalDokterController;
 use App\Http\Controllers\Admin\AturJadwalKunjunganController;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
@@ -239,6 +240,12 @@ Route::middleware('auth')->group(function () {
         Route::get('/diagnosa_dan_konsultasi', [DataMedisPasienController::class, 'dataKonsultasi'])->name('diagnosa_dan_konsultasi');
         Route::get('/hasil_lab', [DataMedisPasienController::class, 'dataLab'])->name('hasil_lab');
         Route::get('/data_emr', [DataMedisPasienController::class, 'getDataEMR'])->name('data_emr');
+    });
+
+    Route::prefix('pengambilan_obat')->group(function () {
+        Route::get('/', [PengambilanObatController::class, 'index'])->name('pengambilan.obat');
+        Route::get('/get-data', [PengambilanObatController::class, 'getDataResepObat'])->name('get.data.resep.obat');
+        Route::post('/update-status-resep-obat', [PengambilanObatController::class, 'getDataResepObat'])->name('update.status.resep.obat');
     });
 
     Route::prefix('settings')->name('settings.')->group(function () {

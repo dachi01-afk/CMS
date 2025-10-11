@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('pembayaran', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('pasien_id')->constrained('pasien', 'id', 'pembayaran_pasien_id')
+            $table->foreignId('resep_id')->constrained('resep', 'id', 'pembayaran_resep_id')
                 ->cascadeOnDelete()->cascadeOnUpdate();
             $table->decimal('total_tagihan', 8, 2);
             $table->enum('status', ['Sudah Bayar', 'Belum Bayar']);
