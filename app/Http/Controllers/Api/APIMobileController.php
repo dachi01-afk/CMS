@@ -15,9 +15,11 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
 class APIMobileController extends Controller
@@ -1131,38 +1133,248 @@ class APIMobileController extends Controller
 
     // Juga perbaiki method getDetailRiwayatPasien()
     public function getDetailRiwayatPasien($kunjunganId)
-{
-    try {
-        $user_id = Auth::user()->id;
-        $dokter = Dokter::where('user_id', $user_id)->firstOrFail();
+    {
+        try {
+            $user_id = Auth::user()->id;
+            $dokter = Dokter::where('user_id', $user_id)->firstOrFail();
 
-        $detailRiwayat = Kunjungan::with([
-            'pasien',
-            'emr',
-            'resep.obat' => function ($query) {
-                // 🔥 TAMBAHKAN withPivot untuk keterangan
-                $query->select('obat.id', 'obat.nama_obat', 'obat.dosis')
-                      ->withPivot('jumlah', 'dosis', 'keterangan'); // ← TAMBAH keterangan
-            },
-        ])
-            ->where('id', $kunjunganId)
-            ->where('dokter_id', $dokter->id)
-            ->whereIn('status', ['Succeed', 'Canceled'])
-            ->firstOrFail();
+            $detailRiwayat = Kunjungan::with([
+                'pasien',
+                'emr',
+                'resep.obat' => function ($query) {
+                    // 🔥 TAMBAHKAN withPivot untuk keterangan
+                    $query->select('obat.id', 'obat.nama_obat', 'obat.dosis')
+                        ->withPivot('jumlah', 'dosis', 'keterangan'); // ← TAMBAH keterangan
+                },
+            ])
+                ->where('id', $kunjunganId)
+                ->where('dokter_id', $dokter->id)
+                ->whereIn('status', ['Succeed', 'Canceled'])
+                ->firstOrFail();
 
-        return response()->json([
-            'success' => true,
-            'status' => 200,
-            'data' => $detailRiwayat,
-            'message' => 'Berhasil mengambil detail riwayat pasien',
-        ], 200);
-    } catch (\Exception $e) {
-        Log::error('Error getting detail riwayat pasien: '.$e->getMessage());
+            return response()->json([
+                'success' => true,
+                'status' => 200,
+                'data' => $detailRiwayat,
+                'message' => 'Berhasil mengambil detail riwayat pasien',
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('Error getting detail riwayat pasien: '.$e->getMessage());
 
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengambil detail riwayat: '.$e->getMessage(),
-        ], 500);
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil detail riwayat: '.$e->getMessage(),
+            ], 500);
+        }
     }
-}
+
+    /**
+     * Send OTP for forgot password
+     */
+    public function sendForgotPasswordOTP(Request $request)
+    {
+        try {
+            $request->validate([
+                'email' => 'required|email|exists:user,email',
+            ]);
+
+            $email = $request->email;
+
+            // Generate 6 digit OTP
+            $otp = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+
+            // Store OTP in cache for 5 minutes
+            $cacheKey = 'forgot_password_otp_'.$email;
+            Cache::put($cacheKey, $otp, now()->addMinutes(5));
+
+            // Send email
+            try {
+                Mail::send('emails.otp_notification', [
+                    'otp' => $otp,
+                    'type' => 'Reset Password',
+                    'expiration_minutes' => 5,
+                ], function ($message) use ($email) {
+                    $message->to($email)
+                        ->subject('Kode Verifikasi Reset Password - Royal Clinic');
+                });
+
+                Log::info("Forgot password OTP sent to: $email, OTP: $otp");
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Kode OTP telah dikirim ke email Anda',
+                    'data' => [
+                        'email' => $email,
+                        'expires_in' => 5, // minutes
+                    ],
+                ], 200);
+
+            } catch (\Exception $e) {
+                Log::error('Failed to send forgot password email: '.$e->getMessage());
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal mengirim email. Silakan coba lagi.',
+                ], 500);
+            }
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error in sendForgotPasswordOTP: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Verify OTP and reset password
+     */
+    public function resetPasswordWithOTP(Request $request)
+    {
+        try {
+            $request->validate([
+                'email' => 'required|email|exists:user,email',
+                'otp' => 'required|string|size:6',
+                'new_password' => 'required|string|min:6|confirmed',
+            ]);
+
+            $email = $request->email;
+            $otp = $request->otp;
+            $newPassword = $request->new_password;
+
+            // Check OTP from cache
+            $cacheKey = 'forgot_password_otp_'.$email;
+            $storedOTP = Cache::get($cacheKey);
+
+            if (! $storedOTP) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kode OTP sudah kedaluwarsa. Silakan minta kode baru.',
+                ], 400);
+            }
+
+            if ($storedOTP !== $otp) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kode OTP tidak valid.',
+                ], 400);
+            }
+
+            // Update password
+            $user = User::where('email', $email)->first();
+            $user->update([
+                'password' => Hash::make($newPassword),
+            ]);
+
+            // Delete OTP from cache
+            Cache::forget($cacheKey);
+
+            // Revoke all tokens for security
+            $user->tokens()->delete();
+
+            Log::info("Password reset successful for email: $email");
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Password berhasil direset. Silakan login dengan password baru.',
+                'data' => [
+                    'email' => $email,
+                    'reset_at' => now()->toISOString(),
+                ],
+            ], 200);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error in resetPasswordWithOTP: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem: '.$e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // Tambahkan method ini ke APIMobileController.php
+
+    /**
+     * Send username to email
+     */
+    public function sendForgotUsername(Request $request)
+    {
+        try {
+            $request->validate([
+                'email' => 'required|email|exists:user,email',
+            ]);
+
+            $email = $request->email;
+
+            // Find user by email
+            $user = User::where('email', $email)->first();
+
+            if (! $user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Email tidak ditemukan dalam sistem',
+                ], 404);
+            }
+
+            // Send email with username
+            try {
+                Mail::send('emails.username_notification', [
+                    'username' => $user->username,
+                    'email' => $email,
+                    'user_role' => $user->role,
+                ], function ($message) use ($email) {
+                    $message->to($email)
+                        ->subject('Username Akun Anda - Royal Clinic');
+                });
+
+                Log::info("Username sent to email: $email, username: {$user->username}");
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Username telah dikirim ke email Anda',
+                    'data' => [
+                        'email' => $email,
+                        'sent_at' => now()->toISOString(),
+                    ],
+                ], 200);
+
+            } catch (\Exception $e) {
+                Log::error('Failed to send username email: '.$e->getMessage());
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal mengirim email. Silakan coba lagi.',
+                ], 500);
+            }
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error in sendForgotUsername: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem: '.$e->getMessage(),
+            ], 500);
+        }
+    }
 }

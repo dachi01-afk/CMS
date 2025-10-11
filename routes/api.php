@@ -18,6 +18,11 @@ Route::post('/create-data-testimoni', [APIMobileController::class, 'createDataTe
 Route::get('/getDataSpesialisasiDokter', [APIMobileController::class, 'getDataSpesialisasiDokter']);
 Route::get('/getDokterBySpesialisasi/{spesialisasi_id}', [APIMobileController::class, 'getDokterBySpesialisasi']);
 
+// 🔥 ROUTES UNTUK FORGOT PASSWORD & USERNAME
+Route::post('/forgot-password/send-otp', [APIMobileController::class, 'sendForgotPasswordOTP']);
+Route::post('/forgot-password/reset', [APIMobileController::class, 'resetPasswordWithOTP']);
+Route::post('/forgot-username', [APIMobileController::class, 'sendForgotUsername']);
+
 // 🔒 PROTECTED ROUTES (butuh autentikasi dengan token)
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/pasien/profile', [APIMobileController::class, 'getProfile']);
@@ -36,7 +41,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/getDataDokterSpesialisasi', [APIMobileController::class, 'getDataDokterSpesialisasi']);
 });
 
-// Route Untuk User Yang Login Sebagai Dokter 
 // Route Untuk User Yang Login Sebagai Dokter 
 Route::middleware(['auth:sanctum', 'role:Dokter'])->group(function () {
     Route::prefix('dokter')->group(function () {
