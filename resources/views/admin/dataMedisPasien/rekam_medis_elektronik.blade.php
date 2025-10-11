@@ -49,4 +49,4 @@
     </div>
 </div>
 
-@vite(['resources/js/admin/dataMedisPasien/rekam_medis_elektronik.js']);
+@vite(['resources/js/admin/dataMedisPasien/rekam_medis_elektronik.js'])

@@ -2,23 +2,27 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Api\APIWebController;
+use App\Http\Controllers\Admin\KasirController;
 use App\Http\Controllers\Dokter\AuthController;
 use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Management\ObatController;
 use App\Http\Controllers\Management\UserController;
+use App\Http\Controllers\Testing\TestingController;
+use App\Http\Controllers\Admin\PembayaranController;
+use App\Http\Controllers\Management\DokterController;
+use App\Http\Controllers\Management\PasienController;
+use App\Http\Controllers\Management\ApotekerController;
 use App\Http\Controllers\Admin\DataMedisPasienController;
+use App\Http\Controllers\Admin\JadwalKunjunganController;
 use App\Http\Controllers\Admin\PengaturanKlinikController;
 use App\Http\Controllers\Admin\ManajemenPenggunaController;
-use App\Http\Controllers\Api\APIWebController;
-use App\Http\Controllers\Dokter\DokterController as DokterDokterController;
-use App\Http\Controllers\Management\ApotekerController;
-use App\Http\Controllers\Management\DokterController;
 use App\Http\Controllers\Management\JadwalDokterController;
-use App\Http\Controllers\Management\ObatController;
-use App\Http\Controllers\Management\PasienController;
-use App\Http\Controllers\Testing\TestingController;
+use App\Http\Controllers\Admin\AturJadwalKunjunganController;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
+use App\Http\Controllers\Dokter\DokterController as DokterDokterController;
 
 // API Routes - Enhanced for better booking functionality
 // Route::prefix('api')->withoutMiddleware(['web'])->group(function () {
@@ -192,6 +196,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/add_pasien', [PasienController::class, 'createPasien'])->name('add_pasien');
         Route::put('/update_pasien/{id}', [PasienController::class, 'updatePasien'])->name('update_pasien');
         Route::delete('/delete_pasien/{id}', [PasienController::class, 'deletePasien'])->name('delete_pasien');
+        Route::delete('/search', [PasienController::class, 'search'])->name('pasien');
 
         // crud apoteker
         Route::get('/data_apoteker', [ManajemenPenggunaController::class, 'dataApoteker'])->name('data_apoteker');
@@ -236,6 +241,19 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('settings')->name('settings.')->group(function () {
         Route::get('/', [SettingsController::class, 'index'])->name('index');
+    });
+
+    Route::prefix('jadwal_kunjungan')->name('jadwal_kunjungan.')->group(function () {
+        Route::get('/',         [JadwalKunjunganController::class, 'index'])->name('index');
+        Route::post('/create',         [JadwalKunjunganController::class, 'store'])->name('create');
+        Route::get('/search', [JadwalKunjunganController::class, 'search'])->name('pasien');
+
+        Route::get('/waiting', [JadwalKunjunganController::class, 'waiting'])->name('waiting');
+        Route::post('/update-status/{id}', [JadwalKunjunganController::class, 'updateStatus'])->name('update_status');
+    });
+
+    Route::prefix('kasir')->name('kasir.')->group(function () {
+        Route::get('/', [KasirController::class, 'store'])->name('index');
     });
 });
 

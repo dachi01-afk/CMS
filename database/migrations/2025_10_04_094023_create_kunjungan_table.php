@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('kunjungan', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('dokter_id')->constrained('dokter', 'id', 'kunjungan_dokter_id')
+            $table->foreignId('dokter_id')->constrained('dokter')
                 ->cascadeOnDelete()->cascadeOnUpdate();
-            $table->foreignId('pasien_id')->constrained('pasien', 'id', 'kunjungan_pasien_id')
+            $table->foreignId('pasien_id')->constrained('pasien')
                 ->cascadeOnDelete()->cascadeOnUpdate();
             $table->date('tanggal_kunjungan');
             $table->string('no_antrian', 3)->nullable();
