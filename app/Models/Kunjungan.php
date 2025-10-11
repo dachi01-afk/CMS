@@ -18,6 +18,7 @@ class Kunjungan extends Model
         'tanggal_kunjungan',
         'no_antrian',
         'keluhan_awal',
+        'status',
     ];
 
     // Cast untuk tipe data yang sesuai

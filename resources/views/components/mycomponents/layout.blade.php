@@ -119,6 +119,12 @@
                         Pengaturan Klinik
                     </x-mycomponents.sidebar_link>
 
+                    <x-mycomponents.sidebar_link href="jadwal_kunjungan.index"
+                        class="fa-solid fa-calendar-plus text-blue-600">
+                        Jadwal Kunjungan
+                    </x-mycomponents.sidebar_link>
+
+
                     <x-mycomponents.sidebar_link href="laporan.index" class="fa-solid fa-chart-line text-blue-600">
                         Laporan
                     </x-mycomponents.sidebar_link>
@@ -127,6 +133,10 @@
                         class="fa-solid fa-notes-medical text-blue-600">
                         Data Medis Pasien
                     </x-mycomponents.sidebar_link>
+
+                    {{-- <x-mycomponents.sidebar_link href="kasir.index" class="fa-solid fa-notes-medical text-blue-600">
+                        Pembayaran
+                    </x-mycomponents.sidebar_link> --}}
 
                     <hr class="my-4 border-gray-300">
                     <x-mycomponents.sidebar_link href="settings.index" class="fa-solid fa-gear">

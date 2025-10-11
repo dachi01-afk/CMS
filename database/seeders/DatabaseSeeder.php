@@ -24,14 +24,14 @@ class DatabaseSeeder extends Seeder
             PasienSeeder::class,
             ObatSeeder::class,
             JadwalDokterSeeder::class,
-            // KunjunganSeeder::class,
+            KunjunganSeeder::class,
             // TestimoniSeeder::class,
-            // ResepSeeder::class,
+            ResepSeeder::class,
             // ResepObatSeeder::class,
             // TesLabSeeder::class,
             // PembayaranSeeder::class,
             // AdministrasiSeeder::class,
-            // EMRSeeder::class,
+            EMRSeeder::class,
         ]);
     }
 }

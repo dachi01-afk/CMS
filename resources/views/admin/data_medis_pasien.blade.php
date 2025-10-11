@@ -26,7 +26,7 @@
         <div class="border-b border-gray-200 dark:border-gray-700 ">
             <ul class="flex flex-wrap -mb-px text-sm font-medium text-center whitespace-nowrap" id="default-tab"
                 data-tabs-toggle="#tab-content" role="tablist">
-
+                {{-- 
                 <li class="me-2" role="presentation">
                     <button class="inline-block p-4 border-b-2 rounded-t-lg" id="rme-tab" data-tabs-target="#data-rme"
                         type="button" role="tab" aria-controls="data-rme" aria-selected="true">
@@ -48,6 +48,13 @@
                         data-tabs-target="#data-hasil-laboratorium" type="button" role="tab"
                         aria-controls="data-hasil-laboratorium" aria-selected="false">
                         Data Hasil Laboratorium
+                    </button>
+                </li> --}}
+
+                <li class="me-2" role="presentation">
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="emr-tab" data-tabs-target="#data-emr"
+                        type="button" role="tab" aria-controls="data-emr" aria-selected="false">
+                        EMR
                     </button>
                 </li>
 
@@ -72,6 +79,11 @@
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-hasil-laboratorium"
                     role="tabpanel" aria-labelledby="hasil-laboratorium-tab">
                     @include('admin.dataMedisPasien.data_hasil_lab')
+                </div>
+
+                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-emr" role="tabpanel"
+                    aria-labelledby="emr-tab">
+                    @include('admin.dataMedisPasien.emr')
                 </div>
 
             </div>
