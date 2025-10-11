@@ -29,11 +29,9 @@ class DatabaseSeeder extends Seeder
             ResepSeeder::class,
             // ResepObatSeeder::class,
             // TesLabSeeder::class,
-            // KonsulSeeder::class,
             // PembayaranSeeder::class,
             // AdministrasiSeeder::class,
             EMRSeeder::class,
-            // TransaksiApotekerSeeder::class,
         ]);
     }
 }

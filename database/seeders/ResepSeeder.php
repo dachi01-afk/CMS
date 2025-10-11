@@ -22,7 +22,6 @@ class ResepSeeder extends Seeder
             for ($i = 0; $i < 10; $i++) {
                 Resep::create([
                     'kunjungan_id' => $kunjungan->id,
-                    'apoteker_id' => $dataApoteker->random()->id,
                 ]);
             }
         }

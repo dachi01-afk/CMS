@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Testing;
 
 use App\Http\Controllers\Controller;
 use App\Models\Dokter;
+use App\Models\EMR;
 use App\Models\JadwalDokter;
 use App\Models\Kunjungan;
 use App\Models\Pasien;
+use App\Models\Resep;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -15,9 +17,11 @@ class TestingController extends Controller
 {
     public function testing()
     {
-        $dataKunjungan = Kunjungan::with('dokter', 'pasien')->paginate(10);
+        $dataResepObat = Resep::with('obat', 'kunjungan.pasien', 'kunjungan.dokter')->paginate(10);
 
-        return view('testing.index', compact('dataKunjungan'));
+        dd($dataResepObat);
+
+        return view('testing.index', compact('dataResepObat'));
     }
 
     public function ubahStatusKunjungan(Request $request)
@@ -62,7 +66,7 @@ class TestingController extends Controller
 
         $dataKunjungan->update([
             'status' => 'Canceled',
-            'no_antrian' => null, 
+            'no_antrian' => null,
         ]);
 
         return response()->json([

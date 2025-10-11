@@ -37,11 +37,6 @@ class Kunjungan extends Model
         return $this->hasMany(TesLab::class);
     }
 
-    public function konsul()
-    {
-        return $this->hasMany(Konsul::class);
-    }
-
     public function dokter()
     {
         return $this->belongsTo(Dokter::class);
@@ -55,7 +50,7 @@ class Kunjungan extends Model
     // Tambahkan relasi untuk EMR
     public function emr()
     {
-        return $this->hasMany(EMR::class);
+        return $this->hasOne(EMR::class);
     }
 
     // Scope untuk filter berdasarkan status
