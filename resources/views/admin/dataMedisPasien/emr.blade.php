@@ -1,13 +1,7 @@
-<!-- Header -->
 <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-    <h2 class="text-2xl font-bold text-gray-700">Laporan Diagnosa & Konsultasi</h2>
-    {{-- <button id="btnAddKonsultasi"
-        class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg shadow hover:bg-blue-700 focus:outline-none">
-        + Tambah Data
-    </button> --}}
+    <h2 class="text-2xl font-bold text-gray-700">EMR</h2>
 </div>
 
-<!-- Tabel Konsultasi -->
 <div class="overflow-hidden rounded-lg shadow-md">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 border-b border-gray-200">
         <div>
@@ -43,9 +37,7 @@
     </div>
 
     <div class="flex flex-col md:flex-row md:items-center md:justify-between px-4 py-3 border-t border-gray-200 gap-3">
-        <div id="konsul_customInfo" class="text-sm text-gray-700 dark:text-gray-300"></div>
+        <div id="konsul_customInfo" class="text-sm text-gray-700"></div>
         <ul id="konsul_customPagination" class="inline-flex -space-x-px text-sm"></ul>
     </div>
 </div>
-
-@vite(['resources/js/admin/dataMedisPasien/data_diagnosa_dan_konsultasi.js'])
