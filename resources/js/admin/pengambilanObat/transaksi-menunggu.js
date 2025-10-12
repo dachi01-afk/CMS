@@ -113,3 +113,217 @@ $(function () {
     tabel.on("draw", updatePagination);
     updatePagination();
 });
+
+$(document).on("click", ".bayarSekarang", function () {
+    const url = $(this).data("url");
+    window.location.href = url;
+});
+
+// $(function () {
+//     const modalBayarSekarang = document.getElementById("modalBayarSekarang");
+//     const modalNya = modalBayarSekarang ? new Modal(addModalElement) : null;
+//     const $formBayarSekarang = $("#formBayarSekarang");
+//     const actionForm = $formBayarSekarang.data('url');
+
+//     function resetModal() {
+//         $formBayarSekarang[0].reset();
+//         $formBayarSekarang.find(".is-invalid").removeClass("is-invalid");
+//         $formBayarSekarang.find(".text-red-600").empty();
+//     }
+
+//     $("body").on("click", ".bayarSekarang", function () {
+//         const id = $(this).data("id");
+//         const emrId = $(this).data("emr-id");
+//     });
+
+//     axios
+//         .get(`/manajemen_pengguna/get_pasien_by_id/${pasienId}`)
+//         .then((response) => {
+//             const pasien = response.data.data;
+//             const baseUrl = $formEdit.data("url");
+//             const finalUrl = baseUrl.replace("/0", "/" + pasien.id);
+//             $formEdit.data("url", finalUrl);
+//             $formEdit.attr("action", finalUrl);
+
+//             $("#edit_pasien_id").val(pasien.id);
+//             $("#edit_username_pasien").val(pasien.user.username);
+//             $("#edit_nama_pasien").val(pasien.nama_pasien);
+//             $("#edit_email_pasien").val(pasien.user.email);
+//             $("#edit_alamat_pasien").val(pasien.alamat);
+//             $("#edit_tanggal_lahir_pasien").val(pasien.tanggal_lahir);
+//             $("#edit_jenis_kelamin_pasien").val(pasien.jenis_kelamin);
+
+//             // Tampilkan foto existing jika ada
+//             if (pasien.foto_pasien) {
+//                 const fotoUrl = `/storage/${pasien.foto_pasien}`;
+//                 $("#edit_preview_foto_pasien")
+//                     .attr("src", fotoUrl)
+//                     .removeClass("hidden");
+//                 $("#edit_placeholder_foto_pasien").addClass("hidden");
+//                 $("#edit_foto_drop_area_pasien")
+//                     .removeClass("border-dashed border-gray-400")
+//                     .addClass("border-solid border-gray-300");
+//             }
+//             if (editModal) editModal.show();
+//         })
+//         .catch(() => {
+//             Swal.fire({
+//                 icon: "error",
+//                 title: "Gagal!",
+//                 text: "Tidak dapat memuat data pasien.",
+//             });
+//         });
+
+//     $formBayarSekarang.on("submit", function (e) {
+//         e.preventDefault();
+//         const url = $formAdd.data("url");
+//         const formData = new FormData($formBayarSekarang[0]);
+
+//         $(".text-red-600").empty();
+//         $formBayarSekarang.find(".is-invalid").removeClass("is-invalid");
+
+//         axios
+//             .post(url, formData, {
+//                 headers: { "Content-Type": "multipart/form-data" },
+//             })
+//             .then((response) => {
+//                 Swal.fire({
+//                     icon: "success",
+//                     title: "Berhasil!",
+//                     text: response.data.message,
+//                     showConfirmButton: false,
+//                     timer: 2000,
+//                 }).then(() => {
+//                     addModal.hide();
+//                     $("#transaksiMenunggu")
+//                         .DataTable()
+//                         .ajax.reload(null, false);
+//                     resetModal();
+//                 });
+//             })
+//             .catch((error) => {
+//                 if (error.response && error.response.status === 422) {
+//                     const errors = error.response.data.errors;
+//                     Swal.fire({
+//                         icon: "error",
+//                         title: "Validasi Gagal!",
+//                         text: "Silakan periksa kembali isian formulir Anda.",
+//                     });
+//                     for (const field in errors) {
+//                         $(`#${field}`).addClass("is-invalid");
+//                         $(`#${field}-error`).html(errors[field][0]);
+//                     }
+//                 }
+//             });
+//     });
+// });
+
+// $(function () {
+//     const editModalElement = document.getElementById("editPasienModal");
+//     const editModal = editModalElement ? new Modal(editModalElement) : null;
+//     const $formEdit = $("#formEditPasien");
+//     const initialEditUrl = $formEdit.data("url");
+
+//     function resetEditForm() {
+//         $formEdit[0].reset();
+//         $formEdit.find(".is-invalid").removeClass("is-invalid");
+//         $formEdit.find(".text-red-600").html("");
+
+//         // reset URL ke awal
+//         $formEdit.data("url", initialEditUrl);
+//         $formEdit.attr("action", initialEditUrl);
+
+//         // Reset preview foto
+//         $("#edit_preview_foto_pasien").addClass("hidden").attr("src", "");
+//         $("#edit_placeholder_foto_pasien").removeClass("hidden");
+//         $("#edit_foto_drop_area_pasien")
+//             .removeClass("border-solid border-gray-300")
+//             .addClass("border-dashed border-gray-400");
+//     }
+
+//     $("body").on("click", ".btn-edit-pasien", function () {
+//         resetEditForm();
+//         const pasienId = $(this).data("id");
+
+//         axios
+//             .get(`/manajemen_pengguna/get_pasien_by_id/${pasienId}`)
+//             .then((response) => {
+//                 const pasien = response.data.data;
+//                 const baseUrl = $formEdit.data("url");
+//                 const finalUrl = baseUrl.replace("/0", "/" + pasien.id);
+//                 $formEdit.data("url", finalUrl);
+//                 $formEdit.attr("action", finalUrl);
+
+//                 $("#edit_pasien_id").val(pasien.id);
+//                 $("#edit_username_pasien").val(pasien.user.username);
+//                 $("#edit_nama_pasien").val(pasien.nama_pasien);
+//                 $("#edit_email_pasien").val(pasien.user.email);
+//                 $("#edit_alamat_pasien").val(pasien.alamat);
+//                 $("#edit_tanggal_lahir_pasien").val(pasien.tanggal_lahir);
+//                 $("#edit_jenis_kelamin_pasien").val(pasien.jenis_kelamin);
+
+//                 // Tampilkan foto existing jika ada
+//                 if (pasien.foto_pasien) {
+//                     const fotoUrl = `/storage/${pasien.foto_pasien}`;
+//                     $("#edit_preview_foto_pasien")
+//                         .attr("src", fotoUrl)
+//                         .removeClass("hidden");
+//                     $("#edit_placeholder_foto_pasien").addClass("hidden");
+//                     $("#edit_foto_drop_area_pasien")
+//                         .removeClass("border-dashed border-gray-400")
+//                         .addClass("border-solid border-gray-300");
+//                 }
+//                 if (editModal) editModal.show();
+//             })
+//             .catch(() => {
+//                 Swal.fire({
+//                     icon: "error",
+//                     title: "Gagal!",
+//                     text: "Tidak dapat memuat data pasien.",
+//                 });
+//             });
+//     });
+
+//     $formEdit.on("submit", function (e) {
+//         e.preventDefault();
+//         const url = $formEdit.data("url");
+//         const formData = new FormData($formEdit[0]);
+//         if (!formData.has("_method")) formData.append("_method", "PUT");
+
+//         axios
+//             .post(url, formData)
+//             .then((response) => {
+//                 Swal.fire({
+//                     icon: "success",
+//                     title: "Berhasil!",
+//                     text: response.data.message,
+//                     showConfirmButton: false,
+//                     timer: 2000,
+//                 }).then(() => {
+//                     editModal.hide();
+//                     $("#pasienTable").DataTable().ajax.reload(null, false);
+//                     resetEditForm();
+//                 });
+//             })
+//             .catch((error) => {
+//                 if (error.response && error.response.status === 422) {
+//                     const errors = error.response.data.errors;
+//                     for (const field in errors) {
+//                         $(`#edit_${field}`).addClass("is-invalid");
+//                         $(`#edit_${field}-error`).html(errors[field][0]);
+//                     }
+//                 } else {
+//                     Swal.fire({
+//                         icon: "error",
+//                         title: "Error!",
+//                         text: "Terjadi kesalahan server.",
+//                     });
+//                 }
+//             });
+//     });
+
+//     $("#closeEditPasienModal").on("click", function () {
+//         if (editModal) editModal.hide();
+//         resetEditForm();
+//     });
+// });

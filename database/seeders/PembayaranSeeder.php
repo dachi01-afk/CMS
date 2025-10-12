@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Pasien;
 use App\Models\Pembayaran;
+use App\Models\Resep;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Faker\Factory as Faker;
@@ -16,23 +17,58 @@ class PembayaranSeeder extends Seeder
      */
     public function run(): void
     {
-        $faker = Faker::create('id_ID');
-        $dataPasien = Pasien::all();
-        $listStatus = ['Sudah Bayar', 'Belum Bayar'];
+        // $faker = Faker::create('id_ID');
+        // $dataPasien = Pasien::all();
+        // $listStatus = ['Sudah Bayar', 'Belum Bayar'];
 
-        foreach ($dataPasien as $pasien) {
-            $jumlahPembayaran = rand(1, 5);
-            for ($i = 0; $i < $jumlahPembayaran; $i++) {
-                $status = Arr::random($listStatus);
-                Pembayaran::create([
-                    'pasien_id' => $pasien->id,
-                    'total_tagihan' => $status === 'Sudah Bayar'
-                        ? $faker->numberBetween(50000, 1000000)
-                        : 0,
-                    'status' => $status,
-                    'tanggal_pembayaran' => $faker->dateTimeBetween('-1 years', '-1 day'),
-                ]);
-            }
+        // foreach ($dataPasien as $pasien) {
+        //     $jumlahPembayaran = rand(1, 5);
+        //     for ($i = 0; $i < $jumlahPembayaran; $i++) {
+        //         $status = Arr::random($listStatus);
+        //         Pembayaran::create([
+        //             'pasien_id' => $pasien->id,
+        //             'total_tagihan' => $status === 'Sudah Bayar'
+        //                 ? $faker->numberBetween(50000, 1000000)
+        //                 : 0,
+        //             'status' => $status,
+        //             'tanggal_pembayaran' => $faker->dateTimeBetween('-1 years', '-1 day'),
+        //         ]);
+        //     }
+        // }
+
+        // Ambil satu data resep beserta relasi obatnya
+        $faker = Faker::create();
+
+        // Ambil satu data resep dengan relasi obatnya
+        $dataResep = Resep::with('obat')->first();
+
+        if (!$dataResep || $dataResep->obat->isEmpty()) {
+            $this->command->warn('⚠️ Tidak ada data resep atau obat di database. Seeder dibatalkan.');
+            return;
         }
+
+        // Hitung total tagihan dari resep_obat
+        $totalTagihan = 0;
+        foreach ($dataResep->obat as $obat) {
+            $hargaObat = $obat->total_harga ?? 0;
+            $jumlah = $obat->pivot->jumlah ?? 1;
+            $subtotal = $hargaObat * $jumlah;
+
+            // Debug log (biar kelihatan pas seeding)
+            $this->command->info("💊 {$obat->nama_obat} x{$jumlah} = {$subtotal}");
+
+            $totalTagihan += $subtotal;
+        }
+
+        // Buat data pembayaran baru
+        Pembayaran::create([
+            'emr_id'            => 1, // kamu bisa ubah sesuai data EMR yang ada
+            'total_tagihan'     => $totalTagihan,
+            'metode_pembayaran' => 'Cash',
+            'kode_transaksi'    => strtoupper(uniqid('TRX_')),
+            'status'            => 'Belum Bayar',
+        ]);
+
+        $this->command->info('✅ Pembayaran berhasil dibuat dengan total tagihan: ' . $totalTagihan);
     }
 }

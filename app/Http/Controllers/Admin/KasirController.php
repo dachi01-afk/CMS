@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Pembayaran;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Yajra\DataTables\DataTables;
 
@@ -19,65 +20,113 @@ class KasirController extends Controller
         $dataPembayaran = Pembayaran::with([
             'emr.kunjungan.pasien',
             'emr.resep.obat',
-        ])->get();
+        ])->where('status', 'Belum Bayar')->get();
 
         return DataTables::of($dataPembayaran)
             ->addIndexColumn()
-            ->addColumn('nama_pasien', fn($payment) => $payment->kunjungan->pasien->nama_pasien ?? '-')
-            ->addColumn('tanggal_kunjungan', fn($payment) => $payment->kunjungan->tanggal_kunjungan ?? '-')
-            ->addColumn('no_antrian', fn($payment) => $payment->kunjungan->no_antrian ?? '-')
-            ->addColumn('nama_obat', function ($payment) {
+            ->addColumn('nama_pasien', fn($p) => $p->emr->kunjungan->pasien->nama_pasien ?? '-')
+            ->addColumn('tanggal_kunjungan', fn($p) => $p->emr->kunjungan->tanggal_kunjungan ?? '-')
+            ->addColumn('no_antrian', fn($p) => $p->emr->kunjungan->no_antrian ?? '-')
+
+            // daftar nama obat
+            ->addColumn('nama_obat', function ($p) {
+                $resep = $p->emr->resep ?? null;
+                if (!$resep || $resep->obat->isEmpty()) {
+                    return '<span class="text-gray-400 italic">Tidak ada</span>';
+                }
 
                 $output = '<ul class="list-disc pl-4">';
-                foreach ($payment->resep->obat as $obat) {
-                    if ($payment->resep->obat->isEmpty()) {
-                        return '<span class="text-gray-400 italic">Tidak ada</span>';
-                    }
+                foreach ($resep->obat as $obat) {
                     $output .= '<li>' . e($obat->nama_obat) . '</li>';
                 }
                 $output .= '</ul>';
                 return $output;
             })
-            ->addColumn('dosis', function ($payment) {
+
+            // dosis
+            ->addColumn('dosis', function ($p) {
+                $resep = $p->emr->resep ?? null;
+                if (!$resep || $resep->obat->isEmpty()) return '-';
                 $output = '<ul class="list-disc pl-4">';
-                foreach ($payment->resep->obat as $obat) {
-                    $output .= '<li>' . e($obat->dosis) . '</li>';
+                foreach ($resep->obat as $obat) {
+                    $output .= '<li>' . e($obat->pivot->dosis ?? '-') . '</li>';
                 }
                 $output .= '</ul>';
                 return $output;
             })
-            ->addColumn('jumlah', function ($payment) {
+
+            // jumlah
+            ->addColumn('jumlah', function ($p) {
+                $resep = $p->emr->resep ?? null;
+                if (!$resep || $resep->obat->isEmpty()) return '-';
                 $output = '<ul class="list-disc pl-4">';
-                foreach ($payment->resep->obat as $obat) {
-                    $output .= '<li>' . e($obat->jumlah) . '</li>';
+                foreach ($resep->obat as $obat) {
+                    $output .= '<li>' . e($obat->pivot->jumlah ?? '-') . '</li>';
                 }
                 $output .= '</ul>';
                 return $output;
             })
-            ->addColumn('total_tagihan', fn($payment) => $payment->total_tagihan ?? '-')
-            ->addColumn('metode_pembayaran', fn($payment) => $payment->metode_pembayaran ?? '-')
-            ->addColumn('status', fn($payment) => $payment->status ?? '-')
-            // 🔹 Kolom action — per obat
-            ->addColumn('action', function ($row) {
-                if ($row->obat->isEmpty()) {
+
+            ->addColumn('total_tagihan', fn($p) => 'Rp ' .  number_format($p->total_tagihan, 0, ',', '.')  ?? '-')
+            ->addColumn('metode_pembayaran', fn($p) => $p->metode_pembayaran ?? '-')
+            ->addColumn('status', fn($p) => $p->status ?? '-')
+
+            // kolom action
+            ->addColumn('action', function ($p) {
+                $resep = $p->emr->resep ?? null;
+                if (!$resep || $resep->obat->isEmpty()) {
                     return '<span class="text-gray-400 italic">Tidak ada tindakan</span>';
                 }
 
                 $output = '<ul class="pl-0">';
-                foreach ($row->obat as $obat) {
+                $url = route('kasir.transaksi', ['kode_transaksi' => $p->kode_transaksi]);
+                foreach ($resep->obat as $obat) {
                     $output .= '
                     <li class="list-none mb-1">
-                        <button class="text-blue-600 hover:text-blue-800" title="Update Status">
+                        <button class="bayarSekarang text-blue-600 hover:text-blue-800" 
+                                data-url="' . $url . '"
+                                data-id="' . $p->id . '"
+                                data-emr-id="' . $p->emr->id . '"
+                                title="Update Status">
                             <i class="fa-regular fa-pen-to-square"></i> Bayar Sekarang
                         </button>
-                    </li>
-                ';
+                    </li>';
                 }
                 $output .= '</ul>';
 
                 return $output;
             })
-            ->rawColumns(['nama_obat', 'jumlah', 'keterangan', 'action'])
+            ->rawColumns(['nama_obat', 'dosis', 'jumlah', 'action'])
             ->make(true);
+    }
+
+    public function transaksi($kodeTransaksi)
+    {
+        $dataPembayaran = Pembayaran::with('emr.kunjungan.pasien', 'emr.resep.obat')->where('kode_transaksi', $kodeTransaksi)->firstOrFail();
+
+        return view('admin.pembayaran.transaksi', compact('dataPembayaran'));
+    }
+
+    public function melakukanPembayaranCash(Request $request)
+    {
+        $request->validate([
+            'uang_yang_diterima' => ['required'],
+            'kembalian' => ['required'],
+        ]);
+
+        $dataPembayaran = Pembayaran::findOrFail($request->id);
+
+        $dataPembayaran->update([
+            'uang_yang_diterima' => $request->uang_yang_diterima,
+            'kembalian' => $request->kembalian,
+            'tanggal_pembayaran' => now(),
+            'status' => 'Sudah Bayar',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $dataPembayaran,
+            'message' => 'Uang Kembalian ' . $request->kembalian,
+        ]);
     }
 }

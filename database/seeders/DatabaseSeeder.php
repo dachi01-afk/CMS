@@ -28,10 +28,10 @@ class DatabaseSeeder extends Seeder
             // TestimoniSeeder::class,
             ResepSeeder::class,
             ResepObatSeeder::class,
-            // TesLabSeeder::class,
-            // PembayaranSeeder::class,
-            // AdministrasiSeeder::class,
             EMRSeeder::class,
+            // TesLabSeeder::class,
+            PembayaranSeeder::class,
+            // AdministrasiSeeder::class,
         ]);
     }
 }

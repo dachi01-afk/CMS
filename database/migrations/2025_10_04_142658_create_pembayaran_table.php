@@ -15,13 +15,13 @@ return new class extends Migration
             $table->id();
             $table->foreignId('emr_id')->constrained('emr', 'id', 'pembayaran_emr_id')
                 ->cascadeOnDelete()->cascadeOnUpdate();
-            $table->decimal('total_tagihan', 8, 2);
-            $table->decimal('uang_yang_diterima', 8, 2);
-            $table->decimal('kembalian', 8, 2);
-            $table->enum('metode_pembayaran', ['Cash', 'Transfer']);
+            $table->decimal('total_tagihan', 8, 2)->nullable();
+            $table->decimal('uang_yang_diterima', 8, 2)->nullable();
+            $table->decimal('kembalian', 8, 2)->nullable();
+            $table->enum('metode_pembayaran', ['Cash', 'Transfer'])->nullable();
             $table->string('kode_transaksi')->nullable(); // bisa dari Midtrans / bank
-            $table->dateTime('tanggal_pembayaran');
-            $table->enum('status', ['Sudah Bayar', 'Belum Bayar']);
+            $table->dateTime('tanggal_pembayaran')->nullable();
+            $table->enum('status', ['Sudah Bayar', 'Belum Bayar'])->default('Belum Bayar')->nullable();
             // Catatan opsional (misalnya "Pembayaran tunai diterima oleh kasir A")
             $table->text('catatan')->nullable();
             $table->timestamps();

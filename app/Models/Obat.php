@@ -13,6 +13,6 @@ class Obat extends Model
     public function resep()
     {
         return $this->belongsToMany(Resep::class, 'resep_obat', 'obat_id', 'resep_id')
-            ->withPivot('jumlah', 'dosis');
+            ->withPivot('jumlah', 'dosis', 'keterangan', 'status');
     }
 }

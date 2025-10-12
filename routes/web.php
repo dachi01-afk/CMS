@@ -272,6 +272,8 @@ Route::middleware('auth')->group(function () {
     Route::prefix('kasir')->name('kasir.')->group(function () {
         Route::get('/', [KasirController::class, 'index'])->name('index');
         Route::get('/get-data-pembayaran', [KasirController::class, 'getDataPembayaran'])->name('get.data.pembayaran');
+        Route::get('/transaksi/{kode_transaksi}', [KasirController::class, 'transaksi'])->name('transaksi');
+        Route::post('/pembayaran-cash', [KasirController::class, 'melakukanPembayaranCash'])->name('pembayaran.cash');
     });
 });
 

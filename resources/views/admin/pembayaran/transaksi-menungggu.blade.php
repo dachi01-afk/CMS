@@ -31,6 +31,7 @@
                     <th class="px-6 py-3">Tanggal Kunjungan</th>
                     <th class="px-6 py-3">Nomor Antrian</th>
                     <th class="px-6 py-3">Nama Obat</th>
+                    <th class="px-6 py-3">Dosis</th>
                     <th class="px-6 py-3">Jumlah Obat</th>
                     <th class="px-6 py-3">Total</th>
                     <th class="px-6 py-3">Metode Pembayaran</th>
@@ -48,8 +49,8 @@
     </div>
 </div>
 
-{{-- <!-- Modal Update Status Resep Obat -->
-<div id="updateStatusModal" aria-hidden="true"
+<!-- Modal Update Status Resep Obat -->
+<div id="modalBayarSekarang" aria-hidden="true"
     class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 bg-black bg-opacity-50">
     <div class="relative w-full max-w-lg max-h-full">
         <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
@@ -63,7 +64,7 @@
             </div>
 
             <!-- Form -->
-            <form id="formUpdateStatus" class="p-5 flex flex-col gap-4" method="POST"
+            <form id="formBayarSekarang" class="p-5 flex flex-col gap-4" method="POST"
                 action="{{ route('update.status.resep.obat') }}">
                 @csrf
                 <input type="hidden" name="resep_id" id="resep_id">
@@ -97,7 +98,7 @@
             </form>
         </div>
     </div>
-</div> --}}
+</div>
 
 
 @vite(['resources/js/admin/pengambilanObat/transaksi-menunggu.js'])
