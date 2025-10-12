@@ -28,20 +28,18 @@ $(function () {
             {
                 data: "nama_obat",
                 name: "nama_obat",
-                orderable: false,
-                searchable: false,
             },
             {
                 data: "jumlah",
                 name: "jumlah",
-                orderable: false,
-                searchable: false,
             },
             {
                 data: "keterangan",
                 name: "keterangan",
-                orderable: false,
-                searchable: false,
+            },
+            {
+                data: "status",
+                name: "status",
             },
             {
                 data: "action",
@@ -144,7 +142,7 @@ $(function () {
         }
 
         Swal.fire({
-            title: "Ubah Status Pengambil Obat",
+            title: "Ubah Status Pengambilan Obat",
             text: "Apakah pasien sudah mengambil obat?",
             icon: "question",
             showCancelButton: true,
@@ -179,141 +177,33 @@ $(function () {
                     })
                     .catch((error) => {
                         console.error("SERVER ERROR:", error);
-                        Swal.fire({
-                            icon: "error",
-                            title: "Gagal!",
-                            text:
-                                error.response?.data?.message ||
-                                "Terjadi kesalahan server. Silakan coba lagi.",
-                        });
+
+                        // Ambil pesan dari backend
+                        const msg =
+                            error.response?.data?.message ||
+                            "Terjadi kesalahan server. Silakan coba lagi.";
+
+                        // Tampilkan pesan berbeda kalau belum bayar
+                        if (
+                            msg.includes("Belum Bayar") ||
+                            msg.includes("pembayaran")
+                        ) {
+                            Swal.fire({
+                                icon: "warning",
+                                title: "Tidak Bisa Diupdate!",
+                                text: msg,
+                                confirmButtonText: "OK",
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: "error",
+                                title: "Gagal!",
+                                text: msg,
+                                confirmButtonText: "OK",
+                            });
+                        }
                     });
             }
         });
     });
 });
-
-// // edit data obat
-// $(function () {
-//     const modalElement = document.getElementById("updateStatusModal");
-//     const updateModal = modalElement ? new Modal(modalElement) : null;
-
-//     function resetForm() {
-//         $("#formUpdateStatus")[0].reset();
-//         $(".is-invalid").removeClass("is-invalid");
-//         $(".text-danger").empty();
-//     }
-
-//     // buka modal dari tombol di tabel
-//     $("body").on("click", ".btn-edit-status", function () {
-//         resetForm();
-//         const resepId = $(this).data("id");
-//         const obatId = $(this).data("obat-id");
-
-//         $("#resep_id").val(resepId);
-//         $("#obat_id").val(obatId);
-
-//         if (updateModal) updateModal.show();
-//     });
-
-//     // tutup modal
-//     $("#closeAddObatModal").on("click", function () {
-//         resetForm();
-//         updateModal?.hide();
-//     });
-
-//     // submit update status
-//     $("#formUpdateStatus").on("submit", function (e) {
-//         e.preventDefault();
-
-//         const url = $(this).data("url");
-//         const formData = {
-//             resep_id: $("#resep_id").val(),
-//             obat_id: $("#obat_id").val(),
-//             status: $("#status").val(),
-//         };
-
-//         axios
-//             .post(url, formData)
-//             .then((response) => {
-//                 Swal.fire({
-//                     icon: "success",
-//                     title: "Berhasil!",
-//                     text: response.data.message,
-//                     showConfirmButton: false,
-//                     timer: 2000,
-//                 });
-//                 updateModal.hide();
-//                 table.ajax.reload(null, false);
-//             })
-//             .catch((error) => {
-//                 if (error.response?.status === 422) {
-//                     const errors = error.response.data.errors;
-//                     for (const field in errors) {
-//                         $(`#${field}`).addClass("is-invalid");
-//                         $(`#${field}-error`).text(errors[field][0]);
-//                     }
-//                     Swal.fire(
-//                         "Validasi Gagal!",
-//                         "Silakan periksa kembali isian Anda.",
-//                         "error"
-//                     );
-//                 } else {
-//                     Swal.fire("Error!", "Terjadi kesalahan server.", "error");
-//                 }
-//             });
-//     });
-
-//     $("#closeEditObatModal").on("click", function () {
-//         if (editModal) editModal.hide();
-//         resetEditForm();
-//     });
-// });
-
-// // delete data
-// $(function () {
-//     $("body").on("click", ".btn-delete-obat", function () {
-//         const dokterId = $(this).data("id");
-//         if (!dokterId) return;
-
-//         Swal.fire({
-//             title: "Apakah Anda yakin?",
-//             text: "Data yang dihapus tidak bisa dikembalikan!",
-//             icon: "warning",
-//             showCancelButton: true,
-//             confirmButtonColor: "#d33",
-//             cancelButtonColor: "#3085d6",
-//             confirmButtonText: "Ya, hapus!",
-//             cancelButtonText: "Batal",
-//         }).then((result) => {
-//             if (result.isConfirmed) {
-//                 axios
-//                     .delete(`/pengaturan_klinik/delete_obat/${dokterId}`)
-//                     .then((response) => {
-//                         Swal.fire({
-//                             icon: "success",
-//                             title: "Berhasil!",
-//                             text: response.data.message,
-//                             showConfirmButton: false,
-//                             timer: 1500,
-//                         }).then(() => {
-//                             if ($("#obatTable").length) {
-//                                 $("#obatTable")
-//                                     .DataTable()
-//                                     .ajax.reload(null, false);
-//                             } else {
-//                                 window.location.reload();
-//                             }
-//                         });
-//                     })
-//                     .catch((error) => {
-//                         console.error("SERVER ERROR:", error);
-//                         Swal.fire({
-//                             icon: "error",
-//                             title: "Error!",
-//                             text: "Terjadi kesalahan server. Silakan coba lagi.",
-//                         });
-//                     });
-//             }
-//         });
-//     });
-// });

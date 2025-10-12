@@ -109,7 +109,7 @@
                         Dashboard
                     </x-mycomponents.sidebar_link>
 
-                    <x-mycomponents.sidebar_link href="jenis.spesialis.index" class="fa-solid fa-house" :active="Request::routeIs('jenis.spesialis.index')">
+                    <x-mycomponents.sidebar_link href="jenis.spesialis.index" class="fa-solid fa-house">
                         Jenis Sepsialis Dokter
                     </x-mycomponents.sidebar_link>
 
@@ -128,7 +128,6 @@
                         Jadwal Kunjungan
                     </x-mycomponents.sidebar_link>
 
-
                     <x-mycomponents.sidebar_link href="laporan.index" class="fa-solid fa-chart-line text-blue-600">
                         Laporan
                     </x-mycomponents.sidebar_link>
@@ -143,9 +142,9 @@
                         Pengambilan Obat
                     </x-mycomponents.sidebar_link>
 
-                    {{-- <x-mycomponents.sidebar_link href="kasir.index" class="fa-solid fa-notes-medical text-blue-600">
-                        Pembayaran
-                    </x-mycomponents.sidebar_link> --}}
+                    <x-mycomponents.sidebar_link href="kasir.index" class="fa-solid fa-notes-medical text-blue-600">
+                        Kasir
+                    </x-mycomponents.sidebar_link>
 
                     <hr class="my-4 border-gray-300">
                     <x-mycomponents.sidebar_link href="settings.index" class="fa-solid fa-gear">

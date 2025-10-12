@@ -270,7 +270,8 @@ Route::middleware('auth')->group(function () {
     });
 
     Route::prefix('kasir')->name('kasir.')->group(function () {
-        Route::get('/', [KasirController::class, 'store'])->name('index');
+        Route::get('/', [KasirController::class, 'index'])->name('index');
+        Route::get('/get-data-pembayaran', [KasirController::class, 'getDataPembayaran'])->name('get.data.pembayaran');
     });
 });
 

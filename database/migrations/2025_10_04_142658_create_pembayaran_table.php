@@ -19,8 +19,11 @@ return new class extends Migration
             $table->decimal('uang_yang_diterima', 8, 2);
             $table->decimal('kembalian', 8, 2);
             $table->enum('metode_pembayaran', ['Cash', 'Transfer']);
+            $table->string('kode_transaksi')->nullable(); // bisa dari Midtrans / bank
             $table->dateTime('tanggal_pembayaran');
             $table->enum('status', ['Sudah Bayar', 'Belum Bayar']);
+            // Catatan opsional (misalnya "Pembayaran tunai diterima oleh kasir A")
+            $table->text('catatan')->nullable();
             $table->timestamps();
         });
     }
