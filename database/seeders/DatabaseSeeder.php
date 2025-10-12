@@ -22,16 +22,16 @@ class DatabaseSeeder extends Seeder
             DokterSeeder::class,
             ApotekerSeeder::class,
             PasienSeeder::class,
-            // ObatSeeder::class,
-            // JadwalDokterSeeder::class,
-            // KunjunganSeeder::class,
+            ObatSeeder::class,
+            JadwalDokterSeeder::class,
+            KunjunganSeeder::class,
             // TestimoniSeeder::class,
-            // ResepSeeder::class,
-            // ResepObatSeeder::class,
+            ResepSeeder::class,
+            ResepObatSeeder::class,
             // TesLabSeeder::class,
             // PembayaranSeeder::class,
             // AdministrasiSeeder::class,
-            // EMRSeeder::class,
+            EMRSeeder::class,
         ]);
     }
 }

@@ -18,12 +18,16 @@ class ResepSeeder extends Seeder
         $dataKunjungan = Kunjungan::get();
         $dataApoteker = Apoteker::get();
 
-        foreach ($dataKunjungan as $kunjungan) {
-            for ($i = 0; $i < 10; $i++) {
-                Resep::create([
-                    'kunjungan_id' => $kunjungan->id,
-                ]);
-            }
-        }
+        // foreach ($dataKunjungan as $kunjungan) {
+        //     for ($i = 0; $i < 10; $i++) {
+        //         Resep::create([
+        //             'kunjungan_id' => $kunjungan->id,
+        //         ]);
+        //     }
+        // }
+
+        Resep::create([
+            'kunjungan_id' => 1,
+        ]);
     }
 }

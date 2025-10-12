@@ -28,37 +28,46 @@ class KunjunganSeeder extends Seeder
         $pasien = Pasien::all();
         $dokter = Dokter::all();
 
-        foreach ($pasien as $p) {
-            // Tentukan tanggal kunjungan pertama pasien ini
-            $hariPertamaBerkunjung = $faker->dateTimeBetween('-1 years', '-1 day');
+        // foreach ($pasien as $p) {
+        //     // Tentukan tanggal kunjungan pertama pasien ini
+        //     $hariPertamaBerkunjung = $faker->dateTimeBetween('-1 years', '-1 day');
 
-            $jumlahKunjungan = rand(3, 5);
-            $tanggalKunjungan = clone $hariPertamaBerkunjung; // copy supaya bisa dimodifikasi
+        //     $jumlahKunjungan = rand(3, 5);
+        //     $tanggalKunjungan = clone $hariPertamaBerkunjung; // copy supaya bisa dimodifikasi
 
-            for ($i = 0; $i < $jumlahKunjungan; $i++) {
-                // Cek jumlah kunjungan yang sudah ada di tanggal itu
-                $countExisting = Kunjungan::whereDate('tanggal_kunjungan', $tanggalKunjungan->format('Y-m-d'))->count();
+        //     for ($i = 0; $i < $jumlahKunjungan; $i++) {
+        //         // Cek jumlah kunjungan yang sudah ada di tanggal itu
+        //         $countExisting = Kunjungan::whereDate('tanggal_kunjungan', $tanggalKunjungan->format('Y-m-d'))->count();
 
-                // Generate nomor antrian baru
-                $noAntrian = str_pad($countExisting + 1, 3, '0', STR_PAD_LEFT); // contoh: 001, 002, 003
+        //         // Generate nomor antrian baru
+        //         $noAntrian = str_pad($countExisting + 1, 3, '0', STR_PAD_LEFT); // contoh: 001, 002, 003
 
-                Kunjungan::create([
-                    'dokter_id' => $dokter->random()->id,
-                    'pasien_id' => $p->id,
-                    'tanggal_kunjungan' => $tanggalKunjungan,
-                    'no_antrian' => $noAntrian,
-                    'keluhan_awal' => $faker->randomElement($daftarKeluhan),
-                    'status' => 'Engaged',
-                ]);
+        //         Kunjungan::create([
+        //             'dokter_id' => $dokter->random()->id,
+        //             'pasien_id' => $p->id,
+        //             'tanggal_kunjungan' => $tanggalKunjungan,
+        //             'no_antrian' => $noAntrian,
+        //             'keluhan_awal' => $faker->randomElement($daftarKeluhan),
+        //             'status' => 'Engaged',
+        //         ]);
 
-                // Setiap kunjungan berikutnya maju 1–7 hari
-                $tanggalKunjungan->modify('+' . rand(1, 7) . ' days');
+        //         // Setiap kunjungan berikutnya maju 1–7 hari
+        //         $tanggalKunjungan->modify('+' . rand(1, 7) . ' days');
 
-                // Biar gak lewat hari ini
-                if ($tanggalKunjungan > new \DateTime('now')) {
-                    $tanggalKunjungan = new \DateTime('now');
-                }
-            }
-        }
+        //         // Biar gak lewat hari ini
+        //         if ($tanggalKunjungan > new \DateTime('now')) {
+        //             $tanggalKunjungan = new \DateTime('now');
+        //         }
+        //     }
+        // }
+
+        Kunjungan::create([
+            'dokter_id' => 1,
+            'pasien_id' => 1,
+            'tanggal_kunjungan' => '2025-10-12',
+            'no_antrian' => '001',
+            'keluhan_awal' => $daftarKeluhan[0],
+            'status' => 'Waiting',
+        ]);
     }
 }

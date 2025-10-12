@@ -253,7 +253,7 @@ Route::middleware('auth')->group(function () {
     Route::prefix('pengambilan_obat')->group(function () {
         Route::get('/', [PengambilanObatController::class, 'index'])->name('pengambilan.obat');
         Route::get('/get-data', [PengambilanObatController::class, 'getDataResepObat'])->name('get.data.resep.obat');
-        Route::post('/update-status-resep-obat', [PengambilanObatController::class, 'getDataResepObat'])->name('update.status.resep.obat');
+        Route::post('/update-status-resep-obat', [PengambilanObatController::class, 'updateStatusResepObat'])->name('update.status.resep.obat');
     });
 
     Route::prefix('settings')->name('settings.')->group(function () {

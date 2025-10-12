@@ -58,9 +58,9 @@ class JadwalDokterSeeder extends Seeder
 
         JadwalDokter::create([
             'dokter_id' => 1,
-            'hari' => 'Senin',
-            'jam_awal' => '10:00:00',
-            'jam_selesai' => '17:00:00',
+            'hari' => 'Minggu',
+            'jam_awal' => '00:00:00',
+            'jam_selesai' => '23:00:00',
         ]);
     }
 }

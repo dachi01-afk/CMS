@@ -10,9 +10,9 @@ class Pembayaran extends Model
 
     protected $guarded = [];
 
-    public function pasien()
+    public function emr()
     {
-        return $this->belongsTo(Pasien::class);
+        return $this->belongsTo(EMR::class);
     }
 
     public function administrasi()

@@ -47,8 +47,7 @@
     </div>
 </div>
 
-{{-- Modal Edit Dokter --}}
-<!-- Modal Update Status Resep Obat -->
+{{-- <!-- Modal Update Status Resep Obat -->
 <div id="updateStatusModal" aria-hidden="true"
     class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 bg-black bg-opacity-50">
     <div class="relative w-full max-w-lg max-h-full">
@@ -57,13 +56,14 @@
             <!-- Header -->
             <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-600">
                 <h3 class="text-xl font-bold text-gray-900 dark:text-white">Update Status Resep Obat</h3>
-                <button type="button" id="closeEditStatusModal" class="text-gray-400 hover:text-gray-600">
+                <button type="button" id="buttonCloseModalUpdateStatus" class="text-gray-400 hover:text-gray-600">
                     ✕
                 </button>
             </div>
 
             <!-- Form -->
-            <form id="formUpdateStatus" class="p-5 flex flex-col gap-4" method="POST">
+            <form id="formUpdateStatus" class="p-5 flex flex-col gap-4" method="POST"
+                action="{{ route('update.status.resep.obat') }}">
                 @csrf
                 <input type="hidden" name="resep_id" id="resep_id">
                 <input type="hidden" name="obat_id" id="obat_id">
@@ -81,7 +81,7 @@
 
                 <!-- Footer Buttons -->
                 <div class="flex justify-end gap-3 mt-6 border-t border-gray-200 pt-4 dark:border-gray-600">
-                    <button type="button" id="closeUpdateStatusModal"
+                    <button type="button" id="closeButtonModalUpdateStatus"
                         class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg 
                         hover:bg-gray-300 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500">
                         Close
@@ -96,7 +96,7 @@
             </form>
         </div>
     </div>
-</div>
+</div> --}}
 
 
 @vite(['resources/js/admin/pengambilanObat/pengambilan_obat.js'])

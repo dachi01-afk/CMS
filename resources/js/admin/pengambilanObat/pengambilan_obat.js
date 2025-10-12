@@ -129,112 +129,47 @@ $(function () {
     updatePagination();
 });
 
-// edit data obat
 $(function () {
-    const modalElement = document.getElementById("updateStatusModal");
-    const updateModal = modalElement ? new Modal(modalElement) : null;
-
-    function resetForm() {
-        $("#formUpdateStatus")[0].reset();
-        $(".is-invalid").removeClass("is-invalid");
-        $(".text-danger").empty();
-    }
-
-    // buka modal dari tombol di tabel
-    $("body").on("click", ".btn-edit-status", function () {
-        resetForm();
-        const resepId = $(this).data("id");
+    $("body").on("click", ".btnUpdateStatus", function () {
+        const resepId = $(this).data("resep-id");
         const obatId = $(this).data("obat-id");
 
-        $("#resep_id").val(resepId);
-        $("#obat_id").val(obatId);
-
-        if (updateModal) updateModal.show();
-    });
-
-    // tutup modal
-    $("#closeAddObatModal").on("click", function () {
-        resetForm();
-        updateModal?.hide();
-    });
-
-    // submit update status
-    $("#formUpdateStatus").on("submit", function (e) {
-        e.preventDefault();
-
-        const url = $(this).data("url");
-        const formData = {
-            resep_id: $("#resep_id").val(),
-            obat_id: $("#obat_id").val(),
-            status: $("#status").val(),
-        };
-
-        axios
-            .post(url, formData)
-            .then((response) => {
-                Swal.fire({
-                    icon: "success",
-                    title: "Berhasil!",
-                    text: response.data.message,
-                    showConfirmButton: false,
-                    timer: 2000,
-                });
-                updateModal.hide();
-                table.ajax.reload(null, false);
-            })
-            .catch((error) => {
-                if (error.response?.status === 422) {
-                    const errors = error.response.data.errors;
-                    for (const field in errors) {
-                        $(`#${field}`).addClass("is-invalid");
-                        $(`#${field}-error`).text(errors[field][0]);
-                    }
-                    Swal.fire(
-                        "Validasi Gagal!",
-                        "Silakan periksa kembali isian Anda.",
-                        "error"
-                    );
-                } else {
-                    Swal.fire("Error!", "Terjadi kesalahan server.", "error");
-                }
+        if (!resepId || !obatId) {
+            Swal.fire({
+                icon: "warning",
+                title: "Data tidak lengkap!",
+                text: "Resep ID atau Obat ID tidak ditemukan.",
             });
-    });
-
-    $("#closeEditObatModal").on("click", function () {
-        if (editModal) editModal.hide();
-        resetEditForm();
-    });
-});
-
-// delete data
-$(function () {
-    $("body").on("click", ".btn-delete-obat", function () {
-        const dokterId = $(this).data("id");
-        if (!dokterId) return;
+            return;
+        }
 
         Swal.fire({
-            title: "Apakah Anda yakin?",
-            text: "Data yang dihapus tidak bisa dikembalikan!",
-            icon: "warning",
+            title: "Ubah Status Pengambil Obat",
+            text: "Apakah pasien sudah mengambil obat?",
+            icon: "question",
             showCancelButton: true,
-            confirmButtonColor: "#d33",
-            cancelButtonColor: "#3085d6",
-            confirmButtonText: "Ya, hapus!",
-            cancelButtonText: "Batal",
+            confirmButtonText: "Iya",
+            cancelButtonText: "Belum",
         }).then((result) => {
             if (result.isConfirmed) {
                 axios
-                    .delete(`/pengaturan_klinik/delete_obat/${dokterId}`)
+                    .post(`/pengambilan_obat/update-status-resep-obat`, {
+                        resep_id: resepId,
+                        obat_id: obatId,
+                    })
                     .then((response) => {
                         Swal.fire({
                             icon: "success",
                             title: "Berhasil!",
-                            text: response.data.message,
+                            text:
+                                response.data.message ||
+                                "Status resep obat berhasil diperbarui.",
                             showConfirmButton: false,
                             timer: 1500,
                         }).then(() => {
-                            if ($("#obatTable").length) {
-                                $("#obatTable")
+                            // reload DataTable atau halaman
+                            if ($("#resepTable").length) {
+                                $("#resepTable")
                                     .DataTable()
                                     .ajax.reload(null, false);
                             } else {
@@ -246,8 +181,10 @@ $(function () {
                         console.error("SERVER ERROR:", error);
                         Swal.fire({
                             icon: "error",
-                            title: "Error!",
-                            text: "Terjadi kesalahan server. Silakan coba lagi.",
+                            title: "Gagal!",
+                            text:
+                                error.response?.data?.message ||
+                                "Terjadi kesalahan server. Silakan coba lagi.",
                         });
                     });
             }
@@ -255,124 +192,128 @@ $(function () {
     });
 });
 
-// EDIT DOKTER
-$(function () {
-    const editModalElement = document.getElementById("editDokterModal");
-    const editModal = editModalElement ? new Modal(editModalElement) : null;
-    const $formEdit = $("#formEditDokter");
-    const initialEditUrl = $formEdit.data("url");
+// // edit data obat
+// $(function () {
+//     const modalElement = document.getElementById("updateStatusModal");
+//     const updateModal = modalElement ? new Modal(modalElement) : null;
 
-    function resetEditForm() {
-        $formEdit[0].reset();
-        $formEdit.find(".is-invalid").removeClass("is-invalid");
-        $formEdit.find(".text-red-600").empty();
+//     function resetForm() {
+//         $("#formUpdateStatus")[0].reset();
+//         $(".is-invalid").removeClass("is-invalid");
+//         $(".text-danger").empty();
+//     }
 
-        // reset URL ke awal
-        $formEdit.data("url", initialEditUrl);
-        $formEdit.attr("action", initialEditUrl);
+//     // buka modal dari tombol di tabel
+//     $("body").on("click", ".btn-edit-status", function () {
+//         resetForm();
+//         const resepId = $(this).data("id");
+//         const obatId = $(this).data("obat-id");
 
-        // Reset preview foto
-        $("#preview_edit_foto_dokter").addClass("hidden").attr("src", "");
-        $("#placeholder_edit_foto_dokter").removeClass("hidden");
-        $("#foto_drop_area_edit")
-            .removeClass("border-solid border-gray-300")
-            .addClass("border-dashed border-gray-400");
-    }
+//         $("#resep_id").val(resepId);
+//         $("#obat_id").val(obatId);
 
-    // buka modal edit
-    $("body").on("click", ".btn-edit-dokter", function () {
-        resetEditForm();
-        const dokterId = $(this).data("id");
+//         if (updateModal) updateModal.show();
+//     });
 
-        axios
-            .get(`/manajemen_pengguna/get_dokter_by_id/${dokterId}`)
-            .then((res) => {
-                const dokter = res.data.data;
-                const baseUrl = $formEdit.data("url");
-                const finalUrl = baseUrl.replace("/0", "/" + dokter.id);
-                $formEdit.data("url", finalUrl);
-                $formEdit.attr("action", finalUrl);
+//     // tutup modal
+//     $("#closeAddObatModal").on("click", function () {
+//         resetForm();
+//         updateModal?.hide();
+//     });
 
-                $("#edit_dokter_id").val(dokter.id);
-                $("#edit_username_dokter").val(dokter.user.username);
-                $("#edit_nama_dokter").val(dokter.nama_dokter);
-                $("#edit_email_akun_dokter").val(dokter.user.email);
-                $("#edit_spesialis_dokter").val(dokter.jenis_spesialis_id);
-                $("#edit_no_hp_dokter").val(dokter.no_hp);
-                $("#edit_deskripsi_dokter").val(dokter.deskripsi_dokter);
-                $("#edit_pengalaman_dokter").val(dokter.pengalaman);
+//     // submit update status
+//     $("#formUpdateStatus").on("submit", function (e) {
+//         e.preventDefault();
 
-                // Tampilkan foto existing jika ada
-                if (dokter.foto_dokter) {
-                    const fotoUrl = `/storage/${dokter.foto_dokter}`;
-                    $("#preview_edit_foto_dokter")
-                        .attr("src", fotoUrl)
-                        .removeClass("hidden");
-                    $("#placeholder_edit_foto_dokter").addClass("hidden");
-                    $("#foto_drop_area_edit")
-                        .removeClass("border-dashed border-gray-400")
-                        .addClass("border-solid border-gray-300");
-                }
+//         const url = $(this).data("url");
+//         const formData = {
+//             resep_id: $("#resep_id").val(),
+//             obat_id: $("#obat_id").val(),
+//             status: $("#status").val(),
+//         };
 
-                if (editModal) editModal.show();
-            })
-            .catch((err) => {
-                console.error(err);
-                Swal.fire({
-                    icon: "error",
-                    title: "Gagal!",
-                    text: "Tidak dapat memuat data dokter.",
-                });
-            });
-    });
+//         axios
+//             .post(url, formData)
+//             .then((response) => {
+//                 Swal.fire({
+//                     icon: "success",
+//                     title: "Berhasil!",
+//                     text: response.data.message,
+//                     showConfirmButton: false,
+//                     timer: 2000,
+//                 });
+//                 updateModal.hide();
+//                 table.ajax.reload(null, false);
+//             })
+//             .catch((error) => {
+//                 if (error.response?.status === 422) {
+//                     const errors = error.response.data.errors;
+//                     for (const field in errors) {
+//                         $(`#${field}`).addClass("is-invalid");
+//                         $(`#${field}-error`).text(errors[field][0]);
+//                     }
+//                     Swal.fire(
+//                         "Validasi Gagal!",
+//                         "Silakan periksa kembali isian Anda.",
+//                         "error"
+//                     );
+//                 } else {
+//                     Swal.fire("Error!", "Terjadi kesalahan server.", "error");
+//                 }
+//             });
+//     });
 
-    // simpan update
-    $formEdit.on("submit", function (e) {
-        e.preventDefault();
-        const url = $formEdit.data("url");
-        const formData = new FormData($formEdit[0]);
-        if (!formData.has("_method")) formData.append("_method", "PUT");
+//     $("#closeEditObatModal").on("click", function () {
+//         if (editModal) editModal.hide();
+//         resetEditForm();
+//     });
+// });
 
-        axios
-            .post(url, formData)
-            .then((res) => {
-                Swal.fire({
-                    icon: "success",
-                    title: "Berhasil!",
-                    text: res.data.success,
-                    showConfirmButton: false,
-                    timer: 2000,
-                }).then(() => {
-                    editModal.hide();
-                    $("#dokterTable").DataTable().ajax.reload(null, false);
-                    resetEditForm();
-                });
-            })
-            .catch((err) => {
-                if (err.response?.status === 422) {
-                    const errors = err.response.data.errors;
-                    Swal.fire({
-                        icon: "error",
-                        title: "Validasi Gagal!",
-                        text: "Silakan periksa kembali input Anda.",
-                    });
-                    for (const field in errors) {
-                        $(`#edit_${field}`).addClass("is-invalid");
-                        $(`#edit_${field}-error`).html(errors[field][0]);
-                    }
-                } else {
-                    Swal.fire({
-                        icon: "error",
-                        title: "Error Server!",
-                        text: "Terjadi kesalahan server.",
-                    });
-                    console.error(err);
-                }
-            });
-    });
+// // delete data
+// $(function () {
+//     $("body").on("click", ".btn-delete-obat", function () {
+//         const dokterId = $(this).data("id");
+//         if (!dokterId) return;
 
-    $("#closeEditDokterModal").on("click", function () {
-        editModal?.hide();
-        resetEditForm();
-    });
-});
+//         Swal.fire({
+//             title: "Apakah Anda yakin?",
+//             text: "Data yang dihapus tidak bisa dikembalikan!",
+//             icon: "warning",
+//             showCancelButton: true,
+//             confirmButtonColor: "#d33",
+//             cancelButtonColor: "#3085d6",
+//             confirmButtonText: "Ya, hapus!",
+//             cancelButtonText: "Batal",
+//         }).then((result) => {
+//             if (result.isConfirmed) {
+//                 axios
+//                     .delete(`/pengaturan_klinik/delete_obat/${dokterId}`)
+//                     .then((response) => {
+//                         Swal.fire({
+//                             icon: "success",
+//                             title: "Berhasil!",
+//                             text: response.data.message,
+//                             showConfirmButton: false,
+//                             timer: 1500,
+//                         }).then(() => {
+//                             if ($("#obatTable").length) {
+//                                 $("#obatTable")
+//                                     .DataTable()
+//                                     .ajax.reload(null, false);
+//                             } else {
+//                                 window.location.reload();
+//                             }
+//                         });
+//                     })
+//                     .catch((error) => {
+//                         console.error("SERVER ERROR:", error);
+//                         Swal.fire({
+//                             icon: "error",
+//                             title: "Error!",
+//                             text: "Terjadi kesalahan server. Silakan coba lagi.",
+//                         });
+//                     });
+//             }
+//         });
+//     });
+// });

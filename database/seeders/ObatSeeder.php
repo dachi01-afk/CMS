@@ -3,9 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Obat;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use Faker\Factory as Faker;
 
 class ObatSeeder extends Seeder
@@ -17,21 +15,20 @@ class ObatSeeder extends Seeder
     {
         $faker = Faker::create('id_ID');
 
-
-        $listNamaObat = [
-            'Paracetamol',
-            'Amoxicillin',
-            'Vitamin C',
-            'Ibuprofen',
-            'Cefixime Syrup',
+        $listObat = [
+            ['nama' => 'Paracetamol',     'total_harga' => 5000.00],
+            ['nama' => 'Amoxicillin',     'total_harga' => 10000.00],
+            ['nama' => 'Vitamin C',       'total_harga' => 20000.00],
+            ['nama' => 'Ibuprofen',       'total_harga' => 10000.00],
+            ['nama' => 'Cefixime Syrup',  'total_harga' => 15000.00],
         ];
 
-        foreach ($listNamaObat as $nama) {
+        foreach ($listObat as $obat) {
             Obat::create([
-                'nama_obat'   => $nama,
+                'nama_obat'   => $obat['nama'],
                 'jumlah'      => $faker->numberBetween(50, 200),
                 'dosis'       => $faker->randomFloat(2, 50, 1000), // contoh: 500.00 mg
-                'total_harga' => $faker->numberBetween(50000, 1000000),
+                'total_harga' => number_format($obat['total_harga'], 2, '.', ''), // contoh: 5000.00
             ]);
         }
     }

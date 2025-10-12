@@ -13,11 +13,14 @@ return new class extends Migration
     {
         Schema::create('pembayaran', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('resep_id')->constrained('resep', 'id', 'pembayaran_resep_id')
+            $table->foreignId('emr_id')->constrained('emr', 'id', 'pembayaran_emr_id')
                 ->cascadeOnDelete()->cascadeOnUpdate();
             $table->decimal('total_tagihan', 8, 2);
-            $table->enum('status', ['Sudah Bayar', 'Belum Bayar']);
+            $table->decimal('uang_yang_diterima', 8, 2);
+            $table->decimal('kembalian', 8, 2);
+            $table->enum('metode_pembayaran', ['Cash', 'Transfer']);
             $table->dateTime('tanggal_pembayaran');
+            $table->enum('status', ['Sudah Bayar', 'Belum Bayar']);
             $table->timestamps();
         });
     }
