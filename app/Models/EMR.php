@@ -33,9 +33,8 @@ class EMR extends Model
             'pasien_id'    // Kolom pasien_id di tabel kunjungan
         );
     }
-
     public function pembayaran()
     {
-        return $this->hasOne(Pembayaran::class);
+        return $this->hasOne(Pembayaran::class, 'emr_id');
     }
 }

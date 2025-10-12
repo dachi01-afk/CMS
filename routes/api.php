@@ -53,3 +53,11 @@ Route::middleware(['auth:sanctum', 'role:Dokter'])->group(function () {
         Route::get('/detail-riwayat-pasien/{kunjunganId}', [APIMobileController::class, 'getDetailRiwayatPasien']);
     });
 });
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::prefix('pembayaran')->group(function () {
+        Route::get('/pasien/{pasien_id}', [APIMobileController::class, 'getPembayaranPasien']);
+        Route::post('/update-status-obat', [APIMobileController::class, 'updateStatusObat']);
+        Route::post('/proses', [APIMobileController::class, 'prosesPembayaran']);
+    });
+});
