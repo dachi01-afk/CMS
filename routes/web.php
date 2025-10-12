@@ -8,6 +8,7 @@ use App\Http\Controllers\Dokter\AuthController;
 use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\JenisSpesialisController;
 use App\Http\Controllers\Management\ObatController;
 use App\Http\Controllers\Management\UserController;
 use App\Http\Controllers\Testing\TestingController;
@@ -173,6 +174,13 @@ Route::middleware('auth')->group(function () {
         Route::get('/total_pasien', [DashboardController::class, 'getTotalPasien'])->name('total_pasien');
         Route::get('/total_apoteker', [DashboardController::class, 'getTotalApoteker'])->name('total_apoteker');
         Route::get('/stok_obat', [DashboardController::class, 'getStokObat'])->name('stok_obat');
+    });
+
+    Route::prefix('jenis-spesialis')->group(function () {
+        Route::get('/', [JenisSpesialisController::class, 'index'])->name('jenis.spesialis.index');
+        Route::get('/data-jenis-spesialis', [JenisSpesialisController::class, 'dataJenisSpesialisDokter'])->name('get.data.jenis.spesialis.dokter');
+        Route::post('/create-data-jenis-spesialis', [JenisSpesialisController::class, 'createJenisSpesialisDokter'])->name('create.data.jenis.spesialis.dokter');
+        Route::get('/get-data-jenis-spesialis/{id}', [JenisSpesialisController::class, 'getJenisSpesialisDokterById'])->name('get.data.jenis.spesialis.dokter.by.id');
     });
 
     Route::prefix('manajemen_pengguna')->name('manajemen_pengguna.')->group(function () {

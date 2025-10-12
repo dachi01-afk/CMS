@@ -109,6 +109,10 @@
                         Dashboard
                     </x-mycomponents.sidebar_link>
 
+                    <x-mycomponents.sidebar_link href="jenis.spesialis.index" class="fa-solid fa-house" :active="Request::routeIs('jenis.spesialis.index')">
+                        Jenis Sepsialis Dokter
+                    </x-mycomponents.sidebar_link>
+
                     <x-mycomponents.sidebar_link href="manajemen_pengguna.index"
                         class="fa-solid fa-users text-blue-600">
                         Manajemen Pengguna

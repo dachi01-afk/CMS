@@ -13,8 +13,8 @@ class PengambilanObatController extends Controller
 {
     public function index()
     {
-        $dataResepObat = Resep::with('obat', 'kunjungan.pasien', 'kunjungan.dokter')->paginate(10);
-        return view('admin.pengambilan_obat', compact('dataResepObat'));
+        
+        return view('admin.pengambilan_obat');
     }
 
     public function getDataResepObat()
