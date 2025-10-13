@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const data = await res.json();
 
         if (data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-500 italic">Tidak ada kunjungan waiting hari ini.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-500 italic">Tidak ada kunjungan pending hari ini.</td></tr>`;
             return;
         }
 
