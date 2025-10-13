@@ -11,6 +11,12 @@ export default defineConfig({
                 // admin
                 "resources/js/admin/dashboard.js",
 
+                // poli
+                "resources/js/admin/poli/data-poli.js",
+
+                // layanan
+                "resources/js/admin/poli/data-poli.js",
+
                 // manajemen-pengguna
                 "resources/js/admin/manajemenPengguna/data_pengguna.js",
                 "resources/js/admin/manajemenPengguna/data_dokter.js",
@@ -19,6 +25,8 @@ export default defineConfig({
                 "resources/js/admin/pengambilanObat/pengambilan_obat.js",
                 "resources/js/admin/jadwalKunjungan/jadwal_kunjungan.js",
                 "resources/js/admin/jadwalKunjungan/proses_kunjungan.js",
+
+
 
                 // pengaturan klinik
                 "resources/js/admin/pengaturanKlinik/jadwal_dokter.js",
