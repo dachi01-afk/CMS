@@ -71,7 +71,6 @@ class APIMobileController extends Controller
             'role' => 'Pasien',
         ]);
 
-        // otomatis buat data pasien baru dengan hanya user_id
         Pasien::create([
             'user_id' => $user->id,
             'nama_pasien' => null,
@@ -143,43 +142,38 @@ class APIMobileController extends Controller
                 ], 404);
             }
 
-            // Validasi input
             $validated = $request->validate([
                 'nama_pasien' => 'required|string|max:255',
                 'alamat' => 'nullable|string|max:255',
                 'tanggal_lahir' => 'nullable|date',
                 'jenis_kelamin' => 'nullable|string|in:Laki-laki,Perempuan',
-                'foto_pasien' => 'nullable|image|mimes:jpeg,png,jpg|max:2048', // 🔥 TAMBAH VALIDASI FOTO
+                'foto_pasien' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             ]);
 
-            // Handle foto upload
-            $pathFotoPasien = $pasien->foto_pasien; // Keep existing photo if no new upload
+            $pathFotoPasien = $pasien->foto_pasien;
 
             if ($request->hasFile('foto_pasien')) {
-                // Delete old photo if exists
                 if ($pasien->foto_pasien && Storage::disk('public')->exists($pasien->foto_pasien)) {
                     Storage::disk('public')->delete($pasien->foto_pasien);
                 }
 
-                // Upload new photo
                 $fileFoto = $request->file('foto_pasien');
                 $namaFoto = 'pasien_'.$user->id.'_'.time().'.'.$fileFoto->getClientOriginalExtension();
                 $pathFotoPasien = $fileFoto->storeAs('Foto-Pasien', $namaFoto, 'public');
             }
 
-            // Update data pasien
             $pasien->update([
                 'nama_pasien' => $validated['nama_pasien'],
                 'alamat' => $validated['alamat'],
                 'tanggal_lahir' => $validated['tanggal_lahir'],
                 'jenis_kelamin' => $validated['jenis_kelamin'],
-                'foto_pasien' => $pathFotoPasien, // 🔥 UPDATE FOTO
+                'foto_pasien' => $pathFotoPasien,
             ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Profil berhasil diperbarui',
-                'data' => $pasien->fresh(), // Return fresh data
+                'data' => $pasien->fresh(),
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -214,17 +208,14 @@ class APIMobileController extends Controller
 
             $tz = config('app.timezone') ?: 'Asia/Jakarta';
             $today = Carbon::now($tz)->startOfDay();
-            $todayNumber = $today->dayOfWeek; // 0 = Minggu, 6 = Sabtu
 
             $jadwalWithDates = $jadwal->map(function ($item) use ($hariMapping, $today) {
                 $hari = $item->hari;
                 $hariNumber = $hariMapping[$hari] ?? null;
 
                 if ($hariNumber !== null) {
-                    // ambil next date sebagai Carbon (dari helper)
                     $tanggalTerdekat = $this->getNextDateByDay($hariNumber, $today);
 
-                    // Pastikan jika target masih < hari ini (mis. karena perbedaan waktu) -> lompat satu minggu
                     if ($tanggalTerdekat->lt($today)) {
                         $tanggalTerdekat = $tanggalTerdekat->addWeek();
                     }
@@ -257,10 +248,6 @@ class APIMobileController extends Controller
         }
     }
 
-    /**
-     * Kembalikan Carbon instance tanggal terdekat untuk $dayOfWeek,
-     * relatif terhadap $from (jika diberikan) atau sekarang (dengan timezone app).
-     */
     private function getNextDateByDay(int $dayOfWeek, ?Carbon $from = null): Carbon
     {
         $tz = config('app.timezone') ?: 'Asia/Jakarta';
@@ -268,7 +255,6 @@ class APIMobileController extends Controller
         $from = $from ? $from->copy()->startOfDay() : Carbon::now($tz)->startOfDay();
         $daysUntilTarget = ($dayOfWeek - $from->dayOfWeek + 7) % 7;
 
-        // 🔥 kalau hasilnya 0 (berarti hari ini), loncat ke minggu depan
         if ($daysUntilTarget === 0) {
             $daysUntilTarget = 7;
         }
@@ -278,7 +264,6 @@ class APIMobileController extends Controller
         return $target;
     }
 
-    /** Format tanggal (terima Carbon atau string) */
     private function formatTanggalIndonesia($date)
     {
         if (! $date instanceof Carbon) {
@@ -298,7 +283,6 @@ class APIMobileController extends Controller
         return "{$hari} {$bulan} {$tahun}";
     }
 
-    /** Hitung selisih hari dari sekarang (pakai timezone app) */
     private function getDayDifference($targetDate)
     {
         $tz = config('app.timezone') ?: 'Asia/Jakarta';
@@ -351,7 +335,6 @@ class APIMobileController extends Controller
     public function getDokterBySpesialisasi($spesialisasiId)
     {
         try {
-            // Validasi apakah spesialisasi ada
             $spesialisasi = DB::table('jenis_spesialis')
                 ->where('id', $spesialisasiId)
                 ->first();
@@ -363,7 +346,6 @@ class APIMobileController extends Controller
                 ], 404);
             }
 
-            // Ambil dokter berdasarkan spesialisasi dengan jadwal mereka
             $dokterList = Dokter::with([
                 'jenisSpesialis',
                 'jadwalDokter' => function ($query) {
@@ -373,7 +355,6 @@ class APIMobileController extends Controller
                 ->where('jenis_spesialis_id', $spesialisasiId)
                 ->get();
 
-            // Mapping hari ke angka untuk perhitungan tanggal
             $hariMapping = [
                 'Senin' => 1,
                 'Selasa' => 2,
@@ -384,7 +365,6 @@ class APIMobileController extends Controller
                 'Minggu' => 0,
             ];
 
-            // Tambahkan tanggal terdekat untuk setiap jadwal dokter
             $dokterWithSchedules = $dokterList->map(function ($dokter) use ($hariMapping) {
                 $jadwalWithDates = $dokter->jadwalDokter->map(function ($jadwal) use ($hariMapping) {
                     $hari = $jadwal->hari;
@@ -404,7 +384,6 @@ class APIMobileController extends Controller
                     return $jadwal;
                 });
 
-                // Urutkan jadwal berdasarkan tanggal terdekat
                 $dokter->jadwalDokter = $jadwalWithDates->sortBy('hari_selisih')->values();
 
                 return $dokter;
@@ -432,12 +411,10 @@ class APIMobileController extends Controller
     public function batalkanStatusKunjungan(Request $request)
     {
         try {
-            // Log untuk debugging
             Log::info('=== BATALKAN KUNJUNGAN START ===');
             Log::info('Request method: '.$request->method());
             Log::info('Request data: ', $request->all());
 
-            // Validasi input - cek apakah 'id' ada dalam request
             $request->validate([
                 'id' => 'required|integer|exists:kunjungan,id',
             ]);
@@ -445,11 +422,9 @@ class APIMobileController extends Controller
             $kunjunganId = $request->input('id');
             Log::info('Processing kunjungan ID: '.$kunjunganId);
 
-            // Cari data kunjungan
             $dataKunjungan = Kunjungan::findOrFail($kunjunganId);
             Log::info('Found kunjungan before update: ', $dataKunjungan->toArray());
 
-            // Cek apakah status masih bisa dibatalkan
             if (! in_array($dataKunjungan->status, ['Pending', 'Confirmed', 'Waiting'])) {
                 Log::warning('Cannot cancel kunjungan with status: '.$dataKunjungan->status);
 
@@ -476,13 +451,11 @@ class APIMobileController extends Controller
                     throw new \Exception('Gagal memperbarui data kunjungan');
                 }
 
-                // Ambil data yang sudah diupdate
                 return Kunjungan::find($kunjunganId);
             });
 
             Log::info('Updated kunjungan after transaction: ', $updatedKunjungan->toArray());
 
-            // Verifikasi bahwa update berhasil
             if ($updatedKunjungan->status !== 'Canceled') {
                 Log::error('Status update failed - still: '.$updatedKunjungan->status);
 
@@ -529,11 +502,9 @@ class APIMobileController extends Controller
         }
     }
 
-    // 🔥 METHOD YANG DIPANGGIL DARI /api/kunjungan/create
     public function bookingDokter(Request $request)
     {
         try {
-            // 🟢 Log untuk debugging
             Log::info('🔥 bookingDokter called with data: ', $request->all());
 
             $request->validate([
@@ -549,11 +520,10 @@ class APIMobileController extends Controller
 
             Log::info("🎯 Processing booking for pasien_id: $pasienId, dokter_id: $dokterId, tanggal: $tanggalKunjungan");
 
-            // 🚫 VALIDASI: Cek apakah pasien sudah pernah booking dokter yang sama di hari yang sama
             $existingBooking = Kunjungan::where('pasien_id', $pasienId)
                 ->where('dokter_id', $dokterId)
                 ->where('tanggal_kunjungan', $tanggalKunjungan)
-                ->whereIn('status', ['Pending', 'Confirmed', 'Waiting', 'Engaged']) // tidak termasuk yang sudah selesai/dibatalkan
+                ->whereIn('status', ['Pending', 'Confirmed', 'Waiting', 'Engaged'])
                 ->first();
 
             if ($existingBooking) {
@@ -565,10 +535,8 @@ class APIMobileController extends Controller
                 ], 422);
             }
 
-            // Gunakan transaksi supaya aman dari race condition
             $result = DB::transaction(function () use ($tanggalKunjungan, $dokterId, $pasienId, $request) {
 
-                // 🎯 LOGIC BENAR: Cari antrian terakhir berdasarkan DOKTER + TANGGAL
                 $lastKunjungan = Kunjungan::where('tanggal_kunjungan', $tanggalKunjungan)
                     ->where('dokter_id', $dokterId)
                     ->orderByDesc('no_antrian')
@@ -577,7 +545,6 @@ class APIMobileController extends Controller
 
                 Log::info('🔍 Last kunjungan found: ', $lastKunjungan ? $lastKunjungan->toArray() : ['none']);
 
-                // Tentukan nomor antrian berikutnya
                 if ($lastKunjungan && $lastKunjungan->no_antrian) {
                     $nextNumber = (int) $lastKunjungan->no_antrian + 1;
                     Log::info("📈 Next number calculated from existing: $nextNumber");
@@ -586,11 +553,9 @@ class APIMobileController extends Controller
                     Log::info("🆕 Starting fresh with number: $nextNumber");
                 }
 
-                // Format jadi 3 digit: 001, 002, 010, 123
                 $formattedNumber = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
                 Log::info("🎫 Formatted number: $formattedNumber");
 
-                // Data yang akan disimpan
                 $dataToCreate = [
                     'pasien_id' => $pasienId,
                     'dokter_id' => $dokterId,
@@ -602,12 +567,11 @@ class APIMobileController extends Controller
 
                 Log::info('💾 Data to create: ', $dataToCreate);
 
-                // Simpan data kunjungan baru
                 $kunjungan = new Kunjungan;
                 $kunjungan->pasien_id = $pasienId;
                 $kunjungan->dokter_id = $dokterId;
                 $kunjungan->tanggal_kunjungan = $tanggalKunjungan;
-                $kunjungan->no_antrian = $formattedNumber;  // 🔥 Manual assign
+                $kunjungan->no_antrian = $formattedNumber;
                 $kunjungan->keluhan_awal = $request->keluhan_awal;
                 $kunjungan->status = 'Pending';
                 $kunjungan->save();
@@ -645,11 +609,9 @@ class APIMobileController extends Controller
         }
     }
 
-    // Method untuk mengambil riwayat kunjungan pasien
     public function getRiwayatKunjungan($pasienId)
     {
         try {
-            // Validasi apakah pasien ada
             $pasien = Pasien::find($pasienId);
             if (! $pasien) {
                 return response()->json([
@@ -658,7 +620,6 @@ class APIMobileController extends Controller
                 ], 404);
             }
 
-            // Ambil semua kunjungan pasien dengan relasi dokter
             $riwayat = Kunjungan::where('pasien_id', $pasienId)
                 ->with(['dokter' => function ($query) {
                     $query->select('id', 'nama_dokter', 'no_hp', 'pengalaman', 'foto_dokter');
@@ -682,8 +643,6 @@ class APIMobileController extends Controller
         }
     }
 
-    // /////////// Function untuk Testimoni //////////////////
-
     public function getDataTestimoni()
     {
         try {
@@ -705,7 +664,6 @@ class APIMobileController extends Controller
         }
     }
 
-    // 🔥 PERBAIKAN: Typo function name dari createDataTestimomi → createDataTestimoni
     public function createDataTestimoni(Request $request)
     {
         try {
@@ -716,20 +674,18 @@ class APIMobileController extends Controller
                 'pekerjaan' => ['required', 'string', 'max:255'],
                 'isi_testimoni' => ['required', 'string'],
                 'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
-                'video' => ['nullable', 'mimetypes:video/mp4,video/avi,video/mpeg'], // max 50MB
+                'video' => ['nullable', 'mimetypes:video/mp4,video/avi,video/mpeg'],
             ]);
 
             $jalurFoto = null;
             $jalurVideo = null;
 
-            // Upload foto jika ada
             if ($request->hasFile('foto')) {
                 $foto = $request->file('foto');
                 $namaFoto = time().'_'.$foto->getClientOriginalName();
                 $jalurFoto = $foto->storeAs('Foto-Testimoni', $namaFoto, 'public');
             }
 
-            // Upload video jika ada
             if ($request->hasFile('video')) {
                 $video = $request->file('video');
                 $namaVideo = time().'_'.$video->getClientOriginalName();
@@ -768,7 +724,6 @@ class APIMobileController extends Controller
         }
     }
 
-    // //////////// Get Data Dokter ////////////
     public function getDataDokter()
     {
         try {
@@ -808,8 +763,7 @@ class APIMobileController extends Controller
             ], 401);
         }
 
-        // 🧩 Tambahkan pengecekan role dokter
-        if ($user->role !== 'Dokter') { // atau cek role_id jika pakai ID
+        if ($user->role !== 'Dokter') {
             return response()->json([
                 'success' => false,
                 'message' => 'Akun ini bukan akun dokter',
@@ -832,7 +786,6 @@ class APIMobileController extends Controller
 
     public function updateDataDokter(Request $request)
     {
-        // Ambil user_id dari token yang sudah diautentikasi
         $login = Auth::user()->id;
 
         $dataDokter = Dokter::with('user')->where('user_id', $login)->first();
@@ -845,7 +798,6 @@ class APIMobileController extends Controller
         }
 
         $request->validate([
-            // Hapus user_id dari validation karena kita ambil dari Auth
             'nama_dokter' => ['required'],
             'foto_dokter' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
             'deskripsi_dokter' => ['required'],
@@ -863,7 +815,7 @@ class APIMobileController extends Controller
         }
 
         $dataDokter->update([
-            'user_id' => $login, // ini pid Gunakan user_id dari Auth
+            'user_id' => $login,
             'nama_dokter' => $request->nama_dokter,
             'foto_dokter' => $pathFotoDokter,
             'deskripsi_dokter' => $request->deskripsi_dokter,
@@ -894,10 +846,9 @@ class APIMobileController extends Controller
                 ], 404);
             }
 
-            // Hanya ambil kunjungan dengan status Engaged
             $dataKunjungan = Kunjungan::with(['dokter', 'pasien'])
                 ->where('dokter_id', $dokter->id)
-                ->where('status', 'Engaged') // Filter hanya Engaged
+                ->where('status', 'Engaged')
                 ->orderBy('tanggal_kunjungan', 'desc')
                 ->orderBy('no_antrian', 'asc')
                 ->get();
@@ -971,7 +922,7 @@ class APIMobileController extends Controller
                 'riwayat_penyakit_keluarga' => 'nullable|string',
                 'tanda_vital' => 'nullable|array',
                 'diagnosis' => 'required|string',
-                'resep' => 'nullable|array', // [{obat_id, jumlah, dosis, keterangan}]
+                'resep' => 'nullable|array',
             ]);
 
             $user_id = Auth::id();
@@ -981,7 +932,6 @@ class APIMobileController extends Controller
                 ->where('dokter_id', $dokter->id)
                 ->firstOrFail();
 
-            // VALIDASI: Pastikan status kunjungan adalah 'Engaged'
             if ($kunjungan->status !== 'Engaged') {
                 return response()->json([
                     'success' => false,
@@ -992,15 +942,12 @@ class APIMobileController extends Controller
             $result = DB::transaction(function () use ($request, $kunjungan) {
                 $resepId = null;
 
-                // Jika dokter menambahkan obat
                 if (! empty($request->resep)) {
-                    // Buat data resep terlebih dahulu (tanpa obat)
                     $resep = Resep::create([
                         'kunjungan_id' => $kunjungan->id,
                     ]);
                     $resepId = $resep->id;
 
-                    // Tambahkan obat ke resep_obat (pivot)
                     foreach ($request->resep as $obatResep) {
                         $obat = Obat::findOrFail($obatResep['obat_id']);
 
@@ -1014,7 +961,6 @@ class APIMobileController extends Controller
                     }
                 }
 
-                // Buat EMR
                 $emr = EMR::create([
                     'kunjungan_id' => $kunjungan->id,
                     'resep_id' => $resepId,
@@ -1038,7 +984,6 @@ class APIMobileController extends Controller
                     'diagnosis' => $request->diagnosis,
                 ]);
 
-                // UPDATE STATUS KUNJUNGAN: Dari 'Engaged' ke 'Payment'
                 $kunjungan->update([
                     'status' => 'Payment',
                 ]);
@@ -1050,11 +995,8 @@ class APIMobileController extends Controller
                     'pasien_id' => $kunjungan->pasien_id,
                 ]);
 
-                // Hitung total tagihan berdasarkan resep
                 $totalTagihan = 0;
-
-                // Biaya konsultasi dasar (bisa diambil dari setting atau tabel tarif)
-                $biayaKonsultasi = 100000; // atau ambil dari database/config
+                $biayaKonsultasi = 150000;
                 $totalTagihan += $biayaKonsultasi;
 
                 if (! empty($resepId)) {
@@ -1064,15 +1006,14 @@ class APIMobileController extends Controller
                     }
                 }
 
-                // Buat data pembayaran - SESUAIKAN DENGAN STRUKTUR TABEL
                 $pembayaran = Pembayaran::create([
                     'emr_id' => $emr->id,
                     'total_tagihan' => $totalTagihan,
-                    'uang_yang_diterima' => 0, // ← GANTI dari jumlah_bayar ke uang_yang_diterima
+                    'uang_yang_diterima' => 0,
                     'kembalian' => 0,
-                    'metode_pembayaran' => 'Cash', // ← WAJIB diisi, tidak boleh null
-                    'tanggal_pembayaran' => now(), // ← WAJIB diisi, tidak boleh null
-                    'status' => 'Belum Bayar', // ← GANTI dari 'Pending' ke 'Belum Bayar'
+                    'metode_pembayaran' => 'Cash',
+                    'tanggal_pembayaran' => now(),
+                    'status' => 'Belum Bayar',
                 ]);
 
                 return [
@@ -1105,11 +1046,6 @@ class APIMobileController extends Controller
         }
     }
 
-    // tampilkan dia riwayat pasien yg diperiksa dokter
-    // Ganti method getRiwayatPasienDiperiksa() di APIMobileController.php
-
-    // Perbaiki method getRiwayatPasienDiperiksa() di APIMobileController.php
-
     public function getRiwayatPasienDiperiksa()
     {
         try {
@@ -1124,7 +1060,6 @@ class APIMobileController extends Controller
                 ], 404);
             }
 
-            // 🔥 PERBAIKAN: Specify kolom dengan nama tabel untuk menghindari ambiguous column
             $riwayatPasien = Kunjungan::with([
                 'pasien' => function ($query) {
                     $query->select('id', 'nama_pasien', 'alamat', 'tanggal_lahir', 'jenis_kelamin', 'foto_pasien');
@@ -1133,7 +1068,6 @@ class APIMobileController extends Controller
                     $query->select('id', 'kunjungan_id', 'keluhan_utama', 'diagnosis', 'created_at');
                 },
                 'resep.obat' => function ($query) {
-                    // 🔥 PERBAIKAN: Specify tabel untuk kolom id
                     $query->select('obat.id', 'obat.nama_obat', 'obat.dosis');
                 },
             ])
@@ -1164,7 +1098,6 @@ class APIMobileController extends Controller
         }
     }
 
-    // Juga perbaiki method getDetailRiwayatPasien()
     public function getDetailRiwayatPasien($kunjunganId)
     {
         try {
@@ -1175,9 +1108,8 @@ class APIMobileController extends Controller
                 'pasien',
                 'emr',
                 'resep.obat' => function ($query) {
-                    // 🔥 TAMBAHKAN withPivot untuk keterangan
                     $query->select('obat.id', 'obat.nama_obat', 'obat.dosis')
-                        ->withPivot('jumlah', 'dosis', 'keterangan'); // ← TAMBAH keterangan
+                        ->withPivot('jumlah', 'dosis', 'keterangan');
                 },
             ])
                 ->where('id', $kunjunganId)
@@ -1201,9 +1133,6 @@ class APIMobileController extends Controller
         }
     }
 
-    /**
-     * Send OTP for forgot password
-     */
     public function sendForgotPasswordOTP(Request $request)
     {
         try {
@@ -1212,15 +1141,11 @@ class APIMobileController extends Controller
             ]);
 
             $email = $request->email;
-
-            // Generate 6 digit OTP
             $otp = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
 
-            // Store OTP in cache for 5 minutes
             $cacheKey = 'forgot_password_otp_'.$email;
             Cache::put($cacheKey, $otp, now()->addMinutes(5));
 
-            // Send email
             try {
                 Mail::send('emails.otp_notification', [
                     'otp' => $otp,
@@ -1238,7 +1163,7 @@ class APIMobileController extends Controller
                     'message' => 'Kode OTP telah dikirim ke email Anda',
                     'data' => [
                         'email' => $email,
-                        'expires_in' => 5, // minutes
+                        'expires_in' => 5,
                     ],
                 ], 200);
 
@@ -1267,9 +1192,6 @@ class APIMobileController extends Controller
         }
     }
 
-    /**
-     * Verify OTP and reset password
-     */
     public function resetPasswordWithOTP(Request $request)
     {
         try {
@@ -1283,7 +1205,6 @@ class APIMobileController extends Controller
             $otp = $request->otp;
             $newPassword = $request->new_password;
 
-            // Check OTP from cache
             $cacheKey = 'forgot_password_otp_'.$email;
             $storedOTP = Cache::get($cacheKey);
 
@@ -1301,16 +1222,12 @@ class APIMobileController extends Controller
                 ], 400);
             }
 
-            // Update password
             $user = User::where('email', $email)->first();
             $user->update([
                 'password' => Hash::make($newPassword),
             ]);
 
-            // Delete OTP from cache
             Cache::forget($cacheKey);
-
-            // Revoke all tokens for security
             $user->tokens()->delete();
 
             Log::info("Password reset successful for email: $email");
@@ -1340,11 +1257,6 @@ class APIMobileController extends Controller
         }
     }
 
-    // Tambahkan method ini ke APIMobileController.php
-
-    /**
-     * Send username to email
-     */
     public function sendForgotUsername(Request $request)
     {
         try {
@@ -1353,8 +1265,6 @@ class APIMobileController extends Controller
             ]);
 
             $email = $request->email;
-
-            // Find user by email
             $user = User::where('email', $email)->first();
 
             if (! $user) {
@@ -1364,7 +1274,6 @@ class APIMobileController extends Controller
                 ], 404);
             }
 
-            // Send email with username
             try {
                 Mail::send('emails.username_notification', [
                     'username' => $user->username,
@@ -1411,51 +1320,55 @@ class APIMobileController extends Controller
         }
     }
 
-    // pembayaran
-
+    // 🔥 METHOD PEMBAYARAN - FIXED
     public function getPembayaranPasien($pasienId)
     {
         try {
-            // Validasi apakah pasien ada
             $pasien = Pasien::find($pasienId);
-            if (! $pasien) {
+            if (!$pasien) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Pasien tidak ditemukan',
                 ], 404);
             }
 
-            // Ambil kunjungan dengan status Payment
             $kunjunganPayment = Kunjungan::with([
                 'dokter' => function ($query) {
-                    $query->select('id', 'nama_dokter', 'no_hp', 'pengalaman', 'foto_dokter');
+                    $query->select('id', 'nama_dokter', 'no_hp', 'pengalaman', 'foto_dokter', 'jenis_spesialis_id');
                 },
+                'dokter.jenisSpesialis',
                 'pasien' => function ($query) {
                     $query->select('id', 'nama_pasien', 'alamat', 'tanggal_lahir', 'jenis_kelamin', 'foto_pasien');
                 },
                 'emr' => function ($query) {
-                    $query->select('id', 'kunjungan_id', 'resep_id', 'keluhan_utama', 'diagnosis',
-                        'tekanan_darah', 'suhu_tubuh', 'nadi', 'pernapasan', 'saturasi_oksigen');
-                },
-                'emr.resep.obat' => function ($query) {
-                    $query->select('obat.id', 'obat.nama_obat', 'obat.dosis', 'obat.total_harga')
-                        ->withPivot('jumlah', 'dosis', 'keterangan', 'status');
+                    $query->select('id', 'kunjungan_id', 'resep_id', 'keluhan_utama', 'diagnosis', 
+                                  'tekanan_darah', 'suhu_tubuh', 'nadi', 'pernapasan', 'saturasi_oksigen');
                 },
                 'emr.pembayaran',
+                'emr.resep.obat' => function ($query) {
+                    $query->select('obat.id', 'obat.nama_obat', 'obat.dosis', 'obat.total_harga')
+                          ->withPivot('jumlah', 'dosis', 'keterangan', 'status');
+                },
             ])
-                ->where('pasien_id', $pasienId)
-                ->where('status', 'Payment')
-                ->orderBy('tanggal_kunjungan', 'desc')
-                ->first();
+            ->where('pasien_id', $pasienId)
+            ->where('status', 'Payment')
+            ->orderBy('tanggal_kunjungan', 'desc')
+            ->first();
 
-            if (! $kunjunganPayment) {
+            if (!$kunjunganPayment) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Tidak ada pembayaran yang menunggu',
                 ], 404);
             }
 
-            // Format response data
+            Log::info('🔍 getPembayaranPasien - Data ditemukan:', [
+                'kunjungan_id' => $kunjunganPayment->id,
+                'emr_id' => $kunjunganPayment->emr->id ?? null,
+                'pembayaran_id' => $kunjunganPayment->emr->pembayaran->id ?? null,
+                'status_pembayaran' => $kunjunganPayment->emr->pembayaran->status ?? null,
+            ]);
+
             $responseData = [
                 'kunjungan_id' => $kunjunganPayment->id,
                 'pasien' => [
@@ -1473,14 +1386,13 @@ class APIMobileController extends Controller
                 'no_antrian' => $kunjunganPayment->no_antrian,
                 'diagnosis' => $kunjunganPayment->emr->diagnosis ?? 'Tidak ada diagnosis',
                 'resep_obat' => [],
-                'biaya_konsultasi' => 150000.0, // Bisa diambil dari config atau tabel tarif
-                'total_obat' => 0.0,
-                'total_tagihan' => 0.0,
+                'biaya_konsultasi' => 150000,
+                'total_obat' => 0,
+                'total_tagihan' => 0,
                 'status_pembayaran' => $kunjunganPayment->emr->pembayaran->status ?? 'Belum Bayar',
                 'pembayaran_id' => $kunjunganPayment->emr->pembayaran->id ?? null,
             ];
 
-            // Hitung total obat dan format resep
             if ($kunjunganPayment->emr && $kunjunganPayment->emr->resep) {
                 $resepObat = [];
                 $totalObat = 0;
@@ -1508,8 +1420,13 @@ class APIMobileController extends Controller
                 $responseData['total_obat'] = $totalObat;
             }
 
-            // Hitung total tagihan
             $responseData['total_tagihan'] = $responseData['biaya_konsultasi'] + $responseData['total_obat'];
+
+            Log::info('✅ Response getPembayaranPasien:', [
+                'kunjungan_id' => $responseData['kunjungan_id'],
+                'pembayaran_id' => $responseData['pembayaran_id'],
+                'total_tagihan' => $responseData['total_tagihan'],
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -1518,38 +1435,31 @@ class APIMobileController extends Controller
             ], 200);
 
         } catch (\Exception $e) {
-            Log::error('Error getting pembayaran pasien: '.$e->getMessage());
-            Log::error('Stack trace: '.$e->getTraceAsString());
+            Log::error('Error getting pembayaran pasien: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil data pembayaran: '.$e->getMessage(),
+                'message' => 'Gagal mengambil data pembayaran: ' . $e->getMessage(),
             ], 500);
         }
     }
 
-    /**
-     * Helper method to calculate age from birth date
-     */
     private function calculateAge($tanggalLahir)
     {
-        if (! $tanggalLahir) {
+        if (!$tanggalLahir) {
             return 0;
         }
 
         try {
             $birthDate = Carbon::parse($tanggalLahir);
             $today = Carbon::now();
-
             return $today->diffInYears($birthDate);
         } catch (\Exception $e) {
             return 0;
         }
     }
 
-    /**
-     * Update medication status (for apoteker simulation)
-     */
     public function updateStatusObat(Request $request)
     {
         try {
@@ -1559,7 +1469,22 @@ class APIMobileController extends Controller
                 'status' => 'required|in:Belum Diambil,Sudah Diambil',
             ]);
 
-            // Update status di pivot table resep_obat
+            $resep = Resep::with(['emr.pembayaran', 'emr.kunjungan'])->findOrFail($request->resep_id);
+            
+            if (!$resep->emr || !$resep->emr->pembayaran) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data pembayaran tidak ditemukan',
+                ], 404);
+            }
+
+            if ($resep->emr->pembayaran->status !== 'Sudah Bayar') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Obat hanya bisa diambil setelah pembayaran selesai',
+                ], 400);
+            }
+
             DB::table('resep_obat')
                 ->where('resep_id', $request->resep_id)
                 ->where('obat_id', $request->obat_id)
@@ -1568,9 +1493,26 @@ class APIMobileController extends Controller
                     'updated_at' => now(),
                 ]);
 
+            $belumDiambil = DB::table('resep_obat')
+                ->where('resep_id', $request->resep_id)
+                ->where('status', 'Belum Diambil')
+                ->count();
+
+            if ($belumDiambil === 0 && $request->status === 'Sudah Diambil') {
+                $resep->emr->kunjungan->update([
+                    'status' => 'Succeed',
+                ]);
+
+                Log::info("Semua obat sudah diambil. Status kunjungan diubah menjadi Succeed", [
+                    'kunjungan_id' => $resep->emr->kunjungan->id,
+                    'resep_id' => $request->resep_id,
+                ]);
+            }
+
             return response()->json([
                 'success' => true,
                 'message' => 'Status obat berhasil diupdate',
+                'all_taken' => $belumDiambil === 0,
             ], 200);
 
         } catch (\Exception $e) {
@@ -1583,71 +1525,130 @@ class APIMobileController extends Controller
         }
     }
 
-    /**
-     * Process payment from patient
-     */
     public function prosesPembayaran(Request $request)
     {
         try {
             $request->validate([
-                'pembayaran_id' => 'required|exists:pembayaran,id',
                 'metode_pembayaran' => 'required|in:Cash,Transfer',
+                'pembayaran_id' => 'nullable|exists:pembayaran,id',
+                'kunjungan_id' => 'nullable|exists:kunjungan,id',
             ]);
 
-            $pembayaran = Pembayaran::with(['emr.kunjungan'])->findOrFail($request->pembayaran_id);
+            Log::info('🔥 PROSES PEMBAYARAN - Request Data:', [
+                'pembayaran_id' => $request->pembayaran_id,
+                'kunjungan_id' => $request->kunjungan_id,
+                'metode_pembayaran' => $request->metode_pembayaran,
+                'all_request' => $request->all(),
+            ]);
 
-            // Validasi: Cek apakah sudah bayar
-            if ($pembayaran->status === 'Sudah Bayar') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Pembayaran sudah dilakukan sebelumnya',
-                ], 400);
-            }
+            $pembayaran = null;
 
-            // Validasi: Cek apakah semua obat sudah diambil
-            if ($pembayaran->emr->resep_id) {
-                $belumDiambil = DB::table('resep_obat')
-                    ->where('resep_id', $pembayaran->emr->resep_id)
-                    ->where('status', 'Belum Diambil')
-                    ->count();
+            if ($request->filled('pembayaran_id')) {
+                $pembayaran = Pembayaran::with(['emr.kunjungan'])->find($request->pembayaran_id);
+                Log::info('🔍 Mencari berdasarkan pembayaran_id: ' . $request->pembayaran_id);
+                
+                if ($pembayaran) {
+                    Log::info('✅ Pembayaran ditemukan:', [
+                        'id' => $pembayaran->id,
+                        'status' => $pembayaran->status,
+                        'total_tagihan' => $pembayaran->total_tagihan,
+                    ]);
+                } else {
+                    Log::warning('❌ Pembayaran TIDAK DITEMUKAN dengan ID: ' . $request->pembayaran_id);
+                }
+            } 
+            
+            if (!$pembayaran && $request->filled('kunjungan_id')) {
+                Log::info('🔍 Fallback: Mencari berdasarkan kunjungan_id: ' . $request->kunjungan_id);
+                
+                $pembayaran = Pembayaran::whereHas('emr', function ($query) use ($request) {
+                    $query->where('kunjungan_id', $request->kunjungan_id);
+                })->with(['emr.kunjungan'])->first();
 
-                if ($belumDiambil > 0) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Semua obat harus diambil terlebih dahulu sebelum melakukan pembayaran',
-                    ], 400);
+                if ($pembayaran) {
+                    Log::info('✅ Pembayaran ditemukan via kunjungan_id:', [
+                        'pembayaran_id' => $pembayaran->id,
+                        'status' => $pembayaran->status,
+                    ]);
+                } else {
+                    Log::warning('❌ Pembayaran TIDAK DITEMUKAN dengan kunjungan_id: ' . $request->kunjungan_id);
                 }
             }
 
-            // Update pembayaran
+            if (!$pembayaran) {
+                Log::error('❌ GAGAL: Pembayaran tidak ditemukan dengan parameter yang diberikan');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data pembayaran tidak ditemukan untuk kunjungan ini.',
+                    'debug' => [
+                        'pembayaran_id' => $request->pembayaran_id,
+                        'kunjungan_id' => $request->kunjungan_id,
+                    ],
+                ], 404);
+            }
+
+            if ($pembayaran->status === 'Sudah Bayar') {
+                Log::warning('⚠️ PEMBAYARAN SUDAH LUNAS sebelumnya', [
+                    'pembayaran_id' => $pembayaran->id,
+                ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pembayaran sudah dilakukan sebelumnya.',
+                ], 400);
+            }
+
             DB::transaction(function () use ($pembayaran, $request) {
-                $pembayaran->update([
+                Log::info('💰 MEMULAI TRANSAKSI PEMBAYARAN:', [
+                    'pembayaran_id' => $pembayaran->id,
+                    'metode' => $request->metode_pembayaran,
+                    'total_tagihan' => $pembayaran->total_tagihan,
+                ]);
+
+                $updateResult = $pembayaran->update([
                     'metode_pembayaran' => $request->metode_pembayaran,
-                    'uang_yang_diterima' => $pembayaran->total_tagihan, // Simulasi: exact amount
+                    'uang_yang_diterima' => $pembayaran->total_tagihan,
                     'kembalian' => 0,
                     'tanggal_pembayaran' => now(),
                     'status' => 'Sudah Bayar',
                 ]);
 
-                // Update status kunjungan menjadi Succeed
-                $pembayaran->emr->kunjungan->update([
-                    'status' => 'Succeed',
-                ]);
+                Log::info('📝 Update pembayaran result: ' . ($updateResult ? 'SUCCESS' : 'FAILED'));
+
+                if ($pembayaran->emr && $pembayaran->emr->kunjungan) {
+                    $kunjunganUpdateResult = $pembayaran->emr->kunjungan->update([
+                        'status' => 'Succeed'
+                    ]);
+                    
+                    Log::info('📝 Update kunjungan result: ' . ($kunjunganUpdateResult ? 'SUCCESS' : 'FAILED'), [
+                        'kunjungan_id' => $pembayaran->emr->kunjungan->id,
+                        'new_status' => 'Succeed',
+                    ]);
+                } else {
+                    Log::error('❌ EMR atau Kunjungan tidak ditemukan!');
+                }
             });
+
+            $pembayaran->refresh();
+            Log::info('✅ PEMBAYARAN SELESAI - Status akhir:', [
+                'pembayaran_id' => $pembayaran->id,
+                'status' => $pembayaran->status,
+                'metode_pembayaran' => $pembayaran->metode_pembayaran,
+                'tanggal_pembayaran' => $pembayaran->tanggal_pembayaran,
+            ]);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Pembayaran berhasil diproses',
+                'message' => 'Pembayaran berhasil diproses dan status kunjungan diubah menjadi Succeed.',
                 'data' => $pembayaran->fresh(),
             ], 200);
 
         } catch (\Exception $e) {
-            Log::error('Error processing pembayaran: '.$e->getMessage());
-            Log::error('Stack trace: '.$e->getTraceAsString());
-
+            Log::error('❌ ERROR PROSES PEMBAYARAN: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal memproses pembayaran: '.$e->getMessage(),
+                'message' => 'Gagal memproses pembayaran: ' . $e->getMessage(),
             ], 500);
         }
     }
