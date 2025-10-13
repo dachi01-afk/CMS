@@ -109,8 +109,16 @@
                         Dashboard
                     </x-mycomponents.sidebar_link>
 
-                    <x-mycomponents.sidebar_link href="jenis.spesialis.index" class="fa-solid fa-house">
+                    <x-mycomponents.sidebar_link href="jenis.spesialis.index" class="fa-solid fa-user-doctor">
                         Jenis Sepsialis Dokter
+                    </x-mycomponents.sidebar_link>
+
+                    <x-mycomponents.sidebar_link href="poli.index" class="fa-solid fa-stethoscope">
+                        Poli
+                    </x-mycomponents.sidebar_link>
+
+                    <x-mycomponents.sidebar_link href="layanan.index" class="fa-solid fa-clipboard-list">
+                        Layanan
                     </x-mycomponents.sidebar_link>
 
                     <x-mycomponents.sidebar_link href="manajemen_pengguna.index"
@@ -128,22 +136,22 @@
                         Jadwal Kunjungan
                     </x-mycomponents.sidebar_link>
 
-                    <x-mycomponents.sidebar_link href="laporan.index" class="fa-solid fa-chart-line text-blue-600">
-                        Laporan
-                    </x-mycomponents.sidebar_link>
-
                     <x-mycomponents.sidebar_link href="data_medis_pasien.index"
                         class="fa-solid fa-notes-medical text-blue-600">
                         Data Medis Pasien
                     </x-mycomponents.sidebar_link>
 
                     <x-mycomponents.sidebar_link href="pengambilan.obat"
-                        class="fa-solid fa-notes-medical text-blue-600">
+                        class="fa-solid fa-pills text-blue-600">
                         Pengambilan Obat
                     </x-mycomponents.sidebar_link>
 
-                    <x-mycomponents.sidebar_link href="kasir.index" class="fa-solid fa-notes-medical text-blue-600">
+                    <x-mycomponents.sidebar_link href="kasir.index" class="fa-solid fa-cash-register text-blue-600">
                         Kasir
+                    </x-mycomponents.sidebar_link>
+
+                    <x-mycomponents.sidebar_link href="laporan.index" class="fa-solid fa-chart-line text-blue-600">
+                        Laporan
                     </x-mycomponents.sidebar_link>
 
                     <hr class="my-4 border-gray-300">

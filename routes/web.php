@@ -8,6 +8,8 @@ use App\Http\Controllers\Dokter\AuthController;
 use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Admin\PoliController;
+use App\Http\Controllers\Admin\LayananController;
 use App\Http\Controllers\JenisSpesialisController;
 use App\Http\Controllers\Management\ObatController;
 use App\Http\Controllers\Management\UserController;
@@ -185,6 +187,14 @@ Route::middleware('auth')->group(function () {
         Route::post('/create-data-jenis-spesialis', [JenisSpesialisController::class, 'createJenisSpesialisDokter'])->name('create.data.jenis.spesialis.dokter');
         Route::get('/get-data-jenis-spesialis/{id}', [JenisSpesialisController::class, 'getDataJenisSPesialisById'])->name('get.data.jenis.spesialis.dokter.by.id');
         Route::post('/update-data-jenis-spesialis', [JenisSpesialisController::class, 'updateJenisSpesialisDokter'])->name('update.data.jenis.spesialis.dokter.by.id');
+    });
+
+    Route::prefix('poli')->group(function () {
+        Route::get('/', [PoliController::class, 'index'])->name('poli.index');
+    });
+
+    Route::prefix('layanan')->group(function () {
+        Route::get('/', [LayananController::class, 'index'])->name('layanan.index');
     });
 
     Route::prefix('manajemen_pengguna')->name('manajemen_pengguna.')->group(function () {
