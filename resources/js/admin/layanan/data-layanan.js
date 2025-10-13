@@ -258,7 +258,7 @@ $(function () {
     });
 });
 
-// delete data poli
+// delete data
 $(function () {
     $("body").on("click", ".btn-delete-poli", function () {
         const id = $(this).data("id");

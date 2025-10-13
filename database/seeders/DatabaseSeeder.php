@@ -28,6 +28,7 @@ class DatabaseSeeder extends Seeder
             ObatSeeder::class,
             JadwalDokterSeeder::class,
             KunjunganSeeder::class,
+            KunjunganLayananSeeder::class,
             // TestimoniSeeder::class,
             ResepSeeder::class,
             ResepObatSeeder::class,

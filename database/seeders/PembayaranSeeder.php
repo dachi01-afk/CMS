@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\Kunjungan;
 use App\Models\MetodePembayaran;
 use App\Models\Pasien;
 use App\Models\Pembayaran;
@@ -61,17 +62,40 @@ class PembayaranSeeder extends Seeder
             $totalTagihan += $subtotal;
         }
 
+        // Ambil satu data resep dengan relasi obatnya
+        $dataKunjungan = Kunjungan::with('layanan')->first();
+
+        if (!$dataKunjungan || $dataKunjungan->layanan->isEmpty()) {
+            $this->command->warn('⚠️ Tidak ada data kunjungan atau layanan di database. Seeder dibatalkan.');
+            return;
+        }
+
+        // Hitung total tagihan dari resep_obat
+        $totalTagihanLayanan = 0;
+        foreach ($dataKunjungan->layanan as $layanan) {
+            $hargaLayanan = $layanan->harga_layanan ?? 0;
+            $jumlahLayanan = $layanan->pivot->jumlah ?? 1;
+            $subtotalLayanan = $hargaLayanan * $jumlahLayanan;
+
+            // Debug log (biar kelihatan pas seeding)
+            $this->command->info("💊 {$layanan->nama_obat} x{$jumlahLayanan} = {$subtotalLayanan}");
+
+            $totalTagihanLayanan += $subtotalLayanan;
+        }
+
+        $totalAkhir = $totalTagihan + $totalTagihanLayanan;
+
         $dataMetodePembayaran = MetodePembayaran::firstOrFail();
 
         // Buat data pembayaran baru
         Pembayaran::create([
             'emr_id'            => 1, // kamu bisa ubah sesuai data EMR yang ada
-            'total_tagihan'     => $totalTagihan,
+            'total_tagihan'     => $totalAkhir,
             'metode_pembayaran_id' => $dataMetodePembayaran->id,
             'kode_transaksi'    => strtoupper(uniqid('TRX_')),
             'status'            => 'Belum Bayar',
         ]);
 
-        $this->command->info('✅ Pembayaran berhasil dibuat dengan total tagihan: ' . $totalTagihan);
+        $this->command->info('✅ Pembayaran berhasil dibuat dengan total tagihan: ' . $totalAkhir);
     }
 }
