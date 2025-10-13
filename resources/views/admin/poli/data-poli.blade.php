@@ -64,7 +64,7 @@
                 {{-- Nama Poli --}}
                 <div>
                     <label for="nama_poli" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama
-                        Spesialis</label>
+                        Poli</label>
                     <input type="text" name="nama_poli" id="nama_poli_create"
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
                             focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
@@ -106,7 +106,7 @@
                 {{-- Nama Poli --}}
                 <div>
                     <label for="nama_poli" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama
-                        Spesialis</label>
+                        Poli</label>
                     <input type="text" name="nama_poli" id="nama_poli_update"
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
                             focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"

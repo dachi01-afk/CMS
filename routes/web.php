@@ -201,6 +201,11 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('layanan')->group(function () {
         Route::get('/', [LayananController::class, 'index'])->name('layanan.index');
+        Route::get('/get-data-layanan', [LayananController::class, 'getDataLayanan'])->name('layanan.get.data');
+        Route::post('/create-data-layanan', [LayananController::class, 'createDataLayanan'])->name('layanan.create.data');
+        Route::get('/get-data-layanan-by-id/{id}', [LayananController::class, 'getDataLayananById'])->name('layanan.get.data.by.id');
+        Route::post('/update-data-layanan', [LayananController::class, 'updateDataLayanan'])->name('layanan.update.data');
+        Route::post('/delete-data-layanan', [LayananController::class, 'deleteDataLayanan'])->name('layanan.delete.data');
     });
 
     Route::prefix('manajemen_pengguna')->name('manajemen_pengguna.')->group(function () {

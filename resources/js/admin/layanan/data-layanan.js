@@ -4,7 +4,7 @@ import $ from "jquery";
 
 // data poli
 $(function () {
-    var table = $("#poliTable").DataTable({
+    var table = $("#layananTable").DataTable({
         processing: true,
         responsive: true,
         serverSide: true,
@@ -14,10 +14,12 @@ $(function () {
         pageLength: 10,
         lengthChange: false,
         info: false,
-        ajax: "/poli/get-data-poli",
+        ajax: "/layanan/get-data-layanan",
         columns: [
             { data: "id", name: "id" },
             { data: "nama_poli", name: "nama_poli" },
+            { data: "nama_layanan", name: "nama_layanan" },
+            { data: "harga_layanan", name: "harga_layanan" },
             {
                 data: "action",
                 name: "action",
@@ -36,13 +38,13 @@ $(function () {
     });
 
     // 🔎 Search
-    $("#poli-searchInput").on("keyup", function () {
+    $("#layanan-searchInput").on("keyup", function () {
         table.search(this.value).draw();
     });
 
-    const $info = $("#poli-customInfo");
-    const $pagination = $("#poli-customPagination");
-    const $perPage = $("#poli-pageLength");
+    const $info = $("#layanan-customInfo");
+    const $pagination = $("#layanan-customPagination");
+    const $perPage = $("#layanan-pageLength");
 
     function updatePagination() {
         const info = table.page.info();
@@ -104,11 +106,11 @@ $(function () {
     updatePagination();
 });
 
-// create data poli
+// create data layanan
 $(function () {
-    const addModalEl = document.getElementById("modalCreatePoli");
+    const addModalEl = document.getElementById("modalCreateLayanan");
     const addModal = addModalEl ? new Modal(addModalEl) : null;
-    const $formAdd = $("#formCreatePoli");
+    const $formAdd = $("#formCreateLayanan");
 
     function resetAddForm() {
         $formAdd[0].reset();
@@ -116,12 +118,12 @@ $(function () {
         $formAdd.find(".text-red-600").empty();
     }
 
-    $("#buttonModalCreatePoli").on("click", function () {
+    $("#buttonModalCreateLayanan").on("click", function () {
         resetAddForm();
         addModal?.show();
     });
 
-    $("#buttonCloseModalCreatePoli").on("click", function () {
+    $("#buttonCloseModalCreateLayanan").on("click", function () {
         addModal?.hide();
         resetAddForm();
     });
@@ -131,7 +133,9 @@ $(function () {
         const url = $formAdd.data("url");
 
         const formData = {
-            nama_poli: $("#nama_poli_create").val(),
+            poli_id: $("#poli_id_create").val(),
+            nama_layanan: $("#nama_layanan_create").val(),
+            harga_layanan: $("#harga_layanan_create").val(),
         };
 
         axios
@@ -170,11 +174,11 @@ $(function () {
     });
 });
 
-// update data poli
+// update data layanan
 $(function () {
-    const editModalEl = document.getElementById("modalUpdatePoli");
+    const editModalEl = document.getElementById("modalUpdateLayanan");
     const editModal = editModalEl ? new Modal(editModalEl) : null;
-    const $formEdit = $("#formUpdatePoli");
+    const $formEdit = $("#formUpdateLayanan");
 
     function resetEditForm() {
         $formEdit[0].reset();
@@ -182,21 +186,24 @@ $(function () {
         $formEdit.find(".text-red-600").empty();
     }
 
-    $("body").on("click", ".btn-edit-poli", function () {
+    $("body").on("click", ".btn-edit-layanan", function () {
         resetEditForm();
         const id = $(this).data("id");
+        const poliId = $(this).data("poli-id");
 
         axios
-            .get(`poli/get-data-poli-by-id/${id}`)
+            .get(`layanan/get-data-layanan-by-id/${id}`)
             .then((response) => {
-                const poli = response.data.data;
+                const layanan = response.data.data;
                 const baseUrl = $formEdit
                     .data("url")
-                    .replace("/0", "/" + poli.id);
+                    .replace("/0", "/" + layanan.id);
                 $formEdit.data("url", baseUrl);
 
-                $("#id_update").val(poli.id);
-                $("#nama_poli_update").val(poli.nama_poli);
+                $("#id_update").val(layanan.id);
+                $("#poli_id_update").val(poliId);
+                $("#nama_layanan_update").val(layanan.nama_layanan);
+                $("#harga_layanan_update").val(layanan.harga_layanan);
                 editModal?.show();
             })
             .catch(() => {
@@ -214,7 +221,9 @@ $(function () {
 
         const formData = {
             id: $("#id_update").val(),
-            nama_poli: $("#nama_poli_update").val(),
+            poli_id: $("#poli_id_update").val(),
+            nama_layanan: $("#nama_layanan_update").val(),
+            harga_layanan: $("#harga_layanan_update").val(),
         };
 
         axios
@@ -228,7 +237,7 @@ $(function () {
                     showConfirmButton: false,
                 });
                 editModal?.hide();
-                $("#poliTable").DataTable().ajax.reload(null, false);
+                $("#layananTable").DataTable().ajax.reload(null, false);
             })
             .catch((error) => {
                 if (error.response?.status === 422) {
@@ -260,7 +269,7 @@ $(function () {
 
 // delete data
 $(function () {
-    $("body").on("click", ".btn-delete-poli", function () {
+    $("body").on("click", ".btn-delete-layanan", function () {
         const id = $(this).data("id");
         if (!id) return;
 
@@ -280,7 +289,7 @@ $(function () {
         }).then((result) => {
             if (result.isConfirmed) {
                 axios
-                    .post(`/poli/delete-data-poli`, formData)
+                    .post(`/layanan/delete-data-layanan`, formData)
                     .then((response) => {
                         Swal.fire({
                             icon: "success",
