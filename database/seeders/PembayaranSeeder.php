@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\MetodePembayaran;
 use App\Models\Pasien;
 use App\Models\Pembayaran;
 use App\Models\Resep;
@@ -60,11 +61,13 @@ class PembayaranSeeder extends Seeder
             $totalTagihan += $subtotal;
         }
 
+        $dataMetodePembayaran = MetodePembayaran::firstOrFail();
+
         // Buat data pembayaran baru
         Pembayaran::create([
             'emr_id'            => 1, // kamu bisa ubah sesuai data EMR yang ada
             'total_tagihan'     => $totalTagihan,
-            'metode_pembayaran' => 'Cash',
+            'metode_pembayaran_id' => $dataMetodePembayaran->id,
             'kode_transaksi'    => strtoupper(uniqid('TRX_')),
             'status'            => 'Belum Bayar',
         ]);

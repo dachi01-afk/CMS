@@ -19,6 +19,8 @@ return new class extends Migration
             $table->decimal('uang_yang_diterima', 8, 2)->nullable();
             $table->decimal('kembalian', 8, 2)->nullable();
             $table->enum('metode_pembayaran', ['Cash', 'Midtrans'])->nullable(); // Update: Ganti Transfer dengan Midtrans
+            $table->foreignId('metode_pembayaran_id')->constrained('metode_pembayaran', 'id', 'pembayaran_metode_pembayaran_id')
+                ->cascadeOnDelete()->cascadeOnUpdate();
             $table->string('kode_transaksi')->nullable(); // bisa dari Midtrans / bank
             $table->dateTime('tanggal_pembayaran')->nullable();
             $table->enum('status', ['Sudah Bayar', 'Belum Bayar'])->default('Belum Bayar')->nullable();

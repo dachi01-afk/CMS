@@ -187,62 +187,50 @@ $(function () {
     });
 });
 
-// edit data apoteker
+// edit data jenis spesialis dokter
 $(function () {
-    const editModalElement = document.getElementById("editJenisSpesialisDokterModal");
-    const editModal = editModalElement ? new Modal(editModalElement) : null;
-    const $formEdit = $("#formEditApoteker");
-    const initialEditUrl = $formEdit.data("url");
+    const modalEditJenisSpesialisDokter = document.getElementById(
+        "editJenisSpesialisDokterModal"
+    );
+    const editModal = modalEditJenisSpesialisDokter
+        ? new Modal(modalEditJenisSpesialisDokter)
+        : null;
+    const $formEdit = $("#formEditJenisSpesialisDokter");
 
     function resetEditForm() {
         $formEdit[0].reset();
         $formEdit.find(".is-invalid").removeClass("is-invalid");
         $formEdit.find(".text-red-600").empty();
-
-        // reset URL ke awal
-        $formEdit.data("url", initialEditUrl);
-        $formEdit.attr("action", initialEditUrl);
     }
 
-    $("body").on("click", ".btn-edit-apoteker", function () {
+    $("body").on("click", ".btn-edit-jenis-spesialis-dokter", function () {
         resetEditForm();
-        const id = $(this).data("id");
+        const jadwalId = $(this).data("id");
 
         axios
-            .get(`/manajemen_pengguna/get_apoteker_by_id/${id}`)
+            .get(`jenis-spesialis/get-data-jenis-spesialis/${jadwalId}`)
             .then((response) => {
-                const data = response.data.data;
+                const jenisSpesialis = response.data.data;
+                const baseUrl = $formEdit
+                    .data("url")
+                    .replace("/0", "/" + jadwal.id);
+                $formEdit.data("url", baseUrl);
 
-                const baseUrl = $formEdit.data("url");
-                const finalUrl = baseUrl.replace("/0", "/" + data.id);
-                $formEdit.data("url", finalUrl);
-                $formEdit.attr("action", finalUrl);
+                $("#jadwal_id_edit").val(jadwal.id);
+                $('#edit-jenis-spesialis-dokter-nama-spesialis').val(jenisSpesialis.nama_spesialis);
+                $('#edit-jenis-spesialis-dokter-nama-spesialis').val(jenisSpesialis.nama_spesialis);
+                $("#dokter_id_edit").val(jadwal.dokter_id);
+                $("#hari_edit").val(jadwal.hari);
+                $("#jam_awal_edit").val(jadwal.jam_awal);
+                $("#jam_selesai_edit").val(jadwal.jam_selesai);
 
-                $("#edit_apoteker_id").val(data.id);
-                $("#edit_username_apoteker").val(data.user.username);
-                $("#edit_email_apoteker").val(data.user.email);
-                $("#edit_nama_apoteker").val(data.nama_apoteker);
-                $("#edit_no_hp_apoteker").val(data.no_hp_apoteker);
-
-                // Tampilkan foto existing jika ada
-                if (data.foto_apoteker) {
-                    const fotoUrl = `/storage/${data.foto_apoteker}`;
-                    $("#edit_preview_foto_apoteker")
-                        .attr("src", fotoUrl)
-                        .removeClass("hidden");
-                    $("#edit_placeholder_foto_apoteker").addClass("hidden");
-                    $("#edit_foto_drop_area_apoteker")
-                        .removeClass("border-dashed border-gray-400")
-                        .addClass("border-solid border-gray-300");
-                }
-
-                if (editModal) editModal.show();
+                editModal?.show();
             })
             .catch(() => {
                 Swal.fire({
                     icon: "error",
                     title: "Gagal!",
-                    text: "Tidak dapat memuat data apoteker.",
+                    text: "Tidak dapat memuat data jadwal.",
                 });
             });
     });
@@ -250,8 +238,14 @@ $(function () {
     $formEdit.on("submit", function (e) {
         e.preventDefault();
         const url = $formEdit.data("url");
-        const formData = new FormData($formEdit[0]);
-        if (!formData.has("_method")) formData.append("_method", "PUT");
+
+        const formData = {
+            dokter_id: $("#dokter_id_edit").val(),
+            hari: $("#hari_edit").val(),
+            jam_awal: $("#jam_awal_edit").val(),
+            jam_selesai: $("#jam_selesai_edit").val(),
+            _method: "PUT",
+        };
 
         axios
             .post(url, formData)
@@ -260,36 +254,37 @@ $(function () {
                     icon: "success",
                     title: "Berhasil!",
                     text: response.data.message,
-                    showConfirmButton: false,
                     timer: 2000,
-                }).then(() => {
-                    editModal.hide();
-                    $("#jenisSpesialisDokter")
-                        .DataTable()
-                        .ajax.reload(null, false);
-                    resetEditForm();
+                    showConfirmButton: false,
                 });
+                editModal?.hide();
+                $("#jadwalTable").DataTable().ajax.reload(null, false);
             })
             .catch((error) => {
-                if (error.response && error.response.status === 422) {
+                if (error.response?.status === 422) {
                     const errors = error.response.data.errors;
                     for (const field in errors) {
-                        $(`#edit_${field}`).addClass("is-invalid");
-                        $(`#edit_${field}-error`).html(errors[field][0]);
+                        $(`#${field}_edit`).addClass("is-invalid");
+                        $(`#${field}_edit-error`).html(errors[field][0]);
                     }
+                    Swal.fire({
+                        icon: "error",
+                        title: "Validasi Gagal!",
+                        text: "Periksa kembali input Anda.",
+                    });
                 } else {
                     Swal.fire({
                         icon: "error",
-                        title: "Error!",
+                        title: "Error Server!",
                         text: "Terjadi kesalahan server.",
                     });
                 }
             });
     });
 
-    $("#closeEditJenisSpesialisDokterModal").on("click", function () {
+    $("#closeEditJadwalModal").on("click", function () {
+        editModal?.hide();
         resetEditForm();
-        if (editModal) editModal.hide();
     });
 });
 
@@ -350,7 +345,9 @@ document.addEventListener("DOMContentLoaded", function () {
         "edit_placeholder_foto_apoteker"
     );
     const dropArea = document.getElementById("edit_foto_drop_area_apoteker");
-    const closeButton = document.getElementById("closeEditJenisSpesialisDokterModal");
+    const closeButton = document.getElementById(
+        "closeEditJenisSpesialisDokterModal"
+    );
     const formEdit = document.getElementById("formEditApoteker");
 
     function resetFotoPreview() {

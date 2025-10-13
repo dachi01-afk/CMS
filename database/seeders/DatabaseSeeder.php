@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use App\Models\KategoriObat;
+use App\Models\MetodePembayaran;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -17,6 +18,8 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             UserSeeder::class,
+            PoliSeeder::class,
+            LayananSeeder::class,
             JenisSpesialisSeeder::class,
             AdminSeeder::class,
             DokterSeeder::class,
@@ -29,6 +32,7 @@ class DatabaseSeeder extends Seeder
             ResepSeeder::class,
             ResepObatSeeder::class,
             EMRSeeder::class,
+            MetodePembayaranSeeder::class,
             // TesLabSeeder::class,
             PembayaranSeeder::class,
             // AdministrasiSeeder::class,

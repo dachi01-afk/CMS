@@ -17,6 +17,11 @@ class Dokter extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function poli()
+    {
+        return $this->belongsTo(Poli::class);
+    }
+
     public function jenisSpesialis()
     {
         return $this->belongsTo(JenisSpesialis::class);

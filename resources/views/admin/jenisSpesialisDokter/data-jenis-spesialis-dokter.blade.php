@@ -22,7 +22,7 @@
             </select>
         </div>
         <div class="relative">
-            <input type="text" id="apoteker_searchInput"
+            <input type="text" id="jenis-spesialis-dokter_searchInput"
                 class="block w-60 p-2 pl-3 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-sky-500 focus:border-sky-500"
                 placeholder="Cari data...">
         </div>
@@ -96,9 +96,9 @@
 </div>
 
 
-{{-- Modal Edit Apoteker --}}
+{{-- Modal Edit Jenis Spesialis Dokter --}}
 <div id="editJenisSpesialisDokterModal" aria-hidden="true"
-    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4">
+    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 justify-center items-center w-full h-full p-4 bg-black bg-opacity-50">
     <div class="relative w-full max-w-xl max-h-full">
         <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
 
@@ -109,10 +109,8 @@
 
             {{-- Form --}}
             <form id="formEditJenisSpesialisDokter" class="p-5 flex flex-col gap-4"
-                data-url="{{ route('manajemen_pengguna.update_apoteker', ['id' => 0]) }}" method="POST"
-                enctype="multipart/form-data">
+                data-url="#" method="POST">
                 @csrf
-                @method('PUT')
                 <input type="hidden" name="id" id="edit-jenis-spesialis-dokter-id">
 
                 <!-- Grid Form -->
@@ -148,13 +146,5 @@
         </div>
     </div>
 </div>
-
-
-
-
-
-
-
-
 
 @vite(['resources/js/admin/jenisSpesialisDokter/data-jenis-spesialis-dokter.js'])
