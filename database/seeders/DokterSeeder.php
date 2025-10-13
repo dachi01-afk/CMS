@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Dokter;
 use App\Models\JenisSpesialis;
+use App\Models\Poli;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
@@ -20,10 +21,12 @@ class DokterSeeder extends Seeder
         $faker = Faker::create();
         $spesialis = JenisSpesialis::pluck('id')->toArray();
         $foto = 'foto_dokter.jpg';
+        $dataPoli = Poli::firstOrFail();
 
         for ($i = 0; $i < $roleDokter->count(); $i++) {
             Dokter::create([
                 'user_id' => $roleDokter[$i]->id,
+                'poli_id' => $dataPoli->id,
                 'nama_dokter' => $faker->name,
                 'deskripsi_dokter' => $faker->paragraph(),
                 'jenis_spesialis_id' => $faker->randomElement($spesialis),

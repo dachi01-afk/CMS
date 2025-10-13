@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Dokter;
 use App\Models\Kunjungan;
 use App\Models\Pasien;
+use App\Models\Poli;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Faker\Factory as Faker;
@@ -18,7 +19,7 @@ class KunjunganSeeder extends Seeder
     {
         $faker = Faker::create();
         $daftarKeluhan = [
-            'Sakit kepala',
+            'Sakit Gigi',
             'Demam tinggi',
             'Batuk pilek',
             'Nyeri perut',
@@ -61,10 +62,12 @@ class KunjunganSeeder extends Seeder
         //     }
         // }
 
+        $dataPoli = Poli::firstOrFail();
+
         Kunjungan::create([
-            'dokter_id' => 1,
+            'poli_id' => $dataPoli->id,
             'pasien_id' => 1,
-            'tanggal_kunjungan' => '2025-10-12',
+            'tanggal_kunjungan' => '2025-10-13',
             'no_antrian' => '001',
             'keluhan_awal' => $daftarKeluhan[0],
             'status' => 'Waiting',

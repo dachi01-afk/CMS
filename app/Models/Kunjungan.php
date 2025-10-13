@@ -13,7 +13,7 @@ class Kunjungan extends Model
 
     // Ubah dari guarded ke fillable untuk security yang lebih baik katanya pid
     protected $fillable = [
-        'dokter_id',
+        'poli_id',
         'pasien_id',
         'tanggal_kunjungan',
         'no_antrian',
@@ -27,19 +27,14 @@ class Kunjungan extends Model
     ];
 
     // Relasi yang sudah ada - tetap sama
-    public function resep()
-    {
-        return $this->hasMany(Resep::class);
-    }
+    // public function resep()
+    // {
+    //     return $this->hasMany(Resep::class);
+    // }
 
-    public function tesLab()
+    public function poli()
     {
-        return $this->hasMany(TesLab::class);
-    }
-
-    public function dokter()
-    {
-        return $this->belongsTo(Dokter::class);
+        return $this->belongsTo(Poli::class);
     }
 
     public function pasien()

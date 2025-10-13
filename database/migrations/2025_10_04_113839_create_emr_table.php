@@ -18,7 +18,6 @@ return new class extends Migration
             $table->foreignId('resep_id')->constrained('resep', 'id', 'emr_resep_id')
                 ->cascadeOnDelete()->cascadeOnUpdate();
             $table->text('keluhan_utama')->nullable();
-            $table->text('riwayat_penyakit_sekarang')->nullable();
             $table->text('riwayat_penyakit_dahulu')->nullable();
             $table->text('riwayat_penyakit_keluarga')->nullable();
             $table->string('tekanan_darah', 10)->nullable();
