@@ -192,6 +192,11 @@ Route::middleware('auth')->group(function () {
 
     Route::prefix('poli')->group(function () {
         Route::get('/', [PoliController::class, 'index'])->name('poli.index');
+        Route::get('/get-data-poli', [PoliController::class, 'getDataPoli'])->name('poli.get.data');
+        Route::post('/create-data-poli', [PoliController::class, 'createDataPoli'])->name('poli.create.data');
+        Route::get('/get-data-poli-by-id/{id}', [PoliController::class, 'getDataPoliById'])->name('poli.get.data.by.id');
+        Route::post('/update-data-poli', [PoliController::class, 'updateDataPoli'])->name('poli.update.data');
+        Route::post('/delete-data-poli', [PoliController::class, 'deleteDataPoli'])->name('poli.delete.data');
     });
 
     Route::prefix('layanan')->group(function () {
