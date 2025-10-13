@@ -15,8 +15,9 @@ class KunjunganLayanan extends Model
         return $this->belongsTo(Kunjungan::class);
     }
 
-    public function layanan()
-    {
-        return $this->belongsTo(Layanan::class);
-    }
+    // Di app/Models/KunjunganLayanan.php
+public function layanan()
+{
+    return $this->belongsTo(Layanan::class, 'layanan_id');
+}
 }

@@ -36,7 +36,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/kunjungan/create', [APIMobileController::class, 'bookingDokter']);
     Route::put('/kunjungan/ubah-status', [APIMobileController::class, 'ubahStatusKunjungan']);
     Route::post('/kunjungan/batalkan', [APIMobileController::class, 'batalkanStatusKunjungan']);
-    Route::get('/kunjungan/riwayat/{pasien_id}', [APIMobileController::class, 'getRiwayatKunjungan']);
 
     Route::get('/getDataJadwalDokter', [APIMobileController::class, 'getDataJadwalDokter']);
     Route::get('/getDataKunjungan', [APIMobileController::class, 'getDataKunjungan']);
@@ -45,15 +44,22 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // Route Untuk User Yang Login Sebagai Dokter 
+// Route Untuk User Yang Login Sebagai Dokter 
 Route::middleware(['auth:sanctum', 'role:Dokter'])->group(function () {
     Route::prefix('dokter')->group(function () {
         Route::get('/get-data-dokter', [APIMobileController::class, 'getDataDokter']);
         Route::post('/update-profile', [APIMobileController::class, 'updateDataDokter']);
         Route::get('/get-data-kunjungan-by-id-dokter', [APIMobileController::class, 'getDataKunjunganBerdasarkanIdDokter']);
         Route::get('/get-data-obat', [APIMobileController::class, 'getDataObat']);
+        
+        // ADD THIS LINE:
+        Route::get('/get-layanan/{poli_id}', [APIMobileController::class, 'getLayananByPoli']);
+        
         Route::post('/save-emr', [APIMobileController::class, 'saveEMR']);         
         Route::get('/riwayat-pasien-diperiksa', [APIMobileController::class, 'getRiwayatPasienDiperiksa']);
         Route::get('/detail-riwayat-pasien/{kunjunganId}', [APIMobileController::class, 'getDetailRiwayatPasien']);
+        Route::get('/pasien/riwayat-diagnosis/{pasien_id}', [APIMobileController::class, 'getRiwayatDiagnosisPasien']);
+
     });
 });
 
@@ -77,3 +83,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/check-expired', [APIMobileController::class, 'checkExpiredPayments']);
     });
 });
+
+Route::get('/getDataPoli', [APIMobileController::class, 'getPoliDokter']);
+Route::get('/getPolibyIdDokter/{dokter_id}', [APIMobileController::class, 'getPolibyIdDokter']);
+Route::get('/getAllDokter', [APIMobileController::class, 'getAllDokter']);
+Route::get('/kunjungan/riwayat/{pasien_id}', [APIMobileController::class, 'getRiwayatKunjungan']);
+
