@@ -96,10 +96,9 @@ class JadwalKunjunganController extends Controller
 
     public function updateStatus($id)
     {
-
         $kunjungan = Kunjungan::findOrFail($id);
 
-        if ($kunjungan->status !== 'Waiting') {
+        if ($kunjungan->status !== 'Pending') {
             return response()->json(['success' => false, 'message' => 'Status tidak valid untuk diproses.']);
         }
 
