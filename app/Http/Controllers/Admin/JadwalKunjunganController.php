@@ -102,8 +102,16 @@ class JadwalKunjunganController extends Controller
             return response()->json(['success' => false, 'message' => 'Status tidak valid untuk diproses.']);
         }
 
-        $kunjungan->update(['status' => 'Engaged']);
+        if ($kunjungan->status === 'Pending') {
+            $kunjungan->update(['status' => 'Waiting']);
+            return response()->json(['success' => true, 'message' => 'Status kunjungan diperbarui menjadi Waiting.']);
+        }
 
-        return response()->json(['success' => true, 'message' => 'Status kunjungan diperbarui menjadi Engaged.']);
+        if ($kunjungan->status === 'Waiting') {
+            $kunjungan->update(['status' => 'Engaged']);
+            return response()->json(['success' => true, 'message' => 'Status kunjungan diperbarui menjadi Engaged.']);
+        }
+
+        return response()->json(['success' => true, 'message' => 'Status kunjungan diperbarui menjadi Waiting.']);
     }
 }
