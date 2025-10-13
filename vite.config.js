@@ -30,6 +30,9 @@ export default defineConfig({
                 "resources/js/admin/dataMedisPasien/rekam_medis_elektronik.js",
                 "resources/js/admin/dataMedisPasien/data_diagnosa_dan_konsultasi.js",
                 "resources/js/admin/dataMedisPasien/data_hasil_lab.js",
+
+                // transaksi 
+                "resources/js/admin/pengambilanObat/transaksi-menunggu.js"
             ],
             refresh: true,
         }),

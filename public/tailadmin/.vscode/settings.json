@@ -1,4 +1,8 @@
 {
   "css.validate": false,
-  "prettier.printWidth": 80
+  "prettier.printWidth": 80,  
+  "intelephense.diagnostics.undefinedFunctions": false,
+  "intelephense.diagnostics.undefinedMethods": false,
+  "intelephense.diagnostics.undefinedTypes": false,
+  "intelephense.diagnostics.duplicateSymbols": false
 }

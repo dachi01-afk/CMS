@@ -127,6 +127,7 @@ Route::post('/testing-batalkan-status-kunjungan', [TestingController::class, 'ba
 Route::post('/testing-update-status-resep-obat', [TestingController::class, 'batalkanStatusKunjungan'])->name('testing.update.status.resep.obat');
 Route::get('/checkout', [TestingController::class, 'checkout'])->name('checkout');
 Route::post('/midtrans/notification', [TestingController::class, 'notificationHandler']);
+Route::get('/sebelum/checkout', [TestingController::class, 'sebelumCheckout']);
 
 
 // // Public web routes for data access
