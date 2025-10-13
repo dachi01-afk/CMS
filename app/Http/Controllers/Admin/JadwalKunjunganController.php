@@ -87,7 +87,7 @@ class JadwalKunjunganController extends Controller
 
         $kunjungan = Kunjungan::with(['dokter', 'pasien'])
             ->whereDate('tanggal_kunjungan', $today)
-            ->where('status', 'Waiting')
+            ->where('status', 'Pending')
             ->orderBy('no_antrian')
             ->get();
 

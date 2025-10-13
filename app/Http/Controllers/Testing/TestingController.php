@@ -8,6 +8,7 @@ use App\Models\EMR;
 use App\Models\JadwalDokter;
 use App\Models\Kunjungan;
 use App\Models\Pasien;
+use App\Models\Pembayaran;
 use App\Models\Resep;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -248,6 +249,11 @@ class TestingController extends Controller
         }
     }
 
+    public function sebelumCheckout() {
+        $dataPembayaran = Pembayaran::with('emr.kunjungan.pasien', 'emr.resep.obat')->get();
+        return view('sebelum-checkout' ,compact('dataPembayaran'));
+    }
+
     public function checkout(Request $request)
     {
         // Konfigurasi Midtrans
@@ -255,6 +261,8 @@ class TestingController extends Controller
         Config::$isProduction = config('midtrans.is_production');
         Config::$isSanitized = true;
         Config::$is3ds = true;
+
+        $dataPembayaran = Pembayaran::with('emr.kunjungan.pasien', 'emr.resep.obat')->where('id', $id);
 
         // Data transaksi (bisa ambil dari DB)
         $params = [

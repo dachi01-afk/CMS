@@ -21,106 +21,147 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Midtrans\Config;
+use Midtrans\Snap;
+use Midtrans\Notification;
 
 class APIMobileController extends Controller
 {
+
+    public function __construct()
+    {
+        // Konfigurasi Midtrans SANDBOX
+        Config::$serverKey = config('midtrans.server_key');
+        Config::$clientKey = config('midtrans.client_key');
+        Config::$isProduction = false; // SANDBOX MODE
+        Config::$isSanitized = true;
+        Config::$is3ds = true;
+        
+        Log::info('Midtrans Sandbox Configuration Loaded');
+    }
+
+    
     /** LOGIN */
     public function login(Request $request)
     {
-        $request->validate([
-            'username' => 'required|string',
-            'password' => 'required|string|min:6',
-        ]);
+        try {
+            $request->validate([
+                'username' => 'required|string',
+                'password' => 'required|string|min:6',
+            ]);
 
-        $user = User::where('username', $request->username)->first();
+            $user = User::where('username', $request->username)->first();
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+            if (! $user || ! Hash::check($request->password, $user->password)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Username atau password salah',
+                ], 401);
+            }
+
+            $user->tokens()->delete();
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Login berhasil',
+                'data' => [
+                    'user' => $user,
+                    'token' => $token,
+                    'token_type' => 'Bearer',
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Login error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Username atau password salah',
-            ], 401);
+                'message' => 'Terjadi kesalahan sistem',
+            ], 500);
         }
-
-        $user->tokens()->delete();
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Login berhasil',
-            'data' => [
-                'user' => $user,
-                'token' => $token,
-                'token_type' => 'Bearer',
-            ],
-        ]);
     }
 
     /** REGISTER */
     public function register(Request $request)
     {
-        $request->validate([
-            'username' => 'required|string|unique:user,username',
-            'email' => 'required|email|unique:user,email',
-            'password' => 'required|string|min:6',
-        ]);
+        try {
+            $request->validate([
+                'username' => 'required|string|unique:user,username',
+                'email' => 'required|email|unique:user,email',
+                'password' => 'required|string|min:6',
+            ]);
 
-        $user = User::create([
-            'username' => $request->username,
-            'email' => $request->email,
-            'password' => bcrypt($request->password),
-            'role' => 'Pasien',
-        ]);
+            $user = User::create([
+                'username' => $request->username,
+                'email' => $request->email,
+                'password' => bcrypt($request->password),
+                'role' => 'Pasien',
+            ]);
 
-        Pasien::create([
-            'user_id' => $user->id,
-            'nama_pasien' => null,
-            'alamat' => null,
-            'tanggal_lahir' => null,
-            'jenis_kelamin' => null,
-        ]);
+            Pasien::create([
+                'user_id' => $user->id,
+                'nama_pasien' => null,
+                'alamat' => null,
+                'tanggal_lahir' => null,
+                'jenis_kelamin' => null,
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Registrasi berhasil',
-            'data' => $user,
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'Registrasi berhasil',
+                'data' => $user,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Register error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem',
+            ], 500);
+        }
     }
 
     public function getProfile(Request $request)
     {
-        $user = $request->user();
+        try {
+            $user = $request->user();
 
-        if (! $user) {
+            if (! $user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User tidak ditemukan',
+                ], 404);
+            }
+
+            $pasien = $user->pasien;
+
+            if (! $pasien) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data pasien tidak ditemukan',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'id' => $pasien->id,
+                    'nama_pasien' => $pasien->nama_pasien,
+                    'alamat' => $pasien->alamat,
+                    'tanggal_lahir' => $pasien->tanggal_lahir,
+                    'jenis_kelamin' => $pasien->jenis_kelamin,
+                    'foto_pasien' => $pasien->foto_pasien,
+                    'created_at' => $user->created_at,
+                    'email' => $user->email,
+                    'username' => $user->username,
+                    'role' => $user->role,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Get profile error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'User tidak ditemukan',
-            ], 404);
+                'message' => 'Terjadi kesalahan sistem',
+            ], 500);
         }
-
-        $pasien = $user->pasien;
-
-        if (! $pasien) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data pasien tidak ditemukan',
-            ], 404);
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'id' => $pasien->id,
-                'nama_pasien' => $pasien->nama_pasien,
-                'alamat' => $pasien->alamat,
-                'tanggal_lahir' => $pasien->tanggal_lahir,
-                'jenis_kelamin' => $pasien->jenis_kelamin,
-                'foto_pasien' => $pasien->foto_pasien,
-                'created_at' => $user->created_at,
-                'email' => $user->email,
-                'username' => $user->username,
-                'role' => $user->role,
-            ],
-        ]);
     }
 
     public function updateProfile(Request $request)
@@ -239,7 +280,7 @@ class APIMobileController extends Controller
                 'data' => $jadwalSorted,
             ]);
         } catch (\Exception $e) {
-            \Log::error('Error getting jadwal dokter: '.$e->getMessage());
+            log::error('Error getting jadwal dokter: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
@@ -298,38 +339,46 @@ class APIMobileController extends Controller
 
     public function ubahStatusKunjungan(Request $request)
     {
-        $dataKunjungan = Kunjungan::findOrFail($request->id);
+        try {
+            $dataKunjungan = Kunjungan::findOrFail($request->id);
 
-        if ($dataKunjungan->status === 'Pending') {
-            $dataKunjungan->update([
-                'status' => 'Waiting',
-            ]);
+            if ($dataKunjungan->status === 'Pending') {
+                $dataKunjungan->update([
+                    'status' => 'Waiting',
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'status' => 200,
+                    'Data Kunjungan' => $dataKunjungan,
+                    'message' => 'Berhasil Merubah Status Kunjungan Dari Pending Menjadi Waiting',
+                ]);
+            } elseif ($dataKunjungan->status === 'Waiting') {
+                $dataKunjungan->update([
+                    'status' => 'Engaged',
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'status' => 200,
+                    'Data Kunjungan' => $dataKunjungan,
+                    'message' => 'Berhasil Merubah Status Kunjungan Dari Waiting Menjadi Engaged',
+                ]);
+            }
 
             return response()->json([
-                'success' => true,
-                'status' => 200,
+                'success' => false,
+                'status' => 404,
+                'message' => 'Error',
                 'Data Kunjungan' => $dataKunjungan,
-                'message' => 'Berhasil Merubah Status Kunjungan Dari Pending Menjadi Waiting',
             ]);
-        } elseif ($dataKunjungan->status === 'Waiting') {
-            $dataKunjungan->update([
-                'status' => 'Engaged',
-            ]);
-
+        } catch (\Exception $e) {
+            Log::error('Error ubah status kunjungan: ' . $e->getMessage());
             return response()->json([
-                'success' => true,
-                'status' => 200,
-                'Data Kunjungan' => $dataKunjungan,
-                'message' => 'Berhasil Merubah Status Kunjungan Dari Waiting Menjadi Engaged',
-            ]);
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem',
+            ], 500);
         }
-
-        return response()->json([
-            'success' => false,
-            'status' => 404,
-            'message' => 'Error',
-            'Data Kunjungan' => $dataKunjungan,
-        ]);
     }
 
     public function getDokterBySpesialisasi($spesialisasiId)
@@ -384,7 +433,7 @@ class APIMobileController extends Controller
                     return $jadwal;
                 });
 
-                $dokter->jadwalDokter = $jadwalWithDates->sortBy('hari_selisih')->values();
+                $dokter->setAttribute('jadwalDokter', $jadwalWithDates->sortBy('hari_selisih')->values());
 
                 return $dokter;
             });
@@ -609,120 +658,182 @@ class APIMobileController extends Controller
         }
     }
 
-    public function getRiwayatKunjungan($pasienId)
-    {
-        try {
-            $pasien = Pasien::find($pasienId);
-            if (! $pasien) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Pasien tidak ditemukan',
-                ], 404);
+    // Di APIMobileController.php - Ganti method getRiwayatKunjungan
+
+public function getRiwayatKunjungan($pasienId)
+{
+    try {
+        $pasien = Pasien::find($pasienId);
+        if (!$pasien) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pasien tidak ditemukan',
+            ], 404);
+        }
+
+        // 🔥 Ambil SEMUA data terkait
+        $riwayat = Kunjungan::where('pasien_id', $pasienId)
+            ->with([
+                'dokter' => function ($query) {
+                    $query->select('id', 'nama_dokter', 'no_hp', 'pengalaman', 'foto_dokter', 'jenis_spesialis_id');
+                },
+                'dokter.jenisSpesialis',
+                'emr' => function ($query) {
+                    $query->select(
+                        'id', 
+                        'kunjungan_id', 
+                        'resep_id',
+                        'keluhan_utama',
+                        'riwayat_penyakit_sekarang',
+                        'riwayat_penyakit_dahulu',
+                        'riwayat_penyakit_keluarga',
+                        'tekanan_darah',
+                        'suhu_tubuh',
+                        'nadi',
+                        'pernapasan',
+                        'saturasi_oksigen',
+                        'diagnosis',
+                        'created_at'
+                    );
+                },
+                'emr.resep.obat' => function ($query) {
+                    $query->select('obat.id', 'obat.nama_obat', 'obat.dosis', 'obat.total_harga')
+                          ->withPivot('jumlah', 'dosis', 'keterangan', 'status');
+                },
+                'emr.pembayaran' => function ($query) {
+                    $query->select(
+                        'id',
+                        'emr_id',
+                        'total_tagihan',
+                        'uang_yang_diterima',
+                        'kembalian',
+                        'metode_pembayaran',
+                        'tanggal_pembayaran',
+                        'status'
+                    );
+                },
+            ])
+            ->orderByDesc('tanggal_kunjungan')
+            ->orderByDesc('created_at')
+            ->get();
+
+        // 🔥 Hitung total biaya per kunjungan
+        $riwayatWithDetails = $riwayat->map(function ($kunjungan) {
+            $biayaKonsultasi = 150000;
+            $totalObat = 0;
+            $resepObat = [];
+
+            if ($kunjungan->emr && $kunjungan->emr->resep) {
+                foreach ($kunjungan->emr->resep->obat as $obat) {
+                    $jumlah = $obat->pivot->jumlah ?? 1;
+                    $hargaObat = $obat->total_harga ?? 0;
+                    $subtotal = $hargaObat * $jumlah;
+                    $totalObat += $subtotal;
+
+                    $resepObat[] = [
+                        'id' => $obat->id,
+                        'nama_obat' => $obat->nama_obat,
+                        'dosis' => $obat->pivot->dosis ?? $obat->dosis,
+                        'jumlah' => $jumlah,
+                        'harga_per_item' => $hargaObat,
+                        'subtotal' => $subtotal,
+                        'keterangan' => $obat->pivot->keterangan ?? 'Sesuai anjuran dokter',
+                        'status' => $obat->pivot->status ?? 'Belum Diambil',
+                    ];
+                }
             }
 
-            $riwayat = Kunjungan::where('pasien_id', $pasienId)
-                ->with(['dokter' => function ($query) {
-                    $query->select('id', 'nama_dokter', 'no_hp', 'pengalaman', 'foto_dokter');
-                }])
-                ->orderByDesc('tanggal_kunjungan')
-                ->orderByDesc('created_at')
-                ->get();
+            $totalTagihan = $biayaKonsultasi + $totalObat;
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Riwayat kunjungan berhasil diambil',
-                'data' => $riwayat,
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error getting riwayat kunjungan: '.$e->getMessage());
+            return [
+                'id' => $kunjungan->id,
+                'tanggal_kunjungan' => $kunjungan->tanggal_kunjungan,
+                'no_antrian' => $kunjungan->no_antrian,
+                'keluhan_awal' => $kunjungan->keluhan_awal,
+                'status' => $kunjungan->status,
+                'created_at' => $kunjungan->created_at,
+                'updated_at' => $kunjungan->updated_at,
+                
+                // Data Dokter
+                'dokter' => [
+                    'id' => $kunjungan->dokter->id ?? null,
+                    'nama_dokter' => $kunjungan->dokter->nama_dokter ?? 'Tidak ada',
+                    'no_hp' => $kunjungan->dokter->no_hp ?? 'Tidak ada',
+                    'pengalaman' => $kunjungan->dokter->pengalaman ?? 'Tidak ada',
+                    'foto_dokter' => $kunjungan->dokter->foto_dokter ?? null,
+                    'spesialisasi' => $kunjungan->dokter->jenisSpesialis->nama_spesialis ?? 'Umum',
+                ],
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengambil riwayat kunjungan: '.$e->getMessage(),
-            ], 500);
-        }
+                // Data EMR (hanya jika status bukan Pending/Canceled)
+                'emr' => $kunjungan->emr ? [
+                    'id' => $kunjungan->emr->id,
+                    'keluhan_utama' => $kunjungan->emr->keluhan_utama,
+                    'riwayat_penyakit_sekarang' => $kunjungan->emr->riwayat_penyakit_sekarang,
+                    'riwayat_penyakit_dahulu' => $kunjungan->emr->riwayat_penyakit_dahulu,
+                    'riwayat_penyakit_keluarga' => $kunjungan->emr->riwayat_penyakit_keluarga,
+                    'tanda_vital' => [
+                        'tekanan_darah' => $kunjungan->emr->tekanan_darah,
+                        'suhu_tubuh' => $kunjungan->emr->suhu_tubuh,
+                        'nadi' => $kunjungan->emr->nadi,
+                        'pernapasan' => $kunjungan->emr->pernapasan,
+                        'saturasi_oksigen' => $kunjungan->emr->saturasi_oksigen,
+                    ],
+                    'diagnosis' => $kunjungan->emr->diagnosis,
+                    'tanggal_pemeriksaan' => $kunjungan->emr->created_at,
+                ] : null,
+
+                // Data Resep Obat
+                'resep_obat' => $resepObat,
+
+                // Data Pembayaran
+                'pembayaran' => $kunjungan->emr && $kunjungan->emr->pembayaran ? [
+                    'id' => $kunjungan->emr->pembayaran->id,
+                    'biaya_konsultasi' => $biayaKonsultasi,
+                    'total_obat' => $totalObat,
+                    'total_tagihan' => $kunjungan->emr->pembayaran->total_tagihan ?? $totalTagihan,
+                    'uang_yang_diterima' => $kunjungan->emr->pembayaran->uang_yang_diterima,
+                    'kembalian' => $kunjungan->emr->pembayaran->kembalian,
+                    'metode_pembayaran' => $kunjungan->emr->pembayaran->metode_pembayaran,
+                    'tanggal_pembayaran' => $kunjungan->emr->pembayaran->tanggal_pembayaran,
+                    'status' => $kunjungan->emr->pembayaran->status,
+                ] : [
+                    'biaya_konsultasi' => $biayaKonsultasi,
+                    'total_obat' => $totalObat,
+                    'total_tagihan' => $totalTagihan,
+                    'status' => 'Belum Ada Pembayaran',
+                ],
+            ];
+        });
+
+        // 🔥 Info Pasien Lengkap
+        $pasienInfo = [
+            'id' => $pasien->id,
+            'nama_pasien' => $pasien->nama_pasien,
+            'alamat' => $pasien->alamat,
+            'tanggal_lahir' => $pasien->tanggal_lahir,
+            'umur' => $this->calculateAge($pasien->tanggal_lahir),
+            'jenis_kelamin' => $pasien->jenis_kelamin,
+            'foto_pasien' => $pasien->foto_pasien,
+        ];
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Riwayat kunjungan berhasil diambil',
+            'pasien_info' => $pasienInfo,
+            'data' => $riwayatWithDetails,
+            'total_kunjungan' => $riwayatWithDetails->count(),
+        ], 200);
+        
+    } catch (\Exception $e) {
+        Log::error('Error getting riwayat kunjungan: ' . $e->getMessage());
+        Log::error('Stack trace: ' . $e->getTraceAsString());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil riwayat kunjungan: ' . $e->getMessage(),
+        ], 500);
     }
-
-    public function getDataTestimoni()
-    {
-        try {
-            $dataTestimoni = Testimoni::all();
-
-            return response()->json([
-                'success' => true,
-                'status' => 200,
-                'Data Testimoni' => $dataTestimoni,
-                'message' => 'Berhasil Meminta Data Testimoni',
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error getting testimoni: '.$e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengambil data testimoni: '.$e->getMessage(),
-            ], 500);
-        }
-    }
-
-    public function createDataTestimoni(Request $request)
-    {
-        try {
-            $request->validate([
-                'pasien_id' => ['required', 'exists:pasien,id'],
-                'nama_testimoni' => ['required', 'string', 'max:255'],
-                'umur' => ['required', 'numeric', 'min:1', 'max:150'],
-                'pekerjaan' => ['required', 'string', 'max:255'],
-                'isi_testimoni' => ['required', 'string'],
-                'foto' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
-                'video' => ['nullable', 'mimetypes:video/mp4,video/avi,video/mpeg'],
-            ]);
-
-            $jalurFoto = null;
-            $jalurVideo = null;
-
-            if ($request->hasFile('foto')) {
-                $foto = $request->file('foto');
-                $namaFoto = time().'_'.$foto->getClientOriginalName();
-                $jalurFoto = $foto->storeAs('Foto-Testimoni', $namaFoto, 'public');
-            }
-
-            if ($request->hasFile('video')) {
-                $video = $request->file('video');
-                $namaVideo = time().'_'.$video->getClientOriginalName();
-                $jalurVideo = $video->storeAs('Video-Testimoni', $namaVideo, 'public');
-            }
-
-            $dataTestimoni = Testimoni::create([
-                'pasien_id' => $request->pasien_id,
-                'nama_testimoni' => $request->nama_testimoni,
-                'umur' => $request->umur,
-                'pekerjaan' => $request->pekerjaan,
-                'isi_testimoni' => $request->isi_testimoni,
-                'foto' => $jalurFoto,
-                'link_video' => $jalurVideo,
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'status' => 200,
-                'Data Testimoni' => $dataTestimoni,
-                'message' => 'Berhasil Membuat Testimoni',
-            ], 201);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (\Exception $e) {
-            Log::error('Error creating testimoni: '.$e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal membuat testimoni: '.$e->getMessage(),
-            ], 500);
-        }
-    }
+}
 
     public function getDataDokter()
     {
@@ -749,87 +860,103 @@ class APIMobileController extends Controller
 
     public function loginDokter(Request $request)
     {
-        $request->validate([
-            'username' => ['required'],
-            'password' => ['required'],
-        ]);
+        try {
+            $request->validate([
+                'username' => ['required'],
+                'password' => ['required'],
+            ]);
 
-        $user = User::where('username', $request->username)->first();
+            $user = User::where('username', $request->username)->first();
 
-        if (! $user || ! Hash::check($request->password, $user->password)) {
+            if (! $user || ! Hash::check($request->password, $user->password)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Username atau password salah',
+                ], 401);
+            }
+
+            if ($user->role !== 'Dokter') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Akun ini bukan akun dokter',
+                ], 403);
+            }
+
+            $user->tokens()->delete();
+            $token = $user->createToken('auth_token')->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Login berhasil',
+                'data' => [
+                    'user' => $user,
+                    'token' => $token,
+                    'token_type' => 'Bearer',
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Login dokter error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Username atau password salah',
-            ], 401);
+                'message' => 'Terjadi kesalahan sistem',
+            ], 500);
         }
-
-        if ($user->role !== 'Dokter') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Akun ini bukan akun dokter',
-            ], 403);
-        }
-
-        $user->tokens()->delete();
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Login berhasil',
-            'data' => [
-                'user' => $user,
-                'token' => $token,
-                'token_type' => 'Bearer',
-            ],
-        ]);
     }
 
     public function updateDataDokter(Request $request)
     {
-        $login = Auth::user()->id;
+        try {
+            $login = Auth::user()->id;
 
-        $dataDokter = Dokter::with('user')->where('user_id', $login)->first();
+            $dataDokter = Dokter::with('user')->where('user_id', $login)->first();
 
-        if (! $dataDokter) {
+            if (! $dataDokter) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data dokter tidak ditemukan',
+                ], 404);
+            }
+
+            $request->validate([
+                'nama_dokter' => ['required'],
+                'foto_dokter' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
+                'deskripsi_dokter' => ['required'],
+                'pengalaman' => ['required'],
+                'jenis_spesialis_id' => ['required', 'exists:jenis_spesialis,id'],
+                'no_hp' => ['required'],
+            ]);
+
+            $pathFotoDokter = $dataDokter->foto_dokter;
+
+            if ($request->hasFile('foto_dokter')) {
+                $fileFoto = $request->file('foto_dokter');
+                $namaFoto = $request->nama_dokter.'_'.time().'.'.$fileFoto->getClientOriginalExtension();
+                $pathFotoDokter = $fileFoto->storeAs('Foto-Dokter', $namaFoto, 'public');
+            }
+
+            $dataDokter->update([
+                'user_id' => $login,
+                'nama_dokter' => $request->nama_dokter,
+                'foto_dokter' => $pathFotoDokter,
+                'deskripsi_dokter' => $request->deskripsi_dokter,
+                'pengalaman' => $request->pengalaman,
+                'jenis_spesialis_id' => $request->jenis_spesialis_id,
+                'no_hp' => $request->no_hp,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'status' => 200,
+                'Data Dokter' => $dataDokter->fresh(),
+                'message' => 'Berhasil Mengupdate Data Dokter',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Update data dokter error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Data dokter tidak ditemukan',
-            ], 404);
+                'message' => 'Terjadi kesalahan sistem',
+            ], 500);
         }
-
-        $request->validate([
-            'nama_dokter' => ['required'],
-            'foto_dokter' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
-            'deskripsi_dokter' => ['required'],
-            'pengalaman' => ['required'],
-            'jenis_spesialis_id' => ['required', 'exists:jenis_spesialis,id'],
-            'no_hp' => ['required'],
-        ]);
-
-        $pathFotoDokter = $dataDokter->foto_dokter;
-
-        if ($request->hasFile('foto_dokter')) {
-            $fileFoto = $request->file('foto_dokter');
-            $namaFoto = $request->nama_dokter.'_'.time().'.'.$fileFoto->getClientOriginalExtension();
-            $pathFotoDokter = $fileFoto->storeAs('Foto-Dokter', $namaFoto, 'public');
-        }
-
-        $dataDokter->update([
-            'user_id' => $login,
-            'nama_dokter' => $request->nama_dokter,
-            'foto_dokter' => $pathFotoDokter,
-            'deskripsi_dokter' => $request->deskripsi_dokter,
-            'pengalaman' => $request->pengalaman,
-            'jenis_spesialis_id' => $request->jenis_spesialis_id,
-            'no_hp' => $request->no_hp,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'status' => 200,
-            'Data Dokter' => $dataDokter->fresh(),
-            'message' => 'Berhasil Mengupdate Data Dokter',
-        ]);
     }
 
     public function getDataKunjunganBerdasarkanIdDokter()
@@ -901,14 +1028,22 @@ class APIMobileController extends Controller
 
     public function getDataObat()
     {
-        $dataObat = Obat::all();
+        try {
+            $dataObat = Obat::all();
 
-        return response()->json([
-            'success' => true,
-            'status' => 200,
-            'Data Obat' => $dataObat,
-            'message' => 'Berhasil Memunculkan Data Obat',
-        ]);
+            return response()->json([
+                'success' => true,
+                'status' => 200,
+                'Data Obat' => $dataObat,
+                'message' => 'Berhasil Memunculkan Data Obat',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting data obat: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem',
+            ], 500);
+        }
     }
 
     public function saveEMR(Request $request)
@@ -1532,7 +1667,7 @@ class APIMobileController extends Controller
                 'metode_pembayaran' => 'required|in:Cash,Transfer',
                 'pembayaran_id' => 'nullable|exists:pembayaran,id',
                 'kunjungan_id' => 'nullable|exists:kunjungan,id',
-            ]);
+            ]); 
 
             Log::info('🔥 PROSES PEMBAYARAN - Request Data:', [
                 'pembayaran_id' => $request->pembayaran_id,
@@ -1652,4 +1787,661 @@ class APIMobileController extends Controller
             ], 500);
         }
     }
+    
+    // midtrans
+    public function updateStatusResepObat(Request $request)
+    {
+        try {
+            $request->validate([
+                'resep_id' => ['required', 'exists:resep,id'],
+                'obat_id' => ['required', 'exists:obat,id'],
+                'status' => ['required', 'string'], // contoh: 'belum bayar' / 'sudah bayar'
+            ]);
+
+            DB::transaction(function () use ($request) {
+                // Ambil resep
+                $resep = Resep::findOrFail($request->resep_id);
+
+                // Cek apakah obat ada di dalam resep ini
+                $obat = $resep->obat()->where('obat_id', $request->obat_id)->firstOrFail();
+
+                // Update status di tabel pivot resep_obat
+                $resep->obat()->updateExistingPivot($request->obat_id, [
+                    'status' => $request->status,
+                ]);
+
+                // Jika status berubah jadi "sudah bayar", kurangi stok obat
+                if ($request->status === 'sudah bayar') {
+                    $jumlahObat = $obat->pivot->jumlah;
+
+                    if ($obat->jumlah < $jumlahObat) {
+                        throw new \Exception('Stok obat tidak mencukupi.');
+                    }
+
+                    $obat->decrement('jumlah', $jumlahObat);
+                }
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Status resep obat berhasil diperbarui.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memperbarui status resep obat: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function checkout(Request $request)
+    {
+        try {
+            // Konfigurasi Midtrans
+            Config::$serverKey = config('midtrans.server_key');
+            Config::$isProduction = config('midtrans.is_production');
+            Config::$isSanitized = true;
+            Config::$is3ds = true;
+
+            // Data transaksi (bisa ambil dari DB)
+            $params = [
+                'transaction_details' => [
+                    'order_id' => rand(),
+                    'gross_amount' => 150000, // nominal transaksi
+                ],
+                'customer_details' => [
+                    'first_name' => 'Budi',
+                    'email' => 'budi@example.com',
+                ],
+            ];
+
+            $snapToken = Snap::getSnapToken($params);
+
+            // Kirim ke view
+            return view('payment', compact('snapToken'));
+        } catch (\Exception $e) {
+            Log::error('Checkout error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem',
+            ], 500);
+        }
+    }
+
+    public function notificationHandler(Request $request)
+    {
+        try {
+            $notif = new \Midtrans\Notification();
+            $transaction = $notif->transaction_status;
+            $order_id = $notif->order_id;
+
+            $dataPembayaran = Pembayaran::firstOrFail($request->id);
+
+            if ($transaction == 'settlement') {
+                $dataPembayaran->update([
+                    'status' => 'Sudah Bayar'
+                ]);
+            }
+
+            return response()->json(['status' => 'ok']);
+        } catch (\Exception $e) {
+            Log::error('Notification handler error: ' . $e->getMessage());
+            return response()->json(['status' => 'error'], 500);
+        }
+    }
+     
+    public function createMidtransTransaction(Request $request)
+    {
+        try {
+            // Konfigurasi Midtrans seperti di TestingController
+            Config::$serverKey = config('midtrans.server_key');
+            Config::$isProduction = config('midtrans.is_production');
+            Config::$isSanitized = true;
+            Config::$is3ds = true;
+
+            // HAPUS LINE INI YANG MENYEBABKAN ERROR:
+            // dd($request); // <-- INI PENYEBAB ERROR FORMAT EXCEPTION!
+
+            $request->validate([
+                'pembayaran_id' => 'nullable|exists:pembayaran,id',
+                'kunjungan_id' => 'nullable|exists:kunjungan,id',
+            ]);
+
+            Log::info('🔥 Creating Midtrans transaction:', [
+                'pembayaran_id' => $request->pembayaran_id,
+                'kunjungan_id' => $request->kunjungan_id,
+            ]);
+
+            // Cari pembayaran
+            $pembayaran = null;
+            if ($request->filled('pembayaran_id')) {
+                $pembayaran = Pembayaran::with(['emr.kunjungan.pasien.user', 'emr.resep.obat'])->find($request->pembayaran_id);
+            } elseif ($request->filled('kunjungan_id')) {
+                $pembayaran = Pembayaran::whereHas('emr', function ($query) use ($request) {
+                    $query->where('kunjungan_id', $request->kunjungan_id);
+                })->with(['emr.kunjungan.pasien.user', 'emr.resep.obat'])->first();
+            }
+
+            if (!$pembayaran) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data pembayaran tidak ditemukan',
+                ], 404);
+            }
+
+            if ($pembayaran->status === 'Sudah Bayar') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pembayaran sudah selesai',
+                ], 400);
+            }
+
+            $pasien = $pembayaran->emr->kunjungan->pasien;
+            
+            // Generate order_id seperti di TestingController
+            $orderId = 'KLINIK-' . $pembayaran->id . '-' . time();
+
+            // Buat item details
+            $itemDetails = [
+                [
+                    'id' => 'konsultasi-' . $pembayaran->id,
+                    'price' => 150000,
+                    'quantity' => 1,
+                    'name' => 'Konsultasi Dokter',
+                ]
+            ];
+
+            // Tambahkan obat jika ada
+            if ($pembayaran->emr && $pembayaran->emr->resep && $pembayaran->emr->resep->obat) {
+                foreach ($pembayaran->emr->resep->obat as $obat) {
+                    $itemDetails[] = [
+                        'id' => 'obat-' . $obat->id,
+                        'price' => (int) $obat->total_harga,
+                        'quantity' => (int) $obat->pivot->jumlah,
+                        'name' => $obat->nama_obat,
+                    ];
+                }
+            }
+
+            // Parameter Midtrans seperti di TestingController
+            $params = [
+                'transaction_details' => [
+                    'order_id' => $orderId,
+                    'gross_amount' => (int) $pembayaran->total_tagihan,
+                ],
+                'customer_details' => [
+                    'first_name' => $pasien->nama_pasien ?? 'Pasien',
+                    'last_name' => 'Klinik',
+                    'email' => $pasien->user->email ?? 'pasien@klinik.com',
+                    'phone' => '08123456789',
+                ],
+                'item_details' => $itemDetails,
+            ];
+
+            Log::info('📋 Midtrans params:', $params);
+
+            // Generate Snap Token
+            $snapToken = Snap::getSnapToken($params);
+
+            // Update pembayaran dengan metode yang sesuai ENUM database
+            $pembayaran->update([
+                'metode_pembayaran' => 'Midtrans', // Sesuai ENUM yang ada
+            ]);
+
+            // Simpan order_id dalam cache
+            Cache::put('midtrans_order_' . $orderId, $pembayaran->id, now()->addHours(24));
+
+            Log::info('✅ Midtrans token generated successfully:', [
+                'order_id' => $orderId,
+                'pembayaran_id' => $pembayaran->id,
+                'snap_token' => substr($snapToken, 0, 20) . '...',
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Token Midtrans berhasil dibuat',
+                'data' => [
+                    'snap_token' => $snapToken,
+                    'order_id' => $orderId,
+                    'amount' => $pembayaran->total_tagihan,
+                    'client_key' => config('midtrans.client_key'),
+                    'is_sandbox' => !config('midtrans.is_production'),
+                ],
+            ]);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('❌ Validation error: ', $e->errors());
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('❌ Error creating Midtrans transaction: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membuat transaksi Midtrans: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function midtransCallback(Request $request)
+    {
+        try {
+            Log::info('🔔 Midtrans Sandbox callback received:', $request->all());
+
+            // Menggunakan Midtrans Notification SDK
+            $notification = new Notification();
+            
+            $transactionStatus = $notification->transaction_status;
+            $orderId = $notification->order_id;
+            $fraudStatus = isset($notification->fraud_status) ? $notification->fraud_status : 'accept';
+
+            Log::info('Processing callback:', [
+                'order_id' => $orderId,
+                'transaction_status' => $transactionStatus,
+                'fraud_status' => $fraudStatus,
+            ]);
+
+            // Cari pembayaran berdasarkan order_id dari cache atau parsing
+            $pembayaranId = Cache::get('midtrans_order_' . $orderId);
+            
+            if (!$pembayaranId) {
+                // Fallback: parse order_id untuk mendapatkan pembayaran_id
+                if (preg_match('/KLINIK-(\d+)-\d+/', $orderId, $matches)) {
+                    $pembayaranId = $matches[1];
+                    Log::info('📋 Pembayaran ID parsed from order_id: ' . $pembayaranId);
+                }
+            }
+
+            if (!$pembayaranId) {
+                Log::error('❌ Cannot find pembayaran for order_id: ' . $orderId);
+                return response()->json(['status' => 'error', 'message' => 'Pembayaran not found'], 404);
+            }
+
+            $pembayaran = Pembayaran::with(['emr.kunjungan', 'emr.resep.obat'])->find($pembayaranId);
+            
+            if (!$pembayaran) {
+                Log::error('❌ Pembayaran not found in DB: ' . $pembayaranId);
+                return response()->json(['status' => 'error', 'message' => 'Pembayaran record not found'], 404);
+            }
+
+            Log::info('✅ Found pembayaran:', [
+                'pembayaran_id' => $pembayaran->id,
+                'current_status' => $pembayaran->status,
+                'emr_id' => $pembayaran->emr_id,
+                'kunjungan_id' => $pembayaran->emr->kunjungan->id ?? null,
+            ]);
+
+            DB::transaction(function () use ($pembayaran, $transactionStatus, $fraudStatus, $orderId) {
+                if ($transactionStatus == 'capture') {
+                    if ($fraudStatus == 'challenge') {
+                        Log::info('⚠️ Payment challenge - waiting verification');
+                        $this->updatePembayaranStatus($pembayaran, 'Pending', $orderId);
+                    } else if ($fraudStatus == 'accept') {
+                        Log::info('✅ Payment capture accepted');
+                        $this->completeMidtransPayment($pembayaran, $orderId);
+                    }
+                } else if ($transactionStatus == 'settlement') {
+                    Log::info('✅ Payment settlement - completing payment');
+                    $this->completeMidtransPayment($pembayaran, $orderId);
+                } else if ($transactionStatus == 'pending') {
+                    Log::info('⏳ Payment pending');
+                    $this->updatePembayaranStatus($pembayaran, 'Belum Bayar', $orderId);
+                } else if (in_array($transactionStatus, ['deny', 'expire', 'cancel'])) {
+                    Log::error('❌ Payment failed: ' . $transactionStatus);
+                    $this->updatePembayaranStatus($pembayaran, 'Belum Bayar', $orderId);
+                }
+            });
+
+            Log::info('✅ Callback processed successfully');
+            return response()->json(['status' => 'ok']);
+
+        } catch (\Exception $e) {
+            Log::error('❌ Midtrans callback error: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    private function completeMidtransPayment($pembayaran, $orderId)
+    {
+        Log::info('💰 Completing Midtrans payment:', [
+            'pembayaran_id' => $pembayaran->id,
+            'order_id' => $orderId,
+            'before_status' => $pembayaran->status,
+        ]);
+
+        // Update pembayaran
+        $updateResult = $pembayaran->update([
+            'status' => 'Sudah Bayar',
+            'metode_pembayaran' => 'Midtrans',
+            'tanggal_pembayaran' => now(),
+            'uang_yang_diterima' => $pembayaran->total_tagihan,
+            'kembalian' => 0,
+        ]);
+
+        Log::info('📝 Pembayaran update result: ' . ($updateResult ? 'SUCCESS' : 'FAILED'));
+
+        // Update kunjungan status
+        if ($pembayaran->emr && $pembayaran->emr->kunjungan) {
+            $kunjunganUpdateResult = $pembayaran->emr->kunjungan->update([
+                'status' => 'Succeed'
+            ]);
+            
+            Log::info('📝 Kunjungan update result: ' . ($kunjunganUpdateResult ? 'SUCCESS' : 'FAILED'), [
+                'kunjungan_id' => $pembayaran->emr->kunjungan->id,
+                'new_status' => 'Succeed',
+            ]);
+        }
+
+        // Update status resep obat otomatis ke "Sudah Diambil"
+        if ($pembayaran->emr && $pembayaran->emr->resep) {
+            DB::table('resep_obat')
+                ->where('resep_id', $pembayaran->emr->resep->id)
+                ->update([
+                    'status' => 'Sudah Diambil',
+                    'updated_at' => now(),
+                ]);
+
+            Log::info('💊 Resep obat updated to Sudah Diambil');
+        }
+
+        // Hapus dari cache
+        Cache::forget('midtrans_order_' . $orderId);
+
+        Log::info('✅ Payment completion successful', [
+            'pembayaran_id' => $pembayaran->id,
+            'status' => 'Sudah Bayar',
+            'kunjungan_status' => 'Succeed',
+        ]);
+    }
+
+    private function updatePembayaranStatus($pembayaran, $status, $orderId)
+    {
+        Log::info("📝 Updating payment status to: $status", [
+            'pembayaran_id' => $pembayaran->id,
+            'order_id' => $orderId,
+        ]);
+
+        $pembayaran->update([
+            'status' => $status,
+            'metode_pembayaran' => 'Midtrans',
+        ]);
+
+        Log::info("✅ Payment status updated successfully");
+    }
+    
+    public function checkPaymentStatus(Request $request, $orderId)
+    {
+        try {
+            // Cari pembayaran berdasarkan order_id
+            $pembayaranId = Cache::get('midtrans_order_' . $orderId);
+            
+            if (!$pembayaranId && preg_match('/KLINIK-(\d+)-\d+/', $orderId, $matches)) {
+                $pembayaranId = $matches[1];
+            }
+
+            if (!$pembayaranId) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order tidak ditemukan',
+                ], 404);
+            }
+
+            $pembayaran = Pembayaran::find($pembayaranId);
+            
+            if (!$pembayaran) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pembayaran tidak ditemukan',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'order_id' => $orderId,
+                    'status' => $pembayaran->status,
+                    'amount' => $pembayaran->total_tagihan,
+                    'payment_method' => $pembayaran->metode_pembayaran,
+                    'paid_at' => $pembayaran->tanggal_pembayaran,
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error checking payment status: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengecek status: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+    public function forceUpdatePaymentStatus(Request $request)
+{
+    try {
+        $request->validate([
+            'pembayaran_id' => 'required|exists:pembayaran,id',
+            'metode_pembayaran' => 'required|in:Cash,Midtrans',
+        ]);
+
+        Log::info('🚨 Force update payment status requested:', [
+            'pembayaran_id' => $request->pembayaran_id,
+            'metode_pembayaran' => $request->metode_pembayaran,
+        ]);
+
+        $pembayaran = Pembayaran::with(['emr.kunjungan', 'emr.resep.obat'])->find($request->pembayaran_id);
+        
+        if (!$pembayaran) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data pembayaran tidak ditemukan',
+            ], 404);
+        }
+
+        if ($pembayaran->status === 'Sudah Bayar') {
+            Log::info('⚠️ Payment already paid:', [
+                'pembayaran_id' => $pembayaran->id,
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Pembayaran sudah selesai sebelumnya',
+                'data' => $pembayaran,
+            ]);
+        }
+
+        // Force update pembayaran
+        DB::transaction(function () use ($pembayaran, $request) {
+            Log::info('💪 Force updating payment:', [
+                'pembayaran_id' => $pembayaran->id,
+                'metode' => $request->metode_pembayaran,
+                'total_tagihan' => $pembayaran->total_tagihan,
+            ]);
+
+            $updateResult = $pembayaran->update([
+                'status' => 'Sudah Bayar',
+                'metode_pembayaran' => $request->metode_pembayaran,
+                'tanggal_pembayaran' => now(),
+                'uang_yang_diterima' => $pembayaran->total_tagihan,
+                'kembalian' => 0,
+                'catatan' => 'Force update - pembayaran dikonfirmasi manual',
+            ]);
+
+            Log::info('📝 Force update payment result: ' . ($updateResult ? 'SUCCESS' : 'FAILED'));
+
+            // Update kunjungan status
+            if ($pembayaran->emr && $pembayaran->emr->kunjungan) {
+                $kunjunganUpdateResult = $pembayaran->emr->kunjungan->update([
+                    'status' => 'Succeed'
+                ]);
+                
+                Log::info('📝 Force update kunjungan result: ' . ($kunjunganUpdateResult ? 'SUCCESS' : 'FAILED'), [
+                    'kunjungan_id' => $pembayaran->emr->kunjungan->id,
+                    'new_status' => 'Succeed',
+                ]);
+            }
+
+            // Update status resep obat otomatis ke "Sudah Diambil" jika Midtrans
+            if ($request->metode_pembayaran === 'Midtrans' && $pembayaran->emr && $pembayaran->emr->resep) {
+                DB::table('resep_obat')
+                    ->where('resep_id', $pembayaran->emr->resep->id)
+                    ->update([
+                        'status' => 'Sudah Diambil',
+                        'updated_at' => now(),
+                    ]);
+
+                Log::info('💊 Force update resep obat to Sudah Diambil');
+            }
+        });
+
+        $pembayaran->refresh();
+
+        Log::info('✅ Force update completed successfully:', [
+            'pembayaran_id' => $pembayaran->id,
+            'status' => $pembayaran->status,
+            'metode_pembayaran' => $pembayaran->metode_pembayaran,
+            'tanggal_pembayaran' => $pembayaran->tanggal_pembayaran,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status pembayaran berhasil diperbarui',
+            'data' => $pembayaran,
+        ]);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        Log::error('❌ Force update validation error: ', $e->errors());
+        return response()->json([
+            'success' => false,
+            'message' => 'Validation error',
+            'errors' => $e->errors(),
+        ], 422);
+    } catch (\Exception $e) {
+        Log::error('❌ Force update error: ' . $e->getMessage());
+        Log::error('Stack trace: ' . $e->getTraceAsString());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal memperbarui status pembayaran: ' . $e->getMessage(),
+        ], 500);
+    }
+}
+public function simulateMidtransCallback(Request $request)
+{
+    try {
+        // HANYA untuk SANDBOX mode
+        if (config('midtrans.is_production')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Endpoint hanya tersedia di sandbox mode',
+            ], 403);
+        }
+
+        $request->validate([
+            'order_id' => 'required|string',
+            'transaction_status' => 'required|in:settlement,capture,pending,deny,cancel,expire',
+        ]);
+
+        $orderId = $request->order_id;
+        $transactionStatus = $request->transaction_status;
+
+        Log::info('🧪 Simulating Midtrans callback:', [
+            'order_id' => $orderId,
+            'transaction_status' => $transactionStatus,
+        ]);
+
+        // Cari pembayaran berdasarkan order_id
+        $pembayaranId = Cache::get('midtrans_order_' . $orderId);
+        
+        if (!$pembayaranId && preg_match('/KLINIK-(\d+)-\d+/', $orderId, $matches)) {
+            $pembayaranId = $matches[1];
+        }
+
+        if (!$pembayaranId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order ID tidak ditemukan',
+            ], 404);
+        }
+
+        $pembayaran = Pembayaran::with(['emr.kunjungan', 'emr.resep.obat'])->find($pembayaranId);
+        
+        if (!$pembayaran) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pembayaran tidak ditemukan',
+            ], 404);
+        }
+
+        // Simulasi proses callback
+        if (in_array($transactionStatus, ['settlement', 'capture'])) {
+            $this->completeMidtransPayment($pembayaran, $orderId);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Callback berhasil disimulasi - pembayaran selesai',
+                'data' => $pembayaran->fresh(),
+            ]);
+        } else {
+            $this->updatePembayaranStatus($pembayaran, 'Belum Bayar', $orderId);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Callback berhasil disimulasi - status: ' . $transactionStatus,
+                'data' => $pembayaran->fresh(),
+            ]);
+        }
+
+    } catch (\Exception $e) {
+        Log::error('❌ Simulate callback error: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mensimulasi callback: ' . $e->getMessage(),
+        ], 500);
+    }
+}
+
+/**
+ * Cek apakah pembayaran sudah expired dan perlu dibatalkan
+ */
+public function checkExpiredPayments()
+{
+    try {
+        // Cari pembayaran yang belum dibayar dan sudah lebih dari 30 menit
+        $expiredPayments = Pembayaran::where('status', 'Belum Bayar')
+            ->where('metode_pembayaran', 'Midtrans')
+            ->where('created_at', '<', now()->subMinutes(30))
+            ->with(['emr.kunjungan'])
+            ->get();
+
+        Log::info('🕐 Checking expired payments, found: ' . $expiredPayments->count());
+
+        $expiredCount = 0;
+        foreach ($expiredPayments as $pembayaran) {
+            // Update status kunjungan kembali ke Payment jika diperlukan
+            if ($pembayaran->emr && $pembayaran->emr->kunjungan && $pembayaran->emr->kunjungan->status === 'Succeed') {
+                $pembayaran->emr->kunjungan->update(['status' => 'Payment']);
+                Log::info('⏰ Reset kunjungan status for expired payment: ' . $pembayaran->id);
+                $expiredCount++;
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Ditemukan {$expiredCount} pembayaran yang expired",
+            'expired_count' => $expiredCount,
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('❌ Check expired payments error: ' . $e->getMessage());
+        
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengecek expired payments: ' . $e->getMessage(),
+        ], 500);
+    }
+}
 }
