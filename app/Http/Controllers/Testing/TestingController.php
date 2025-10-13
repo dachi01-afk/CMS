@@ -12,6 +12,8 @@ use App\Models\Resep;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Midtrans\Config;
+use Midtrans\Snap;
 
 class TestingController extends Controller
 {
@@ -244,5 +246,44 @@ class TestingController extends Controller
                 'message' => 'Gagal memperbarui status resep obat: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    public function checkout(Request $request)
+    {
+        // Konfigurasi Midtrans
+        Config::$serverKey = config('midtrans.server_key');
+        Config::$isProduction = config('midtrans.is_production');
+        Config::$isSanitized = true;
+        Config::$is3ds = true;
+
+        // Data transaksi (bisa ambil dari DB)
+        $params = [
+            'transaction_details' => [
+                'order_id' => rand(),
+                'gross_amount' => 150000, // nominal transaksi
+            ],
+            'customer_details' => [
+                'first_name' => 'Budi',
+                'email' => 'budi@example.com',
+            ],
+        ];
+
+        $snapToken = Snap::getSnapToken($params);
+
+        // Kirim ke view
+        return view('payment', compact('snapToken'));
+    }
+
+    public function notificationHandler(Request $request)
+    {
+        $notif = new \Midtrans\Notification();
+        $transaction = $notif->transaction_status;
+        $order_id = $notif->order_id;
+
+        if ($transaction == 'settlement') {
+            // update status order di database jadi 'paid'
+        }
+
+        return response()->json(['status' => 'ok']);
     }
 }
