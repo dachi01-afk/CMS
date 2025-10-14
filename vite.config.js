@@ -11,6 +11,9 @@ export default defineConfig({
                 // admin
                 "resources/js/admin/dashboard.js",
 
+                // Jenis spesialis dokter
+                "resources/js/admin/jenisSpesialisDokter/data-jenis-spesialis-dokter.js",
+
                 // poli
                 "resources/js/admin/poli/data-poli.js",
 
