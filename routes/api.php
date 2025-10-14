@@ -58,7 +58,6 @@ Route::middleware(['auth:sanctum', 'role:Dokter'])->group(function () {
         Route::post('/save-emr', [APIMobileController::class, 'saveEMR']);         
         Route::get('/riwayat-pasien-diperiksa', [APIMobileController::class, 'getRiwayatPasienDiperiksa']);
         Route::get('/detail-riwayat-pasien/{kunjunganId}', [APIMobileController::class, 'getDetailRiwayatPasien']);
-        Route::get('/pasien/riwayat-diagnosis/{pasien_id}', [APIMobileController::class, 'getRiwayatDiagnosisPasien']);
 
     });
 });
@@ -88,4 +87,5 @@ Route::get('/getDataPoli', [APIMobileController::class, 'getPoliDokter']);
 Route::get('/getPolibyIdDokter/{dokter_id}', [APIMobileController::class, 'getPolibyIdDokter']);
 Route::get('/getAllDokter', [APIMobileController::class, 'getAllDokter']);
 Route::get('/kunjungan/riwayat/{pasien_id}', [APIMobileController::class, 'getRiwayatKunjungan']);
+Route::get('/pasien/riwayat-diagnosis/{pasien_id}', [APIMobileController::class, 'getRiwayatDiagnosisPasien']);
 
