@@ -1,5 +1,4 @@
 import axios from "axios";
-import { initFlowbite } from "flowbite";
 import $ from "jquery";
 
 // data tabel Apoteker
@@ -189,52 +188,60 @@ $(function () {
 
 // edit data jenis spesialis dokter
 $(function () {
-    const modalEditJenisSpesialisDokter = document.getElementById(
-        "editJenisSpesialisDokterModal"
+    // 🔹 Inisialisasi modal
+    const editModalEl = document.getElementById(
+        "updateJenisSpesialisDokterModal"
     );
-    const editModal = modalEditJenisSpesialisDokter
-        ? new Modal(modalEditJenisSpesialisDokter)
-        : null;
-    const $formEdit = $("#formEditJenisSpesialisDokter");
+    const editModal = editModalEl ? new Modal(editModalEl) : null;
+    const $formEdit = $("#formUpdateJenisSpesialisDokter");
 
+    // 🔹 Reset form edit
     function resetEditForm() {
         $formEdit[0].reset();
         $formEdit.find(".is-invalid").removeClass("is-invalid");
         $formEdit.find(".text-red-600").empty();
     }
 
+    // 🔹 Saat klik tombol edit
     $("body").on("click", ".btn-edit-jenis-spesialis-dokter", function () {
         resetEditForm();
-        const jadwalId = $(this).data("id");
+        const id = $(this).data("id");
 
         axios
-            .get(`jenis-spesialis/get-data-jenis-spesialis/${jadwalId}`)
+            .get(`jenis-spesialis/get-data-jenis-spesialis/${id}`)
             .then((response) => {
                 const jenisSpesialis = response.data.data;
+                console.log("📦 Data diterima:", jenisSpesialis);
+
+                // 🔸 Update URL form
                 const baseUrl = $formEdit
                     .data("url")
-                    .replace("/0", "/" + jadwal.id);
+                    .replace("/0", "/" + jenisSpesialis.id);
                 $formEdit.data("url", baseUrl);
 
-                $("#jadwal_id_edit").val(jadwal.id);
-                $('#edit-jenis-spesialis-dokter-nama-spesialis').val(jenisSpesialis.nama_spesialis);
-                $('#edit-jenis-spesialis-dokter-nama-spesialis').val(jenisSpesialis.nama_spesialis);
-                $("#dokter_id_edit").val(jadwal.dokter_id);
-                $("#hari_edit").val(jadwal.hari);
-                $("#jam_awal_edit").val(jadwal.jam_awal);
-                $("#jam_selesai_edit").val(jadwal.jam_selesai);
+                // 🔸 Isi form
+                $("#id_update").val(jenisSpesialis.id);
+                $("#update-jenis-spesialis-dokter-nama-spesialis").val(
+                    jenisSpesialis.nama_spesialis
+                );
 
+                // 🔹 Pastikan modal muncul
+                $("#editJenisSpesialisDokterModal")
+                    .removeClass("hidden")
+                    .addClass("flex");
                 editModal?.show();
             })
-            .catch(() => {
+            .catch((error) => {
+                console.error("❌ Gagal memuat data:", error);
                 Swal.fire({
                     icon: "error",
                     title: "Gagal!",
-                    text: "Tidak dapat memuat data jadwal.",
+                    text: "Tidak dapat memuat data jenis spesialis.",
                 });
             });
     });
 
+    // 🔹 Saat submit form edit
     $formEdit.on("submit", function (e) {
         e.preventDefault();
         const url = $formEdit.data("url");
@@ -257,7 +264,13 @@ $(function () {
                     timer: 2000,
                     showConfirmButton: false,
                 });
+
+                // 🔸 Tutup modal dan reset form
+                $("#editJenisSpesialisDokterModal").addClass("hidden");
                 editModal?.hide();
+                resetEditForm();
+
+                // 🔸 Reload DataTable
                 $("#jadwalTable").DataTable().ajax.reload(null, false);
             })
             .catch((error) => {
@@ -282,12 +295,13 @@ $(function () {
             });
     });
 
+    // 🔹 Saat klik tombol close
     $("#closeEditJadwalModal").on("click", function () {
         editModal?.hide();
+        $("#editJenisSpesialisDokterModal").addClass("hidden");
         resetEditForm();
     });
 });
-
 // delete data dokter
 $(function () {
     $("body").on("click", ".btn-delete-apoteker", function () {

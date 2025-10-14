@@ -273,6 +273,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/diagnosa_dan_konsultasi', [DataMedisPasienController::class, 'dataKonsultasi'])->name('diagnosa_dan_konsultasi');
         Route::get('/hasil_lab', [DataMedisPasienController::class, 'dataLab'])->name('hasil_lab');
         Route::get('/data_emr', [DataMedisPasienController::class, 'getDataEMR'])->name('data_emr');
+        Route::get('/get-data-emr-by-id/{id}', [DataMedisPasienController::class, 'getDataEMRById'])->name('get.data.emr.by.id');
     });
 
     Route::prefix('pengambilan_obat')->group(function () {

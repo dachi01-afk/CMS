@@ -70,7 +70,7 @@ class KunjunganSeeder extends Seeder
             'tanggal_kunjungan' => '2025-10-13',
             'no_antrian' => '001',
             'keluhan_awal' => $daftarKeluhan[0],
-            'status' => 'Waiting',
+            'status' => 'Pending',
         ]);
     }
 }
