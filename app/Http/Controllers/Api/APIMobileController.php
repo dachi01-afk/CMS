@@ -1613,91 +1613,208 @@ public function __construct()
     }
 
     public function getRiwayatPasienDiperiksa()
-    {
-        try {
-            $user_id = Auth::user()->id;
+{
+    try {
+        $user_id = Auth::user()->id;
+        Log::info('🔍 Getting riwayat pasien diperiksa for user_id: ' . $user_id);
 
-            $dokter = Dokter::with('user')->where('user_id', $user_id)->firstOrFail();
+        // Ambil data dokter dengan relasi poli
+        $dokter = Dokter::with(['user', 'poli'])->where('user_id', $user_id)->first();
 
-            if (! $dokter) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data dokter tidak ditemukan',
-                ], 404);
-            }
-
-            $riwayatPasien = Kunjungan::with([
-                'pasien' => function ($query) {
-                    $query->select('id', 'nama_pasien', 'alamat', 'tanggal_lahir', 'jenis_kelamin', 'foto_pasien');
-                },
-                'emr' => function ($query) {
-                    $query->select('id', 'kunjungan_id', 'keluhan_utama', 'diagnosis', 'created_at');
-                },
-                'resep.obat' => function ($query) {
-                    $query->select('obat.id', 'obat.nama_obat', 'obat.dosis');
-                },
-            ])
-                ->where('dokter_id', $dokter->id)
-                ->whereIn('status', ['Succeed', 'Canceled'])
-                ->orderBy('updated_at', 'desc')
-                ->get();
-
-            return response()->json([
-                'success' => true,
-                'status' => 200,
-                'data' => $riwayatPasien,
-                'total_pasien' => $riwayatPasien->count(),
-                'dokter_info' => [
-                    'id' => $dokter->id,
-                    'nama_dokter' => $dokter->nama_dokter,
-                    'user_id' => $user_id,
-                ],
-                'message' => 'Berhasil mengambil riwayat pasien yang diperiksa',
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error getting riwayat pasien diperiksa: ' . $e->getMessage());
-
+        if (!$dokter) {
+            Log::warning('❌ Dokter tidak ditemukan untuk user_id: ' . $user_id);
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil riwayat pasien: ' . $e->getMessage(),
-            ], 500);
+                'message' => 'Data dokter tidak ditemukan',
+            ], 404);
         }
+
+        Log::info('✅ Dokter found:', [
+            'dokter_id' => $dokter->id,
+            'nama_dokter' => $dokter->nama_dokter,
+            'poli_id' => $dokter->poli_id,
+            'poli_nama' => $dokter->poli->nama_poli ?? 'N/A',
+        ]);
+
+        // FIXED: Gunakan poli_id bukan dokter_id untuk konsistensi dengan skema baru
+        $riwayatPasien = Kunjungan::with([
+            'pasien' => function ($query) {
+                $query->select('id', 'nama_pasien', 'alamat', 'tanggal_lahir', 'jenis_kelamin', 'foto_pasien');
+            },
+            'emr' => function ($query) {
+                $query->select('id', 'kunjungan_id', 'keluhan_utama', 'diagnosis', 'created_at');
+            },
+            // FIXED: Gunakan resep dengan relasi yang benar
+            'emr.resep',
+            'emr.resep.obat' => function ($query) {
+                $query->select('obat.id', 'obat.nama_obat', 'obat.dosis')
+                    ->withPivot('jumlah', 'dosis', 'keterangan', 'status');
+            },
+            'poli' // Tambahkan relasi poli untuk informasi tambahan
+        ])
+        ->where('poli_id', $dokter->poli_id) // FIXED: Gunakan poli_id
+        ->whereIn('status', ['Succeed', 'Canceled']) // Status yang sudah selesai
+        ->orderBy('updated_at', 'desc')
+        ->orderBy('tanggal_kunjungan', 'desc')
+        ->get();
+
+        Log::info('📊 Query result:', [
+            'poli_id_used' => $dokter->poli_id,
+            'total_riwayat' => $riwayatPasien->count(),
+            'status_filter' => ['Succeed', 'Canceled'],
+        ]);
+
+        // Debug: Log beberapa contoh data untuk debugging
+        if ($riwayatPasien->isNotEmpty()) {
+            $sample = $riwayatPasien->first();
+            Log::info('📋 Sample riwayat data:', [
+                'kunjungan_id' => $sample->id,
+                'pasien_nama' => $sample->pasien->nama_pasien ?? 'N/A',
+                'status' => $sample->status,
+                'has_emr' => $sample->emr !== null,
+                'has_resep' => $sample->emr && $sample->emr->resep !== null,
+                'tanggal_kunjungan' => $sample->tanggal_kunjungan,
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'status' => 200,
+            'data' => $riwayatPasien,
+            'total_pasien' => $riwayatPasien->count(),
+            'dokter_info' => [
+                'id' => $dokter->id,
+                'nama_dokter' => $dokter->nama_dokter,
+                'user_id' => $user_id,
+                'poli_id' => $dokter->poli_id,
+                'poli_nama' => $dokter->poli->nama_poli ?? 'Tidak ada',
+            ],
+            'debug_info' => [
+                'query_used' => 'poli_id = ' . $dokter->poli_id,
+                'status_filter' => ['Succeed', 'Canceled'],
+            ],
+            'message' => 'Berhasil mengambil riwayat pasien yang diperiksa',
+        ], 200);
+
+    } catch (\Exception $e) {
+        Log::error('❌ CRITICAL ERROR in getRiwayatPasienDiperiksa: ' . $e->getMessage());
+        Log::error('📍 File: ' . $e->getFile() . ' Line: ' . $e->getLine());
+        Log::error('🔍 Stack trace: ' . $e->getTraceAsString());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil riwayat pasien: ' . $e->getMessage(),
+            'debug_info' => [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'user_id' => Auth::id() ?? 'not_authenticated',
+            ],
+        ], 500);
     }
+}
 
     public function getDetailRiwayatPasien($kunjunganId)
-    {
-        try {
-            $user_id = Auth::user()->id;
-            $dokter = Dokter::where('user_id', $user_id)->firstOrFail();
+{
+    try {
+        $user_id = Auth::user()->id;
+        Log::info('🔍 Getting detail riwayat for kunjungan_id: ' . $kunjunganId . ' by user_id: ' . $user_id);
 
-            $detailRiwayat = Kunjungan::with([
-                'pasien',
-                'emr',
-                'resep.obat' => function ($query) {
-                    $query->select('obat.id', 'obat.nama_obat', 'obat.dosis')
-                        ->withPivot('jumlah', 'dosis', 'keterangan');
-                },
-            ])
-                ->where('id', $kunjunganId)
-                ->where('dokter_id', $dokter->id)
-                ->whereIn('status', ['Succeed', 'Canceled'])
-                ->firstOrFail();
+        $dokter = Dokter::with(['poli'])->where('user_id', $user_id)->first();
 
+        if (!$dokter) {
+            Log::warning('❌ Dokter tidak ditemukan untuk user_id: ' . $user_id);
             return response()->json([
-                'success' => true,
-                'status' => 200,
-                'data' => $detailRiwayat,
-                'message' => 'Berhasil mengambil detail riwayat pasien',
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error getting detail riwayat pasien: ' . $e->getMessage());
+                'success' => false,
+                'message' => 'Data dokter tidak ditemukan',
+            ], 404);
+        }
+
+        Log::info('✅ Dokter found:', [
+            'dokter_id' => $dokter->id,
+            'poli_id' => $dokter->poli_id,
+            'poli_nama' => $dokter->poli->nama_poli ?? 'N/A',
+        ]);
+
+        // FIXED: Gunakan poli_id untuk konsistensi
+        $detailRiwayat = Kunjungan::with([
+            'pasien',
+            'poli', // Tambahkan relasi poli
+            'emr',
+            'emr.resep',
+            'emr.resep.obat' => function ($query) {
+                $query->select('obat.id', 'obat.nama_obat', 'obat.dosis', 'obat.total_harga')
+                    ->withPivot('jumlah', 'dosis', 'keterangan', 'status');
+            },
+            // Tambahkan relasi layanan jika diperlukan
+            'layanan'
+        ])
+        ->where('id', $kunjunganId)
+        ->where('poli_id', $dokter->poli_id) // FIXED: Gunakan poli_id bukan dokter_id
+        ->whereIn('status', ['Succeed', 'Canceled'])
+        ->first();
+
+        if (!$detailRiwayat) {
+            Log::warning('❌ Detail riwayat tidak ditemukan:', [
+                'kunjungan_id' => $kunjunganId,
+                'poli_id' => $dokter->poli_id,
+                'dokter_id' => $dokter->id,
+            ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal mengambil detail riwayat: ' . $e->getMessage(),
-            ], 500);
+                'message' => 'Data riwayat tidak ditemukan atau tidak memiliki akses',
+                'debug_info' => [
+                    'kunjungan_id' => $kunjunganId,
+                    'poli_id_checked' => $dokter->poli_id,
+                    'status_filter' => ['Succeed', 'Canceled'],
+                ],
+            ], 404);
         }
+
+        Log::info('✅ Detail riwayat found:', [
+            'kunjungan_id' => $detailRiwayat->id,
+            'pasien_nama' => $detailRiwayat->pasien->nama_pasien ?? 'N/A',
+            'status' => $detailRiwayat->status,
+            'has_emr' => $detailRiwayat->emr !== null,
+            'has_resep' => $detailRiwayat->emr && $detailRiwayat->emr->resep !== null,
+            'resep_obat_count' => $detailRiwayat->emr && $detailRiwayat->emr->resep && $detailRiwayat->emr->resep->obat ? $detailRiwayat->emr->resep->obat->count() : 0,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'status' => 200,
+            'data' => $detailRiwayat,
+            'dokter_info' => [
+                'id' => $dokter->id,
+                'nama_dokter' => $dokter->nama_dokter,
+                'poli_id' => $dokter->poli_id,
+                'poli_nama' => $dokter->poli->nama_poli ?? 'Tidak ada',
+            ],
+            'debug_info' => [
+                'query_used' => "poli_id = {$dokter->poli_id}",
+                'kunjungan_id' => $kunjunganId,
+                'has_access' => true,
+            ],
+            'message' => 'Berhasil mengambil detail riwayat pasien',
+        ], 200);
+
+    } catch (\Exception $e) {
+        Log::error('❌ CRITICAL ERROR in getDetailRiwayatPasien: ' . $e->getMessage());
+        Log::error('📍 File: ' . $e->getFile() . ' Line: ' . $e->getLine());
+        Log::error('🔍 Stack trace: ' . $e->getTraceAsString());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil detail riwayat: ' . $e->getMessage(),
+            'debug_info' => [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'kunjungan_id' => $kunjunganId,
+                'user_id' => Auth::id() ?? 'not_authenticated',
+            ],
+        ], 500);
     }
+}
 
     public function sendForgotPasswordOTP(Request $request)
     {
