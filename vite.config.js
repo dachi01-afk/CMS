@@ -16,6 +16,7 @@ export default defineConfig({
 
                 // layanan
                 "resources/js/admin/poli/data-poli.js",
+                "resources/js/admin/layanan/data-layanan.js",
 
                 // manajemen-pengguna
                 "resources/js/admin/manajemenPengguna/data_pengguna.js",
