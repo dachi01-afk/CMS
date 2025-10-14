@@ -126,6 +126,18 @@
                         <div id="email_akun_dokter-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
 
+                    <!-- No HP -->
+                    <div>
+                        <label for="no_hp_dokter"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">No HP</label>
+                        <input type="text" name="no_hp_dokter" id="no_hp_dokter"
+                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                            focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="0812xxxxxxxx" required>
+                        <div id="no_hp_dokter-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+
                     <!-- Spesialis -->
                     <div>
                         <label for="spesialis_dokter"
@@ -140,30 +152,19 @@
                         </select>
                         <div id="spesialis_dokter-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
-                    
+
                     <div>
                         <label for="spesialis_dokter"
                             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Spesialis</label>
-                        <select id="spesialis_dokter" name="spesialis_dokter" required
+                        <select id="spesialis_dokter" name="poli_id" required
                             class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
                             focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
                             <option value="" disabled selected>Pilih Spesialis</option>
-                            @foreach ($spesialis as $item)
-                                <option value="{{ $item->id }}">{{ $item->nama_spesialis }}</option>
+                            @foreach ($dataPoli as $poli)
+                                <option value="{{ $poli->id }}">{{ $poli->nama_poli }}</option>
                             @endforeach
                         </select>
                         <div id="spesialis_dokter-error" class="text-red-600 text-sm mt-1"></div>
-                    </div>
-
-                    <!-- No HP -->
-                    <div>
-                        <label for="no_hp_dokter"
-                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">No HP</label>
-                        <input type="text" name="no_hp_dokter" id="no_hp_dokter"
-                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
-                            focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                            placeholder="0812xxxxxxxx" required>
-                        <div id="no_hp_dokter-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
 
                     <!-- Pengalaman -->

@@ -20,6 +20,7 @@ class DokterController extends Controller
     {
         $request->validate([
             'username_dokter'    => 'required|string|max:255|unique:user,username',
+            'poli_id'            => ['required', 'exists:poli,id'],
             'nama_dokter'        => 'required|string|max:255',
             'email_akun_dokter'  => 'required|email|max:255|unique:user,email',
             'spesialis_dokter'   => 'required|integer|exists:jenis_spesialis,id',
@@ -67,6 +68,7 @@ class DokterController extends Controller
         // 3️⃣ Simpan ke tabel dokter
         Dokter::create([
             'user_id'            => $user->id,
+            'poli_id'            => $request->poli_id,
             'nama_dokter'        => $request->nama_dokter,
             'jenis_spesialis_id' => $request->spesialis_dokter,
             'foto_dokter'        => $fotoPath,
