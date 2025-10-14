@@ -34,6 +34,7 @@ $(function () {
             { data: "email_user", name: "email_user" },
             { data: "role", name: "role" },
             { data: "nama_spesialis", name: "nama_spesialis" },
+            { data: "nama_poli", name: "nama_poli" },
             { data: "no_hp", name: "no_hp" },
             {
                 data: "action",
@@ -255,12 +256,14 @@ $(function () {
             .get(`/manajemen_pengguna/get_dokter_by_id/${dokterId}`)
             .then((res) => {
                 const dokter = res.data.data;
+                console.log(dokter);
                 const baseUrl = $formEdit.data("url");
                 const finalUrl = baseUrl.replace("/0", "/" + dokter.id);
                 $formEdit.data("url", finalUrl);
                 $formEdit.attr("action", finalUrl);
 
                 $("#edit_dokter_id").val(dokter.id);
+                $("#edit_poli_id").val(dokter.poli.id);
                 $("#edit_username_dokter").val(dokter.user.username);
                 $("#edit_nama_dokter").val(dokter.nama_dokter);
                 $("#edit_email_akun_dokter").val(dokter.user.email);
@@ -298,7 +301,6 @@ $(function () {
         e.preventDefault();
         const url = $formEdit.data("url");
         const formData = new FormData($formEdit[0]);
-        if (!formData.has("_method")) formData.append("_method", "PUT");
 
         axios
             .post(url, formData)

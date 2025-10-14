@@ -43,7 +43,7 @@ class ManajemenPenggunaController extends Controller
 
     public function dataDokter()
     {
-        $query = Dokter::with(['user', 'jenisSpesialis'])->select('dokter.*');
+        $query = Dokter::with(['user', 'jenisSpesialis', 'poli'])->get();
 
         return DataTables::of($query)
             ->addIndexColumn()
@@ -59,6 +59,7 @@ class ManajemenPenggunaController extends Controller
             ->addColumn('email_user', fn($row) => $row->user->email ?? '-')
             ->addColumn('role', fn($row) => $row->user->role ?? '-')
             ->addColumn('nama_spesialis', fn($row) => $row->jenisSpesialis->nama_spesialis ?? '-')
+            ->addColumn('nama_poli', fn($row) => $row->poli->nama_poli ?? '-')
             ->addColumn('action', function ($dokter) {
                 return '
                 <button class="btn-edit-dokter text-blue-600 hover:text-blue-800 mr-2" data-id="' . $dokter->id . '"  title="Edit">

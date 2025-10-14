@@ -83,18 +83,19 @@ class DokterController extends Controller
 
     public function getDokterById($id)
     {
-        $data = Dokter::with('user')->findOrFail($id);
+        $data = Dokter::with('user', 'poli')->findOrFail($id);
         return response()->json(['data' => $data]);
     }
 
 
-    public function updateDokter(Request $request, $id)
+    public function updateDokter(Request $request)
     {
-        $dokter = Dokter::findOrFail($id);
+        $dokter = Dokter::findOrFail($request->edit_dokter_id);
         $user   = $dokter->user;
 
         $request->validate([
             'edit_username_dokter'    => 'required|string|max:255|unique:user,username,' . $user->id,
+            'edit_poli_id'              => ['required', 'exists:poli,id'],
             'edit_nama_dokter'        => 'required|string|max:255',
             'edit_email_akun_dokter'  => 'required|email|max:255|unique:user,email,' . $user->id,
             'edit_spesialis_dokter'   => 'required|integer|exists:jenis_spesialis,id',
@@ -152,6 +153,7 @@ class DokterController extends Controller
             'deskripsi_dokter'   => $request->edit_deskripsi_dokter,
             'pengalaman'         => $request->edit_pengalaman_dokter,
             'no_hp'              => $request->edit_no_hp_dokter,
+            'poli_id'              => $request->edit_poli_id,
         ];
 
         if ($fotoPath) {

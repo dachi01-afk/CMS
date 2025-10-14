@@ -222,7 +222,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/data_dokter', [ManajemenPenggunaController::class, 'dataDokter'])->name('data_dokter');
         Route::get('/get_dokter_by_id/{id}', [DokterController::class, 'getDokterById'])->name('get_dokter_by_id');
         Route::post('/add_dokter', [DokterController::class, 'createDokter'])->name('add_dokter');
-        Route::put('/update_dokter/{id}', [DokterController::class, 'updateDokter'])->name('update_dokter');
+        Route::post('/update_dokter/', [DokterController::class, 'updateDokter'])->name('update_dokter');
         Route::delete('/delete_dokter/{id}', [DokterController::class, 'deleteDokter'])->name('delete_dokter');
 
         // crud pasien

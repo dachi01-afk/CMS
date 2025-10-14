@@ -153,13 +153,14 @@
                         <div id="spesialis_dokter-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
 
+                    {{-- Poli --}}
                     <div>
                         <label for="spesialis_dokter"
-                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Spesialis</label>
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Poli</label>
                         <select id="spesialis_dokter" name="poli_id" required
                             class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
                             focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
-                            <option value="" disabled selected>Pilih Spesialis</option>
+                            <option value="" disabled selected>Pilih Poli</option>
                             @foreach ($dataPoli as $poli)
                                 <option value="{{ $poli->id }}">{{ $poli->nama_poli }}</option>
                             @endforeach
@@ -248,10 +249,9 @@
 
             {{-- Form --}}
             <form id="formEditDokter" class="p-5 flex flex-col gap-4"
-                data-url="{{ route('manajemen_pengguna.update_dokter', ['id' => 0]) }}" method="POST"
+                data-url="{{ route('manajemen_pengguna.update_dokter') }}" method="POST"
                 enctype="multipart/form-data">
                 @csrf
-                @method('PUT')
                 <input type="hidden" name="edit_dokter_id" id="edit_dokter_id">
 
                 {{-- Foto --}}
@@ -325,6 +325,21 @@
                             @endforeach
                         </select>
                         <div id="edit_spesialis_dokter-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- Poli --}}
+                    <div>
+                        <label for="edit_poli_id"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Poli</label>
+                        <select id="edit_poli_id" name="poli_id" required
+                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                            focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                            <option value="" disabled selected>Pilih Poli</option>
+                            @foreach ($dataPoli as $poli)
+                                <option value="{{ $poli->id }}">{{ $poli->nama_poli }}</option>
+                            @endforeach
+                        </select>
+                        <div id="edit_poli_id-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
 
                     <!-- No HP -->
