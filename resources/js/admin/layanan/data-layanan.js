@@ -204,7 +204,7 @@ $(function () {
                 $("#poli_id_update").val(poliId);
                 $("#nama_layanan_update").val(layanan.nama_layanan);
                 $("#harga_layanan_update").val(layanan.harga_layanan);
-                editModal?.show();
+                editModal?.s();
             })
             .catch(() => {
                 Swal.fire({
