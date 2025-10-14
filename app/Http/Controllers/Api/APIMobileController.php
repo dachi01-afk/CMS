@@ -29,17 +29,19 @@ use App\Models\Poli;
 class APIMobileController extends Controller
 {
 
-    public function __construct()
-    {
-        // Konfigurasi Midtrans SANDBOX
-        Config::$serverKey = config('midtrans.server_key');
-        Config::$clientKey = config('midtrans.client_key');
-        Config::$isProduction = false; // SANDBOX MODE
-        Config::$isSanitized = true;
-        Config::$is3ds = true;
+public function __construct()
+{
+    // HANYA konfigurasi yang diperlukan untuk server-side
+    Config::$serverKey = config('midtrans.server_key');
+    Config::$isProduction = config('midtrans.is_production', false);
+    Config::$isSanitized = true;
+    Config::$is3ds = true;
 
-        Log::info('Midtrans Sandbox Configuration Loaded');
-    }
+    Log::info('Midtrans Configuration:', [
+        'server_key_prefix' => substr(config('midtrans.server_key'), 0, 10),
+        'is_production' => config('midtrans.is_production', false),
+    ]);
+}
 
 
     /** LOGIN */
@@ -1354,6 +1356,7 @@ class APIMobileController extends Controller
                     'total_tagihan' => $totalTagihan,
                     'uang_yang_diterima' => 0,
                     'kembalian' => 0,
+                    'kode_transaksi' => strtoupper(uniqid('TRX_')),
                     'metode_pembayaran' => 'Cash',
                     'tanggal_pembayaran' => now(),
                     'status' => 'Belum Bayar',
