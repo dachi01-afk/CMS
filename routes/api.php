@@ -65,21 +65,18 @@ Route::middleware(['auth:sanctum', 'role:Dokter'])->group(function () {
 // 🔥 PEMBAYARAN ROUTES - CORRECTED AND ENHANCED
 Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('pembayaran')->group(function () {
-        // KOREKSI: Parameter route harus {pasien_id} bukan {kodte_transaksi}
+        // Route yang sudah ada
         Route::get('/pasien/{pasien_id}', [APIMobileController::class, 'getPembayaranPasien']);
         
-        // Existing routes
+        // 🔥 TAMBAHKAN ROUTE INI untuk detail individual
+        Route::get('/detail/{kunjungan_id}', [APIMobileController::class, 'getDetailPembayaran']);
+        
+        // Route lainnya...
         Route::post('/update-status-obat', [APIMobileController::class, 'updateStatusObat']);
         Route::post('/proses', [APIMobileController::class, 'prosesPembayaran']);
-        
-        // 🔥 MIDTRANS ROUTES
         Route::post('/midtrans/create', [APIMobileController::class, 'createMidtransTransaction']);
         Route::get('/status/{order_id}', [APIMobileController::class, 'checkPaymentStatus']);
-        
-        // 🔥 NEW: FORCE UPDATE & ADDITIONAL ENDPOINTS
         Route::post('/force-update', [APIMobileController::class, 'forceUpdatePaymentStatus']);
-        Route::post('/midtrans/simulate-callback', [APIMobileController::class, 'simulateMidtransCallback']);
-        Route::get('/check-expired', [APIMobileController::class, 'checkExpiredPayments']);
     });
 });
 
