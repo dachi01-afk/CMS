@@ -143,7 +143,7 @@
 
 {{-- Update Jenis Spesialis --}}
 <div id="updateJenisSpesialisDokterModal" aria-hidden="true"
-    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-20 justify-center items-center w-full h-full p-4">
+    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 justify-center items-center w-full h-full p-4">
     <div class="relative w-full max-w-xl max-h-full">
         <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
             <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-600">
@@ -157,7 +157,6 @@
                 <input type="hidden" name="id" id="id_update"><input>
                 <!-- Grid Form -->
                 <div class="grid grid-cols-1">
-
                     <div>
                         <label for="nama_spesialis"
                             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama Spesialis</label>
