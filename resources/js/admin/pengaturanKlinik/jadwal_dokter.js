@@ -17,6 +17,7 @@ $(function () {
         columns: [
             { data: 'id', name: 'id' },
             { data: 'dokter', name: 'dokter' },
+            { data: 'nama_poli', name: 'nama_poli' },
             { data: 'hari_formatted', name: 'hari' },
             { data: 'jam_awal', name: 'jam_awal' },
             { data: 'jam_selesai', name: 'jam_selesai' },
@@ -108,6 +109,7 @@ $(function () {
 
         const formData = {
             dokter_id: $('#dokter_id').val(),
+            poli_id: $('#poli_id_create').val(),
             hari: $('#hari').val(),
             jam_awal: $('#jam_awal').val(),
             jam_selesai: $('#jam_selesai').val(),

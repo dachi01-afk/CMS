@@ -16,6 +16,9 @@ return new class extends Migration
             $table->foreignId('dokter_id')->constrained('dokter', 'id', 'jadwal_dokter_dokter_id')
                 ->cascadeOnDelete()
                 ->cascadeOnUpdate();
+            $table->foreignId('poli_id')->constrained('poli', 'id', 'jadwal_dokter_poli_id')
+                ->cascadeOnDelete()
+                ->cascadeOnUpdate();
             $table->string('hari');
             $table->time('jam_awal');
             $table->time('jam_selesai');

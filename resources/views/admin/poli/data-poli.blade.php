@@ -68,7 +68,7 @@
                     <input type="text" name="nama_poli" id="nama_poli_create"
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
                             focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="Nama Spesialis" required>
+                        placeholder="Nama Poli" required>
                     <div id="nama_poli-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
@@ -110,7 +110,7 @@
                     <input type="text" name="nama_poli" id="nama_poli_update"
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
                             focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="Nama Spesialis" required>
+                        placeholder="Nama Poli" required>
                     <div id="nama_poli-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 

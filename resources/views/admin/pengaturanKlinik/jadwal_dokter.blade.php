@@ -34,6 +34,7 @@
                 <tr>
                     <th class="px-6 py-3">No</th>
                     <th class="px-6 py-3">Nama Dokter</th>
+                    <th class="px-6 py-3">Nama Poli</th>
                     <th class="px-6 py-3">Hari</th>
                     <th class="px-6 py-3">Jam Mulai</th>
                     <th class="px-6 py-3">Jam Selesai</th>
@@ -76,6 +77,20 @@
                         @endforeach
                     </select>
                     <div id="dokter_id-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
+                {{-- Nama Poli --}}
+                <div>
+                    <label for="poli_id" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Pilih
+                        Poli</label>
+                    <select id="poli_id_create" name="poli_id" required
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                        <option value="" disabled selected>Pilih Poli</option>
+                        @foreach ($dataPoli as $poli)
+                            <option value="{{ $poli->id }}">{{ $poli->nama_poli }}</option>
+                        @endforeach
+                    </select>
+                    <div id="poli_id-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
                 {{-- Hari --}}

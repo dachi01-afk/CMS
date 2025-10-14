@@ -7,6 +7,7 @@ use App\Models\JadwalDokter;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Dokter;
+use App\Models\Poli;
 use Yajra\DataTables\Facades\DataTables;
 
 class PengaturanKlinikController extends Controller
@@ -14,7 +15,8 @@ class PengaturanKlinikController extends Controller
     public function index()
     {
         $dokters = Dokter::select('id', 'nama_dokter')->get();
-        return view('admin.pengaturan_klinik', compact('dokters'));
+        $dataPoli = Poli::all();
+        return view('admin.pengaturan_klinik', compact('dokters', 'dataPoli'));
     }
 
     public function dataObat()
@@ -38,12 +40,17 @@ class PengaturanKlinikController extends Controller
 
     public function dataJadwalDokter()
     {
-        $query = JadwalDokter::with('dokter:id,nama_dokter')
-            ->select(['id', 'dokter_id', 'hari', 'jam_awal', 'jam_selesai']);
+        // $query = JadwalDokter::with('dokter:id,nama_dokter')
+        //     ->select(['id', 'dokter_id', 'hari', 'jam_awal', 'jam_selesai']);
+
+        $query = JadwalDokter::with('dokter', 'dokter.poli')->get();
 
         return DataTables::of($query)
             ->addColumn('dokter', function ($jadwal) {
                 return $jadwal->dokter->nama_dokter ?? '-';
+            })
+            ->addColumn('nama_poli', function ($jadwal) {
+                return $jadwal->dokter->poli->nama_poli ?? '-';
             })
             ->addColumn('hari_formatted', function ($jadwal) {
                 return is_array($jadwal->hari) ? implode(', ', $jadwal->hari) : $jadwal->hari;
