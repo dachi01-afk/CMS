@@ -1999,7 +1999,7 @@ public function __construct()
     }
 
     // 🔥 METHOD PEMBAYARAN - FIXED
-   public function getPembayaranPasien($pasienId)
+public function getPembayaranPasien($pasienId)
 {
     try {
         $pasien = Pasien::find($pasienId);
@@ -2010,6 +2010,9 @@ public function __construct()
             ], 404);
         }
 
+        Log::info('🔍 getPembayaranPasien called for pasien_id: ' . $pasienId);
+
+        // FIXED: Query yang lebih sederhana dan jelas
         $kunjunganPayment = Kunjungan::with([
             'poli',
             'pasien' => function ($query) {
@@ -2029,10 +2032,7 @@ public function __construct()
                     'saturasi_oksigen'
                 );
             },
-            'emr.pembayaran' => function ($query) {
-                // 🔥 TAMBAHKAN FILTER DI SINI
-                $query->where('status', 'Belum Bayar');
-            },
+            'emr.pembayaran', // Load pembayaran tanpa filter dulu
             'emr.resep.obat' => function ($query) {
                 $query->select('obat.id', 'obat.nama_obat', 'obat.dosis', 'obat.total_harga')
                     ->withPivot('jumlah', 'dosis', 'keterangan', 'status');
@@ -2040,24 +2040,136 @@ public function __construct()
             'layanan',
         ])
             ->where('pasien_id', $pasienId)
-            ->where('status', 'Payment')
-            // 🔥 TAMBAHKAN FILTER INI UNTUK MEMASTIKAN HANYA YANG BELUM BAYAR
-            ->whereHas('emr.pembayaran', function ($query) {
-                $query->where('status', 'Belum Bayar');
-            })
+            ->where('status', 'Payment') // Hanya kunjungan dengan status Payment
             ->orderBy('tanggal_kunjungan', 'desc')
-            ->first();
+            ->get(); // Gunakan get() bukan first() untuk debugging
+
+        Log::info('📊 Query result:', [
+            'total_kunjungan' => $kunjunganPayment->count(),
+            'kunjungan_ids' => $kunjunganPayment->pluck('id')->toArray(),
+        ]);
+
+        // Filter manual untuk kunjungan dengan pembayaran belum lunas
+        $kunjunganPayment = $kunjunganPayment->filter(function ($kunjungan) {
+            // Pastikan ada EMR dan pembayaran
+            if (!$kunjungan->emr || !$kunjungan->emr->pembayaran) {
+                Log::warning('❌ Kunjungan tanpa EMR/pembayaran:', ['kunjungan_id' => $kunjungan->id]);
+                return false;
+            }
+            
+            // Filter hanya yang statusnya Belum Bayar
+            $isPending = $kunjungan->emr->pembayaran->status === 'Belum Bayar';
+            
+            Log::info('🔍 Checking kunjungan:', [
+                'kunjungan_id' => $kunjungan->id,
+                'pembayaran_status' => $kunjungan->emr->pembayaran->status,
+                'is_pending' => $isPending,
+            ]);
+            
+            return $isPending;
+        })->first(); // Ambil yang pertama setelah filter
 
         if (!$kunjunganPayment) {
+            Log::info('❌ Tidak ada pembayaran pending untuk pasien_id: ' . $pasienId);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Tidak ada pembayaran yang menunggu',
             ], 404);
         }
 
-        // ... rest of your code remains the same ...
+        Log::info('✅ Found pending payment:', [
+            'kunjungan_id' => $kunjunganPayment->id,
+            'pembayaran_id' => $kunjunganPayment->emr->pembayaran->id,
+            'status' => $kunjunganPayment->emr->pembayaran->status,
+        ]);
+
+        // Build response data
+        $responseData = [
+            'kunjungan_id' => $kunjunganPayment->id,
+            'pasien' => [
+                'nama_pasien' => $kunjunganPayment->pasien->nama_pasien ?? 'Tidak ada',
+                'umur' => $this->calculateAge($kunjunganPayment->pasien->tanggal_lahir ?? null),
+                'jenis_kelamin' => $kunjunganPayment->pasien->jenis_kelamin ?? 'Tidak ada',
+                'foto_pasien' => $kunjunganPayment->pasien->foto_pasien,
+            ],
+            'poli' => [
+                'nama_poli' => $kunjunganPayment->poli->nama_poli ?? 'Umum',
+            ],
+            'tanggal_kunjungan' => $kunjunganPayment->tanggal_kunjungan,
+            'no_antrian' => $kunjunganPayment->no_antrian,
+            'diagnosis' => $kunjunganPayment->emr->diagnosis ?? 'Tidak ada diagnosis',
+            'layanan' => [],
+            'resep_obat' => [],
+            'total_layanan' => 0,
+            'total_obat' => 0,
+            'total_tagihan' => 0,
+            'status_pembayaran' => $kunjunganPayment->emr->pembayaran->status ?? 'Belum Bayar',
+            'pembayaran_id' => $kunjunganPayment->emr->pembayaran->id ?? null,
+        ];
+
+        // Process layanan
+        $totalLayanan = 0;
+        if ($kunjunganPayment->layanan && $kunjunganPayment->layanan->isNotEmpty()) {
+            foreach ($kunjunganPayment->layanan as $layanan) {
+                $jumlah = (int) $layanan->pivot->jumlah;
+                $hargaLayanan = (float) $layanan->harga_layanan;
+                $subtotal = $hargaLayanan * $jumlah;
+                $totalLayanan += $subtotal;
+
+                $responseData['layanan'][] = [
+                    'id' => $layanan->id,
+                    'nama_layanan' => $layanan->nama_layanan ?? 'Layanan',
+                    'harga_layanan' => $hargaLayanan,
+                    'jumlah' => $jumlah,
+                    'subtotal' => $subtotal,
+                ];
+            }
+        }
+
+        // Process resep obat
+        $totalObat = 0;
+        if ($kunjunganPayment->emr && $kunjunganPayment->emr->resep) {
+            foreach ($kunjunganPayment->emr->resep->obat as $obat) {
+                $jumlah = $obat->pivot->jumlah ?? 1;
+                $hargaObat = $obat->total_harga ?? 0;
+                $subtotal = $hargaObat * $jumlah;
+                $totalObat += $subtotal;
+
+                $responseData['resep_obat'][] = [
+                    'obat' => [
+                        'id' => $obat->id,
+                        'nama_obat' => $obat->nama_obat,
+                        'harga_obat' => $hargaObat,
+                    ],
+                    'jumlah' => $jumlah,
+                    'dosis' => $obat->pivot->dosis ?? $obat->dosis,
+                    'keterangan' => $obat->pivot->keterangan ?? 'Sesuai anjuran dokter',
+                    'status' => $obat->pivot->status ?? 'Belum Diambil',
+                ];
+            }
+        }
+
+        $responseData['total_layanan'] = $totalLayanan;
+        $responseData['total_obat'] = $totalObat;
+        $responseData['total_tagihan'] = $totalLayanan + $totalObat;
+
+        Log::info('✅ Response data prepared successfully:', [
+            'kunjungan_id' => $responseData['kunjungan_id'],
+            'pembayaran_id' => $responseData['pembayaran_id'],
+            'total_tagihan' => $responseData['total_tagihan'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data pembayaran berhasil diambil',
+            'data' => $responseData,
+        ], 200);
+
     } catch (\Exception $e) {
-        Log::error('Error getting pembayaran pasien: ' . $e->getMessage());
+        Log::error('❌ Error getting pembayaran pasien: ' . $e->getMessage());
+        Log::error('Stack trace: ' . $e->getTraceAsString());
+
         return response()->json([
             'success' => false,
             'message' => 'Gagal mengambil data pembayaran: ' . $e->getMessage(),
