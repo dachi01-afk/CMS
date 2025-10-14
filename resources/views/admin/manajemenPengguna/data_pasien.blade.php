@@ -56,7 +56,7 @@
 
 <!-- Modal Add Pasien -->
 <div id="addPasienModal" aria-hidden="true"
-    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4">
+    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 bg-black bg-opacity-50">
     <div class="relative w-full max-w-xl max-h-full">
         <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700 flex flex-col">
 
@@ -82,7 +82,7 @@
                             upload profile
                         </div>
                         <input type="file" name="foto_pasien" id="foto_pasien" accept="image/*"
-                            class="absolute inset-0 opacity-0 cursor-pointer" required>
+                            class="absolute inset-0 opacity-0 cursor-pointer">
                     </div>
                     <div id="foto_pasien-error" class="text-red-600 text-sm mt-1 text-center"></div>
                 </div>
@@ -207,7 +207,7 @@
 
 <!-- Modal Edit Pasien -->
 <div id="editPasienModal" aria-hidden="true"
-    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4">
+    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 bg-black bg-opacity-50">
     <div class="relative w-full max-w-xl max-h-[90vh]">
         <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700 flex flex-col h-full">
 
@@ -235,7 +235,7 @@
                             upload profile
                         </div>
                         <input type="file" name="edit_foto_pasien" id="edit_foto_pasien" accept="image/*"
-                            class="absolute inset-0 opacity-0 cursor-pointer" required>
+                            class="absolute inset-0 opacity-0 cursor-pointer">
                     </div>
                     <div id="edit_foto_pasien-error" class="text-red-600 text-sm mt-1 text-center"></div>
                 </div>

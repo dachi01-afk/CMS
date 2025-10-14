@@ -54,7 +54,7 @@
 
 <!-- Modal Add Jadwal Dokter -->
 <div id="addJadwalModal" aria-hidden="true"
-    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4">
+    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 bg-black bg-opacity-50">
     <div class="relative w-full max-w-xl max-h-full">
         <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
             <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-600">
@@ -65,32 +65,25 @@
                 data-url="{{ route('pengaturan_klinik.add_jadwal_dokter') }}" method="POST">
                 @csrf
 
-                {{-- Dokter --}}
+                <!-- Search Dokter -->
                 <div>
-                    <label for="dokter_id" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Pilih
-                        Dokter</label>
-                    <select id="dokter_id" name="dokter_id" required
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
-                        <option value="" disabled selected>Pilih Dokter</option>
-                        @foreach ($dokters as $dokter)
-                            <option value="{{ $dokter->id }}">{{ $dokter->nama_dokter }}</option>
-                        @endforeach
-                    </select>
-                    <div id="dokter_id-error" class="text-red-600 text-sm mt-1"></div>
+                    <label class="block text-sm font-medium text-gray-700">Cari Dokter</label>
+                    <input type="text" id="search_dokter_create" name="search_dokter_create" placeholder="Ketik nama dokter..."
+                        class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                    <div id="search_results_create"
+                        class="mt-2 bg-white border border-gray-200 rounded-lg shadow max-h-40 overflow-y-auto hidden">
+                        <!-- Hasil pencarian akan muncul di sini -->
+                    </div>
                 </div>
 
-                {{-- Nama Poli --}}
-                <div>
-                    <label for="poli_id" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Pilih
-                        Poli</label>
-                    <select id="poli_id_create" name="poli_id" required
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
-                        <option value="" disabled selected>Pilih Poli</option>
-                        @foreach ($dataPoli as $poli)
-                            <option value="{{ $poli->id }}">{{ $poli->nama_poli }}</option>
-                        @endforeach
-                    </select>
-                    <div id="poli_id-error" class="text-red-600 text-sm mt-1"></div>
+                {{-- Data Dokter --}}
+                <div id="dokter_data_create" class="hidden">
+                    <input type="hidden" name="dokter_id" id="dokter_id_create">
+                    <input type="hidden" name="poli_id" id="poli_id_create">
+                    <p class="text-sm text-gray-600"><strong>Nama Dokter:</strong> <span id="nama_dokter_create"></span></p>
+                    <p class="text-sm text-gray-600"><strong>Poli Dokter:</strong> <span id="nama_poli_create"></span></p>
+                    {{-- <p class="text-sm text-gray-600"><strong>Jenis Kelamin:</strong> <span id="deskripsi_dokter"></span> --}}
+                    </p>
                 </div>
 
                 {{-- Hari --}}
@@ -148,7 +141,7 @@
 
 {{-- edit jadwal --}}
 <div id="editJadwalModal" aria-hidden="true"
-    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4">
+    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 bg-black bg-opacity-50">
     <div class="relative w-full max-w-xl max-h-full">
         <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
             <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-600">
@@ -159,20 +152,27 @@
                 data-url="{{ route('pengaturan_klinik.update_jadwal_dokter', ['id' => 0]) }}" method="POST">
                 @csrf
                 @method('PUT')
-                <input type="hidden" id="jadwal_id_edit" name="jadwal_id_edit">
+                <input type="hidden" id="jadwal_id_update" name="id">
 
-                {{-- Dokter --}}
+                <!-- Search Dokter -->
                 <div>
-                    <label for="dokter_id_edit"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Pilih Dokter</label>
-                    <select id="dokter_id_edit" name="dokter_id_edit" required
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5">
-                        <option value="" disabled>Pilih Dokter</option>
-                        @foreach ($dokters as $dokter)
-                            <option value="{{ $dokter->id }}">{{ $dokter->nama_dokter }}</option>
-                        @endforeach
-                    </select>
-                    <div id="dokter_id_edit-error" class="text-red-600 text-sm mt-1"></div>
+                    <label class="block text-sm font-medium text-gray-700">Cari Dokter</label>
+                    <input type="text" id="search_dokter_update" name="search_dokter_update" placeholder="Ketik nama dokter..."
+                        class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                    <div id="search_results_update"
+                        class="mt-2 bg-white border border-gray-200 rounded-lg shadow max-h-40 overflow-y-auto hidden">
+                        <!-- Hasil pencarian akan muncul di sini -->
+                    </div>
+                </div>
+
+                {{-- Data Dokter --}}
+                <div id="dokter_data_update" class="hidden">
+                    <input type="hidden" name="dokter_id" id="dokter_id_update">
+                    <input type="hidden" name="poli_id" id="poli_id_update">
+                    <p class="text-sm text-gray-600"><strong>Nama Dokter:</strong> <span id="nama_dokter_update"></span></p>
+                    <p class="text-sm text-gray-600"><strong>Poli Dokter:</strong> <span id="nama_poli_update"></span></p>
+                    {{-- <p class="text-sm text-gray-600"><strong>Jenis Kelamin:</strong> <span id="deskripsi_dokter"></span> --}}
+                    </p>
                 </div>
 
                 {{-- Hari --}}

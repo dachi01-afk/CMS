@@ -16,7 +16,12 @@ $(function () {
         info: false,
         ajax: "/poli/get-data-poli",
         columns: [
-            { data: "id", name: "id" },
+            {
+                data: "DT_RowIndex",
+                name: "DT_RowIndex",
+                orderable: false,
+                searchable: false,
+            },
             { data: "nama_poli", name: "nama_poli" },
             {
                 data: "action",

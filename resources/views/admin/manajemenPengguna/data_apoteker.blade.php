@@ -18,7 +18,7 @@
                 <option value="10">10</option>
                 <option value="25">25</option>
                 <option value="50">50</option>
-                <option value="100">100</option>
+                <option value="100">100</option>pdata
             </select>
         </div>
         <div class="relative">
@@ -54,7 +54,7 @@
 
 {{-- Modal Add Apoteker --}}
 <div id="addApotekerModal" aria-hidden="true"
-    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4">
+    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 bg-black bg-opacity-50">
     <div class="relative w-full max-w-xl max-h-full">
         <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
 
@@ -190,7 +190,7 @@
 
 {{-- Modal Edit Apoteker --}}
 <div id="editApotekerModal" aria-hidden="true"
-    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4">
+    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 bg-black bg-opacity-50">
     <div class="relative w-full max-w-xl max-h-full">
         <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
 
@@ -324,13 +324,5 @@
         </div>
     </div>
 </div>
-
-
-
-
-
-
-
-
 
 @vite(['resources/js/admin/manajemenPengguna/data_apoteker.js'])

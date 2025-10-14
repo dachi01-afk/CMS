@@ -76,17 +76,18 @@
 
 
 <!-- Modal Tambah Kunjungan -->
-<div id="addKunjunganModal" tabindex="-1" aria-hidden="true"
-    class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
-    <div class="relative p-4 w-full max-w-2xl max-h-full">
-        <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
+<div id="addKunjunganModal" tabindex="-1" aria-hidden="true"    
+    class="hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 bg-black bg-opacity-50 overflow-y-auto overflow-x-hidden">
+    <div class="relative w-full max-w-xl max-h-full">
+        <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
+            
             <!-- Header -->
-            <div class="flex items-center justify-between p-4 border-b rounded-t dark:border-gray-600">
-                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
+            <div class="flex items-center justify-between p-4 border-b dark:border-gray-600">
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
                     Tambah Kunjungan Pasien
                 </h3>
                 <button type="button" id="closeModalBtn"
-                    class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center">
+                    class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center">
                     ✕
                 </button>
             </div>
@@ -95,69 +96,70 @@
             <form action="{{ route('jadwal_kunjungan.create') }}" method="POST" class="p-6 space-y-4">
                 @csrf
 
-                <!-- Info Dokter -->
+                <!-- Dokter -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Dokter</label>
+                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Dokter</label>
                     <input type="text" id="dokter_nama" name="dokter_nama" readonly
-                        class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
                     <input type="hidden" id="dokter_id" name="dokter_id">
                 </div>
 
-                {{-- Info Poli --}}
+                <!-- Poli -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Poli</label>
-                    <input type="text" id="nama_poli" readonly 
-                        class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Poli</label>
+                    <input type="text" id="nama_poli" readonly
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
                     <input type="hidden" id="poli_id" name="poli_id">
                 </div>
 
-                <!-- Search Pasien -->
+                <!-- Cari Pasien -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Cari Pasien</label>
+                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Cari Pasien</label>
                     <input type="text" id="search_pasien" name="search_pasien" placeholder="Ketik nama pasien..."
-                        class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
                     <div id="search_results"
                         class="mt-2 bg-white border border-gray-200 rounded-lg shadow max-h-40 overflow-y-auto hidden">
-                        <!-- Hasil pencarian akan muncul di sini -->
+                        <!-- hasil pencarian -->
                     </div>
                 </div>
 
                 <!-- Data Pasien -->
-                <div id="pasien_data" class="hidden">
+                <div id="pasien_data" class="hidden space-y-1 text-sm text-gray-700 dark:text-gray-300">
                     <input type="hidden" name="pasien_id" id="pasien_id">
-                    <p class="text-sm text-gray-600"><strong>Nama:</strong> <span id="nama_pasien"></span></p>
-                    <p class="text-sm text-gray-600"><strong>Alamat:</strong> <span id="alamat_pasien"></span></p>
-                    <p class="text-sm text-gray-600"><strong>Jenis Kelamin:</strong> <span id="jk_pasien"></span>
-                    </p>
+                    <p><strong>Nama:</strong> <span id="nama_pasien"></span></p>
+                    <p><strong>Alamat:</strong> <span id="alamat_pasien"></span></p>
+                    <p><strong>Jenis Kelamin:</strong> <span id="jk_pasien"></span></p>
                 </div>
 
-                <!-- Tanggal Kunjungan -->
+                <!-- Tanggal -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Tanggal Kunjungan</label>
+                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Tanggal Kunjungan</label>
                     <input type="date" name="tanggal_kunjungan" required
-                        class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
                 </div>
 
                 <!-- Keluhan -->
                 <div>
-                    <label class="block text-sm font-medium text-gray-700">Keluhan Awal</label>
+                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Keluhan Awal</label>
                     <textarea name="keluhan_awal" rows="3" required
-                        class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500"></textarea>
+                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"></textarea>
                 </div>
 
                 <!-- Footer -->
-                <div class="flex justify-end space-x-2 border-t pt-4">
-                    <button type="button" class="px-4 py-2 text-sm bg-gray-200 rounded-lg hover:bg-gray-300">
-                        Batal
+                <div class="flex justify-end space-x-2 border-t border-gray-200 dark:border-gray-600 pt-4">
+                    <button type="button" id="closeModalBtn2"
+                        class="px-4 py-2 text-sm bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white">
+                        Close
                     </button>
                     <button type="submit"
-                        class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
-                        Simpan
+                        class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-400">
+                        Save
                     </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
+
 
 @vite(['resources/js/admin/jadwalKunjungan/jadwal_kunjungan.js'])

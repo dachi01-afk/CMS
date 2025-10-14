@@ -17,9 +17,35 @@ $(function () {
         columns: [
             { data: "id", name: "id" },
             { data: "nama_obat", name: "nama_obat" },
-            { data: "jumlah", name: "jumlah" },
-            { data: "dosis", name: "dosis" },
-            { data: "total_harga", name: "total_harga" },
+            {
+                data: "jumlah",
+                name: "jumlah",
+                render: function (data, type, row) {
+                    if (!data) return "-"; // kalau null / kosong
+                    return data + " pcs";
+                },
+            },
+            {
+                data: "dosis",
+                name: "dosis",
+                render: function (data, type, row) {
+                    if (!data) return "-"; // kalau null / kosong
+                    return data + " mg";
+                },
+            },
+            {
+                data: "total_harga",
+                name: "total_harga",
+                render: function (data) {
+                    if (!data) return "-";
+                    const formatted = Number(data).toLocaleString("id-ID", {
+                        style: "currency",
+                        currency: "IDR",
+                        minimumFractionDigits: 0,
+                    });
+                    return formatted; // hasilnya: Rp1.000.000
+                },
+            },
             {
                 data: "action",
                 name: "action",

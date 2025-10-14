@@ -257,6 +257,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/get_jadwal_dokter_by_id/{id}', [JadwalDokterController::class, 'getJadwalDokterById'])->name('get_jadwal_dokter_by_id');
         Route::put('/update_jadwal_dokter/{id}', [JadwalDokterController::class, 'updateJadwalDokter'])->name('update_jadwal_dokter');
         Route::delete('/delete_jadwal_dokter/{id}', [JadwalDokterController::class, 'deleteJadwalDokter'])->name('delete_jadwal_dokter');
+        Route::get('/search', [JadwalDokterController::class, 'search'])->name('dokter');
+
     });
 
     Route::prefix('laporan')->name('laporan.')->group(function () {

@@ -16,10 +16,27 @@ $(function () {
         info: false,
         ajax: "/layanan/get-data-layanan",
         columns: [
-            { data: "id", name: "id" },
+            {
+                data: "DT_RowIndex",
+                name: "DT_RowIndex",
+                orderable: false,
+                searchable: false,
+            },
             { data: "nama_poli", name: "nama_poli" },
             { data: "nama_layanan", name: "nama_layanan" },
-            { data: "harga_layanan", name: "harga_layanan" },
+            {
+                data: "harga_layanan",
+                name: "harga_layanan",
+                render: function (data) {
+                    if (!data) return "-";
+                    const formatted = Number(data).toLocaleString("id-ID", {
+                        style: "currency",
+                        currency: "IDR",
+                        minimumFractionDigits: 0,
+                    });
+                    return formatted; // hasilnya: Rp1.000.000
+                },
+            },
             {
                 data: "action",
                 name: "action",
@@ -149,7 +166,7 @@ $(function () {
                     showConfirmButton: false,
                 });
                 addModal?.hide();
-                $("#poliTable").DataTable().ajax.reload(null, false);
+                $("#layananTable").DataTable().ajax.reload(null, false);
             })
             .catch((error) => {
                 if (error.response?.status === 422) {
@@ -204,7 +221,7 @@ $(function () {
                 $("#poli_id_update").val(poliId);
                 $("#nama_layanan_update").val(layanan.nama_layanan);
                 $("#harga_layanan_update").val(layanan.harga_layanan);
-                editModal?.s();
+                editModal?.show();
             })
             .catch(() => {
                 Swal.fire({
