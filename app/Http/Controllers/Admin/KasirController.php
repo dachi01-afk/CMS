@@ -104,8 +104,6 @@ class KasirController extends Controller
     {
         $dataPembayaran = Pembayaran::with('emr.kunjungan.pasien', 'emr.resep.obat')->where('kode_transaksi', $kodeTransaksi)->firstOrFail();
 
-        dd($dataPembayaran);
-
         return view('admin.pembayaran.transaksi', compact('dataPembayaran'));
     }
 

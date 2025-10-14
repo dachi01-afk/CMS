@@ -9,6 +9,7 @@ use App\Models\Apoteker;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\JenisSpesialis;
+use App\Models\Poli;
 use Yajra\DataTables\Facades\DataTables;
 
 class ManajemenPenggunaController extends Controller
@@ -16,7 +17,8 @@ class ManajemenPenggunaController extends Controller
     public function index()
     {
         $spesialis = JenisSpesialis::all();
-        return view('admin.manajemen_pengguna', compact('spesialis'));
+        $dataPoli = Poli::all();
+        return view('admin.manajemen_pengguna', compact('spesialis', 'dataPoli'));
     }
 
     public function dataUser()

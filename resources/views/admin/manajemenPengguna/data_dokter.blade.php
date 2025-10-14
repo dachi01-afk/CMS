@@ -140,6 +140,20 @@
                         </select>
                         <div id="spesialis_dokter-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
+                    
+                    <div>
+                        <label for="spesialis_dokter"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Spesialis</label>
+                        <select id="spesialis_dokter" name="spesialis_dokter" required
+                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                            focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                            <option value="" disabled selected>Pilih Spesialis</option>
+                            @foreach ($spesialis as $item)
+                                <option value="{{ $item->id }}">{{ $item->nama_spesialis }}</option>
+                            @endforeach
+                        </select>
+                        <div id="spesialis_dokter-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
 
                     <!-- No HP -->
                     <div>

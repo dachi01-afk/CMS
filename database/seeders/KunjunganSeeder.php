@@ -72,5 +72,29 @@ class KunjunganSeeder extends Seeder
             'keluhan_awal' => $daftarKeluhan[0],
             'status' => 'Pending',
         ]);
+        Kunjungan::create([
+            'poli_id' => $dataPoli->id,
+            'pasien_id' => 1,
+            'tanggal_kunjungan' => '2025-10-14',
+            'no_antrian' => '001',
+            'keluhan_awal' => $daftarKeluhan[0],
+            'status' => 'Pending',
+        ]);
+        Kunjungan::create([
+            'poli_id' => $dataPoli->id,
+            'pasien_id' => 1,
+            'tanggal_kunjungan' => '2025-10-15',
+            'no_antrian' => '001',
+            'keluhan_awal' => $daftarKeluhan[0],
+            'status' => 'Pending',
+        ]);
+        Kunjungan::create([
+            'poli_id' => $dataPoli->id,
+            'pasien_id' => 1,
+            'tanggal_kunjungan' => '2025-10-16',
+            'no_antrian' => '001',
+            'keluhan_awal' => $daftarKeluhan[0],
+            'status' => 'Pending',
+        ]);
     }
 }

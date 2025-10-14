@@ -30,7 +30,7 @@ class DatabaseSeeder extends Seeder
             KunjunganSeeder::class,
             KunjunganLayananSeeder::class,
             // TestimoniSeeder::class,
-            ResepSeeder::class,
+            ResepSeeder::class, 
             ResepObatSeeder::class,
             EMRSeeder::class,
             MetodePembayaranSeeder::class,

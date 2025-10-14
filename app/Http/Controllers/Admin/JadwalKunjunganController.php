@@ -17,6 +17,8 @@ class JadwalKunjunganController extends Controller
         // Ambil hari saat ini, misal: 'Senin', 'Selasa', dst.
         $hariIni = ucfirst(Carbon::now()->locale('id')->dayName);
 
+        // $dataKunjungan = Kunjungan::with('poli.dokter', 'ku  njungan')->get();
+
         // Ambil jadwal berdasarkan hari ini
         $jadwalHariIni = JadwalDokter::with('dokter')
             ->where('hari', $hariIni)
@@ -34,7 +36,7 @@ class JadwalKunjunganController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'dokter_id' => 'required|exists:dokter,id',
+            'poli_id' => 'required|exists:dokter,id',
             'pasien_id' => 'required|exists:pasien,id',
             'tanggal_kunjungan' => 'required|date',
             'keluhan_awal' => 'required|string',
@@ -85,11 +87,13 @@ class JadwalKunjunganController extends Controller
     {
         $today = now()->toDateString();
 
-        $kunjungan = Kunjungan::with(['dokter', 'pasien'])
-            ->whereDate('tanggal_kunjungan', $today)
-            ->where('status', 'Pending')
-            ->orderBy('no_antrian')
-            ->get();
+        $kunjungan = Kunjungan::with(['poli.dokter', 'pasien'])->where('status', 'pending')->oderBy('no_antrian')->get();
+
+        // $kunjungan = Kunjungan::with(['poli.dokter', 'pasien'])
+        //     ->whereDate('tanggal_kunjungan', $today)
+        //     ->where('status', 'Waiting')
+        //     ->orderBy('no_antrian')
+        //     ->get();
 
         return response()->json($kunjungan);
     }
