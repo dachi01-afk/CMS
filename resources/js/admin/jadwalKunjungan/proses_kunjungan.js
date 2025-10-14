@@ -30,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="px-6 py-3 font-semibold">${item.no_antrian}</td>
                 <td class="px-6 py-3">${item.pasien.nama_pasien}</td>
                 <td class="px-6 py-3">${item.dokter.nama_dokter}</td>
+                <td class="px-6 py-3">${item.poli.nama_poli}</td>
                 <td class="px-6 py-3">${item.keluhan_awal}</td>
                 <td class="px-6 py-3 text-center">
                     <button data-id="${item.id}" class="ubahStatusBtn bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-xs">Mulai Konsultasi</button>

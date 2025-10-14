@@ -20,7 +20,7 @@ class JadwalKunjunganController extends Controller
         // $dataKunjungan = Kunjungan::with('poli.dokter', 'ku  njungan')->get();
 
         // Ambil jadwal berdasarkan hari ini
-        $jadwalHariIni = JadwalDokter::with('dokter')
+        $jadwalHariIni = JadwalDokter::with('dokter', 'poli')
             ->where('hari', $hariIni)
             ->get();
         return view('admin.jadwal_kunjungan', compact('jadwalHariIni', 'hariIni'));
@@ -36,11 +36,13 @@ class JadwalKunjunganController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'poli_id' => 'required|exists:dokter,id',
+            'poli_id' => 'required|exists:poli,id',
             'pasien_id' => 'required|exists:pasien,id',
             'tanggal_kunjungan' => 'required|date',
             'keluhan_awal' => 'required|string',
         ]);
+
+        // dd($request->all());
 
         // Gunakan transaksi agar aman dari race condition
         $kunjungan = DB::transaction(function () use ($request) {
@@ -65,12 +67,12 @@ class JadwalKunjunganController extends Controller
 
             // Simpan data kunjungan
             $kunjungan = Kunjungan::create([
-                'dokter_id' => $request->dokter_id,
+                'poli_id' => $request->poli_id,
                 'pasien_id' => $request->pasien_id,
                 'tanggal_kunjungan' => $tanggal,
                 'no_antrian' => $formattedNo,
                 'keluhan_awal' => $request->keluhan_awal,
-                'status' => 'Waiting',
+                'status' => 'Pending',
             ]);
 
             return $kunjungan;
@@ -87,13 +89,13 @@ class JadwalKunjunganController extends Controller
     {
         $today = now()->toDateString();
 
-        $kunjungan = Kunjungan::with(['poli.dokter', 'pasien'])->where('status', 'pending')->oderBy('no_antrian')->get();
+        // $kunjungan = Kunjungan::with(['poli.dokter', 'pasien'])->where('status', 'pending')->whereDate('tanggal_kunjunfan', $today)->oderBy('no_antrian')->get();   
 
-        // $kunjungan = Kunjungan::with(['poli.dokter', 'pasien'])
-        //     ->whereDate('tanggal_kunjungan', $today)
-        //     ->where('status', 'Waiting')
-        //     ->orderBy('no_antrian')
-        //     ->get();
+        $kunjungan = Kunjungan::with(['poli','dokter', 'pasien'])
+            ->whereDate('tanggal_kunjungan', $today)
+            ->where('status', 'Pending')
+            ->orderBy('no_antrian')
+            ->get();
 
         return response()->json($kunjungan);
     }

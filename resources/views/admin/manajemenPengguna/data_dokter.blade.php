@@ -37,6 +37,7 @@
                     <th class="px-6 py-3">Email Dokter</th>
                     <th class="px-6 py-3">Role</th>
                     <th class="px-6 py-3">Spesialis</th>
+                    <th class="px-6 py-3">Poli</th>
                     <th class="px-6 py-3">No HP</th>
                     <th class="px-6 py-3 text-center">Aksi</th>
                 </tr>

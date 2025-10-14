@@ -29,6 +29,8 @@ document.addEventListener('DOMContentLoaded', () => {
         btn.addEventListener('click', () => {
             document.getElementById('dokter_id').value = btn.dataset.dokterId;
             document.getElementById('dokter_nama').value = `${btn.dataset.dokterNama} (${btn.dataset.spesialis})`;
+            document.getElementById('nama_poli').value = btn.dataset.namaPoli;
+            document.getElementById('poli_id').value = btn.dataset.poliId;
             modal.show();
         });
     });

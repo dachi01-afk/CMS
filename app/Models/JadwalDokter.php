@@ -13,4 +13,8 @@ class JadwalDokter extends Model
     public function dokter () {
         return $this->belongsTo(Dokter::class);
     }
+
+    public function poli() {
+        return $this->belongsTo(Poli::class);
+    }
 }

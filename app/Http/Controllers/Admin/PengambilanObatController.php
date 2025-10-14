@@ -21,15 +21,19 @@ class PengambilanObatController extends Controller
 
     public function getDataResepObat()
     {
-        $query = Resep::with('obat', 'kunjungan.pasien', 'kunjungan.dokter')->get();
-        $query = Resep::with('obat', 'kunjungan.pasien', 'kunjungan.dokter')->whereHas('obat', function ($q) {
+        // $query = Resep::with('obat', 'kunjungan.pasien', 'kunjungan.dokter')->get();
+    $query = Resep::with('obat', 'kunjungan.pasien', 'kunjungan.poli.dokter')->whereHas('obat', function ($q) {
             $q->where('resep_obat.status', 'Belum Diambil');
         })->get();
 
         return DataTables::of($query)
             ->addIndexColumn()
 
-            ->addColumn('nama_dokter', fn($row) => $row->kunjungan->dokter->nama_dokter ?? '-')
+            ->addColumn('nama_dokter', function ($row) {
+    $dokter = $row->kunjungan->poli->dokter->first();
+    return $dokter->nama_dokter ?? '-';
+})
+
             ->addColumn('nama_pasien', fn($row) => $row->kunjungan->pasien->nama_pasien ?? '-')
             ->addColumn('no_antrian', fn($row) => $row->kunjungan->no_antrian ?? '-')
             ->addColumn('tanggal_kunjungan', fn($row) => $row->kunjungan->tanggal_kunjungan ?? '-')

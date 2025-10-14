@@ -11,6 +11,7 @@
                     <th class="px-6 py-3 text-left">No Antrian</th>
                     <th class="px-6 py-3 text-left">Nama Pasien</th>
                     <th class="px-6 py-3 text-left">Dokter</th>
+                    <th class="px-6 py-3 text-left">Poli</th>
                     <th class="px-6 py-3 text-left">Keluhan</th>
                     <th class="px-6 py-3 text-center">Aksi</th>
                 </tr>

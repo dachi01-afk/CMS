@@ -32,6 +32,12 @@ class Kunjungan extends Model
     //     return $this->hasMany(Resep::class);
     // }
 
+    // Dokter langsung belongsTo lewat poli_id
+public function dokter()
+{
+    return $this->belongsTo(Dokter::class, 'poli_id', 'poli_id');
+}
+
     public function poli()
     {
         return $this->belongsTo(Poli::class);

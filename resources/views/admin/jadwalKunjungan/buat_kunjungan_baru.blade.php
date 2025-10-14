@@ -14,6 +14,7 @@
             <thead class="bg-indigo-50 text-indigo-700 text-xs uppercase tracking-wide">
                 <tr>
                     <th class="px-6 py-3 font-semibold text-left">Dokter</th>
+                    <th class="px-6 py-3 font-semibold text-left">Poli</th>
                     <th class="px-6 py-3 font-semibold text-left">Spesialis</th>
                     <th class="px-6 py-3 font-semibold text-center">Waktu</th>
                     <th class="px-6 py-3 font-semibold text-center">Aksi</th>
@@ -26,6 +27,10 @@
                         <!-- Kolom Dokter -->
                         <td class="px-6 py-4 font-medium text-gray-900 text-base">
                             {{ $jadwal->dokter->nama_dokter }}
+                        </td>
+
+                        <td class="px-6 py-4 font-medium text-gray-900 text-base">
+                            {{ $jadwal->poli->nama_poli }}
                         </td>
 
                         <!-- Kolom Spesialis -->
@@ -48,6 +53,8 @@
                                 class="pilih-jadwal-btn text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg text-sm font-medium transition duration-150 shadow-sm"
                                 data-dokter-id="{{ $jadwal->dokter->id }}"
                                 data-dokter-nama="{{ $jadwal->dokter->nama_dokter }}"
+                                data-poli-id="{{ $jadwal->poli->id }}"
+                                data-nama-poli="{{ $jadwal->poli->nama_poli }}"
                                 data-spesialis="{{ $jadwal->dokter->jenisSpesialis->nama_spesialis ?? '-' }}"
                                 data-jadwal-id="{{ $jadwal->id }}">
                                 Pilih
@@ -94,6 +101,14 @@
                     <input type="text" id="dokter_nama" name="dokter_nama" readonly
                         class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
                     <input type="hidden" id="dokter_id" name="dokter_id">
+                </div>
+
+                {{-- Info Poli --}}
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Poli</label>
+                    <input type="text" id="nama_poli" readonly 
+                        class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
+                    <input type="hidden" id="poli_id" name="poli_id">
                 </div>
 
                 <!-- Search Pasien -->

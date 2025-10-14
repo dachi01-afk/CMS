@@ -95,7 +95,7 @@ class DokterController extends Controller
 
         $request->validate([
             'edit_username_dokter'    => 'required|string|max:255|unique:user,username,' . $user->id,
-            'edit_poli_id'              => ['required', 'exists:poli,id'],
+            'poli_id'              => ['required'],
             'edit_nama_dokter'        => 'required|string|max:255',
             'edit_email_akun_dokter'  => 'required|email|max:255|unique:user,email,' . $user->id,
             'edit_spesialis_dokter'   => 'required|integer|exists:jenis_spesialis,id',
@@ -153,13 +153,18 @@ class DokterController extends Controller
             'deskripsi_dokter'   => $request->edit_deskripsi_dokter,
             'pengalaman'         => $request->edit_pengalaman_dokter,
             'no_hp'              => $request->edit_no_hp_dokter,
-            'poli_id'              => $request->edit_poli_id,
+            'poli_id'              => $request->poli_id,
         ];
+
+        $updateDataUser = ([
+            'username' => $request->edit_username_dokter,
+        ]);
 
         if ($fotoPath) {
             $updateData['foto_dokter'] = $fotoPath;
         }
         $dokter->update($updateData);
+        $user->update($updateDataUser);
 
         return response()->json(['success' => 'Data dokter berhasil diperbarui.']);
     }
