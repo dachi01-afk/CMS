@@ -292,21 +292,17 @@ public function __construct()
         }
     }
 
-    private function getNextDateByDay(int $dayOfWeek, ?Carbon $from = null): Carbon
-    {
-        $tz = config('app.timezone') ?: 'Asia/Jakarta';
-
-        $from = $from ? $from->copy()->startOfDay() : Carbon::now($tz)->startOfDay();
-        $daysUntilTarget = ($dayOfWeek - $from->dayOfWeek + 7) % 7;
-
-        if ($daysUntilTarget === 0) {
-            $daysUntilTarget = 7;
-        }
-
-        $target = $from->copy()->addDays($daysUntilTarget);
-
-        return $target;
-    }
+private function getNextDateByDay(int $dayOfWeek, ?Carbon $from = null): Carbon
+{
+    $tz = config('app.timezone') ?: 'Asia/Jakarta';
+    $from = $from ? $from->copy()->startOfDay() : Carbon::now($tz)->startOfDay();
+    $daysUntilTarget = ($dayOfWeek - $from->dayOfWeek + 7) % 7;
+    
+    // HAPUS SEMUA PENGECEKAN JAM - biar Flutter yang handle
+    
+    $target = $from->copy()->addDays($daysUntilTarget);
+    return $target;
+}
 
     private function formatTanggalIndonesia($date)
     {
@@ -563,17 +559,55 @@ public function __construct()
         }
     }
 
-    public function bookingDokter(Request $request)
-    {
-        try {
-            Log::info('🔥 bookingDokter called with data: ', $request->all());
 
-            $request->validate([
-                'pasien_id' => ['required', 'exists:pasien,id'],
-                'poli_id' => ['required', 'exists:poli,id'], // GANTI dari dokter_id ke poli_id
-                'tanggal_kunjungan' => ['required', 'date'],
-                'keluhan_awal' => ['required', 'string'],
-            ]);
+    private function isProfileComplete($pasienId)
+{
+    $pasien = Pasien::find($pasienId);
+    
+    if (!$pasien) {
+        return false;
+    }
+    
+    // Cek field wajib yang harus diisi
+    $requiredFields = [
+        'nama_pasien',
+        'alamat', 
+        'tanggal_lahir',
+        'jenis_kelamin'
+    ];
+    
+    foreach ($requiredFields as $field) {
+        if (empty($pasien->$field)) {
+            return false;
+        }
+    }
+    
+    return true;
+}
+ 
+
+    public function bookingDokter(Request $request)
+{
+    try {
+        Log::info('🔥 bookingDokter called with data: ', $request->all());
+
+        $request->validate([
+            'pasien_id' => ['required', 'exists:pasien,id'],
+            'poli_id' => ['required', 'exists:poli,id'],
+            'tanggal_kunjungan' => ['required', 'date'],
+            'keluhan_awal' => ['required', 'string'],
+        ]);
+
+        $pasienId = $request->pasien_id;
+        
+        // VALIDASI PROFIL LENGKAP
+        if (!$this->isProfileComplete($pasienId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Mohon lengkapi data profil Anda terlebih dahulu sebelum membuat janji',
+                'error_code' => 'PROFILE_INCOMPLETE'
+            ], 422);
+        }
 
             $tanggalKunjungan = $request->tanggal_kunjungan;
             $poliId = $request->poli_id; // GANTI dari dokter_id
@@ -3285,42 +3319,42 @@ public function getDetailPembayaran($kunjunganId)
      * Get all dokter with poli and jadwal data
      */
     public function getAllDokter()
-    {
-        try {
-            // Ambil semua dokter dengan relasi poli dan jadwal
-            $dokterList = Dokter::with(['poli', 'jadwalDokter'])->get();
+{
+    try {
+        // Ambil semua dokter dengan relasi poli dan jadwal
+        $dokterList = Dokter::with(['poli', 'jadwalDokter'])->get();
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Data seluruh dokter berhasil diambil',
-                'data' => $dokterList->map(function ($dokter) {
-                    return [
-                        'id_dokter' => $dokter->id,
-                        'nama_dokter' => $dokter->nama_dokter,
-                        'foto_dokter' => $dokter->foto_dokter,
-                        'no_hp' => $dokter->no_hp,
-                        'poli' => [
-                            'id' => $dokter->poli->id ?? null,
-                            'nama_poli' => $dokter->poli->nama_poli ?? '-',
-                        ],
-                        'jadwal' => $dokter->jadwalDokter->map(function ($item) {
-                            return [
-                                'hari' => $item->hari,
-                                'jam_awal' => $item->jam_awal,
-                                'jam_selesai' => $item->jam_selesai
-                            ];
-                        }),
-                    ];
-                })
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error getting all dokter: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'success' => true,
+            'message' => 'Data seluruh dokter berhasil diambil',
+            'data' => $dokterList->map(function ($dokter) {
+                return [
+                    'id_dokter' => $dokter->id,
+                    'nama_dokter' => $dokter->nama_dokter,
+                    'foto_dokter' => $dokter->foto_dokter,
+                    'no_hp' => $dokter->no_hp,
+                    'poli' => [
+                        'id' => $dokter->poli->id ?? null,
+                        'nama_poli' => $dokter->poli->nama_poli ?? '-',
+                    ],
+                    'jadwal' => $dokter->jadwalDokter->map(function ($item) {
+                        return [
+                            'hari' => $item->hari,
+                            'jam_awal' => $item->jam_awal,      // Pastikan ini ada
+                            'jam_selesai' => $item->jam_selesai, // Pastikan ini ada
+                        ];
+                    }),
+                ];
+            })
+        ]);
+    } catch (\Exception $e) {
+        Log::error('Error getting all dokter: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * Get layanan by poli ID
