@@ -27,7 +27,7 @@ Route::post('/forgot-username', [APIMobileController::class, 'sendForgotUsername
 Route::post('/pembayaran/midtrans/callback', [APIMobileController::class, 'midtransCallback']);
 
 // 🔒 PROTECTED ROUTES (butuh autentikasi dengan token)
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'role:Pasien'])->group(function () {
     Route::get('/pasien/profile', [APIMobileController::class, 'getProfile']);
     Route::post('/pasien/update', [APIMobileController::class, 'updateProfile']);
     Route::get('/getJadwalDokter', [APIMobileController::class, 'getJadwalDokter'])->name('getJadwalDokter');

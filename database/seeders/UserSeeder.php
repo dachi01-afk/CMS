@@ -50,7 +50,7 @@ class UserSeeder extends Seeder
 
         $faker = Faker::create();
 
-        $role = ['Admin', 'Dokter', 'Apoteker', 'Pasien'];
+        $role = ['Admin', 'Dokter', 'Apoteker'];
 
         foreach ($role as $r) {
             for ($i = 0; $i < 4; $i++) {
@@ -61,6 +61,17 @@ class UserSeeder extends Seeder
                     'role' => $r,
                 ]);
             }
+        }
+
+        $rolePasien = 'Pasien';
+
+        for ($i = 0; $i < 19; $i++) {
+            User::create([
+                'username' => $faker->username,
+                'email' => $faker->unique()->safeEmail,
+                'password' => Hash::make('password'),
+                'role' => $rolePasien,
+            ]);
         }
     }
 }

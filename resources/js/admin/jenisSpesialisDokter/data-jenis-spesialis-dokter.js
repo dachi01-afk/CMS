@@ -295,22 +295,130 @@ $(function () {
 //     });
 // });
 
+// $(function () {
+//     const editModalEl = document.getElementById(
+//         "updateJenisSpesialisDokterModal"
+//     );
+//     const modalUpdateJenisSpesialis = editModalEl
+//         ? new Modal(editModalEl)
+//         : null;
+//     const $formEdit = $("#formUpdateJenisSpesialisDokter");
+
+//     function showModalFix() {
+//         editModalEl.classList.remove("hidden");
+//         editModalEl.classList.add("flex");
+//         editModalEl.style.zIndex = "99999";
+//         editModalEl.style.opacity = "1";
+//         editModalEl.querySelector(".bg-white").style.opacity = "1";
+//     }
+
+//     function resetEditForm() {
+//         $formEdit[0].reset();
+//         $formEdit.find(".is-invalid").removeClass("is-invalid");
+//         $formEdit.find(".text-red-600").empty();
+//     }
+
+//     // 🔹 Klik tombol edit
+//     $("body").on("click", ".btn-edit-jenis-spesialis-dokter", function () {
+//         resetEditForm();
+//         const id = $(this).data("id");
+
+//         axios
+//             .get(`jenis-spesialis/get-data-jenis-spesialis/${id}`)
+//             .then((response) => {
+//                 const spesialis = response.data.data;
+//                 const baseUrl = $formEdit
+//                     .data("url")
+//                     .replace("/0", "/" + spesialis.id);
+//                 $formEdit.data("url", baseUrl);
+
+//                 $("#id_update").val(spesialis.id);
+//                 $("#update-jenis-spesialis-dokter-nama-spesialis").val(
+//                     spesialis.nama_spesialis
+//                 );
+//                 if (modalUpdateJenisSpesialis) modalUpdateJenisSpesialis.show();
+//                 // 🔹 tampilkan modal
+//                 // showModalFix();
+//                 // showModalFix();
+//             })
+//             .catch(() => {
+//                 Swal.fire({
+//                     icon: "error",
+//                     title: "Gagal!",
+//                     text: "Tidak dapat memuat data spesialis.",
+//                 });
+//             });
+//     });
+
+//     // 🔹 Submit form update
+//     $formEdit.on("submit", function (e) {
+//         e.preventDefault();
+//         const url = $formEdit.data("url");
+
+//         const formData = {
+//             id: $("#id_update").val(),
+//             nama_spesialis: $(
+//                 "#update-jenis-spesialis-dokter-nama-spesialis"
+//             ).val(),
+//         };
+
+//         axios
+//             .post(url, formData)
+//             .then((response) => {
+//                 Swal.fire({
+//                     icon: "success",
+//                     title: "Berhasil!",
+//                     text: response.data.message,
+//                     timer: 2000,
+//                     showConfirmButton: false,
+//                 });
+//                 modalUpdateJenisSpesialis?.hide();
+//                 $("#poliTable").DataTable().ajax.reload(null, false);
+//             })
+//             .catch((error) => {
+//                 if (error.response?.status === 422) {
+//                     const errors = error.response.data.errors;
+//                     for (const field in errors) {
+//                         $(`#${field}_edit`).addClass("is-invalid");
+//                         $(`#${field}_edit-error`).html(errors[field][0]);
+//                     }
+//                     Swal.fire({
+//                         icon: "error",
+//                         title: "Validasi Gagal!",
+//                         text: "Periksa kembali input Anda.",
+//                     });
+//                 } else {
+//                     Swal.fire({
+//                         icon: "error",
+//                         title: "Error Server!",
+//                         text: "Terjadi kesalahan server.",
+//                     });
+//                 }
+//             });
+//     });
+
+//     // 🔹 Tombol Close modal
+//     $("#closeAddJenisSpesialisDokterModal").on("click", function () {
+//         modalUpdateJenisSpesialis?.hide();
+//         resetEditForm();
+//     });
+// });
+
 $(function () {
     const editModalEl = document.getElementById(
         "updateJenisSpesialisDokterModal"
     );
     const modalUpdateJenisSpesialis = editModalEl
-        ? new Modal(editModalEl)
+        ? new Modal(editModalEl, {
+              placement: "center",
+              backdrop: "dynamic",
+              backdropClasses:
+                  "bg-gray-900/50 dark:bg-gray-900/80 fixed inset-0 z-40",
+              closable: true,
+          })
         : null;
-    const $formEdit = $("#formUpdateJenisSpesialisDokter");
 
-    function showModalFix() {
-        editModalEl.classList.remove("hidden");
-        editModalEl.classList.add("flex");
-        editModalEl.style.zIndex = "99999";
-        editModalEl.style.opacity = "1";
-        editModalEl.querySelector(".bg-white").style.opacity = "1";
-    }
+    const $formEdit = $("#formUpdateJenisSpesialisDokter");
 
     function resetEditForm() {
         $formEdit[0].reset();
@@ -337,10 +445,13 @@ $(function () {
                     spesialis.nama_spesialis
                 );
 
-                // 🔹 tampilkan modal
-                showModalFix();
+                // 🔹 Tampilkan modal
+                if (modalUpdateJenisSpesialis) {
+                    modalUpdateJenisSpesialis.show();
+                }
             })
-            .catch(() => {
+            .catch((error) => {
+                console.error("Error:", error);
                 Swal.fire({
                     icon: "error",
                     title: "Gagal!",
@@ -359,6 +470,7 @@ $(function () {
             nama_spesialis: $(
                 "#update-jenis-spesialis-dokter-nama-spesialis"
             ).val(),
+            _token: $('meta[name="csrf-token"]').attr("content"),
         };
 
         axios
@@ -371,15 +483,28 @@ $(function () {
                     timer: 2000,
                     showConfirmButton: false,
                 });
-                modalUpdateJenisSpesialis?.hide();
-                $("#poliTable").DataTable().ajax.reload(null, false);
+
+                if (modalUpdateJenisSpesialis) {
+                    modalUpdateJenisSpesialis.hide();
+                }
+
+                // Reload DataTable jika ada
+                if ($.fn.DataTable.isDataTable("#jenisSpesialisTable")) {
+                    $("#jenisSpesialisTable")
+                        .DataTable()
+                        .ajax.reload(null, false);
+                }
+
+                resetEditForm();
             })
             .catch((error) => {
                 if (error.response?.status === 422) {
                     const errors = error.response.data.errors;
                     for (const field in errors) {
-                        $(`#${field}_edit`).addClass("is-invalid");
-                        $(`#${field}_edit-error`).html(errors[field][0]);
+                        $(`#update-jenis-spesialis-dokter-${field}`).addClass(
+                            "border-red-500"
+                        );
+                        $(`#${field}-error`).html(errors[field][0]);
                     }
                     Swal.fire({
                         icon: "error",
@@ -390,15 +515,27 @@ $(function () {
                     Swal.fire({
                         icon: "error",
                         title: "Error Server!",
-                        text: "Terjadi kesalahan server.",
+                        text:
+                            error.response?.data?.message ||
+                            "Terjadi kesalahan server.",
                     });
                 }
             });
     });
 
-    // 🔹 Tombol Close modal
-    $("#buttonCloseModalUpdatePoli").on("click", function () {
-        modalUpdateJenisSpesialis?.hide();
+    // 🔹 Tombol Close modal (X button)
+    $("#closeUpdateJenisSpesialisDokterModal").on("click", function () {
+        if (modalUpdateJenisSpesialis) {
+            modalUpdateJenisSpesialis.hide();
+        }
+        resetEditForm();
+    });
+
+    // 🔹 Tombol Batal
+    $("#btnCancelUpdateJenisSpesialis").on("click", function () {
+        if (modalUpdateJenisSpesialis) {
+            modalUpdateJenisSpesialis.hide();
+        }
         resetEditForm();
     });
 });
@@ -570,66 +707,66 @@ $(function () {
 });
 
 // edit foto
-document.addEventListener("DOMContentLoaded", function () {
-    const fileInput = document.getElementById("edit_foto_apoteker");
-    const previewImg = document.getElementById("edit_preview_foto_apoteker");
-    const placeholder = document.getElementById(
-        "edit_placeholder_foto_apoteker"
-    );
-    const dropArea = document.getElementById("edit_foto_drop_area_apoteker");
-    const closeButton = document.getElementById(
-        "closeEditJenisSpesialisDokterModal"
-    );
-    const formEdit = document.getElementById("formEditApoteker");
+// document.addEventListener("DOMContentLoaded", function () {
+//     const fileInput = document.getElementById("edit_foto_apoteker");
+//     const previewImg = document.getElementById("edit_preview_foto_apoteker");
+//     const placeholder = document.getElementById(
+//         "edit_placeholder_foto_apoteker"
+//     );
+//     const dropArea = document.getElementById("edit_foto_drop_area_apoteker");
+//     const closeButton = document.getElementById(
+//         "closeEditJenisSpesialisDokterModal"
+//     );
+//     const formEdit = document.getElementById("formEditApoteker");
 
-    function resetFotoPreview() {
-        if (fileInput) fileInput.value = "";
-        if (previewImg) {
-            previewImg.src = "";
-            previewImg.classList.add("hidden");
-        }
-        if (placeholder) placeholder.classList.remove("hidden");
-        if (dropArea) {
-            dropArea.classList.add("border-dashed", "border-gray-400");
-            dropArea.classList.remove("border-solid", "border-gray-300");
-        }
-    }
+//     function resetFotoPreview() {
+//         if (fileInput) fileInput.value = "";
+//         if (previewImg) {
+//             previewImg.src = "";
+//             previewImg.classList.add("hidden");
+//         }
+//         if (placeholder) placeholder.classList.remove("hidden");
+//         if (dropArea) {
+//             dropArea.classList.add("border-dashed", "border-gray-400");
+//             dropArea.classList.remove("border-solid", "border-gray-300");
+//         }
+//     }
 
-    // Saat user pilih file baru
-    if (fileInput) {
-        fileInput.addEventListener("change", function (e) {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function (event) {
-                    previewImg.src = event.target.result;
-                    previewImg.classList.remove("hidden");
-                    placeholder.classList.add("hidden");
-                    dropArea.classList.remove(
-                        "border-dashed",
-                        "border-gray-400"
-                    );
-                    dropArea.classList.add("border-solid", "border-gray-300");
-                };
-                reader.readAsDataURL(file);
-            }
-            // ❌ jangan reset kalau batal pilih file (biar foto lama tetap tampil)
-        });
-    }
+//     // Saat user pilih file baru
+//     if (fileInput) {
+//         fileInput.addEventListener("change", function (e) {
+//             const file = e.target.files[0];
+//             if (file) {
+//                 const reader = new FileReader();
+//                 reader.onload = function (event) {
+//                     previewImg.src = event.target.result;
+//                     previewImg.classList.remove("hidden");
+//                     placeholder.classList.add("hidden");
+//                     dropArea.classList.remove(
+//                         "border-dashed",
+//                         "border-gray-400"
+//                     );
+//                     dropArea.classList.add("border-solid", "border-gray-300");
+//                 };
+//                 reader.readAsDataURL(file);
+//             }
+//             // ❌ jangan reset kalau batal pilih file (biar foto lama tetap tampil)
+//         });
+//     }
 
-    // Tutup modal via tombol X
-    closeButton?.addEventListener("click", function () {
-        resetFotoPreview();
-        formEdit.reset();
-    });
+//     // Tutup modal via tombol X
+//     closeButton?.addEventListener("click", function () {
+//         resetFotoPreview();
+//         formEdit.reset();
+//     });
 
-    // Tutup modal via backdrop klik (optional)
-    const modalElement = document.getElementById("editDokterModal");
-    modalElement?.addEventListener("click", function (e) {
-        if (e.target === modalElement) {
-            modalElement.classList.add("hidden");
-            resetFotoPreview();
-            formEdit.reset();
-        }
-    });
-});
+//     // Tutup modal via backdrop klik (optional)
+//     const modalElement = document.getElementById("editDokterModal");
+//     modalElement?.addEventListener("click", function (e) {
+//         if (e.target === modalElement) {
+//             modalElement.classList.add("hidden");
+//             resetFotoPreview();
+//             formEdit.reset();
+//         }
+//     });
+// });

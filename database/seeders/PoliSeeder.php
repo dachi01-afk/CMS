@@ -13,8 +13,12 @@ class PoliSeeder extends Seeder
      */
     public function run(): void
     {
-        Poli::create([
-            'nama_poli' => 'Gigi',
-        ]);
+        $listPoli = ['Poli Gigi', 'Poli Anak', 'Poli THT'];
+
+        foreach ($listPoli as $poli) {
+            Poli::create([
+                'nama_poli' => $poli,
+            ]);
+        }
     }
 }
