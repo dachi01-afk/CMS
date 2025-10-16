@@ -50,7 +50,7 @@ class LayananController extends Controller
         $request->validate([
             'poli_id' => ['required', 'exists:poli,id'],
             'nama_layanan' => ['required'],
-            'harga_layanan' => ['required'],
+    'harga_layanan' => ['required', 'numeric', 'min:0'],
         ]);
 
         $dataPoli = Poli::findOrFail($request->poli_id);

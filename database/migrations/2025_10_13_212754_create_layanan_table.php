@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('poli_id')->constrained('poli', 'id', 'layanan_poli_id')
                 ->cascadeOnDelete()->cascadeOnUpdate();
             $table->string('nama_layanan');
-            $table->decimal('harga_layanan', 8, 2);
+            $table->decimal('harga_layanan', 12, 2);
             $table->timestamps();
         });
     }
