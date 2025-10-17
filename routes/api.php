@@ -2,7 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\APIMobileController; // ⬅️ pastikan sesuai folder aslinya
+use App\Http\Controllers\Api\APIMobileController;
 
 /*
 |--------------------------------------------------------------------------
@@ -11,7 +11,6 @@ use App\Http\Controllers\Api\APIMobileController; // ⬅️ pastikan sesuai fold
 */
 Route::post('/login', [APIMobileController::class, 'login'])->name('api.login');
 Route::post('/register', [APIMobileController::class, 'register'])->name('api.register');
-
 Route::post('/login-dokter', [APIMobileController::class, 'loginDokter'])->name('api.login_dokter');
 
 Route::get('/getDataTestimoni', [APIMobileController::class, 'getDataTestimoni']);
@@ -19,39 +18,22 @@ Route::post('/create-data-testimoni', [APIMobileController::class, 'createDataTe
 Route::get('/getDataSpesialisasiDokter', [APIMobileController::class, 'getDataSpesialisasiDokter']);
 Route::get('/getDokterBySpesialisasi/{spesialisasi_id}', [APIMobileController::class, 'getDokterBySpesialisasi']);
 
+/* Throttled public endpoints (OTP/forgot) */
 Route::middleware('throttle:6,1')->group(function () {
     Route::post('/forgot-password/send-otp', [APIMobileController::class, 'sendForgotPasswordOTP'])->name('forgot_password.send_otp');
     Route::post('/forgot-password/reset', [APIMobileController::class, 'resetPasswordWithOTP'])->name('forgot_password.reset');
+
     Route::post('/forgot-username/send-otp', [APIMobileController::class, 'sendForgotUsernameOTP'])->name('forgot_username.send_otp');
     Route::post('/forgot-username/verify-or-change', [APIMobileController::class, 'verifyOrChangeUsernameWithOTP'])->name('forgot_username.verify_or_change');
+
+    // optional deprecated endpoint, tetap disediakan jika masih dipakai app lama
     Route::post('/forgot-username', [APIMobileController::class, 'sendForgotUsername'])->name('forgot_username.deprecated');
-// 🔥 ROUTES UNTUK FORGOT PASSWORD & USERNAME
-Route::post('/forgot-password/send-otp', [APIMobileController::class, 'sendForgotPasswordOTP']);
-Route::post('/forgot-password/reset', [APIMobileController::class, 'resetPasswordWithOTP']);
-Route::post('/forgot-username', [APIMobileController::class, 'sendForgotUsername']);
+}); // <-- penting: tutup group-nya
 
-// 🔥 MIDTRANS CALLBACK - PUBLIC (dipanggil langsung oleh Midtrans server tanpa auth)
-Route::post('/pembayaran/midtrans/callback', [APIMobileController::class, 'midtransCallback']);
-
-// 🔒 PROTECTED ROUTES (butuh autentikasi dengan token)
-Route::middleware(['auth:sanctum', 'role:Pasien'])->group(function () {
-    Route::get('/pasien/profile', [APIMobileController::class, 'getProfile']);
-    Route::post('/pasien/update', [APIMobileController::class, 'updateProfile']);
-    Route::get('/getJadwalDokter', [APIMobileController::class, 'getJadwalDokter'])->name('getJadwalDokter');
-
-    // Kunjungan routes
-    Route::post('/kunjungan/create', [APIMobileController::class, 'bookingDokter']);
-    Route::put('/kunjungan/ubah-status', [APIMobileController::class, 'ubahStatusKunjungan']);
-    Route::post('/kunjungan/batalkan', [APIMobileController::class, 'batalkanStatusKunjungan']);
-
-    Route::get('/getDataJadwalDokter', [APIMobileController::class, 'getDataJadwalDokter']);
-    Route::get('/getDataKunjungan', [APIMobileController::class, 'getDataKunjungan']);
-    Route::get('/getDataDokter', [APIMobileController::class, 'getDataDokter']);
-    Route::get('/getDataDokterSpesialisasi', [APIMobileController::class, 'getDataDokterSpesialisasi']);
-});
-
+/* Midtrans callback (public, dipanggil server Midtrans) */
 Route::post('/pembayaran/midtrans/callback', [APIMobileController::class, 'midtransCallback'])->name('midtrans.callback');
 
+/* Katalog data publik */
 Route::get('/getDataPoli', [APIMobileController::class, 'getPoliDokter'])->name('poli.data');
 Route::get('/getPolibyIdDokter/{dokter_id}', [APIMobileController::class, 'getPolibyIdDokter'])->name('poli.by_dokter');
 Route::get('/getAllDokter', [APIMobileController::class, 'getAllDokter'])->name('dokter.all');
@@ -62,7 +44,6 @@ Route::get('/getAllDokter', [APIMobileController::class, 'getAllDokter'])->name(
 |--------------------------------------------------------------------------
 */
 Route::middleware('auth:sanctum')->group(function () {
-
     // Auth
     Route::post('/logout', [APIMobileController::class, 'logout'])->name('api.logout');
 
@@ -79,10 +60,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Kunjungan
     Route::post('/kunjungan/create', [APIMobileController::class, 'bookingDokter'])->name('kunjungan.create');
-
-    // ⬇️ FIX: tambahkan {id} dan konsisten pakai PUT
     Route::put('/kunjungan/{id}/status', [APIMobileController::class, 'ubahStatusKunjungan'])->name('kunjungan.ubah_status');
-
     Route::post('/kunjungan/batalkan', [APIMobileController::class, 'batalkanStatusKunjungan'])->name('kunjungan.batalkan');
 
     // Riwayat pasien
@@ -93,8 +71,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('pembayaran')->name('pembayaran.')->group(function () {
         Route::get('/pasien/{pasien_id}', [APIMobileController::class, 'getPembayaranPasien'])->name('pasien');
         Route::get('/detail/{kunjungan_id}', [APIMobileController::class, 'getDetailPembayaran'])->name('detail');
-
-        // ⬇️ FIX: tambahkan {id} dan pakai PUT (sesuai controller updateStatusObat(Request $r, $id))
         Route::put('/update-status-obat/{id}', [APIMobileController::class, 'updateStatusObat'])->name('update_status_obat');
 
         Route::post('/proses', [APIMobileController::class, 'prosesPembayaran'])->name('proses');
@@ -115,13 +91,16 @@ Route::middleware('auth:sanctum')->group(function () {
 | DOKTER-ONLY (Sanctum + role:Dokter)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth:sanctum', 'role:Dokter'])->prefix('dokter')->name('dokter.')->group(function () {
-    Route::get('/get-data-dokter', [APIMobileController::class, 'getDataDokter'])->name('data');
-    Route::post('/update-profile', [APIMobileController::class, 'updateDataDokter'])->name('update_profile');
-    Route::get('/get-data-kunjungan-by-id-dokter', [APIMobileController::class, 'getDataKunjunganBerdasarkanIdDokter'])->name('kunjungan_by_dokter');
-    Route::get('/get-data-obat', [APIMobileController::class, 'getDataObat'])->name('obat');
-    Route::get('/get-layanan/{poli_id}', [APIMobileController::class, 'getLayananByPoli'])->name('layanan_by_poli');
-    Route::post('/save-emr', [APIMobileController::class, 'saveEMR'])->name('save_emr');
-    Route::get('/riwayat-pasien-diperiksa', [APIMobileController::class, 'getRiwayatPasienDiperiksa'])->name('riwayat_pasien_diperiksa');
-    Route::get('/detail-riwayat-pasien/{kunjunganId}', [APIMobileController::class, 'getDetailRiwayatPasien'])->name('detail_riwayat_pasien');
-});
+Route::middleware(['auth:sanctum', 'role:Dokter'])
+    ->prefix('dokter')
+    ->name('dokter.')
+    ->group(function () {
+        Route::get('/get-data-dokter', [APIMobileController::class, 'getDataDokter'])->name('data');
+        Route::post('/update-profile', [APIMobileController::class, 'updateDataDokter'])->name('update_profile');
+        Route::get('/get-data-kunjungan-by-id-dokter', [APIMobileController::class, 'getDataKunjunganBerdasarkanIdDokter'])->name('kunjungan_by_dokter');
+        Route::get('/get-data-obat', [APIMobileController::class, 'getDataObat'])->name('obat');
+        Route::get('/get-layanan/{poli_id}', [APIMobileController::class, 'getLayananByPoli'])->name('layanan_by_poli');
+        Route::post('/save-emr', [APIMobileController::class, 'saveEMR'])->name('save_emr');
+        Route::get('/riwayat-pasien-diperiksa', [APIMobileController::class, 'getRiwayatPasienDiperiksa'])->name('riwayat_pasien_diperiksa');
+        Route::get('/detail-riwayat-pasien/{kunjunganId}', [APIMobileController::class, 'getDetailRiwayatPasien'])->name('detail_riwayat_pasien');
+    });
