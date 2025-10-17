@@ -21,47 +21,71 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Midtrans\Config;
 use Midtrans\Snap;
 use Midtrans\Notification;
 use App\Models\Poli;
+use App\Http\Controllers\Api\Concerns\TransformsNotifications;
 
 class APIMobileController extends Controller
 {
 
-public function __construct()
-{
-    // HANYA konfigurasi yang diperlukan untuk server-side
-    Config::$serverKey = config('midtrans.server_key');
-    Config::$isProduction = config('midtrans.is_production', false);
-    Config::$isSanitized = true;
-    Config::$is3ds = true;
+    public function __construct()
+    {
+        // HANYA konfigurasi yang diperlukan untuk server-side
+        Config::$serverKey = config('midtrans.server_key');
+        Config::$isProduction = config('midtrans.is_production', false);
+        Config::$isSanitized = true;
+        Config::$is3ds = true;
 
-    Log::info('Midtrans Configuration:', [
-        'server_key_prefix' => substr(config('midtrans.server_key'), 0, 10),
-        'is_production' => config('midtrans.is_production', false),
-    ]);
-}
+        Log::info('Midtrans Configuration:', [
+            'server_key_prefix' => substr(config('midtrans.server_key'), 0, 10),
+            'is_production' => config('midtrans.is_production', false),
+        ]);
+    }
 
 
     /** LOGIN */
     public function login(Request $request)
     {
         try {
-            $request->validate([
+            $validator = Validator::make($request->all(), [
                 'username' => 'required|string',
                 'password' => 'required|string|min:6',
+            ], [
+                'username.required' => 'Username tidak boleh kosong.',
+                'password.required' => 'Password tidak boleh kosong.',
+                'password.min'      => 'Password minimal 6 karakter.',
             ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors'  => $validator->errors(),
+                ], 422);
+            }
 
             $user = User::where('username', $request->username)->first();
 
-            if (! $user || ! Hash::check($request->password, $user->password)) {
+            // Username tidak ditemukan / salah
+            if (! $user) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Username atau password salah',
+                    'message' => 'Username salah',
                 ], 401);
             }
 
+            // Password salah
+            if (! Hash::check($request->password, $user->password)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Password salah',
+                ], 401);
+            }
+
+            // Kredensial ok → buat token
             $user->tokens()->delete();
             $token = $user->createToken('auth_token')->plainTextToken;
 
@@ -69,12 +93,12 @@ public function __construct()
                 'success' => true,
                 'message' => 'Login berhasil',
                 'data' => [
-                    'user' => $user,
-                    'token' => $token,
+                    'user'       => $user,
+                    'token'      => $token,
                     'token_type' => 'Bearer',
                 ],
-            ]);
-        } catch (\Exception $e) {
+            ], 200);
+        } catch (\Throwable $e) {
             Log::error('Login error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
@@ -83,37 +107,57 @@ public function __construct()
         }
     }
 
+
     /** REGISTER */
     public function register(Request $request)
     {
-        try {
-            $request->validate([
-                'username' => 'required|string|unique:user,username',
-                'email' => 'required|email|unique:user,email',
-                'password' => 'required|string|min:6',
-            ]);
+        $validator = Validator::make($request->all(), [
+            'username' => 'required|string|min:3|unique:user,username', // <--
+            'email'    => 'required|email|unique:user,email',           // <--
+            'password' => 'required|string|min:6',
+        ], [
+            'username.required' => 'Username tidak boleh kosong.',
+            'username.min'      => 'Username minimal 3 karakter.',
+            'username.unique'   => 'Username sudah digunakan.',
+            'email.required'    => 'Email tidak boleh kosong.',
+            'email.email'       => 'Format email tidak valid.',
+            'email.unique'      => 'Email sudah terdaftar.',
+            'password.required' => 'Password tidak boleh kosong.',
+            'password.min'      => 'Password minimal 6 karakter.',
+        ]);
 
-            $user = User::create([
-                'username' => $request->username,
-                'email' => $request->email,
-                'password' => bcrypt($request->password),
-                'role' => 'Pasien',
-            ]);
-
-            Pasien::create([
-                'user_id' => $user->id,
-                'nama_pasien' => null,
-                'alamat' => null,
-                'tanggal_lahir' => null,
-                'jenis_kelamin' => null,
-            ]);
-
+        if ($validator->fails()) {
             return response()->json([
-                'success' => true,
-                'message' => 'Registrasi berhasil',
-                'data' => $user,
-            ]);
-        } catch (\Exception $e) {
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            return DB::transaction(function () use ($request) {
+                $user = User::create([
+                    'username' => $request->username,
+                    'email'    => $request->email,
+                    'password' => Hash::make($request->password),
+                    'role'     => 'Pasien',
+                ]);
+
+                Pasien::create([
+                    'user_id'        => $user->id,
+                    'nama_pasien'    => null,
+                    'alamat'         => null,
+                    'tanggal_lahir'  => null,
+                    'jenis_kelamin'  => null,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Registrasi berhasil',
+                    'data'    => $user,
+                ], 201);
+            });
+        } catch (\Throwable $e) {
             Log::error('Register error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
@@ -121,6 +165,71 @@ public function __construct()
             ], 500);
         }
     }
+
+    /**
+     * Get recent notifications for polling
+     */
+    public function getRecentNotifications(Request $request)
+    {
+        $user = $request->user(); // auth:sanctum
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $sinceParam = $request->query('since');
+        $limit      = (int) $request->query('limit', 50);
+
+        $since = $sinceParam ? Carbon::parse($sinceParam) : now()->subDay();
+
+        $items = Notification::where('user_id', $user->id)
+            ->where('created_at', '>=', $since)
+            ->orderBy('created_at', 'desc')
+            ->limit($limit)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data'    => $items,
+        ]);
+    }
+
+    /**
+     * Mark notification as read
+     */
+    public function markNotificationAsRead(Request $request, $id)
+    {
+        $user = $request->user(); // auth:sanctum
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+        }
+
+        $notif = Notification::where('id', $id)
+            ->where('user_id', $user->id)
+            ->firstOrFail();
+
+        $notif->is_read = true;
+        $notif->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Notification marked as read',
+        ]);
+    }
+
+    /**
+     * Create notification (internal use)
+     */
+        protected function createNotification(int $userId, string $title, string $body, array $data = []): Notification
+    {
+        return Notification::create([
+            'user_id' => $userId,
+            'title'   => $title,
+            'body'    => $body,
+            'data'    => $data,
+            'is_read' => false,
+        ]);
+    }
+
 
     public function getProfile(Request $request)
     {
@@ -292,17 +401,17 @@ public function __construct()
         }
     }
 
-private function getNextDateByDay(int $dayOfWeek, ?Carbon $from = null): Carbon
-{
-    $tz = config('app.timezone') ?: 'Asia/Jakarta';
-    $from = $from ? $from->copy()->startOfDay() : Carbon::now($tz)->startOfDay();
-    $daysUntilTarget = ($dayOfWeek - $from->dayOfWeek + 7) % 7;
-    
-    // HAPUS SEMUA PENGECEKAN JAM - biar Flutter yang handle
-    
-    $target = $from->copy()->addDays($daysUntilTarget);
-    return $target;
-}
+    private function getNextDateByDay(int $dayOfWeek, ?Carbon $from = null): Carbon
+    {
+        $tz = config('app.timezone') ?: 'Asia/Jakarta';
+        $from = $from ? $from->copy()->startOfDay() : Carbon::now($tz)->startOfDay();
+        $daysUntilTarget = ($dayOfWeek - $from->dayOfWeek + 7) % 7;
+
+        // HAPUS SEMUA PENGECEKAN JAM - biar Flutter yang handle
+
+        $target = $from->copy()->addDays($daysUntilTarget);
+        return $target;
+    }
 
     private function formatTanggalIndonesia($date)
     {
@@ -345,48 +454,43 @@ private function getNextDateByDay(int $dayOfWeek, ?Carbon $from = null): Carbon
         return $today->diffInDays($targetDate);
     }
 
-    public function ubahStatusKunjungan(Request $request)
+    public function ubahStatusKunjungan(Request $request, $id)
     {
+        $validated = $request->validate([
+            'status'     => 'required|string|max:50',
+            'no_antrian' => 'nullable|integer|min:1',
+        ]);
+
+        $kunjungan = Kunjungan::findOrFail($id);
+
+        $kunjungan->status = $validated['status'];
+        if (array_key_exists('no_antrian', $validated)) {
+            $kunjungan->no_antrian = $validated['no_antrian'];
+        }
+        $kunjungan->save();
+
+        // === Kirim notifikasi ke pasien ===
         try {
-            $dataKunjungan = Kunjungan::findOrFail($request->id);
-
-            if ($dataKunjungan->status === 'Pending') {
-                $dataKunjungan->update([
-                    'status' => 'Waiting',
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'status' => 200,
-                    'Data Kunjungan' => $dataKunjungan,
-                    'message' => 'Berhasil Merubah Status Kunjungan Dari Pending Menjadi Waiting',
-                ]);
-            } elseif ($dataKunjungan->status === 'Waiting') {
-                $dataKunjungan->update([
-                    'status' => 'Engaged',
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'status' => 200,
-                    'Data Kunjungan' => $dataKunjungan,
-                    'message' => 'Berhasil Merubah Status Kunjungan Dari Waiting Menjadi Engaged',
-                ]);
+            $title = 'Status Kunjungan Diperbarui';
+            // Kamu bisa sesuaikan wording per status:
+            // switch ($kunjungan->status) { case 'Diterima': ... }
+            $body  = 'Status kunjungan Anda kini: ' . ($kunjungan->status ?? '-');
+            if (!empty($kunjungan->no_antrian)) {
+                $body .= ' | No. Antrian: ' . $kunjungan->no_antrian;
             }
 
-            return response()->json([
-                'success' => false,
-                'status' => 404,
-                'message' => 'Error',
-                'Data Kunjungan' => $dataKunjungan,
+            $this->notifyPasienFromKunjungan($kunjungan, $title, $body, [
+                'changed_by' => 'admin',
             ]);
-        } catch (\Exception $e) {
-            Log::error('Error ubah status kunjungan: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan sistem',
-            ], 500);
+        } catch (\Throwable $e) {
+            Log::warning('Gagal kirim notif ubahStatusKunjungan: ' . $e->getMessage());
         }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status kunjungan berhasil diperbarui',
+            'data'    => $kunjungan,
+        ]);
     }
 
     public function getDokterBySpesialisasi($spesialisasiId)
@@ -561,53 +665,53 @@ private function getNextDateByDay(int $dayOfWeek, ?Carbon $from = null): Carbon
 
 
     private function isProfileComplete($pasienId)
-{
-    $pasien = Pasien::find($pasienId);
-    
-    if (!$pasien) {
-        return false;
-    }
-    
-    // Cek field wajib yang harus diisi
-    $requiredFields = [
-        'nama_pasien',
-        'alamat', 
-        'tanggal_lahir',
-        'jenis_kelamin'
-    ];
-    
-    foreach ($requiredFields as $field) {
-        if (empty($pasien->$field)) {
+    {
+        $pasien = Pasien::find($pasienId);
+
+        if (!$pasien) {
             return false;
         }
+
+        // Cek field wajib yang harus diisi
+        $requiredFields = [
+            'nama_pasien',
+            'alamat',
+            'tanggal_lahir',
+            'jenis_kelamin'
+        ];
+
+        foreach ($requiredFields as $field) {
+            if (empty($pasien->$field)) {
+                return false;
+            }
+        }
+
+        return true;
     }
-    
-    return true;
-}
- 
+
 
     public function bookingDokter(Request $request)
-{
-    try {
-        Log::info('🔥 bookingDokter called with data: ', $request->all());
+    {
+        try {
+            Log::info('🔥 bookingDokter called with data: ', $request->all());
 
-        $request->validate([
-            'pasien_id' => ['required', 'exists:pasien,id'],
-            'poli_id' => ['required', 'exists:poli,id'],
-            'tanggal_kunjungan' => ['required', 'date'],
-            'keluhan_awal' => ['required', 'string'],
-        ]);
+            $request->validate([
+                'pasien_id' => ['required', 'exists:pasien,id'],
+                'poli_id' => ['required', 'exists:poli,id'],
+                'tanggal_kunjungan' => ['required', 'date'],
+                'keluhan_awal' => ['required', 'string'],
+            ]);
 
-        $pasienId = $request->pasien_id;
-        
-        // VALIDASI PROFIL LENGKAP
-        if (!$this->isProfileComplete($pasienId)) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Mohon lengkapi data profil Anda terlebih dahulu sebelum membuat janji',
-                'error_code' => 'PROFILE_INCOMPLETE'
-            ], 422);
-        }
+            $pasienId = $request->pasien_id;
+
+            // VALIDASI PROFIL LENGKAP
+            if (!$this->isProfileComplete($pasienId)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Mohon lengkapi data profil Anda terlebih dahulu sebelum membuat janji',
+                    'error_code' => 'PROFILE_INCOMPLETE'
+                ], 422);
+            }
 
             $tanggalKunjungan = $request->tanggal_kunjungan;
             $poliId = $request->poli_id; // GANTI dari dokter_id
@@ -1026,20 +1130,38 @@ private function getNextDateByDay(int $dayOfWeek, ?Carbon $from = null): Carbon
     public function loginDokter(Request $request)
     {
         try {
-            $request->validate([
-                'username' => ['required'],
-                'password' => ['required'],
+            $validator = Validator::make($request->all(), [
+                'username' => 'required|string',
+                'password' => 'required|string|min:6',
             ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors'  => $validator->errors(),
+                ], 422);
+            }
 
             $user = User::where('username', $request->username)->first();
 
-            if (! $user || ! Hash::check($request->password, $user->password)) {
+            // Username salah
+            if (! $user) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Username atau password salah',
+                    'message' => 'Username salah',
                 ], 401);
             }
 
+            // Password salah
+            if (! Hash::check($request->password, $user->password)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Password salah',
+                ], 401);
+            }
+
+            // Role bukan Dokter
             if ($user->role !== 'Dokter') {
                 return response()->json([
                     'success' => false,
@@ -1054,12 +1176,12 @@ private function getNextDateByDay(int $dayOfWeek, ?Carbon $from = null): Carbon
                 'success' => true,
                 'message' => 'Login berhasil',
                 'data' => [
-                    'user' => $user,
-                    'token' => $token,
+                    'user'       => $user,
+                    'token'      => $token,
                     'token_type' => 'Bearer',
                 ],
-            ]);
-        } catch (\Exception $e) {
+            ], 200);
+        } catch (\Throwable $e) {
             Log::error('Login dokter error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
@@ -1647,217 +1769,236 @@ private function getNextDateByDay(int $dayOfWeek, ?Carbon $from = null): Carbon
     }
 
     public function getRiwayatPasienDiperiksa()
-{
-    try {
-        $user_id = Auth::user()->id;
-        Log::info('🔍 Getting riwayat pasien diperiksa for user_id: ' . $user_id);
+    {
+        try {
+            $user_id = Auth::user()->id;
+            Log::info('🔍 Getting riwayat pasien diperiksa for user_id: ' . $user_id);
 
-        // Ambil data dokter dengan relasi poli
-        $dokter = Dokter::with(['user', 'poli'])->where('user_id', $user_id)->first();
+            // Ambil data dokter dengan relasi poli
+            $dokter = Dokter::with(['user', 'poli'])->where('user_id', $user_id)->first();
 
-        if (!$dokter) {
-            Log::warning('❌ Dokter tidak ditemukan untuk user_id: ' . $user_id);
-            return response()->json([
-                'success' => false,
-                'message' => 'Data dokter tidak ditemukan',
-            ], 404);
-        }
+            if (!$dokter) {
+                Log::warning('❌ Dokter tidak ditemukan untuk user_id: ' . $user_id);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data dokter tidak ditemukan',
+                ], 404);
+            }
 
-        Log::info('✅ Dokter found:', [
-            'dokter_id' => $dokter->id,
-            'nama_dokter' => $dokter->nama_dokter,
-            'poli_id' => $dokter->poli_id,
-            'poli_nama' => $dokter->poli->nama_poli ?? 'N/A',
-        ]);
-
-        // FIXED: Gunakan poli_id bukan dokter_id untuk konsistensi dengan skema baru
-        $riwayatPasien = Kunjungan::with([
-            'pasien' => function ($query) {
-                $query->select('id', 'nama_pasien', 'alamat', 'tanggal_lahir', 'jenis_kelamin', 'foto_pasien');
-            },
-            'emr' => function ($query) {
-                $query->select('id', 'kunjungan_id', 'keluhan_utama', 'diagnosis', 'created_at');
-            },
-            // FIXED: Gunakan resep dengan relasi yang benar
-            'emr.resep',
-            'emr.resep.obat' => function ($query) {
-                $query->select('obat.id', 'obat.nama_obat', 'obat.dosis')
-                    ->withPivot('jumlah', 'dosis', 'keterangan', 'status');
-            },
-            'poli' // Tambahkan relasi poli untuk informasi tambahan
-        ])
-        ->where('poli_id', $dokter->poli_id) // FIXED: Gunakan poli_id
-        ->whereIn('status', ['Succeed', 'Canceled']) // Status yang sudah selesai
-        ->orderBy('updated_at', 'desc')
-        ->orderBy('tanggal_kunjungan', 'desc')
-        ->get();
-
-        Log::info('📊 Query result:', [
-            'poli_id_used' => $dokter->poli_id,
-            'total_riwayat' => $riwayatPasien->count(),
-            'status_filter' => ['Succeed', 'Canceled'],
-        ]);
-
-        // Debug: Log beberapa contoh data untuk debugging
-        if ($riwayatPasien->isNotEmpty()) {
-            $sample = $riwayatPasien->first();
-            Log::info('📋 Sample riwayat data:', [
-                'kunjungan_id' => $sample->id,
-                'pasien_nama' => $sample->pasien->nama_pasien ?? 'N/A',
-                'status' => $sample->status,
-                'has_emr' => $sample->emr !== null,
-                'has_resep' => $sample->emr && $sample->emr->resep !== null,
-                'tanggal_kunjungan' => $sample->tanggal_kunjungan,
-            ]);
-        }
-
-        return response()->json([
-            'success' => true,
-            'status' => 200,
-            'data' => $riwayatPasien,
-            'total_pasien' => $riwayatPasien->count(),
-            'dokter_info' => [
-                'id' => $dokter->id,
-                'nama_dokter' => $dokter->nama_dokter,
-                'user_id' => $user_id,
-                'poli_id' => $dokter->poli_id,
-                'poli_nama' => $dokter->poli->nama_poli ?? 'Tidak ada',
-            ],
-            'debug_info' => [
-                'query_used' => 'poli_id = ' . $dokter->poli_id,
-                'status_filter' => ['Succeed', 'Canceled'],
-            ],
-            'message' => 'Berhasil mengambil riwayat pasien yang diperiksa',
-        ], 200);
-
-    } catch (\Exception $e) {
-        Log::error('❌ CRITICAL ERROR in getRiwayatPasienDiperiksa: ' . $e->getMessage());
-        Log::error('📍 File: ' . $e->getFile() . ' Line: ' . $e->getLine());
-        Log::error('🔍 Stack trace: ' . $e->getTraceAsString());
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengambil riwayat pasien: ' . $e->getMessage(),
-            'debug_info' => [
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'user_id' => Auth::id() ?? 'not_authenticated',
-            ],
-        ], 500);
-    }
-}
-
-    public function getDetailRiwayatPasien($kunjunganId)
-{
-    try {
-        $user_id = Auth::user()->id;
-        Log::info('🔍 Getting detail riwayat for kunjungan_id: ' . $kunjunganId . ' by user_id: ' . $user_id);
-
-        $dokter = Dokter::with(['poli'])->where('user_id', $user_id)->first();
-
-        if (!$dokter) {
-            Log::warning('❌ Dokter tidak ditemukan untuk user_id: ' . $user_id);
-            return response()->json([
-                'success' => false,
-                'message' => 'Data dokter tidak ditemukan',
-            ], 404);
-        }
-
-        Log::info('✅ Dokter found:', [
-            'dokter_id' => $dokter->id,
-            'poli_id' => $dokter->poli_id,
-            'poli_nama' => $dokter->poli->nama_poli ?? 'N/A',
-        ]);
-
-        // FIXED: Gunakan poli_id untuk konsistensi
-        $detailRiwayat = Kunjungan::with([
-            'pasien',
-            'poli', // Tambahkan relasi poli
-            'emr',
-            'emr.resep',
-            'emr.resep.obat' => function ($query) {
-                $query->select('obat.id', 'obat.nama_obat', 'obat.dosis', 'obat.total_harga')
-                    ->withPivot('jumlah', 'dosis', 'keterangan', 'status');
-            },
-            // Tambahkan relasi layanan jika diperlukan
-            'layanan'
-        ])
-        ->where('id', $kunjunganId)
-        ->where('poli_id', $dokter->poli_id) // FIXED: Gunakan poli_id bukan dokter_id
-        ->whereIn('status', ['Succeed', 'Canceled'])
-        ->first();
-
-        if (!$detailRiwayat) {
-            Log::warning('❌ Detail riwayat tidak ditemukan:', [
-                'kunjungan_id' => $kunjunganId,
-                'poli_id' => $dokter->poli_id,
+            Log::info('✅ Dokter found:', [
                 'dokter_id' => $dokter->id,
+                'nama_dokter' => $dokter->nama_dokter,
+                'poli_id' => $dokter->poli_id,
+                'poli_nama' => $dokter->poli->nama_poli ?? 'N/A',
             ]);
 
+            // FIXED: Gunakan poli_id bukan dokter_id untuk konsistensi dengan skema baru
+            $riwayatPasien = Kunjungan::with([
+                'pasien' => function ($query) {
+                    $query->select('id', 'nama_pasien', 'alamat', 'tanggal_lahir', 'jenis_kelamin', 'foto_pasien');
+                },
+                'emr' => function ($query) {
+                    $query->select('id', 'kunjungan_id', 'keluhan_utama', 'diagnosis', 'created_at');
+                },
+                // FIXED: Gunakan resep dengan relasi yang benar
+                'emr.resep',
+                'emr.resep.obat' => function ($query) {
+                    $query->select('obat.id', 'obat.nama_obat', 'obat.dosis')
+                        ->withPivot('jumlah', 'dosis', 'keterangan', 'status');
+                },
+                'poli' // Tambahkan relasi poli untuk informasi tambahan
+            ])
+                ->where('poli_id', $dokter->poli_id) // FIXED: Gunakan poli_id
+                ->whereIn('status', ['Succeed', 'Canceled']) // Status yang sudah selesai
+                ->orderBy('updated_at', 'desc')
+                ->orderBy('tanggal_kunjungan', 'desc')
+                ->get();
+
+            Log::info('📊 Query result:', [
+                'poli_id_used' => $dokter->poli_id,
+                'total_riwayat' => $riwayatPasien->count(),
+                'status_filter' => ['Succeed', 'Canceled'],
+            ]);
+
+            // Debug: Log beberapa contoh data untuk debugging
+            if ($riwayatPasien->isNotEmpty()) {
+                $sample = $riwayatPasien->first();
+                Log::info('📋 Sample riwayat data:', [
+                    'kunjungan_id' => $sample->id,
+                    'pasien_nama' => $sample->pasien->nama_pasien ?? 'N/A',
+                    'status' => $sample->status,
+                    'has_emr' => $sample->emr !== null,
+                    'has_resep' => $sample->emr && $sample->emr->resep !== null,
+                    'tanggal_kunjungan' => $sample->tanggal_kunjungan,
+                ]);
+            }
+
             return response()->json([
-                'success' => false,
-                'message' => 'Data riwayat tidak ditemukan atau tidak memiliki akses',
+                'success' => true,
+                'status' => 200,
+                'data' => $riwayatPasien,
+                'total_pasien' => $riwayatPasien->count(),
+                'dokter_info' => [
+                    'id' => $dokter->id,
+                    'nama_dokter' => $dokter->nama_dokter,
+                    'user_id' => $user_id,
+                    'poli_id' => $dokter->poli_id,
+                    'poli_nama' => $dokter->poli->nama_poli ?? 'Tidak ada',
+                ],
                 'debug_info' => [
-                    'kunjungan_id' => $kunjunganId,
-                    'poli_id_checked' => $dokter->poli_id,
+                    'query_used' => 'poli_id = ' . $dokter->poli_id,
                     'status_filter' => ['Succeed', 'Canceled'],
                 ],
-            ], 404);
+                'message' => 'Berhasil mengambil riwayat pasien yang diperiksa',
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('❌ CRITICAL ERROR in getRiwayatPasienDiperiksa: ' . $e->getMessage());
+            Log::error('📍 File: ' . $e->getFile() . ' Line: ' . $e->getLine());
+            Log::error('🔍 Stack trace: ' . $e->getTraceAsString());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil riwayat pasien: ' . $e->getMessage(),
+                'debug_info' => [
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'user_id' => Auth::id() ?? 'not_authenticated',
+                ],
+            ], 500);
         }
-
-        Log::info('✅ Detail riwayat found:', [
-            'kunjungan_id' => $detailRiwayat->id,
-            'pasien_nama' => $detailRiwayat->pasien->nama_pasien ?? 'N/A',
-            'status' => $detailRiwayat->status,
-            'has_emr' => $detailRiwayat->emr !== null,
-            'has_resep' => $detailRiwayat->emr && $detailRiwayat->emr->resep !== null,
-            'resep_obat_count' => $detailRiwayat->emr && $detailRiwayat->emr->resep && $detailRiwayat->emr->resep->obat ? $detailRiwayat->emr->resep->obat->count() : 0,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'status' => 200,
-            'data' => $detailRiwayat,
-            'dokter_info' => [
-                'id' => $dokter->id,
-                'nama_dokter' => $dokter->nama_dokter,
-                'poli_id' => $dokter->poli_id,
-                'poli_nama' => $dokter->poli->nama_poli ?? 'Tidak ada',
-            ],
-            'debug_info' => [
-                'query_used' => "poli_id = {$dokter->poli_id}",
-                'kunjungan_id' => $kunjunganId,
-                'has_access' => true,
-            ],
-            'message' => 'Berhasil mengambil detail riwayat pasien',
-        ], 200);
-
-    } catch (\Exception $e) {
-        Log::error('❌ CRITICAL ERROR in getDetailRiwayatPasien: ' . $e->getMessage());
-        Log::error('📍 File: ' . $e->getFile() . ' Line: ' . $e->getLine());
-        Log::error('🔍 Stack trace: ' . $e->getTraceAsString());
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengambil detail riwayat: ' . $e->getMessage(),
-            'debug_info' => [
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'kunjungan_id' => $kunjunganId,
-                'user_id' => Auth::id() ?? 'not_authenticated',
-            ],
-        ], 500);
     }
-}
+
+    public function getDetailRiwayatPasien($kunjunganId)
+    {
+        try {
+            $user_id = Auth::user()->id;
+            Log::info('🔍 Getting detail riwayat for kunjungan_id: ' . $kunjunganId . ' by user_id: ' . $user_id);
+
+            $dokter = Dokter::with(['poli'])->where('user_id', $user_id)->first();
+
+            if (!$dokter) {
+                Log::warning('❌ Dokter tidak ditemukan untuk user_id: ' . $user_id);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data dokter tidak ditemukan',
+                ], 404);
+            }
+
+            Log::info('✅ Dokter found:', [
+                'dokter_id' => $dokter->id,
+                'poli_id' => $dokter->poli_id,
+                'poli_nama' => $dokter->poli->nama_poli ?? 'N/A',
+            ]);
+
+            // FIXED: Gunakan poli_id untuk konsistensi
+            $detailRiwayat = Kunjungan::with([
+                'pasien',
+                'poli', // Tambahkan relasi poli
+                'emr',
+                'emr.resep',
+                'emr.resep.obat' => function ($query) {
+                    $query->select('obat.id', 'obat.nama_obat', 'obat.dosis', 'obat.total_harga')
+                        ->withPivot('jumlah', 'dosis', 'keterangan', 'status');
+                },
+                // Tambahkan relasi layanan jika diperlukan
+                'layanan'
+            ])
+                ->where('id', $kunjunganId)
+                ->where('poli_id', $dokter->poli_id) // FIXED: Gunakan poli_id bukan dokter_id
+                ->whereIn('status', ['Succeed', 'Canceled'])
+                ->first();
+
+            if (!$detailRiwayat) {
+                Log::warning('❌ Detail riwayat tidak ditemukan:', [
+                    'kunjungan_id' => $kunjunganId,
+                    'poli_id' => $dokter->poli_id,
+                    'dokter_id' => $dokter->id,
+                ]);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data riwayat tidak ditemukan atau tidak memiliki akses',
+                    'debug_info' => [
+                        'kunjungan_id' => $kunjunganId,
+                        'poli_id_checked' => $dokter->poli_id,
+                        'status_filter' => ['Succeed', 'Canceled'],
+                    ],
+                ], 404);
+            }
+
+            Log::info('✅ Detail riwayat found:', [
+                'kunjungan_id' => $detailRiwayat->id,
+                'pasien_nama' => $detailRiwayat->pasien->nama_pasien ?? 'N/A',
+                'status' => $detailRiwayat->status,
+                'has_emr' => $detailRiwayat->emr !== null,
+                'has_resep' => $detailRiwayat->emr && $detailRiwayat->emr->resep !== null,
+                'resep_obat_count' => $detailRiwayat->emr && $detailRiwayat->emr->resep && $detailRiwayat->emr->resep->obat ? $detailRiwayat->emr->resep->obat->count() : 0,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'status' => 200,
+                'data' => $detailRiwayat,
+                'dokter_info' => [
+                    'id' => $dokter->id,
+                    'nama_dokter' => $dokter->nama_dokter,
+                    'poli_id' => $dokter->poli_id,
+                    'poli_nama' => $dokter->poli->nama_poli ?? 'Tidak ada',
+                ],
+                'debug_info' => [
+                    'query_used' => "poli_id = {$dokter->poli_id}",
+                    'kunjungan_id' => $kunjunganId,
+                    'has_access' => true,
+                ],
+                'message' => 'Berhasil mengambil detail riwayat pasien',
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('❌ CRITICAL ERROR in getDetailRiwayatPasien: ' . $e->getMessage());
+            Log::error('📍 File: ' . $e->getFile() . ' Line: ' . $e->getLine());
+            Log::error('🔍 Stack trace: ' . $e->getTraceAsString());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil detail riwayat: ' . $e->getMessage(),
+                'debug_info' => [
+                    'file' => $e->getFile(),
+                    'line' => $e->getLine(),
+                    'kunjungan_id' => $kunjunganId,
+                    'user_id' => Auth::id() ?? 'not_authenticated',
+                ],
+            ], 500);
+        }
+    }
 
     public function sendForgotPasswordOTP(Request $request)
     {
         try {
-            $request->validate([
-                'email' => 'required|email|exists:user,email',
+            $validator = Validator::make($request->all(), [
+                'email' => 'required|email',
+            ], [
+                'email.required' => 'Email tidak boleh kosong.',
+                'email.email'    => 'Format email tidak valid.',
             ]);
 
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors'  => $validator->errors(),
+                ], 422);
+            }
+
             $email = $request->email;
+            $user  = User::where('email', $email)->first();
+
+            // Email tidak ditemukan
+            if (! $user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Email tidak ditemukan dalam sistem',
+                ], 404);
+            }
+
             $otp = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
 
             $cacheKey = 'forgot_password_otp_' . $email;
@@ -1873,7 +2014,8 @@ private function getNextDateByDay(int $dayOfWeek, ?Carbon $from = null): Carbon
                         ->subject('Kode Verifikasi Reset Password - Royal Clinic');
                 });
 
-                Log::info("Forgot password OTP sent to: $email, OTP: $otp");
+                // Jangan log OTP di production
+                Log::info("Forgot password OTP sent to: $email");
 
                 return response()->json([
                     'success' => true,
@@ -1883,51 +2025,69 @@ private function getNextDateByDay(int $dayOfWeek, ?Carbon $from = null): Carbon
                         'expires_in' => 5,
                     ],
                 ], 200);
-            } catch (\Exception $e) {
+            } catch (\Throwable $e) {
                 Log::error('Failed to send forgot password email: ' . $e->getMessage());
-
                 return response()->json([
                     'success' => false,
                     'message' => 'Gagal mengirim email. Silakan coba lagi.',
                 ], 500);
             }
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Error in sendForgotPasswordOTP: ' . $e->getMessage());
-
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage(),
+                'message' => 'Terjadi kesalahan sistem',
             ], 500);
         }
     }
 
+
     public function resetPasswordWithOTP(Request $request)
     {
         try {
-            $request->validate([
-                'email' => 'required|email|exists:user,email',
-                'otp' => 'required|string|size:6',
-                'new_password' => 'required|string|min:6|confirmed',
+            $validator = Validator::make($request->all(), [
+                'email'         => 'required|email',
+                'otp'           => 'required|string|size:6',
+                'new_password'  => 'required|string|min:6|confirmed',
+            ], [
+                'email.required'        => 'Email tidak boleh kosong.',
+                'email.email'           => 'Format email tidak valid.',
+                'otp.required'          => 'Kode OTP wajib diisi.',
+                'otp.size'              => 'Kode OTP harus 6 digit.',
+                'new_password.required' => 'Password baru wajib diisi.',
+                'new_password.min'      => 'Password baru minimal 6 karakter.',
+                'new_password.confirmed' => 'Konfirmasi password tidak sama.',
             ]);
 
-            $email = $request->email;
-            $otp = $request->otp;
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors'  => $validator->errors(),
+                ], 422);
+            }
+
+            $email       = $request->email;
+            $otp         = $request->otp;
             $newPassword = $request->new_password;
+
+            $user = User::where('email', $email)->first();
+            if (! $user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Email tidak ditemukan dalam sistem',
+                ], 404);
+            }
 
             $cacheKey = 'forgot_password_otp_' . $email;
             $storedOTP = Cache::get($cacheKey);
 
             if (! $storedOTP) {
+                // OTP kedaluwarsa → 410 Gone (lebih tepat daripada 400)
                 return response()->json([
                     'success' => false,
                     'message' => 'Kode OTP sudah kedaluwarsa. Silakan minta kode baru.',
-                ], 400);
+                ], 410);
             }
 
             if ($storedOTP !== $otp) {
@@ -1937,7 +2097,6 @@ private function getNextDateByDay(int $dayOfWeek, ?Carbon $from = null): Carbon
                 ], 400);
             }
 
-            $user = User::where('email', $email)->first();
             $user->update([
                 'password' => Hash::make($newPassword),
             ]);
@@ -1955,32 +2114,119 @@ private function getNextDateByDay(int $dayOfWeek, ?Carbon $from = null): Carbon
                     'reset_at' => now()->toISOString(),
                 ],
             ], 200);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error('Error in resetPasswordWithOTP: ' . $e->getMessage());
-
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage(),
+                'message' => 'Terjadi kesalahan sistem',
             ], 500);
         }
     }
 
-    public function sendForgotUsername(Request $request)
+
+    public function sendForgotUsernameOTP(Request $request)
     {
         try {
-            $request->validate([
-                'email' => 'required|email|exists:user,email',
+            // VALIDASI FORMAT SAJA
+            $validator = Validator::make($request->all(), [
+                'email' => 'required|email', // <- BUKAN "requirad"
+            ], [
+                'email.required' => 'Email tidak boleh kosong.',
+                'email.email'    => 'Format email tidak valid.',
             ]);
 
-            $email = $request->email;
-            $user = User::where('email', $email)->first();
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors'  => $validator->errors(),
+                ], 422);
+            }
 
+            $email = $request->email;
+
+            // CEK EMAIL DI DB
+            $user = User::where('email', $email)->first();
+            if (!$user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Email tidak ditemukan dalam sistem',
+                ], 404);
+            }
+
+            // GENERATE & SIMPAN OTP (5 menit)
+            $otp = str_pad(random_int(100000, 999999), 6, '0', STR_PAD_LEFT);
+            $cacheKey = 'forgot_username_otp_' . $email;
+            Cache::put($cacheKey, $otp, now()->addMinutes(5));
+
+            // KIRIM EMAIL OTP
+            try {
+                Mail::send('emails.otp_notification', [
+                    'otp' => $otp,
+                    'type' => 'Forgot Username',
+                    'expiration_minutes' => 5,
+                ], function ($message) use ($email) {
+                    $message->to($email)->subject('Kode Verifikasi - Lupa Username (Royal Clinic)');
+                });
+
+                Log::info("Forgot-username OTP sent to: {$email}, OTP: {$otp}");
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Kode OTP telah dikirim ke email Anda',
+                    'data' => [
+                        'email' => $email,
+                        'expires_in' => 5,
+                    ],
+                ], 200);
+            } catch (\Throwable $e) {
+                Log::error('Failed to send forgot-username OTP email: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Gagal mengirim email. Silakan coba lagi.',
+                ], 500);
+            }
+        } catch (\Throwable $e) {
+            Log::error('Error in sendForgotUsernameOTP: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem',
+            ], 500);
+        }
+    }
+
+
+    public function verifyOrChangeUsernameWithOTP(Request $request)
+    {
+        try {
+            // new_username optional: hanya diverifikasi kalau diisi
+            $validator = Validator::make($request->all(), [
+                'email'        => 'required|email',
+                'otp'          => 'required|string|size:6',
+                'new_username' => 'sometimes|nullable|string|min:3|max:50|regex:/^[A-Za-z0-9_.-]+$/|unique:user,username',
+            ], [
+                'email.required'         => 'Email tidak boleh kosong.',
+                'email.email'            => 'Format email tidak valid.',
+                'otp.required'           => 'Kode OTP wajib diisi.',
+                'otp.size'               => 'Kode OTP harus 6 digit.',
+                'new_username.min'       => 'Username minimal 3 karakter.',
+                'new_username.regex'     => 'Username hanya boleh huruf, angka, titik, garis bawah, dan minus.',
+                'new_username.unique'    => 'Username sudah dipakai.',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal',
+                    'errors'  => $validator->errors(),
+                ], 422);
+            }
+
+            $email = trim(strtolower($request->email));
+            $otp   = $request->otp;
+            $new   = $request->new_username;
+
+            $user = User::whereRaw('LOWER(email) = ?', [$email])->first();
             if (! $user) {
                 return response()->json([
                     'success' => false,
@@ -1988,124 +2234,332 @@ private function getNextDateByDay(int $dayOfWeek, ?Carbon $from = null): Carbon
                 ], 404);
             }
 
-            try {
-                Mail::send('emails.username_notification', [
-                    'username' => $user->username,
-                    'email' => $email,
-                    'user_role' => $user->role,
-                ], function ($message) use ($email) {
-                    $message->to($email)
-                        ->subject('Username Akun Anda - Royal Clinic');
-                });
+            $cacheKey = 'forgot_username_otp_' . $email;
+            $storedOTP = Cache::get($cacheKey);
 
-                Log::info("Username sent to email: $email, username: {$user->username}");
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Username telah dikirim ke email Anda',
-                    'data' => [
-                        'email' => $email,
-                        'sent_at' => now()->toISOString(),
-                    ],
-                ], 200);
-            } catch (\Exception $e) {
-                Log::error('Failed to send username email: ' . $e->getMessage());
-
+            if (! $storedOTP) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Gagal mengirim email. Silakan coba lagi.',
-                ], 500);
+                    'message' => 'Kode OTP sudah kedaluwarsa. Silakan minta kode baru.',
+                ], 410);
             }
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (\Exception $e) {
-            Log::error('Error in sendForgotUsername: ' . $e->getMessage());
+
+            if ($storedOTP !== $otp) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kode OTP tidak valid.',
+                ], 400);
+            }
+
+            // Jika tidak ingin ganti username → cukup kembalikan username saat ini
+            if ($new === null || $new === '') {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Verifikasi OTP berhasil',
+                    'data' => [
+                        'email'    => $email,
+                        'username' => $user->username,
+                        'verified_at' => now()->toISOString(),
+                    ],
+                ], 200);
+            }
+
+            // Jika ingin ganti username
+            // (opsional) double check unik (selain unique rule)
+            if (User::where('username', $new)->exists()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Username sudah dipakai.',
+                ], 409);
+            }
+
+            $user->update(['username' => $new]);
+
+            Cache::forget($cacheKey);
+            $user->tokens()->delete(); // optional: force re-login
 
             return response()->json([
+                'success' => true,
+                'message' => 'Username berhasil diganti.',
+                'data' => [
+                    'email'        => $email,
+                    'new_username' => $new,
+                    'updated_at'   => now()->toISOString(),
+                ],
+            ], 200);
+        } catch (\Throwable $e) {
+            Log::error('Error in verifyOrChangeUsernameWithOTP: ' . $e->getMessage());
+            return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan sistem: ' . $e->getMessage(),
+                'message' => 'Terjadi kesalahan sistem',
             ], 500);
         }
     }
 
+
+
     // 🔥 METHOD PEMBAYARAN - FIXED
-public function getPembayaranPasien($pasienId)
-{
-    try {
-        $pasien = Pasien::find($pasienId);
-        if (!$pasien) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Pasien tidak ditemukan',
-            ], 404);
-        }
-
-        Log::info('🔍 getPembayaranPasien called for pasien_id: ' . $pasienId);
-
-        // FIXED: Query untuk multiple pembayaran pending
-        $kunjunganPayments = Kunjungan::with([
-            'poli',
-            'pasien' => function ($query) {
-                $query->select('id', 'nama_pasien', 'alamat', 'tanggal_lahir', 'jenis_kelamin', 'foto_pasien');
-            },
-            'emr' => function ($query) {
-                $query->select(
-                    'id',
-                    'kunjungan_id',
-                    'resep_id',
-                    'keluhan_utama',
-                    'diagnosis',
-                    'tekanan_darah',
-                    'suhu_tubuh',
-                    'nadi',
-                    'pernapasan',
-                    'saturasi_oksigen'
-                );
-            },
-            'emr.pembayaran',
-            'emr.resep.obat' => function ($query) {
-                $query->select('obat.id', 'obat.nama_obat', 'obat.dosis', 'obat.total_harga')
-                    ->withPivot('jumlah', 'dosis', 'keterangan', 'status');
-            },
-            'layanan',
-        ])
-            ->where('pasien_id', $pasienId)
-            ->where('status', 'Payment')
-            ->orderBy('tanggal_kunjungan', 'desc')
-            ->get(); // Return semua, bukan first()
-
-        // Filter untuk pembayaran belum lunas
-        $pendingPayments = $kunjunganPayments->filter(function ($kunjungan) {
-            if (!$kunjungan->emr || !$kunjungan->emr->pembayaran) {
-                return false;
+    public function getPembayaranPasien($pasienId)
+    {
+        try {
+            $pasien = Pasien::find($pasienId);
+            if (!$pasien) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pasien tidak ditemukan',
+                ], 404);
             }
-            return $kunjungan->emr->pembayaran->status === 'Belum Bayar';
-        });
 
-        if ($pendingPayments->isEmpty()) {
+            Log::info('🔍 getPembayaranPasien called for pasien_id: ' . $pasienId);
+
+            // FIXED: Query untuk multiple pembayaran pending
+            $kunjunganPayments = Kunjungan::with([
+                'poli',
+                'pasien' => function ($query) {
+                    $query->select('id', 'nama_pasien', 'alamat', 'tanggal_lahir', 'jenis_kelamin', 'foto_pasien');
+                },
+                'emr' => function ($query) {
+                    $query->select(
+                        'id',
+                        'kunjungan_id',
+                        'resep_id',
+                        'keluhan_utama',
+                        'diagnosis',
+                        'tekanan_darah',
+                        'suhu_tubuh',
+                        'nadi',
+                        'pernapasan',
+                        'saturasi_oksigen'
+                    );
+                },
+                'emr.pembayaran',
+                'emr.resep.obat' => function ($query) {
+                    $query->select('obat.id', 'obat.nama_obat', 'obat.dosis', 'obat.total_harga')
+                        ->withPivot('jumlah', 'dosis', 'keterangan', 'status');
+                },
+                'layanan',
+            ])
+                ->where('pasien_id', $pasienId)
+                ->where('status', 'Payment')
+                ->orderBy('tanggal_kunjungan', 'desc')
+                ->get(); // Return semua, bukan first()
+
+            // Filter untuk pembayaran belum lunas
+            $pendingPayments = $kunjunganPayments->filter(function ($kunjungan) {
+                if (!$kunjungan->emr || !$kunjungan->emr->pembayaran) {
+                    return false;
+                }
+                return $kunjungan->emr->pembayaran->status === 'Belum Bayar';
+            });
+
+            if ($pendingPayments->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Tidak ada pembayaran yang menunggu',
+                ], 404);
+            }
+
+            // Build response untuk multiple payments
+            $paymentsData = [];
+            $totalKeseluruhan = 0;
+
+            foreach ($pendingPayments as $kunjungan) {
+                $paymentData = [
+                    'kunjungan_id' => $kunjungan->id,
+                    'tanggal_kunjungan' => $kunjungan->tanggal_kunjungan,
+                    'no_antrian' => $kunjungan->no_antrian,
+                    'diagnosis' => $kunjungan->emr->diagnosis ?? 'Tidak ada diagnosis',
+                    'poli' => [
+                        'nama_poli' => $kunjungan->poli->nama_poli ?? 'Umum',
+                    ],
+                    'layanan' => [],
+                    'resep_obat' => [],
+                    'total_layanan' => 0,
+                    'total_obat' => 0,
+                    'total_tagihan' => 0,
+                    'status_pembayaran' => $kunjungan->emr->pembayaran->status ?? 'Belum Bayar',
+                    'pembayaran_id' => $kunjungan->emr->pembayaran->id ?? null,
+                ];
+
+                // Process layanan
+                $totalLayanan = 0;
+                if ($kunjungan->layanan && $kunjungan->layanan->isNotEmpty()) {
+                    foreach ($kunjungan->layanan as $layanan) {
+                        $jumlah = (int) $layanan->pivot->jumlah;
+                        $hargaLayanan = (float) $layanan->harga_layanan;
+                        $subtotal = $hargaLayanan * $jumlah;
+                        $totalLayanan += $subtotal;
+
+                        $paymentData['layanan'][] = [
+                            'id' => $layanan->id,
+                            'nama_layanan' => $layanan->nama_layanan ?? 'Layanan',
+                            'harga_layanan' => $hargaLayanan,
+                            'jumlah' => $jumlah,
+                            'subtotal' => $subtotal,
+                        ];
+                    }
+                }
+
+                // Process resep obat
+                $totalObat = 0;
+                if ($kunjungan->emr && $kunjungan->emr->resep) {
+                    foreach ($kunjungan->emr->resep->obat as $obat) {
+                        $jumlah = $obat->pivot->jumlah ?? 1;
+                        $hargaObat = $obat->total_harga ?? 0;
+                        $subtotal = $hargaObat * $jumlah;
+                        $totalObat += $subtotal;
+
+                        $paymentData['resep_obat'][] = [
+                            'obat' => [
+                                'id' => $obat->id,
+                                'nama_obat' => $obat->nama_obat,
+                                'harga_obat' => $hargaObat,
+                            ],
+                            'jumlah' => $jumlah,
+                            'dosis' => $obat->pivot->dosis ?? $obat->dosis,
+                            'keterangan' => $obat->pivot->keterangan ?? 'Sesuai anjuran dokter',
+                            'status' => $obat->pivot->status ?? 'Belum Diambil',
+                        ];
+                    }
+                }
+
+                $paymentData['total_layanan'] = $totalLayanan;
+                $paymentData['total_obat'] = $totalObat;
+                $paymentData['total_tagihan'] = $totalLayanan + $totalObat;
+
+                $totalKeseluruhan += $paymentData['total_tagihan'];
+                $paymentsData[] = $paymentData;
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data pembayaran berhasil diambil',
+                'data' => [
+                    'pasien' => [
+                        'nama_pasien' => $pendingPayments->first()->pasien->nama_pasien ?? 'Tidak ada',
+                        'umur' => $this->calculateAge($pendingPayments->first()->pasien->tanggal_lahir ?? null),
+                        'jenis_kelamin' => $pendingPayments->first()->pasien->jenis_kelamin ?? 'Tidak ada',
+                        'foto_pasien' => $pendingPayments->first()->pasien->foto_pasien,
+                    ],
+                    'payments' => $paymentsData,
+                    'total_keseluruhan' => $totalKeseluruhan,
+                    'jumlah_kunjungan' => count($paymentsData),
+                ],
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('❌ Error getting pembayaran pasien: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Tidak ada pembayaran yang menunggu',
-            ], 404);
+                'message' => 'Gagal mengambil data pembayaran: ' . $e->getMessage(),
+            ], 500);
         }
+    }
 
-        // Build response untuk multiple payments
-        $paymentsData = [];
-        $totalKeseluruhan = 0;
+protected function notifyPasienFromKunjungan(Kunjungan $kunjungan, string $title, string $body, array $extra = []): void
+    {
+        try {
+            // Ambil user_id dari relasi pasien
+            $userId = null;
 
-        foreach ($pendingPayments as $kunjungan) {
-            $paymentData = [
+            if ($kunjungan->relationLoaded('pasien')) {
+                $userId = optional($kunjungan->pasien)->user_id;
+            } else {
+                $pasien = Pasien::find($kunjungan->pasien_id);
+                $userId = optional($pasien)->user_id;
+            }
+
+            if (!$userId) {
+                Log::warning('notifyPasienFromKunjungan: user_id pasien tidak ditemukan. kunjungan_id='.$kunjungan->id);
+                return;
+            }
+
+            $payload = array_merge([
+                'type'           => 'kunjungan_status',
+                'kunjungan_id'   => $kunjungan->id,
+                'status'         => $kunjungan->status ?? null,
+                'nomor_antrian'  => $kunjungan->no_antrian ?? null,
+            ], $extra);
+
+            $this->createNotification($userId, $title, $body, $payload);
+        } catch (\Throwable $e) {
+            Log::warning('notifyPasienFromKunjungan error: '.$e->getMessage());
+        }
+    }
+
+
+    // Tambahkan method ini ke APIMobileController.php
+
+    public function getDetailPembayaran($kunjunganId)
+    {
+        try {
+            Log::info('🔍 getDetailPembayaran called for kunjungan_id: ' . $kunjunganId);
+
+            $kunjungan = Kunjungan::with([
+                'poli',
+                'pasien' => function ($query) {
+                    $query->select('id', 'nama_pasien', 'alamat', 'tanggal_lahir', 'jenis_kelamin', 'foto_pasien');
+                },
+                'emr' => function ($query) {
+                    $query->select(
+                        'id',
+                        'kunjungan_id',
+                        'resep_id',
+                        'keluhan_utama',
+                        'diagnosis',
+                        'tekanan_darah',
+                        'suhu_tubuh',
+                        'nadi',
+                        'pernapasan',
+                        'saturasi_oksigen'
+                    );
+                },
+                'emr.pembayaran',
+                'emr.resep.obat' => function ($query) {
+                    $query->select('obat.id', 'obat.nama_obat', 'obat.dosis', 'obat.total_harga')
+                        ->withPivot('jumlah', 'dosis', 'keterangan', 'status');
+                },
+                'layanan',
+            ])
+                ->where('id', $kunjunganId)
+                ->where('status', 'Payment')
+                ->first();
+
+            if (!$kunjungan) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kunjungan tidak ditemukan atau sudah dibayar',
+                ], 404);
+            }
+
+            if (!$kunjungan->emr || !$kunjungan->emr->pembayaran) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data pembayaran tidak tersedia',
+                ], 404);
+            }
+
+            if ($kunjungan->emr->pembayaran->status !== 'Belum Bayar') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pembayaran sudah selesai',
+                ], 400);
+            }
+
+            // Build response data untuk detail individual
+            $responseData = [
                 'kunjungan_id' => $kunjungan->id,
-                'tanggal_kunjungan' => $kunjungan->tanggal_kunjungan,
-                'no_antrian' => $kunjungan->no_antrian,
-                'diagnosis' => $kunjungan->emr->diagnosis ?? 'Tidak ada diagnosis',
+                'pasien' => [
+                    'nama_pasien' => $kunjungan->pasien->nama_pasien ?? 'Tidak ada',
+                    'umur' => $this->calculateAge($kunjungan->pasien->tanggal_lahir ?? null),
+                    'jenis_kelamin' => $kunjungan->pasien->jenis_kelamin ?? 'Tidak ada',
+                    'foto_pasien' => $kunjungan->pasien->foto_pasien,
+                ],
                 'poli' => [
                     'nama_poli' => $kunjungan->poli->nama_poli ?? 'Umum',
                 ],
+                'tanggal_kunjungan' => $kunjungan->tanggal_kunjungan,
+                'no_antrian' => $kunjungan->no_antrian,
+                'diagnosis' => $kunjungan->emr->diagnosis ?? 'Tidak ada diagnosis',
                 'layanan' => [],
                 'resep_obat' => [],
                 'total_layanan' => 0,
@@ -2124,7 +2578,7 @@ public function getPembayaranPasien($pasienId)
                     $subtotal = $hargaLayanan * $jumlah;
                     $totalLayanan += $subtotal;
 
-                    $paymentData['layanan'][] = [
+                    $responseData['layanan'][] = [
                         'id' => $layanan->id,
                         'nama_layanan' => $layanan->nama_layanan ?? 'Layanan',
                         'harga_layanan' => $hargaLayanan,
@@ -2143,7 +2597,7 @@ public function getPembayaranPasien($pasienId)
                     $subtotal = $hargaObat * $jumlah;
                     $totalObat += $subtotal;
 
-                    $paymentData['resep_obat'][] = [
+                    $responseData['resep_obat'][] = [
                         'obat' => [
                             'id' => $obat->id,
                             'nama_obat' => $obat->nama_obat,
@@ -2157,181 +2611,23 @@ public function getPembayaranPasien($pasienId)
                 }
             }
 
-            $paymentData['total_layanan'] = $totalLayanan;
-            $paymentData['total_obat'] = $totalObat;
-            $paymentData['total_tagihan'] = $totalLayanan + $totalObat;
-            
-            $totalKeseluruhan += $paymentData['total_tagihan'];
-            $paymentsData[] = $paymentData;
+            $responseData['total_layanan'] = $totalLayanan;
+            $responseData['total_obat'] = $totalObat;
+            $responseData['total_tagihan'] = $totalLayanan + $totalObat;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Detail pembayaran berhasil diambil',
+                'data' => $responseData,
+            ], 200);
+        } catch (\Exception $e) {
+            Log::error('❌ Error getting detail pembayaran: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil detail pembayaran: ' . $e->getMessage(),
+            ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Data pembayaran berhasil diambil',
-            'data' => [
-                'pasien' => [
-                    'nama_pasien' => $pendingPayments->first()->pasien->nama_pasien ?? 'Tidak ada',
-                    'umur' => $this->calculateAge($pendingPayments->first()->pasien->tanggal_lahir ?? null),
-                    'jenis_kelamin' => $pendingPayments->first()->pasien->jenis_kelamin ?? 'Tidak ada',
-                    'foto_pasien' => $pendingPayments->first()->pasien->foto_pasien,
-                ],
-                'payments' => $paymentsData,
-                'total_keseluruhan' => $totalKeseluruhan,
-                'jumlah_kunjungan' => count($paymentsData),
-            ],
-        ], 200);
-
-    } catch (\Exception $e) {
-        Log::error('❌ Error getting pembayaran pasien: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengambil data pembayaran: ' . $e->getMessage(),
-        ], 500);
     }
-}
-
-// Tambahkan method ini ke APIMobileController.php
-
-public function getDetailPembayaran($kunjunganId)
-{
-    try {
-        Log::info('🔍 getDetailPembayaran called for kunjungan_id: ' . $kunjunganId);
-
-        $kunjungan = Kunjungan::with([
-            'poli',
-            'pasien' => function ($query) {
-                $query->select('id', 'nama_pasien', 'alamat', 'tanggal_lahir', 'jenis_kelamin', 'foto_pasien');
-            },
-            'emr' => function ($query) {
-                $query->select(
-                    'id',
-                    'kunjungan_id',
-                    'resep_id',
-                    'keluhan_utama',
-                    'diagnosis',
-                    'tekanan_darah',
-                    'suhu_tubuh',
-                    'nadi',
-                    'pernapasan',
-                    'saturasi_oksigen'
-                );
-            },
-            'emr.pembayaran',
-            'emr.resep.obat' => function ($query) {
-                $query->select('obat.id', 'obat.nama_obat', 'obat.dosis', 'obat.total_harga')
-                    ->withPivot('jumlah', 'dosis', 'keterangan', 'status');
-            },
-            'layanan',
-        ])
-            ->where('id', $kunjunganId)
-            ->where('status', 'Payment')
-            ->first();
-
-        if (!$kunjungan) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Kunjungan tidak ditemukan atau sudah dibayar',
-            ], 404);
-        }
-
-        if (!$kunjungan->emr || !$kunjungan->emr->pembayaran) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data pembayaran tidak tersedia',
-            ], 404);
-        }
-
-        if ($kunjungan->emr->pembayaran->status !== 'Belum Bayar') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Pembayaran sudah selesai',
-            ], 400);
-        }
-
-        // Build response data untuk detail individual
-        $responseData = [
-            'kunjungan_id' => $kunjungan->id,
-            'pasien' => [
-                'nama_pasien' => $kunjungan->pasien->nama_pasien ?? 'Tidak ada',
-                'umur' => $this->calculateAge($kunjungan->pasien->tanggal_lahir ?? null),
-                'jenis_kelamin' => $kunjungan->pasien->jenis_kelamin ?? 'Tidak ada',
-                'foto_pasien' => $kunjungan->pasien->foto_pasien,
-            ],
-            'poli' => [
-                'nama_poli' => $kunjungan->poli->nama_poli ?? 'Umum',
-            ],
-            'tanggal_kunjungan' => $kunjungan->tanggal_kunjungan,
-            'no_antrian' => $kunjungan->no_antrian,
-            'diagnosis' => $kunjungan->emr->diagnosis ?? 'Tidak ada diagnosis',
-            'layanan' => [],
-            'resep_obat' => [],
-            'total_layanan' => 0,
-            'total_obat' => 0,
-            'total_tagihan' => 0,
-            'status_pembayaran' => $kunjungan->emr->pembayaran->status ?? 'Belum Bayar',
-            'pembayaran_id' => $kunjungan->emr->pembayaran->id ?? null,
-        ];
-
-        // Process layanan
-        $totalLayanan = 0;
-        if ($kunjungan->layanan && $kunjungan->layanan->isNotEmpty()) {
-            foreach ($kunjungan->layanan as $layanan) {
-                $jumlah = (int) $layanan->pivot->jumlah;
-                $hargaLayanan = (float) $layanan->harga_layanan;
-                $subtotal = $hargaLayanan * $jumlah;
-                $totalLayanan += $subtotal;
-
-                $responseData['layanan'][] = [
-                    'id' => $layanan->id,
-                    'nama_layanan' => $layanan->nama_layanan ?? 'Layanan',
-                    'harga_layanan' => $hargaLayanan,
-                    'jumlah' => $jumlah,
-                    'subtotal' => $subtotal,
-                ];
-            }
-        }
-
-        // Process resep obat
-        $totalObat = 0;
-        if ($kunjungan->emr && $kunjungan->emr->resep) {
-            foreach ($kunjungan->emr->resep->obat as $obat) {
-                $jumlah = $obat->pivot->jumlah ?? 1;
-                $hargaObat = $obat->total_harga ?? 0;
-                $subtotal = $hargaObat * $jumlah;
-                $totalObat += $subtotal;
-
-                $responseData['resep_obat'][] = [
-                    'obat' => [
-                        'id' => $obat->id,
-                        'nama_obat' => $obat->nama_obat,
-                        'harga_obat' => $hargaObat,
-                    ],
-                    'jumlah' => $jumlah,
-                    'dosis' => $obat->pivot->dosis ?? $obat->dosis,
-                    'keterangan' => $obat->pivot->keterangan ?? 'Sesuai anjuran dokter',
-                    'status' => $obat->pivot->status ?? 'Belum Diambil',
-                ];
-            }
-        }
-
-        $responseData['total_layanan'] = $totalLayanan;
-        $responseData['total_obat'] = $totalObat;
-        $responseData['total_tagihan'] = $totalLayanan + $totalObat;
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Detail pembayaran berhasil diambil',
-            'data' => $responseData,
-        ], 200);
-
-    } catch (\Exception $e) {
-        Log::error('❌ Error getting detail pembayaran: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Gagal mengambil detail pembayaran: ' . $e->getMessage(),
-        ], 500);
-    }
-}
 
     private function calculateAge($tanggalLahir)
     {
@@ -2348,195 +2644,97 @@ public function getDetailPembayaran($kunjunganId)
         }
     }
 
-    public function updateStatusObat(Request $request)
+     public function updateStatusObat(Request $request, $id)
     {
-        try {
-            $request->validate([
-                'resep_id' => 'required|exists:resep,id',
-                'obat_id' => 'required|exists:obat,id',
-                'status' => 'required|in:Belum Diambil,Sudah Diambil',
-            ]);
+        $validated = $request->validate([
+            'status' => 'required|string|max:50',
+        ]);
 
-            $resep = Resep::with(['emr.pembayaran', 'emr.kunjungan'])->findOrFail($request->resep_id);
+        // Ganti Resep ke model yang kamu pakai
+        $resep = Resep::findOrFail($id);
+        $resep->status = $validated['status'];
+        $resep->save();
 
-            if (!$resep->emr || !$resep->emr->pembayaran) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data pembayaran tidak ditemukan',
-                ], 404);
-            }
-
-            if ($resep->emr->pembayaran->status !== 'Sudah Bayar') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Obat hanya bisa diambil setelah pembayaran selesai',
-                ], 400);
-            }
-
-            DB::table('resep_obat')
-                ->where('resep_id', $request->resep_id)
-                ->where('obat_id', $request->obat_id)
-                ->update([
-                    'status' => $request->status,
-                    'updated_at' => now(),
-                ]);
-
-            $belumDiambil = DB::table('resep_obat')
-                ->where('resep_id', $request->resep_id)
-                ->where('status', 'Belum Diambil')
-                ->count();
-
-            if ($belumDiambil === 0 && $request->status === 'Sudah Diambil') {
-                $resep->emr->kunjungan->update([
-                    'status' => 'Succeed',
-                ]);
-
-                Log::info("Semua obat sudah diambil. Status kunjungan diubah menjadi Succeed", [
-                    'kunjungan_id' => $resep->emr->kunjungan->id,
-                    'resep_id' => $request->resep_id,
-                ]);
-            }
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Status obat berhasil diupdate',
-                'all_taken' => $belumDiambil === 0,
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error updating status obat: ' . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengupdate status obat: ' . $e->getMessage(),
-            ], 500);
+        // Cari kunjungan untuk tahu pasiennya
+        $kunjungan = null;
+        if ($resep->relationLoaded('kunjungan')) {
+            $kunjungan = $resep->kunjungan;
+        } elseif (!empty($resep->kunjungan_id)) {
+            $kunjungan = Kunjungan::find($resep->kunjungan_id);
         }
+
+        if ($kunjungan) {
+            try {
+                $title = 'Status Resep/Obat Diperbarui';
+                $body  = 'Status obat Anda kini: ' . ($resep->status ?? '-');
+
+                $this->notifyPasienFromKunjungan($kunjungan, $title, $body, [
+                    'type'       => 'obat_status',
+                    'resep_id'   => $resep->id,
+                    'new_status' => $resep->status,
+                ]);
+            } catch (\Throwable $e) {
+                Log::warning('Gagal kirim notif updateStatusObat: ' . $e->getMessage());
+            }
+        } else {
+            Log::warning('updateStatusObat: kunjungan tidak ditemukan untuk resep_id='.$resep->id);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Status obat berhasil diperbarui',
+            'data'    => $resep,
+        ]);
     }
 
-    public function prosesPembayaran(Request $request)
+     public function prosesPembayaran(Request $request)
     {
-        try {
-            $request->validate([
-                'metode_pembayaran' => 'required|in:Cash,Transfer',
-                'pembayaran_id' => 'nullable|exists:pembayaran,id',
-                'kunjungan_id' => 'nullable|exists:kunjungan,id',
-            ]);
+        $validated = $request->validate([
+            'kunjungan_id' => 'required|integer|exists:kunjungans,id',
+            'nominal'      => 'required|numeric|min:0',
+            'metode'       => 'required|string|max:50',
+            'invoice_no'   => 'nullable|string|max:100',
+        ]);
 
-            Log::info('🔥 PROSES PEMBAYARAN - Request Data:', [
-                'pembayaran_id' => $request->pembayaran_id,
-                'kunjungan_id' => $request->kunjungan_id,
-                'metode_pembayaran' => $request->metode_pembayaran,
-                'all_request' => $request->all(),
-            ]);
+        $kunjungan = Kunjungan::findOrFail($validated['kunjungan_id']);
 
-            $pembayaran = null;
+        // Simpan pembayaran (ganti sesuai skema kamu)
+        $pembayaran = Pembayaran::create([
+            'kunjungan_id' => $kunjungan->id,
+            'nominal'      => $validated['nominal'],
+            'metode'       => $validated['metode'],
+            'invoice_no'   => $validated['invoice_no'] ?? null,
+            'status'       => 'Berhasil', // atau sesuai statusmu
+            'paid_at'      => now(),
+        ]);
 
-            if ($request->filled('pembayaran_id')) {
-                $pembayaran = Pembayaran::with(['emr.kunjungan'])->find($request->pembayaran_id);
-                Log::info('🔍 Mencari berdasarkan pembayaran_id: ' . $request->pembayaran_id);
-
-                if ($pembayaran) {
-                    Log::info('✅ Pembayaran ditemukan:', [
-                        'id' => $pembayaran->id,
-                        'status' => $pembayaran->status,
-                        'total_tagihan' => $pembayaran->total_tagihan,
-                    ]);
-                } else {
-                    Log::warning('❌ Pembayaran TIDAK DITEMUKAN dengan ID: ' . $request->pembayaran_id);
-                }
-            }
-
-            if (!$pembayaran && $request->filled('kunjungan_id')) {
-                Log::info('🔍 Fallback: Mencari berdasarkan kunjungan_id: ' . $request->kunjungan_id);
-
-                $pembayaran = Pembayaran::whereHas('emr', function ($query) use ($request) {
-                    $query->where('kunjungan_id', $request->kunjungan_id);
-                })->with(['emr.kunjungan'])->first();
-
-                if ($pembayaran) {
-                    Log::info('✅ Pembayaran ditemukan via kunjungan_id:', [
-                        'pembayaran_id' => $pembayaran->id,
-                        'status' => $pembayaran->status,
-                    ]);
-                } else {
-                    Log::warning('❌ Pembayaran TIDAK DITEMUKAN dengan kunjungan_id: ' . $request->kunjungan_id);
-                }
-            }
-
-            if (!$pembayaran) {
-                Log::error('❌ GAGAL: Pembayaran tidak ditemukan dengan parameter yang diberikan');
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data pembayaran tidak ditemukan untuk kunjungan ini.',
-                    'debug' => [
-                        'pembayaran_id' => $request->pembayaran_id,
-                        'kunjungan_id' => $request->kunjungan_id,
-                    ],
-                ], 404);
-            }
-
-            if ($pembayaran->status === 'Sudah Bayar') {
-                Log::warning('⚠️ PEMBAYARAN SUDAH LUNAS sebelumnya', [
-                    'pembayaran_id' => $pembayaran->id,
-                ]);
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Pembayaran sudah dilakukan sebelumnya.',
-                ], 400);
-            }
-
-            DB::transaction(function () use ($pembayaran, $request) {
-                Log::info('💰 MEMULAI TRANSAKSI PEMBAYARAN:', [
-                    'pembayaran_id' => $pembayaran->id,
-                    'metode' => $request->metode_pembayaran,
-                    'total_tagihan' => $pembayaran->total_tagihan,
-                ]);
-
-                $updateResult = $pembayaran->update([
-                    'metode_pembayaran' => $request->metode_pembayaran,
-                    'uang_yang_diterima' => $pembayaran->total_tagihan,
-                    'kembalian' => 0,
-                    'tanggal_pembayaran' => now(),
-                    'status' => 'Sudah Bayar',
-                ]);
-
-                Log::info('📝 Update pembayaran result: ' . ($updateResult ? 'SUCCESS' : 'FAILED'));
-
-                if ($pembayaran->emr && $pembayaran->emr->kunjungan) {
-                    $kunjunganUpdateResult = $pembayaran->emr->kunjungan->update([
-                        'status' => 'Succeed'
-                    ]);
-
-                    Log::info('📝 Update kunjungan result: ' . ($kunjunganUpdateResult ? 'SUCCESS' : 'FAILED'), [
-                        'kunjungan_id' => $pembayaran->emr->kunjungan->id,
-                        'new_status' => 'Succeed',
-                    ]);
-                } else {
-                    Log::error('❌ EMR atau Kunjungan tidak ditemukan!');
-                }
-            });
-
-            $pembayaran->refresh();
-            Log::info('✅ PEMBAYARAN SELESAI - Status akhir:', [
-                'pembayaran_id' => $pembayaran->id,
-                'status' => $pembayaran->status,
-                'metode_pembayaran' => $pembayaran->metode_pembayaran,
-                'tanggal_pembayaran' => $pembayaran->tanggal_pembayaran,
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Pembayaran berhasil diproses dan status kunjungan diubah menjadi Succeed.',
-                'data' => $pembayaran->fresh(),
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('❌ ERROR PROSES PEMBAYARAN: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal memproses pembayaran: ' . $e->getMessage(),
-            ], 500);
+        // (Opsional) update status kunjungan -> 'Sudah Bayar'
+        if (property_exists($kunjungan, 'status_pembayaran')) {
+            $kunjungan->status_pembayaran = 'Lunas';
+            $kunjungan->save();
         }
+
+        // === Kirim notifikasi ke pasien ===
+        try {
+            $title = 'Pembayaran Berhasil';
+            $body  = 'Pembayaran Anda telah diterima. Terima kasih.';
+
+            $this->notifyPasienFromKunjungan($kunjungan, $title, $body, [
+                'type'       => 'pembayaran',
+                'amount'     => (float) $validated['nominal'],
+                'method'     => $validated['metode'],
+                'invoice_no' => $validated['invoice_no'] ?? null,
+                'paid_at'    => now()->toIso8601String(),
+            ]);
+        } catch (\Throwable $e) {
+            Log::warning('Gagal kirim notif pembayaran: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Pembayaran berhasil diproses',
+            'data'    => $pembayaran,
+        ]);
     }
 
     // midtrans
@@ -3319,42 +3517,42 @@ public function getDetailPembayaran($kunjunganId)
      * Get all dokter with poli and jadwal data
      */
     public function getAllDokter()
-{
-    try {
-        // Ambil semua dokter dengan relasi poli dan jadwal
-        $dokterList = Dokter::with(['poli', 'jadwalDokter'])->get();
+    {
+        try {
+            // Ambil semua dokter dengan relasi poli dan jadwal
+            $dokterList = Dokter::with(['poli', 'jadwalDokter'])->get();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Data seluruh dokter berhasil diambil',
-            'data' => $dokterList->map(function ($dokter) {
-                return [
-                    'id_dokter' => $dokter->id,
-                    'nama_dokter' => $dokter->nama_dokter,
-                    'foto_dokter' => $dokter->foto_dokter,
-                    'no_hp' => $dokter->no_hp,
-                    'poli' => [
-                        'id' => $dokter->poli->id ?? null,
-                        'nama_poli' => $dokter->poli->nama_poli ?? '-',
-                    ],
-                    'jadwal' => $dokter->jadwalDokter->map(function ($item) {
-                        return [
-                            'hari' => $item->hari,
-                            'jam_awal' => $item->jam_awal,      // Pastikan ini ada
-                            'jam_selesai' => $item->jam_selesai, // Pastikan ini ada
-                        ];
-                    }),
-                ];
-            })
-        ]);
-    } catch (\Exception $e) {
-        Log::error('Error getting all dokter: ' . $e->getMessage());
-        return response()->json([
-            'success' => false,
-            'message' => 'Terjadi kesalahan: ' . $e->getMessage()
-        ], 500);
+            return response()->json([
+                'success' => true,
+                'message' => 'Data seluruh dokter berhasil diambil',
+                'data' => $dokterList->map(function ($dokter) {
+                    return [
+                        'id_dokter' => $dokter->id,
+                        'nama_dokter' => $dokter->nama_dokter,
+                        'foto_dokter' => $dokter->foto_dokter,
+                        'no_hp' => $dokter->no_hp,
+                        'poli' => [
+                            'id' => $dokter->poli->id ?? null,
+                            'nama_poli' => $dokter->poli->nama_poli ?? '-',
+                        ],
+                        'jadwal' => $dokter->jadwalDokter->map(function ($item) {
+                            return [
+                                'hari' => $item->hari,
+                                'jam_awal' => $item->jam_awal,      // Pastikan ini ada
+                                'jam_selesai' => $item->jam_selesai, // Pastikan ini ada
+                            ];
+                        }),
+                    ];
+                })
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting all dokter: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: ' . $e->getMessage()
+            ], 500);
+        }
     }
-}
 
     /**
      * Get layanan by poli ID
