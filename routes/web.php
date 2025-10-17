@@ -14,6 +14,7 @@ use App\Http\Controllers\JenisSpesialisController;
 use App\Http\Controllers\Management\ObatController;
 use App\Http\Controllers\Management\UserController;
 use App\Http\Controllers\Testing\TestingController;
+use App\Http\Controllers\Testing\TestingChartController;
 use App\Http\Controllers\Admin\PembayaranController;
 use App\Http\Controllers\Management\DokterController;
 use App\Http\Controllers\Management\PasienController;
@@ -130,6 +131,13 @@ Route::post('/testing-update-status-resep-obat', [TestingController::class, 'bat
 Route::get('/checkout', [TestingController::class, 'checkout'])->name('checkout');
 Route::post('/midtrans/notification', [TestingController::class, 'notificationHandler']);
 Route::get('/sebelum/checkout', [TestingController::class, 'sebelumCheckout']);
+
+
+Route::prefix('/testing-chart')->group(function () {
+    Route::get('/', [TestingChartController::class, 'index'])->name('testing.chart.index');
+    Route::get('/keuangan', [TestingChartController::class, 'chartKeuangan'])->name('testing.chart.keuangan');
+    Route::get('/kunjungan', [TestingChartController::class, 'chartKunjungan'])->name('testing.chart.kunjungan');
+});
 
 
 // // Public web routes for data access
@@ -258,7 +266,6 @@ Route::middleware('auth')->group(function () {
         Route::put('/update_jadwal_dokter/{id}', [JadwalDokterController::class, 'updateJadwalDokter'])->name('update_jadwal_dokter');
         Route::delete('/delete_jadwal_dokter/{id}', [JadwalDokterController::class, 'deleteJadwalDokter'])->name('delete_jadwal_dokter');
         Route::get('/search', [JadwalDokterController::class, 'search'])->name('dokter');
-
     });
 
     Route::prefix('laporan')->name('laporan.')->group(function () {
@@ -295,6 +302,10 @@ Route::middleware('auth')->group(function () {
 
         Route::get('/waiting', [JadwalKunjunganController::class, 'waiting'])->name('waiting');
         Route::post('/update-status/{id}', [JadwalKunjunganController::class, 'updateStatus'])->name('update_status');
+
+        Route::get('/masa-depan', [JadwalKunjunganController::class, 'masaDepan'])->name('masa.depan');
+
+        Route::get('/get-data-KYAD/{id}', [JadwalKunjunganController::class, 'getDataKYAD']);
     });
 
     Route::prefix('kasir')->name('kasir.')->group(function () {

@@ -25,6 +25,29 @@ Route::middleware('throttle:6,1')->group(function () {
     Route::post('/forgot-username/send-otp', [APIMobileController::class, 'sendForgotUsernameOTP'])->name('forgot_username.send_otp');
     Route::post('/forgot-username/verify-or-change', [APIMobileController::class, 'verifyOrChangeUsernameWithOTP'])->name('forgot_username.verify_or_change');
     Route::post('/forgot-username', [APIMobileController::class, 'sendForgotUsername'])->name('forgot_username.deprecated');
+// 🔥 ROUTES UNTUK FORGOT PASSWORD & USERNAME
+Route::post('/forgot-password/send-otp', [APIMobileController::class, 'sendForgotPasswordOTP']);
+Route::post('/forgot-password/reset', [APIMobileController::class, 'resetPasswordWithOTP']);
+Route::post('/forgot-username', [APIMobileController::class, 'sendForgotUsername']);
+
+// 🔥 MIDTRANS CALLBACK - PUBLIC (dipanggil langsung oleh Midtrans server tanpa auth)
+Route::post('/pembayaran/midtrans/callback', [APIMobileController::class, 'midtransCallback']);
+
+// 🔒 PROTECTED ROUTES (butuh autentikasi dengan token)
+Route::middleware(['auth:sanctum', 'role:Pasien'])->group(function () {
+    Route::get('/pasien/profile', [APIMobileController::class, 'getProfile']);
+    Route::post('/pasien/update', [APIMobileController::class, 'updateProfile']);
+    Route::get('/getJadwalDokter', [APIMobileController::class, 'getJadwalDokter'])->name('getJadwalDokter');
+
+    // Kunjungan routes
+    Route::post('/kunjungan/create', [APIMobileController::class, 'bookingDokter']);
+    Route::put('/kunjungan/ubah-status', [APIMobileController::class, 'ubahStatusKunjungan']);
+    Route::post('/kunjungan/batalkan', [APIMobileController::class, 'batalkanStatusKunjungan']);
+
+    Route::get('/getDataJadwalDokter', [APIMobileController::class, 'getDataJadwalDokter']);
+    Route::get('/getDataKunjungan', [APIMobileController::class, 'getDataKunjungan']);
+    Route::get('/getDataDokter', [APIMobileController::class, 'getDataDokter']);
+    Route::get('/getDataDokterSpesialisasi', [APIMobileController::class, 'getDataDokterSpesialisasi']);
 });
 
 Route::post('/pembayaran/midtrans/callback', [APIMobileController::class, 'midtransCallback'])->name('midtrans.callback');

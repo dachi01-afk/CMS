@@ -27,74 +27,76 @@ class KunjunganSeeder extends Seeder
         ];
 
         $pasien = Pasien::all();
-        $dokter = Dokter::all();
+        $dataPoli = Poli::all();
 
-        // foreach ($pasien as $p) {
-        //     // Tentukan tanggal kunjungan pertama pasien ini
-        //     $hariPertamaBerkunjung = $faker->dateTimeBetween('-1 years', '-1 day');
+        foreach ($pasien as $p) {
+            $poli = $dataPoli->random();
 
-        //     $jumlahKunjungan = rand(3, 5);
-        //     $tanggalKunjungan = clone $hariPertamaBerkunjung; // copy supaya bisa dimodifikasi
+            // Tentukan tanggal kunjungan pertama pasien ini
+            $hariPertamaBerkunjung = $faker->dateTimeBetween('-1 years', '1 years');
 
-        //     for ($i = 0; $i < $jumlahKunjungan; $i++) {
-        //         // Cek jumlah kunjungan yang sudah ada di tanggal itu
-        //         $countExisting = Kunjungan::whereDate('tanggal_kunjungan', $tanggalKunjungan->format('Y-m-d'))->count();
+            $jumlahKunjungan = rand(10, 15);
+            $tanggalKunjungan = clone $hariPertamaBerkunjung; // copy supaya bisa dimodifikasi
 
-        //         // Generate nomor antrian baru
-        //         $noAntrian = str_pad($countExisting + 1, 3, '0', STR_PAD_LEFT); // contoh: 001, 002, 003
+            for ($i = 0; $i < $jumlahKunjungan; $i++) {
+                // Cek jumlah kunjungan yang sudah ada di tanggal itu
+                $countExisting = Kunjungan::whereDate('tanggal_kunjungan', $tanggalKunjungan->format('Y-m-d'))->count();
 
-        //         Kunjungan::create([
-        //             'dokter_id' => $dokter->random()->id,
-        //             'pasien_id' => $p->id,
-        //             'tanggal_kunjungan' => $tanggalKunjungan,
-        //             'no_antrian' => $noAntrian,
-        //             'keluhan_awal' => $faker->randomElement($daftarKeluhan),
-        //             'status' => 'Engaged',
-        //         ]);
+                // Generate nomor antrian baru
+                $noAntrian = str_pad($countExisting + 1, 3, '0', STR_PAD_LEFT); // contoh: 001, 002, 003
 
-        //         // Setiap kunjungan berikutnya maju 1–7 hari
-        //         $tanggalKunjungan->modify('+' . rand(1, 7) . ' days');
+                Kunjungan::create([
+                    'poli_id' => $poli->id,
+                    'pasien_id' => $p->id,
+                    'tanggal_kunjungan' => $tanggalKunjungan,
+                    'no_antrian' => $noAntrian,
+                    'keluhan_awal' => $faker->randomElement($daftarKeluhan),
+                    'status' => 'Pending',
+                ]);
 
-        //         // Biar gak lewat hari ini
-        //         if ($tanggalKunjungan > new \DateTime('now')) {
-        //             $tanggalKunjungan = new \DateTime('now');
-        //         }
-        //     }
-        // }
+                // Setiap kunjungan berikutnya maju 1–7 hari
+                $tanggalKunjungan->modify('+' . rand(1, 7) . ' days');
 
-        $dataPoli = Poli::firstOrFail();
+                // Biar gak lewat hari ini
+                if ($tanggalKunjungan > new \DateTime('now')) {
+                    $tanggalKunjungan = new \DateTime('now');
+                }
+            }
+        }
 
-        Kunjungan::create([
-            'poli_id' => $dataPoli->id,
-            'pasien_id' => 1,
-            'tanggal_kunjungan' => '2025-10-13',
-            'no_antrian' => '001',
-            'keluhan_awal' => $daftarKeluhan[0],
-            'status' => 'Pending',
-        ]);
-        Kunjungan::create([
-            'poli_id' => $dataPoli->id,
-            'pasien_id' => 1,
-            'tanggal_kunjungan' => '2025-10-14',
-            'no_antrian' => '001',
-            'keluhan_awal' => $daftarKeluhan[0],
-            'status' => 'Pending',
-        ]);
-        Kunjungan::create([
-            'poli_id' => $dataPoli->id,
-            'pasien_id' => 1,
-            'tanggal_kunjungan' => '2025-10-15',
-            'no_antrian' => '001',
-            'keluhan_awal' => $daftarKeluhan[0],
-            'status' => 'Pending',
-        ]);
-        Kunjungan::create([
-            'poli_id' => $dataPoli->id,
-            'pasien_id' => 1,
-            'tanggal_kunjungan' => '2025-10-16',
-            'no_antrian' => '001',
-            'keluhan_awal' => $daftarKeluhan[0],
-            'status' => 'Pending',
-        ]);
+        // $dataPoli = Poli::firstOrFail();
+
+        // Kunjungan::create([
+        //     'poli_id' => $dataPoli->id,
+        //     'pasien_id' => 1,
+        //     'tanggal_kunjungan' => '2025-10-13',
+        //     'no_antrian' => '001',
+        //     'keluhan_awal' => $daftarKeluhan[0],
+        //     'status' => 'Pending',
+        // ]);
+        // Kunjungan::create([
+        //     'poli_id' => $dataPoli->id,
+        //     'pasien_id' => 1,
+        //     'tanggal_kunjungan' => '2025-10-14',
+        //     'no_antrian' => '001',
+        //     'keluhan_awal' => $daftarKeluhan[0],
+        //     'status' => 'Pending',
+        // ]);
+        // Kunjungan::create([
+        //     'poli_id' => $dataPoli->id,
+        //     'pasien_id' => 1,
+        //     'tanggal_kunjungan' => '2025-10-15',
+        //     'no_antrian' => '001',
+        //     'keluhan_awal' => $daftarKeluhan[0],
+        //     'status' => 'Pending',
+        // ]);
+        // Kunjungan::create([
+        //     'poli_id' => $dataPoli->id,
+        //     'pasien_id' => 1,
+        //     'tanggal_kunjungan' => '2025-10-16',
+        //     'no_antrian' => '001',
+        //     'keluhan_awal' => $daftarKeluhan[0],
+        //     'status' => 'Pending',
+        // ]);
     }
 }

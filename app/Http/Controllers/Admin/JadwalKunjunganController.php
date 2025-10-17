@@ -14,17 +14,61 @@ class JadwalKunjunganController extends Controller
 {
     public function index()
     {
-        // Ambil hari saat ini, misal: 'Senin', 'Selasa', dst.
+        // Ambil hari saat ini dalam bahasa Indonesia
         $hariIni = ucfirst(Carbon::now()->locale('id')->dayName);
 
-        // $dataKunjungan = Kunjungan::with('poli.dokter', 'ku  njungan')->get();
+        // Mapping hari Indonesia ke bahasa Inggris (untuk keperluan parsing Carbon)
+        $mapHari = [
+            'senin'  => 'monday',
+            'selasa' => 'tuesday',
+            'rabu'   => 'wednesday',
+            'kamis'  => 'thursday',
+            'jumat'  => 'friday',
+            'sabtu'  => 'saturday',
+            'minggu' => 'sunday',
+        ];
+
+        // Ambil semua jadwal dokter
+        $jadwalSemua = JadwalDokter::with(['dokter', 'poli'])->get();
+
+        // Proses jadwal yang akan datang berdasarkan hari
+        $jadwalYangAkanDatang = $jadwalSemua->map(function ($jadwal) use ($mapHari) {
+            $hariIndo = strtolower($jadwal->hari);
+            $hariEng = $mapHari[$hariIndo] ?? null;
+
+            if (!$hariEng) {
+                $jadwal->tanggal_berikutnya = null;
+                return $jadwal;
+            }
+
+            // Tanggal hari ini dan nama hari yang sedang diproses
+            $today = Carbon::today();
+            $tanggalHariIni = Carbon::parse('this ' . $hariEng);
+
+            // Jika hari itu sudah lewat, ambil minggu depan
+            if ($tanggalHariIni->lessThan($today)) {
+                $tanggalHariIni = Carbon::parse('next ' . $hariEng);
+            }
+
+            // Simpan hasil ke model (atribut baru)
+            $jadwal->tanggal_berikutnya = $tanggalHariIni;
+
+            return $jadwal;
+        })->filter(function ($jadwal) {
+            // Hanya ambil jadwal yang masih relevan (hari ini atau setelahnya)
+            return $jadwal->tanggal_berikutnya &&
+                $jadwal->tanggal_berikutnya->greaterThanOrEqualTo(Carbon::today());
+        });
 
         // Ambil jadwal berdasarkan hari ini
-        $jadwalHariIni = JadwalDokter::with('dokter', 'poli')
+        $jadwalHariIni = JadwalDokter::with(['dokter', 'poli'])
             ->where('hari', $hariIni)
             ->get();
-        return view('admin.jadwal_kunjungan', compact('jadwalHariIni', 'hariIni'));
+
+        // Kirim ke view
+        return view('admin.jadwal_kunjungan', compact('jadwalHariIni', 'hariIni', 'jadwalYangAkanDatang'));
     }
+
 
     public function search(Request $request)
     {
@@ -91,7 +135,7 @@ class JadwalKunjunganController extends Controller
 
         // $kunjungan = Kunjungan::with(['poli.dokter', 'pasien'])->where('status', 'pending')->whereDate('tanggal_kunjunfan', $today)->oderBy('no_antrian')->get();   
 
-        $kunjungan = Kunjungan::with(['poli','dokter', 'pasien'])
+        $kunjungan = Kunjungan::with(['poli', 'dokter', 'pasien'])
             ->whereDate('tanggal_kunjungan', $today)
             ->where('status', 'Pending')
             ->orderBy('no_antrian')
@@ -114,5 +158,26 @@ class JadwalKunjunganController extends Controller
         }
 
         return response()->json(['success' => true, 'message' => 'Status kunjungan diperbarui menjadi Waiting.']);
+    }
+
+    public function masaDepan()
+    {
+        $kunjunganMasaDepan = Kunjungan::with(['poli', 'dokter', 'pasien'])
+            ->where('status', 'Pending')
+            ->whereDate('tanggal_kunjungan', '>', Carbon::today())
+            ->orderBy('tanggal_kunjungan', 'asc')
+            ->orderBy('no_antrian', 'asc')
+            ->get();
+
+        return response()->json($kunjunganMasaDepan);
+    }
+
+    public function getDataKYAD($id)
+    {
+        $dataKYAD = Kunjungan::with('pasien', 'poli.dokter')->where('id', $id)->firstOrFail();
+
+        return response()->json([
+            'data' => $dataKYAD
+        ]);
     }
 }

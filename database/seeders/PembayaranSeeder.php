@@ -63,11 +63,16 @@ class PembayaranSeeder extends Seeder
         }
 
         // Ambil satu data resep dengan relasi obatnya
-        $dataKunjungan = Kunjungan::with('layanan')->first();
+        $dataKunjungan = Kunjungan::with('kunjunganLayanan')->first();
 
-        if (!$dataKunjungan || $dataKunjungan->layanan->isEmpty()) {
-            $this->command->warn('⚠️ Tidak ada data kunjungan atau layanan di database. Seeder dibatalkan.');
-            return;
+        // if (!$dataKunjungan || $dataKunjungan->layanan->isEmpty()) {
+        //     $this->command->warn('⚠️ Tidak ada data kunjungan atau layanan di database. Seeder dibatalkan.');
+        //     return;
+        // }
+
+        if (!$dataKunjungan) {
+            $this->command->warn('⚠️ Tidak ada data kunjungan, buat data dummy sementara.');
+            $dataKunjungan = \App\Models\Kunjungan::factory()->create();
         }
 
         // Hitung total tagihan dari resep_obat

@@ -1,51 +1,90 @@
-<!-- Header -->
-<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-    <h2 class="text-2xl font-bold text-gray-700">Laporan Keuangan</h2>
-    {{-- <button id="btnAddKeuangan"
-        class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg shadow hover:bg-blue-700 focus:outline-none">
-        + Tambah Data
-    </button> --}}
-</div>
+{{-- main --}}
+<div>
+    <!-- Header Halaman -->
+    <div class="mb-4 mt-2">
+        <div class="flex items-center justify-between">
+            <div class="flex flex-col space-y-1">
+                <div class="flex items-center space-x-3">
+                    <i class="fa-solid fa-gauge-high fa-2xl text-indigo-600"></i>
 
-<!-- Tabel Keuangan -->
-<div class="overflow-hidden rounded-lg shadow-md">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 border-b border-gray-200">
-        <div>
-            <select id="keuangan_pageLength"
-                class="border border-gray-300 text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block w-24 p-1">
-                <option value="10">10</option>
-                <option value="25">25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-            </select>
+                    <h1 class="text-3xl font-extrabold text-gray-900 leading-tight">
+                        Laporan Keuangan
+                    </h1>
+                </div>
+            </div>
+
+            <div class="hidden sm:flex items-center text-gray-600 space-x-2">
+                <i class="fa-regular fa-calendar-days"></i>
+                <span class="font-semibold text-sm">{{ date('d M Y') }}</span>
+            </div>
         </div>
-        <div class="relative">
-            <input type="text" id="keuangan_searchInput"
-                class="block w-60 p-2 pl-3 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-sky-500 focus:border-sky-500"
-                placeholder="Cari data...">
+
+        <p class="mt-2 text-sm text-gray-500">
+            Ringkasan statistik keuangan secara keseluruhan.
+        </p>
+    </div>
+    <hr class="mb-2 border-gray-200">
+
+
+    <!-- Konten -->
+    {{-- <div class="p-2 shadow-lg rounded-lg min-h-screen"> --}}
+
+    <div class="lg:col-span-1 bg-white p-1 rounded-xl shadow-lg flex flex-col h-full">
+
+        {{-- ========== Grafik Utama ========== --}}
+        <div class="bg-white rounded-lg shadow p-4 mb-3">
+            <h2 class="text-lg font-semibold text-gray-700 mb-2">Grafik Jumlah Kunjungan Pasien</h2>
+            <canvas id="kunjunganChart" class="w-full h-64"></canvas>
         </div>
+
+        {{-- ========== 4 Card Statistik Mini ========== --}}
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
+            {{-- Jumlah Dokter --}}
+            <div
+                class="flex items-center justify-between p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow">
+                <div>
+                    <p class="text-sm">Jumlah Dokter</p>
+                    <h3 id="totalDokter" class="text-2xl font-bold">0</h3>
+                </div>
+                <i class="fa-solid fa-user-md text-3xl opacity-70"></i>
+            </div>
+
+            {{-- Jumlah Pasien --}}
+            <div
+                class="flex items-center justify-between p-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg shadow">
+                <div>
+                    <p class="text-sm">Jumlah Pasien</p>
+                    <h3 id="totalPasien" class="text-2xl font-bold">0</h3>
+                </div>
+                <i class="fa-solid fa-users text-3xl opacity-70"></i>
+            </div>
+
+            {{-- Jumlah Apoteker --}}
+            <div
+                class="flex items-center justify-between p-4 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white rounded-lg shadow">
+                <div>
+                    <p class="text-sm">Jumlah Apoteker</p>
+                    <h3 id="totalApoteker" class="text-2xl font-bold">0</h3>
+                </div>
+                <i class="fa-solid fa-prescription-bottle-medical text-3xl opacity-70"></i>
+            </div>
+
+            {{-- Stok Obat --}}
+            <div
+                class="flex items-center justify-between p-4 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg shadow">
+                <div>
+                    <p class="text-sm">Total Stok Obat</p>
+                    <h3 id="totalObat" class="text-2xl font-bold">0</h3>
+                </div>
+                <i class="fa-solid fa-pills text-3xl opacity-70"></i>
+            </div>
+        </div>
+
     </div>
 
-    <div class="overflow-x-auto">
-        <table id="keuanganTable" class="w-full text-sm text-left text-gray-600">
-            <thead class="text-xs uppercase bg-sky-500 text-white">
-                <tr>
-                    <th class="px-6 py-3">No</th>
-                    <th class="px-6 py-3">Nama Pasien</th>
-                    <th class="px-6 py-3">Total Tagihan</th>
-                    <th class="px-6 py-3">Status</th>
-                    <th class="px-6 py-3">Tanggal Pembayaran</th>
-                    {{-- <th class="px-6 py-3 text-center">Aksi</th> --}}
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
 
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between px-4 py-3 border-t border-gray-200 gap-3">
-        <div id="keuangan_customInfo" class="text-sm text-gray-700 dark:text-gray-300"></div>
-        <ul id="keuangan_customPagination" class="inline-flex -space-x-px text-sm"></ul>
-    </div>
+    {{-- </div> --}}
+
 </div>
 
 @vite(['resources/js/admin/laporan/laporan_keuangan.js'])

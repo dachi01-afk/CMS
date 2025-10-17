@@ -28,15 +28,24 @@ class DatabaseSeeder extends Seeder
             ObatSeeder::class,
             JadwalDokterSeeder::class,
             KunjunganSeeder::class,
+<<<<<<< HEAD
             KunjunganLayananSeeder::class,
             TestimoniSeeder::class,
+=======
+            // KunjunganLayananSeeder::class,
+            // TestimoniSeeder::class,
+>>>>>>> 889d6acc4c4e0f879d23a1ef106f70bcd595e7a9
             ResepSeeder::class, 
             ResepObatSeeder::class,
             EMRSeeder::class,
             MetodePembayaranSeeder::class,
             // TesLabSeeder::class,
             PembayaranSeeder::class,
+<<<<<<< HEAD
             AdministrasiSeeder::class,
+=======
+            // AdministrasiSeeder::class,
+>>>>>>> 889d6acc4c4e0f879d23a1ef106f70bcd595e7a9
         ]);
     }
 }

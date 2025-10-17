@@ -34,11 +34,26 @@
                     </button>
                 </li>
 
+                <li class="me-2" role="presentation">
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="tkyad-tab"
+                        data-tabs-target="#data-tkyad" type="button" role="tab" aria-controls="data-tkyad">
+                        Tambah Kunjungan Yang Akan Datang
+                    </button>
+                </li>
+
                 <li class="me-2" role="presentation" id="menuProsesKunjungan">
                     <button class="inline-block p-4 border-b-2 rounded-t-lg" id="proses_kunjungan-tab"
                         data-tabs-target="#data-proses_kunjungan" type="button" role="tab"
                         aria-controls="data-proses_kunjungan" aria-selected="false">
-                        Proses Kunjungan
+                        Proses Kunjungan Hari Ini
+                    </button>
+                </li>
+
+                <li class="me-2" role="presentation" id="menuProsesKunjunganMasaDepan">
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="proses_kunjungan--masa-depan-tab"
+                        data-tabs-target="#data-proses_kunjungan_masa_depan" type="button" role="tab"
+                        aria-controls="data-proses_kunjungan_masa_depan" aria-selected="false">
+                        Kunjungan Yang Akan Datang
                     </button>
                 </li>
 
@@ -56,9 +71,20 @@
                     @include('admin.jadwalKunjungan.buat_kunjungan_baru')
                 </div>
 
+                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-tkyad" role="tabpanel"
+                    aria-labelledby="tkb-tkyad">
+                    @include('admin.jadwalKunjungan.buat-kunjungan-yang-akan-datang')
+                </div>
+
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-proses_kunjungan"
                     role="tabpanel" aria-labelledby="proses_kunjungan-tab">
                     @include('admin.jadwalKunjungan.proses_kunjungan')
+                </div>
+
+                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2"
+                    id="data-proses_kunjungan_masa_depan" role="tabpanel"
+                    aria-labelledby="proses_kunjungan-masa-depan-tab">
+                    @include('admin.jadwalKunjungan.kunjungan-masa-depan')
                 </div>
 
             </div>
