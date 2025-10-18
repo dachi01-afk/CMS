@@ -20,50 +20,82 @@ class DataMedisPasienController extends Controller
 
     public function getDataEMR()
     {
-        $dataEMR = EMR::with('kunjungan.pasien', 'kunjungan.poli.dokter', 'kunjungan', 'resep.obat')->get();
+        $dataEMR = EMR::with([
+            'kunjungan.pasien',
+            'kunjungan.poli.dokter', // cukup sekali
+            'resep.obat',
+        ])->get();
 
         return DataTables::of($dataEMR)
             ->addIndexColumn()
-            ->addColumn('nama_pasien', fn($emr) => $emr->kunjungan->pasien->nama_pasien ?? '-')
+            ->addColumn(
+                'nama_pasien',
+                fn($emr) =>
+                $emr->kunjungan?->pasien?->nama_pasien ?? '-'
+            )
+            // ->addColumn('nama_dokter', function ($emr) {
+            //     $namaDokter = $emr->kunjungan?->poli?->dokter?->first()?->nama_dokter ?? '-';
+            //     return $namaDokter;
+            // })
             ->addColumn('nama_dokter', function ($emr) {
-                // cek dulu rantai relasinya satu per satu
-                $poli = $emr->kunjungan->poli ?? null;
-                if (!$poli) return '-';
-
-                // kalau di model Poli relasinya hasMany
-                if (method_exists($poli, 'dokter')) {
-                    $dokter = $poli->dokter;
-                    if ($dokter instanceof \Illuminate\Database\Eloquent\Collection) {
-                        return optional($dokter->first())->nama_dokter ?? '-';
-                    } else {
-                        // kalau hasOne
-                        return $dokter->nama_dokter ?? '-';
-                    }
-                }
-
-                return '-';
+                $dokter = $emr->kunjungan?->poli?->dokter?->first();
+                return $dokter?->nama_dokter ?? '-';
             })
-            ->addColumn('tanggal_kunjungan', fn($emr) => $emr->kunjungan->tanggal_kunjungan ?? '-')
-            ->addColumn('keluhan_awal', fn($emr) => $emr->kunjungan->keluhan_awal ?? '-')
-            ->addColumn('keluhan_utama', fn($emr) => $emr->keluhan_utama ?? '-')
-            ->addColumn('riwayat_penyakit_dahulu', fn($emr) => $emr->riwayat_penyakit_dahulu ?? '-')
-            ->addColumn('riwayat_penyakit_keluarga', fn($emr) => $emr->riwayat_penyakit_keluarga ?? '-')
+            ->addColumn(
+                'tanggal_kunjungan',
+                fn($emr) =>
+                $emr->kunjungan?->tanggal_kunjungan ?? '-'
+            )
+            ->addColumn(
+                'keluhan_awal',
+                fn($emr) =>
+                $emr->kunjungan?->keluhan_awal ?? '-'
+            )
+            ->addColumn(
+                'keluhan_utama',
+                fn($emr) =>
+                $emr->keluhan_utama ?? '-'
+            )
+            ->addColumn(
+                'riwayat_penyakit_dahulu',
+                fn($emr) =>
+                $emr->riwayat_penyakit_dahulu ?? '-'
+            )
+            ->addColumn(
+                'riwayat_penyakit_keluarga',
+                fn($emr) =>
+                $emr->riwayat_penyakit_keluarga ?? '-'
+            )
             ->addColumn('tekanan_darah', fn($emr) => $emr->tekanan_darah ?? '-')
             ->addColumn('suhu_tubuh', fn($emr) => $emr->suhu_tubuh ?? '-')
             ->addColumn('nadi', fn($emr) => $emr->nadi ?? '-')
             ->addColumn('pernapasan', fn($emr) => $emr->pernapasan ?? '-')
             ->addColumn('saturasi_oksigen', fn($emr) => $emr->saturasi_oksigen ?? '-')
             ->addColumn('diagnosis', fn($emr) => $emr->diagnosis ?? '-')
+            // ->addColumn('action', function ($emr) {
+            //     $namaDokter = $emr->kunjungan?->poli?->dokter?->first()?->nama_dokter ?? '-';
+            //     // amankan attribute HTML kalau perlu
+            //     $namaAttr = e($namaDokter);
+            //     return '
+            //     <button class="btn-detail-emr text-blue-600 hover:text-blue-800 mr-2 text-center items-center"
+            //             data-id="' . $emr->id . '"
+            //             data-dokter="' . $namaAttr . '"
+            //             title="Detail">
+            //         <i class="fa-solid fa-circle-info text-lg"></i> Lihat Detail
+            //     </button>
+            // ';
+            // })
             ->addColumn('action', function ($emr) {
-                $dokter = $emr->kunjungan->poli->dokter->first();
+                $dokter = $emr->kunjungan?->poli?->dokter?->first();
+                $namaDokter = $dokter?->nama_dokter ?? '-';
                 return '
-                <button class="btn-detail-emr text-blue-600 hover:text-blue-800 mr-2 text-center items-center" 
-                        data-id="' . $emr->id . '" 
-                        data-dokter="' . $dokter->nama_dokter . '" 
-                        title="Detail">
-                    <i class="fa-solid fa-circle-info text-lg"></i> Lihat Detail
-                </button>
-                ';
+        <button class="btn-detail-emr text-blue-600 hover:text-blue-800 mr-2 text-center items-center"
+                data-id="' . $emr->id . '"
+                data-dokter="' . $namaDokter . '"
+                title="Detail">
+            <i class="fa-solid fa-circle-info text-lg"></i> Lihat Detail
+        </button>
+    ';
             })
             ->rawColumns(['action'])
             ->make(true);

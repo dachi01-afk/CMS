@@ -26,7 +26,7 @@ $(function () {
             { data: "nama_dokter", name: "nama_dokter" },
             { data: "tanggal_kunjungan", name: "tanggal_kunjungan" },
             { data: "keluhan_awal", name: "keluhan_awal" },
-            { data: "keluhan_utama", name: "tanggal_kunjungan" },
+            { data: "keluhan_utama", name: "keluhan_utama" },
             {
                 data: "riwayat_penyakit_dahulu",
                 name: "riwayat_penyakit_dahulu",
