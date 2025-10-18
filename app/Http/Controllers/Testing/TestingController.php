@@ -294,4 +294,8 @@ class TestingController extends Controller
 
         return response()->json(['status' => 'ok']);
     }
+
+    public function contohDetailEMR() {
+        return view('contoh-detail-emr');
+    }
 }

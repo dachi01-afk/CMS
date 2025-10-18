@@ -35,7 +35,7 @@ class DatabaseSeeder extends Seeder
             EMRSeeder::class,
             MetodePembayaranSeeder::class,
             // TesLabSeeder::class,
-            PembayaranSeeder::class,
+            // PembayaranSeeder::class,
             // AdministrasiSeeder::class,
         ]);
     }

@@ -41,7 +41,7 @@
 
                         <td class="px-6 py-4 font-medium text-gray-900 text-center">
                             {{ $jadwal->hari }}
-                            ({{ \Carbon\Carbon::parse($jadwal->tanggal_berikutnya)->translatedFormat('d F Y') }})
+                            {{ \Carbon\Carbon::parse($jadwal->tanggal_berikutnya)->translatedFormat('d F Y') }}
                         </td>
 
                         <!-- Kolom Waktu -->
@@ -60,6 +60,7 @@
                                 data-dokter-id="{{ $jadwal->dokter->id }}"
                                 data-dokter-nama="{{ $jadwal->dokter->nama_dokter }}"
                                 data-poli-id="{{ $jadwal->poli->id }}" data-nama-poli="{{ $jadwal->poli->nama_poli }}"
+                                data-tanggal="{{ \Carbon\Carbon::parse($jadwal->tanggal_berikutnya)->toDateString() }}"
                                 data-spesialis="{{ $jadwal->dokter->jenisSpesialis->nama_spesialis ?? '-' }}"
                                 data-jadwal-id="{{ $jadwal->id }}">
                                 Pilih
@@ -101,6 +102,8 @@
             <form action="{{ route('jadwal_kunjungan.create') }}" method="POST" class="p-6 space-y-4">
                 @csrf
 
+                <input type="hidden" id="tanggal-kunjungan-kyad" name="tanggal_kunjungan">
+
                 <!-- Dokter -->
                 <div>
                     <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Dokter</label>
@@ -120,7 +123,8 @@
                 <!-- Cari Pasien -->
                 <div>
                     <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Cari Pasien</label>
-                    <input type="text" id="search_pasien-kyad" name="search_pasien" placeholder="Ketik nama pasien..."
+                    <input type="text" id="search_pasien-kyad" name="search_pasien"
+                        placeholder="Ketik nama pasien..."
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
                     <div id="search_results-kyad"
                         class="mt-2 bg-white border border-gray-200 rounded-lg shadow max-h-40 overflow-y-auto hidden">
@@ -134,14 +138,6 @@
                     <p><strong>Nama:</strong> <span id="nama_pasien-kyad"></span></p>
                     <p><strong>Alamat:</strong> <span id="alamat_pasien-kyad"></span></p>
                     <p><strong>Jenis Kelamin:</strong> <span id="jk_pasien-kyad"></span></p>
-                </div>
-
-                <!-- Tanggal -->
-                <div>
-                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Tanggal
-                        Kunjungan</label>
-                    <input type="date" name="tanggal_kunjungan" required
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
                 </div>
 
                 <!-- Keluhan -->

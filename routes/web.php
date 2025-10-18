@@ -131,6 +131,7 @@ Route::post('/testing-update-status-resep-obat', [TestingController::class, 'bat
 Route::get('/checkout', [TestingController::class, 'checkout'])->name('checkout');
 Route::post('/midtrans/notification', [TestingController::class, 'notificationHandler']);
 Route::get('/sebelum/checkout', [TestingController::class, 'sebelumCheckout']);
+Route::get('/contoh-detail-emr', [TestingController::class, 'contohDetailEMR']);
 
 
 Route::prefix('/testing-chart')->group(function () {
@@ -306,6 +307,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/masa-depan', [JadwalKunjunganController::class, 'masaDepan'])->name('masa.depan');
 
         Route::get('/get-data-KYAD/{id}', [JadwalKunjunganController::class, 'getDataKYAD']);
+
+        Route::post('/batalkan-kunjungan/{id}', [JadwalKunjunganController::class, 'batalkanKunjungan']);
     });
 
     Route::prefix('kasir')->name('kasir.')->group(function () {

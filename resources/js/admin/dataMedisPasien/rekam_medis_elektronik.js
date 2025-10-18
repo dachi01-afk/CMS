@@ -16,7 +16,12 @@ $(function () {
         info: false,
         ajax: "/data_medis_pasien/data_emr",
         columns: [
-            { data: "id", name: "id" },
+            {
+                data: "DT_RowIndex",
+                name: "DT_RowIndex",
+                orderable: false,
+                searchable: false,
+            },
             { data: "nama_pasien", name: "nama_pasien" },
             { data: "nama_dokter", name: "nama_dokter" },
             { data: "tanggal_kunjungan", name: "tanggal_kunjungan" },
@@ -148,6 +153,11 @@ $(function () {
                 $("#detail_riwayat_penyakit_keluarga").text(
                     data.riwayat_penyakit_keluarga || "-"
                 );
+                $("#tekanan_darah").text(data.tekanan_darah || "-");
+                $("#nadi").text(data.nadi || "-");
+                $("#pernapasan").text(data.pernapasan || "-");
+                $("#saturasi_oksigen").text(data.saturasi_oksigen || "-");
+                $("#diagnosis").text(data.diagnosis || "-");
 
                 modalDetailEMR?.show();
             })
@@ -162,7 +172,7 @@ $(function () {
         $("#closeDetailEMR").on("click", function () {
             modalDetailEMR?.hide();
         });
-        
+
         $("#buttonCloseModalDetailEMR").on("click", function () {
             modalDetailEMR?.hide();
         });

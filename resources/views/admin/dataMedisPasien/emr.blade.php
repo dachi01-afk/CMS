@@ -86,6 +86,24 @@
 
                     <div class="font-medium text-gray-700 dark:text-gray-300">Riwayat Penyakit Keluarga:</div>
                     <div id="detail_riwayat_penyakit_keluarga" class="text-gray-900 dark:text-white">-</div>
+
+                    <div class="font-medium text-gray-700 dark:text-gray-300">Tekanan Darah:</div>
+                    <div id="tekanan_darah" class="text-gray-900 dark:text-white">-</div>
+
+                    <div class="font-medium text-gray-700 dark:text-gray-300">Suhu Tubuh:</div>
+                    <div id="suhu_tubuh" class="text-gray-900 dark:text-white">-</div>
+
+                    <div class="font-medium text-gray-700 dark:text-gray-300">Detak Nadi:</div>
+                    <div id="nadi" class="text-gray-900 dark:text-white">-</div>
+
+                    <div class="font-medium text-gray-700 dark:text-gray-300">Pernapasan:</div>
+                    <div id="pernapasan" class="text-gray-900 dark:text-white">-</div>
+
+                    <div class="font-medium text-gray-700 dark:text-gray-300">Saturasi Oksigen:</div>
+                    <div id="saturasi_oksigen" class="text-gray-900 dark:text-white">-</div>
+
+                    <div class="font-medium text-gray-700 dark:text-gray-300">Diagnosis:</div>
+                    <div id="diagnosis" class="text-gray-900 dark:text-white">-</div>
                 </div>
             </div>
 

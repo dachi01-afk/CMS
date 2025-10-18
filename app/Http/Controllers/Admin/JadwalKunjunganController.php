@@ -17,6 +17,8 @@ class JadwalKunjunganController extends Controller
         // Ambil hari saat ini dalam bahasa Indonesia
         $hariIni = ucfirst(Carbon::now()->locale('id')->dayName);
 
+        $tanggalHariIni = Carbon::now()->toDateString();
+
         // Mapping hari Indonesia ke bahasa Inggris (untuk keperluan parsing Carbon)
         $mapHari = [
             'senin'  => 'monday',
@@ -56,17 +58,20 @@ class JadwalKunjunganController extends Controller
             return $jadwal;
         })->filter(function ($jadwal) {
             // Hanya ambil jadwal yang masih relevan (hari ini atau setelahnya)
+
             return $jadwal->tanggal_berikutnya &&
                 $jadwal->tanggal_berikutnya->greaterThanOrEqualTo(Carbon::today());
         });
 
+        $jamSekarang = Carbon::now()->format('H:i:s');
+
         // Ambil jadwal berdasarkan hari ini
         $jadwalHariIni = JadwalDokter::with(['dokter', 'poli'])
-            ->where('hari', $hariIni)
+            ->where('hari', $hariIni)->where('jam_selesai', '>', $jamSekarang)
             ->get();
 
         // Kirim ke view
-        return view('admin.jadwal_kunjungan', compact('jadwalHariIni', 'hariIni', 'jadwalYangAkanDatang'));
+        return view('admin.jadwal_kunjungan', compact('jadwalHariIni', 'hariIni', 'jadwalYangAkanDatang', 'tanggalHariIni'));
     }
 
 
@@ -82,7 +87,6 @@ class JadwalKunjunganController extends Controller
         $request->validate([
             'poli_id' => 'required|exists:poli,id',
             'pasien_id' => 'required|exists:pasien,id',
-            'tanggal_kunjungan' => 'required|date',
             'keluhan_awal' => 'required|string',
         ]);
 
@@ -95,7 +99,7 @@ class JadwalKunjunganController extends Controller
 
             // Ambil kunjungan terakhir di tanggal yang sama
             $lastKunjungan = Kunjungan::where('tanggal_kunjungan', $tanggal)
-                ->orderByDesc('id')
+                ->orderByDesc('no_antrian')
                 ->lockForUpdate() // kunci baris agar tidak bentrok antar request
                 ->first();
 
@@ -178,6 +182,27 @@ class JadwalKunjunganController extends Controller
 
         return response()->json([
             'data' => $dataKYAD
+        ]);
+    }
+
+    public function batalkanKunjungan($id)
+    {
+        $dataKYAD = Kunjungan::find($id);
+
+        if (!$dataKYAD) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data kunjungan tidak ditemukan'
+            ]);
+        }
+
+        $dataKYAD->update([
+            'status' => 'Canceled',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Berhasil Membatalkan Kunjungan'
         ]);
     }
 }
