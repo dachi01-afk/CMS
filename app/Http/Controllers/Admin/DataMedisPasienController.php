@@ -26,8 +26,22 @@ class DataMedisPasienController extends Controller
             ->addIndexColumn()
             ->addColumn('nama_pasien', fn($emr) => $emr->kunjungan->pasien->nama_pasien ?? '-')
             ->addColumn('nama_dokter', function ($emr) {
-                $dokter = $emr->kunjungan->poli->dokter->first();
-                return $dokter->nama_dokter ?? '-';
+                // cek dulu rantai relasinya satu per satu
+                $poli = $emr->kunjungan->poli ?? null;
+                if (!$poli) return '-';
+
+                // kalau di model Poli relasinya hasMany
+                if (method_exists($poli, 'dokter')) {
+                    $dokter = $poli->dokter;
+                    if ($dokter instanceof \Illuminate\Database\Eloquent\Collection) {
+                        return optional($dokter->first())->nama_dokter ?? '-';
+                    } else {
+                        // kalau hasOne
+                        return $dokter->nama_dokter ?? '-';
+                    }
+                }
+
+                return '-';
             })
             ->addColumn('tanggal_kunjungan', fn($emr) => $emr->kunjungan->tanggal_kunjungan ?? '-')
             ->addColumn('keluhan_awal', fn($emr) => $emr->kunjungan->keluhan_awal ?? '-')
