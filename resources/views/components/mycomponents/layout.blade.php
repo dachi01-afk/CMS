@@ -109,9 +109,9 @@
                         Dashboard
                     </x-mycomponents.sidebar_link>
 
-                    <x-mycomponents.sidebar_link href="jenis.spesialis.index" class="fa-solid fa-user-doctor">
+                    {{-- <x-mycomponents.sidebar_link href="jenis.spesialis.index" class="fa-solid fa-user-doctor">
                         Jenis Sepsialis Dokter
-                    </x-mycomponents.sidebar_link>
+                    </x-mycomponents.sidebar_link> --}}
 
                     <x-mycomponents.sidebar_link href="poli.index" class="fa-solid fa-stethoscope">
                         Poli
