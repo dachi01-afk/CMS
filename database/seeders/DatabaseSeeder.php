@@ -32,12 +32,12 @@ class DatabaseSeeder extends Seeder
             // TestimoniSeeder::class,
             ResepSeeder::class,
             ResepObatSeeder::class,
-            EMRSeeder::class,
+            // EMRSeeder::class,
             MetodePembayaranSeeder::class,
             // TesLabSeeder::class,
 
             // PembayaranSeeder::class,
-            PembayaranSeeder::class,
+            // PembayaranSeeder::class,
             // AdministrasiSeeder::class,
         ]);
     }
