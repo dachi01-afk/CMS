@@ -95,7 +95,7 @@ Route::middleware(['auth:sanctum', 'role:Dokter'])
     ->prefix('dokter')
     ->name('dokter.')
     ->group(function () {
-        Route::get('/get-data-dokter', [APIMobileController::class, 'getDataDokter'])->name('data');
+        Route::get('/get-data-dokter', [APIMobileController::class, 'getDataDokter']);
         Route::post('/update-profile', [APIMobileController::class, 'updateDataDokter'])->name('update_profile');
         Route::get('/get-data-kunjungan-by-id-dokter', [APIMobileController::class, 'getDataKunjunganBerdasarkanIdDokter'])->name('kunjungan_by_dokter');
         Route::get('/get-data-obat', [APIMobileController::class, 'getDataObat'])->name('obat');

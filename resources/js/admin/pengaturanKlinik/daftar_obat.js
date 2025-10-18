@@ -22,7 +22,7 @@ $(function () {
                 name: "jumlah",
                 render: function (data, type, row) {
                     if (!data) return "-"; // kalau null / kosong
-                    return data + " pcs";
+                    return data + " capsul";
                 },
             },
             {

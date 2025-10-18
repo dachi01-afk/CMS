@@ -30,7 +30,9 @@ export default defineConfig({
                 "resources/js/admin/jadwalKunjungan/jadwal_kunjungan.js",
                 "resources/js/admin/jadwalKunjungan/proses_kunjungan.js",
 
-
+                // jadwal kunjungan
+                "resources/js/admin/jadwalKunjungan/jadwal-dokter-yang-akan-datang.js",
+                "resources/js/admin/jadwalKunjungan/kunjungan-masa-depan.js",
 
                 // pengaturan klinik
                 "resources/js/admin/pengaturanKlinik/jadwal_dokter.js",
@@ -43,8 +45,8 @@ export default defineConfig({
                 "resources/js/admin/dataMedisPasien/data_diagnosa_dan_konsultasi.js",
                 "resources/js/admin/dataMedisPasien/data_hasil_lab.js",
 
-                // transaksi 
-                "resources/js/admin/pengambilanObat/transaksi-menunggu.js"
+                // transaksi
+                "resources/js/admin/pengambilanObat/transaksi-menunggu.js",
             ],
             refresh: true,
         }),

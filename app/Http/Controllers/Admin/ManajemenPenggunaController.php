@@ -26,6 +26,7 @@ class ManajemenPenggunaController extends Controller
         $query = User::select(['id', 'username', 'email', 'role']);
 
         return DataTables::of($query)
+            ->addIndexColumn()
             ->addColumn('action', function ($user) {
                 return '
                     <button class="btn-edit-user text-blue-600 hover:text-blue-800 mr-2" data-id="' . $user->id . '"  title="Edit"

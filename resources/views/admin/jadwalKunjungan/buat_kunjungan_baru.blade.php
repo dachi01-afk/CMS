@@ -53,10 +53,9 @@
                                 class="pilih-jadwal-btn text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg text-sm font-medium transition duration-150 shadow-sm"
                                 data-dokter-id="{{ $jadwal->dokter->id }}"
                                 data-dokter-nama="{{ $jadwal->dokter->nama_dokter }}"
-                                data-poli-id="{{ $jadwal->poli->id }}"
-                                data-nama-poli="{{ $jadwal->poli->nama_poli }}"
+                                data-poli-id="{{ $jadwal->poli->id }}" data-nama-poli="{{ $jadwal->poli->nama_poli }}"
                                 data-spesialis="{{ $jadwal->dokter->jenisSpesialis->nama_spesialis ?? '-' }}"
-                                data-jadwal-id="{{ $jadwal->id }}">
+                                data-tanggal-kunjungan="{{ $tanggalHariIni }}" data-jadwal-id="{{ $jadwal->id }}">
                                 Pilih
                             </button>
                         </td>
@@ -76,11 +75,11 @@
 
 
 <!-- Modal Tambah Kunjungan -->
-<div id="addKunjunganModal" tabindex="-1" aria-hidden="true"    
+<div id="addKunjunganModal" tabindex="-1" aria-hidden="true"
     class="hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 bg-black bg-opacity-50 overflow-y-auto overflow-x-hidden">
     <div class="relative w-full max-w-xl max-h-full">
         <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
-            
+
             <!-- Header -->
             <div class="flex items-center justify-between p-4 border-b dark:border-gray-600">
                 <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
@@ -95,6 +94,7 @@
             <!-- Form -->
             <form action="{{ route('jadwal_kunjungan.create') }}" method="POST" class="p-6 space-y-4">
                 @csrf
+                <input type="hidden" name="tanggal_kunjungan" id="tanggal_kunjungan">
 
                 <!-- Dokter -->
                 <div>
@@ -132,11 +132,11 @@
                 </div>
 
                 <!-- Tanggal -->
-                <div>
+                {{-- <div>
                     <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Tanggal Kunjungan</label>
                     <input type="date" name="tanggal_kunjungan" required
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
-                </div>
+                </div> --}}
 
                 <!-- Keluhan -->
                 <div>
