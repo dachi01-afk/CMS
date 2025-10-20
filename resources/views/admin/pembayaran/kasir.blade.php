@@ -54,7 +54,7 @@
                 </div>
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-riwayat-transaksi"
                     role="tabpanel" aria-labelledby="riwayat-transaksi-tab">
-                    @include('admin.table_pengambilan_obat')
+                    @include('admin.pembayaran.riwayat-transaksi')
                 </div>
             </div>
         </div>

@@ -140,6 +140,10 @@ Route::prefix('/testing-chart')->group(function () {
     Route::get('/kunjungan', [TestingChartController::class, 'chartKunjungan'])->name('testing.chart.kunjungan');
 });
 
+Route::get('/contoh-kuitansi', function () {
+    return view('kuitansi');
+});
+
 
 // // Public web routes for data access
 // Route::get('/getDataJadwalDokter', [APIController::class, 'getDataJadwalDokter'])->name('get.data.jadwal.dokter');
@@ -316,6 +320,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/get-data-pembayaran', [KasirController::class, 'getDataPembayaran'])->name('get.data.pembayaran');
         Route::get('/transaksi/{kode_transaksi}', [KasirController::class, 'transaksi'])->name('transaksi');
         Route::post('/pembayaran-cash', [KasirController::class, 'melakukanPembayaranCash'])->name('pembayaran.cash');
+        Route::get('/get-data-riwayat-pembayaran', [KasirController::class, 'getDataRiwayatPembayaran'])->name('get.data.riwayat.pembayaran');
+        Route::get('/kwitansi/{kodeTransaksi}', [KasirController::class, 'showKwitansi'])->name('show.kwitansi');
     });
 });
 
