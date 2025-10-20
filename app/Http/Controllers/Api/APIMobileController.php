@@ -3811,4 +3811,16 @@ class APIMobileController extends Controller
             ], 500);
         }
     }
+
+    public function getDataMetodePembayaran()
+    {
+        $dataMetodePembayaran = MetodePembayaran::all();
+
+        return response()->json([
+            'success' => true,
+            'status' => 200,
+            'message' => 'Berhasil Memunculkan Data Metode Pembayaran',
+            'data' => $dataMetodePembayaran,
+        ]);
+    }
 }

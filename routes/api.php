@@ -78,6 +78,8 @@ Route::middleware(['auth:sanctum', 'role:Pasien'])->group(function () {
         Route::post('/midtrans/create', [APIMobileController::class, 'createMidtransTransaction'])->name('midtrans.create');
         Route::get('/status/{order_id}', [APIMobileController::class, 'checkPaymentStatus'])->name('status');
         Route::post('/force-update', [APIMobileController::class, 'forceUpdatePaymentStatus'])->name('force_update');
+
+        Route::get('/get-data-metode-pembayaran', [APIMobileController::class, 'getDataMetodePembayaran']);
     });
 
     // Notifications (polling)
