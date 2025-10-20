@@ -15,7 +15,7 @@ $(function () {
         columns: [
             {
                 data: "DT_RowIndex",
-                nama: "DT_RowIndex",
+                name: "DT_RowIndex",
                 orderable: false,
                 searchable: false,
             },

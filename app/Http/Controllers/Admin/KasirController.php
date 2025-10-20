@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Pembayaran;
+use App\Models\MetodePembayaran;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -310,4 +311,27 @@ class KasirController extends Controller
 
         return view('admin.pembayaran.kwitansi', compact('dataPembayaran', 'totalObat', 'totalLayanan', 'grandTotal', 'namaPT'));
     }
+
+    public function getDataMetodePembayaran()
+    {
+        $dataMetodePembayaran = MetodePembayaran::all();
+
+        return DataTables::of($dataMetodePembayaran)
+            ->addIndexColumn()
+            ->addColumn('nama_metode', fn($mP) => $mP->nama_metode)
+            ->addColumn('action', function ($mP) {
+                return '
+                <button class="btn-update-metode-pembayaran text-blue-600 hover:text-blue-800 mr-2" data-id="' . $mP->id . '" title="Edit">
+                    <i class="fa-regular fa-pen-to-square text-lg"></i>
+                </button>
+                <button class="btn-delete-metode-pembayaran text-red-600 hover:text-red-800" data-id="' . $mP->id . '" title="Hapus">
+                    <i class="fa-regular fa-trash-can text-lg"></i>
+                </button>
+            ';
+            })
+            ->rawColumns(['action'])
+            ->make(true);
+    }
+
+    
 }

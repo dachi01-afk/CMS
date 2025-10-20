@@ -1,32 +1,34 @@
+import $ from "jquery";
 import axios from "axios";
 import { initFlowbite } from "flowbite";
-import $ from "jquery";
 
-// data jadwal dokter
+// data metode pembayaran
 $(function () {
-    var table = $("#jadwalTable").DataTable({
+    var table = $("#metodePembayaran").DataTable({
         processing: true,
         serverSide: true,
-        paging: true,
         searching: true,
         ordering: true,
-        pageLength: 10,
-        lengthChange: false,
+        pageLength: true,
+        lengthChange: true,
         info: false,
-        ajax: "/pengaturan_klinik/jadwal_dokter",
+        ajax: "kasir/metode-pembayaran",
         columns: [
-            { data: "id", name: "id" },
-            { data: "dokter", name: "dokter" },
-            { data: "nama_poli", name: "nama_poli" },
-            { data: "hari_formatted", name: "hari" },
-            { data: "jam_awal", name: "jam_awal" },
-            { data: "jam_selesai", name: "jam_selesai" },
+            {
+                data: "DT_RowIndex",
+                name: "DT_RowIndex",
+                orderable: false,
+                searchable: false,
+            },
+            {
+                data: "nama_metode",
+                name: "nama_metode",
+            },
             {
                 data: "action",
                 name: "action",
                 orderable: false,
                 searchable: false,
-                className: "text-center whitespace-nowrap",
             },
         ],
         dom: "t",
@@ -39,13 +41,13 @@ $(function () {
     });
 
     // 🔎 Search
-    $("#jadwal_searchInput").on("keyup", function () {
+    $("#metode-pembayaran-search-input").on("keyup", function () {
         table.search(this.value).draw();
     });
 
-    const $info = $("#jadwal_customInfo");
-    const $pagination = $("#jadwal_customPagination");
-    const $perPage = $("#jadwal_pageLength");
+    const $info = $("#metode-pembayaran-custom-info");
+    const $pagination = $("#metode-pembayaran-custom-pagination");
+    const $perPage = $("#metode-pembayaran-page-length");
 
     function updatePagination() {
         const info = table.page.info();
@@ -107,11 +109,11 @@ $(function () {
     updatePagination();
 });
 
-// add jadwal dokter
+// add data metode pembayaran
 $(function () {
-    const addModalEl = document.getElementById("addJadwalModal");
+    const addModalEl = document.getElementById("modalCreateMetodePembayaran");
     const addModal = addModalEl ? new Modal(addModalEl) : null;
-    const $formAdd = $("#formAddJadwalDokter");
+    const $formAdd = $("#formCreateMetodePembayaran");
 
     function resetAddForm() {
         $formAdd[0].reset();
@@ -121,63 +123,14 @@ $(function () {
         $("#search_results_create").addClass("hidden");
     }
 
-    $("#btnAddJadwalDokter").on("click", function () {
+    $("#buttonOpenModalCreateMetodePembayaran").on("click", function () {
         resetAddForm();
         addModal?.show();
     });
 
-    $("#closeAddJadwalModal").on("click", function () {
+    $("#buttonCloseModalCreateMetodePembayaran").on("click", function () {
         addModal?.hide();
         resetAddForm();
-    });
-
-    const searchInput = document.getElementById("search_dokter_create");
-    const resultsDiv = document.getElementById("search_results_create");
-    const dokterDataDiv = document.getElementById("dokter_data_create");
-
-    searchInput.addEventListener("keyup", async () => {
-        const query = searchInput.value.trim();
-        if (query.length < 2) {
-            resultsDiv.classList.add("hidden");
-            return;
-        }
-
-        const response = await fetch(
-            `/pengaturan_klinik/search?query=${query}`
-        );
-        const data = await response.json();
-
-        console.log(data);
-
-        resultsDiv.innerHTML = "";
-        if (data.length > 0) {
-            resultsDiv.classList.remove("hidden");
-            data.forEach((dokter) => {
-                const item = document.createElement("div");
-                item.className =
-                    "px-4 py-2 hover:bg-indigo-100 cursor-pointer text-sm";
-                item.textContent = `${dokter.nama_dokter} (${dokter.nama_poli})`; // tampilkan poli di hasil pencarian
-
-                item.onclick = () => {
-                    document.getElementById("dokter_id_create").value =
-                        dokter.id;
-                    document.getElementById("poli_id_create").value =
-                        dokter.poli_id;
-                    document.getElementById("nama_dokter_create").textContent =
-                        dokter.nama_dokter;
-                    document.getElementById("nama_poli_create").textContent =
-                        dokter.nama_poli || "-";
-                    dokterDataDiv.classList.remove("hidden");
-                    resultsDiv.classList.add("hidden");
-                    searchInput.value = dokter.nama_dokter;
-                };
-
-                resultsDiv.appendChild(item);
-            });
-        } else {
-            resultsDiv.classList.remove("hidden");
-            resultsDiv.innerHTML = `<div class="px-4 py-2 text-gray-500 text-sm">Tidak ditemukan</div>`;
-        }
     });
 
     $formAdd.on("submit", function (e) {
@@ -185,11 +138,7 @@ $(function () {
         const url = $formAdd.data("url");
 
         const formData = {
-            dokter_id: $("#dokter_id_create").val(),
-            poli_id: $("#poli_id_create").val(),
-            hari: $("#hari").val(),
-            jam_awal: $("#jam_awal").val(),
-            jam_selesai: $("#jam_selesai").val(),
+            nama_metode: $("#nama_metode_create").val(),
         };
 
         axios
@@ -203,7 +152,7 @@ $(function () {
                     showConfirmButton: false,
                 });
                 addModal?.hide();
-                $("#jadwalTable").DataTable().ajax.reload(null, false);
+                $("#metodePembayaran").DataTable().ajax.reload(null, false);
             })
             .catch((error) => {
                 if (error.response?.status === 422) {
@@ -230,105 +179,43 @@ $(function () {
 
 // edit jadwal dokter
 $(function () {
-    const editModalEl = document.getElementById("editJadwalModal");
+    const editModalEl = document.getElementById("modalUpdateMetodePembayaran");
     const editModal = editModalEl ? new Modal(editModalEl) : null;
-    const $formEdit = $("#formEditJadwalDokter");
+    const $formEdit = $("#formUpdateMetodePembayaran");
 
     // 🔁 Reset form edit setiap kali modal ditutup
     function resetEditForm() {
         $formEdit[0].reset();
         $formEdit.find(".is-invalid").removeClass("is-invalid");
         $formEdit.find(".text-red-600").empty();
-        $("#dokter_data_update").addClass("hidden");
-        $("#search_results_update").addClass("hidden");
-    }
-
-    // 🩺 Search Dokter (sama seperti create, tapi untuk modal edit)
-    const searchInputUpdate = document.getElementById("search_dokter_update");
-    const resultsDivUpdate = document.getElementById("search_results_update");
-    const dokterDataDivUpdate = document.getElementById("dokter_data_update");
-
-    if (searchInputUpdate) {
-        searchInputUpdate.addEventListener("keyup", async () => {
-            const query = searchInputUpdate.value.trim();
-            if (query.length < 2) {
-                resultsDivUpdate.classList.add("hidden");
-                return;
-            }
-
-            const response = await fetch(
-                `/pengaturan_klinik/search?query=${query}`
-            );
-            const data = await response.json();
-
-            resultsDivUpdate.innerHTML = "";
-            if (data.length > 0) {
-                resultsDivUpdate.classList.remove("hidden");
-                data.forEach((dokter) => {
-                    const item = document.createElement("div");
-                    item.className =
-                        "px-4 py-2 hover:bg-indigo-100 cursor-pointer text-sm";
-                    item.textContent = `${dokter.nama_dokter} (${
-                        dokter.nama_poli || "-"
-                    })`;
-
-                    item.onclick = () => {
-                        $("#dokter_id_update").val(dokter.id);
-                        $("#poli_id_update").val(dokter.poli_id);
-                        $("#nama_dokter_update").text(dokter.nama_dokter);
-                        $("#nama_poli_update").text(dokter.nama_poli || "-");
-
-                        dokterDataDivUpdate.classList.remove("hidden");
-                        resultsDivUpdate.classList.add("hidden");
-                        searchInputUpdate.value = dokter.nama_dokter;
-                    };
-
-                    resultsDivUpdate.appendChild(item);
-                });
-            } else {
-                resultsDivUpdate.classList.remove("hidden");
-                resultsDivUpdate.innerHTML = `<div class="px-4 py-2 text-gray-500 text-sm">Tidak ditemukan</div>`;
-            }
-        });
     }
 
     // ✏️ Klik tombol Edit
-    $("body").on("click", ".btn-edit-jadwal", function () {
+    $("body").on("click", ".btn-update-metode-pembayaran", function () {
         resetEditForm();
-        const jadwalId = $(this).data("id");
+        const id = $(this).data("id");
 
         axios
-            .get(`/pengaturan_klinik/get_jadwal_dokter_by_id/${jadwalId}`)
+            .get(`/kasir/get-data-metode-pembayaran/${id}`)
             .then((response) => {
-                const jadwal = response.data.data;
+                const metodePembayaran = response.data.data;
 
                 // Set action URL
                 const baseUrl = $formEdit
                     .data("url")
-                    .replace("/0", "/" + jadwal.id);
+                    .replace("/0", "/" + metodePembayaran.id);
                 $formEdit.data("url", baseUrl);
 
                 // Isi form dengan data dari backend
-                $("#jadwal_id_update").val(jadwal.id);
-                $("#dokter_id_update").val(jadwal.dokter.id);
-                $("#poli_id_update").val(jadwal.poli.id);
-                $("#hari_edit").val(jadwal.hari);
-                $("#jam_awal_edit").val(jadwal.jam_awal);
-                $("#jam_selesai_edit").val(jadwal.jam_selesai);
-
-                // Tampilkan data dokter di modal edit
-                $("#nama_dokter_update").text(jadwal.dokter.nama_dokter);
-                $("#nama_poli_update").text(jadwal.poli.nama_poli);
-                $("#search_dokter_update").val(jadwal.dokter.nama_dokter);
-                $("#dokter_data_update").removeClass("hidden");
-
+                $("#id_update").val(metodePembayaran.id);
+                $("#nama_metode_update").val(metodePembayaran.nama_metode);
                 editModal?.show();
             })
             .catch(() => {
                 Swal.fire({
                     icon: "error",
                     title: "Gagal!",
-                    text: "Tidak dapat memuat data jadwal.",
+                    text: "Tidak dapat memuat data metode pembayaran.",
                 });
             });
     });
@@ -339,12 +226,9 @@ $(function () {
         const url = $formEdit.data("url");
 
         const formData = {
-            dokter_id: $("#dokter_id_update").val(),
-            poli_id: $("#poli_id_update").val(),
-            hari: $("#hari_edit").val(),
-            jam_awal: $("#jam_awal_edit").val(),
-            jam_selesai: $("#jam_selesai_edit").val(),
-            _method: "PUT",
+            id: $("#id_update").val(),
+            nama_metode: $("#nama_metode_update").val(),
+            _method: "POST",
         };
 
         axios
@@ -358,7 +242,7 @@ $(function () {
                     showConfirmButton: false,
                 });
                 editModal?.hide();
-                $("#jadwalTable").DataTable().ajax.reload(null, false);
+                $("#metodePembayaran").DataTable().ajax.reload(null, false);
             })
             .catch((error) => {
                 if (error.response?.status === 422) {
@@ -383,17 +267,16 @@ $(function () {
     });
 
     // ❌ Tutup modal
-    $("#closeEditJadwalModal").on("click", function () {
+    $("#buttonCloseModalUpdateMetodePembayaran").on("click", function () {
         editModal?.hide();
         resetEditForm();
     });
 });
 
-// delete data
 $(function () {
-    $("body").on("click", ".btn-delete-jadwal", function () {
-        const dokterId = $(this).data("id");
-        if (!dokterId) return;
+    $("body").on("click", ".btn-delete-metode-pembayaran", function () {
+        const id = $(this).data("id");
+        if (!id) return;
 
         Swal.fire({
             title: "Apakah Anda yakin?",
@@ -407,9 +290,7 @@ $(function () {
         }).then((result) => {
             if (result.isConfirmed) {
                 axios
-                    .delete(
-                        `/pengaturan_klinik/delete_jadwal_dokter/${dokterId}`
-                    )
+                    .post(`/kasir/delete-metode-pembayaran/${id}`)
                     .then((response) => {
                         Swal.fire({
                             icon: "success",
@@ -418,8 +299,8 @@ $(function () {
                             showConfirmButton: false,
                             timer: 1500,
                         }).then(() => {
-                            if ($("#jadwalTable").length) {
-                                $("#jadwalTable")
+                            if ($("#metodePembayaran").length) {
+                                $("#metodePembayaran")
                                     .DataTable()
                                     .ajax.reload(null, false);
                             } else {

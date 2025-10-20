@@ -48,6 +48,7 @@ export default defineConfig({
                 // transaksi
                 "resources/js/admin/pengambilanObat/transaksi-menunggu.js",
                 "resources/js/admin/pembayaran/riwayat-transaksi.js",
+                "resources/js/admin/pembayaran/metode-pembayaran.js",
             ],
             refresh: true,
         }),

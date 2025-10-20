@@ -13,6 +13,7 @@ use App\Http\Controllers\Admin\LayananController;
 use App\Http\Controllers\JenisSpesialisController;
 use App\Http\Controllers\Management\ObatController;
 use App\Http\Controllers\Management\UserController;
+use App\Http\Controllers\Management\MetodePembayaranController;
 use App\Http\Controllers\Testing\TestingController;
 use App\Http\Controllers\Testing\TestingChartController;
 use App\Http\Controllers\Admin\PembayaranController;
@@ -322,6 +323,12 @@ Route::middleware('auth')->group(function () {
         Route::post('/pembayaran-cash', [KasirController::class, 'melakukanPembayaranCash'])->name('pembayaran.cash');
         Route::get('/get-data-riwayat-pembayaran', [KasirController::class, 'getDataRiwayatPembayaran'])->name('get.data.riwayat.pembayaran');
         Route::get('/kwitansi/{kodeTransaksi}', [KasirController::class, 'showKwitansi'])->name('show.kwitansi');
+
+        Route::get('/metode-pembayaran', [KasirController::class, 'getDataMetodePembayaran'])->name('get.data.metode.pembayaran');
+        Route::post('/create-metode-pembayaran', [MetodePembayaranController::class, 'createData'])->name('crate.data.metode.pembayaran');
+        Route::post('/update-metode-pembayaran', [MetodePembayaranController::class, 'updateData'])->name('update.data.metode.pembayaran');
+        Route::post('/delete-metode-pembayaran/{id}', [MetodePembayaranController::class, 'deleteData'])->name('delete.data.metode.pembayaran');
+        Route::get('/get-data-metode-pembayaran/{id}', [MetodePembayaranController::class, 'getDataMetodePembayaran'])->name('get.data.metode.pembayaran.by.id');
     });
 });
 

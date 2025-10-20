@@ -40,6 +40,13 @@
                         Riwayat Transaksi
                     </button>
                 </li>
+                <li class="me-2" role="presentation">
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="metode-pembayaran-tab"
+                        data-tabs-target="#data-metode-pembayaran" type="button" role="tab"
+                        aria-controls="data-metode-pembayaran" aria-selected="false">
+                        Metode Pembayaran
+                    </button>
+                </li>
             </ul>
         </div>
 
@@ -55,6 +62,10 @@
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-riwayat-transaksi"
                     role="tabpanel" aria-labelledby="riwayat-transaksi-tab">
                     @include('admin.pembayaran.riwayat-transaksi')
+                </div>
+                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-metode-pembayaran"
+                    role="tabpanel" aria-labelledby="metode-pembayaran-tab">
+                    @include('admin.pembayaran.metode-pembayaran')
                 </div>
             </div>
         </div>
