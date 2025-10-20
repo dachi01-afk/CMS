@@ -1,46 +1,45 @@
+/* imports HARUS paling atas */
+@import "datatables.net-dt/css/dataTables.dataTables.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* === Flowbite === */
-@import "flowbite";
-
-/* === DataTables === */
-@import "datatables.net-dt/css/dataTables.dataTables.css";
-
-/* === Kustomisasi Style DataTables agar match Flowbite & Tailwind === */
-.dataTables_wrapper {
+/* taruh @apply di dalam layer agar diproses & tidak kepangkas oleh purge */
+@layer components {
+  .dataTables_wrapper {
     @apply p-4 bg-white dark:bg-gray-800 rounded-xl shadow-sm;
-}
+  }
 
-.dataTables_wrapper .dataTables_filter input {
+  .dataTables_wrapper .dataTables_filter input {
     @apply border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm;
-}
+  }
 
-.dataTables_wrapper .dataTables_length select {
+  .dataTables_wrapper .dataTables_length select {
     @apply border border-gray-300 rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none text-sm;
-}
+  }
 
-.dataTables_wrapper .dataTables_paginate .paginate_button {
+  .dataTables_wrapper .dataTables_paginate .paginate_button {
     @apply bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-lg px-3 py-1 mx-1 transition-colors;
-}
+  }
 
-.dataTables_wrapper .dataTables_paginate .paginate_button.current {
+  .dataTables_wrapper .dataTables_paginate .paginate_button.current {
     @apply bg-blue-500 text-white font-semibold;
-}
+  }
 
-.dataTables_wrapper .dataTables_info {
+  .dataTables_wrapper .dataTables_info {
     @apply text-sm text-gray-600 dark:text-gray-400;
-}
+  }
 
-table.dataTable thead {
+  table.dataTable thead {
     @apply bg-sky-500 text-white text-sm uppercase;
-}
+  }
 
-table.dataTable tbody tr:hover {
+  table.dataTable tbody tr:hover {
     @apply bg-blue-50;
-}
+  }
 
-.dataTables_wrapper table {
-  transition: opacity 0.3s ease-in-out;
+  .dataTables_wrapper table {
+    transition: opacity 0.3s ease-in-out;
+  }
 }

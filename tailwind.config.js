@@ -4,13 +4,12 @@ import forms from "@tailwindcss/forms";
 /** @type {import('tailwindcss').Config} */
 export default {
     content: [
-        "./vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php",
-        "./storage/framework/views/*.php",
-        "./resources/views/**/*.blade.php",
-        "./resources/**/*.js",
-        "./node_modules/flowbite/**/*.js",
-        "./node_modules/datatables.net-dt/**/*.{js,ts}",
-    ],
+  "./vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php",
+  "./storage/framework/views/*.php",
+  "./resources/views/**/*.blade.php",
+  "./resources/**/*.{js,ts,jsx,tsx,vue}",   // <— tambah ini
+  "./node_modules/flowbite/**/*.js",
+],
 
     darkMode: "class",
     theme: {

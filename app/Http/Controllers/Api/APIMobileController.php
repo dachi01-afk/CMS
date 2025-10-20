@@ -23,28 +23,28 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
-use Midtrans\Config;
-use Midtrans\Snap;
-use Midtrans\Notification;
+// use Midtrans\Config;
+// use Midtrans\Snap;
+// use Midtrans\Notification;
 use App\Models\Poli;
 use App\Http\Controllers\Api\Concerns\TransformsNotifications;
 
 class APIMobileController extends Controller
 {
 
-    public function __construct()
-    {
-        // HANYA konfigurasi yang diperlukan untuk server-side
-        Config::$serverKey = config('midtrans.server_key');
-        Config::$isProduction = config('midtrans.is_production', false);
-        Config::$isSanitized = true;
-        Config::$is3ds = true;
+    // public function __construct()
+    // {
+    //     // HANYA konfigurasi yang diperlukan untuk server-side
+    //     Config::$serverKey = config('midtrans.server_key');
+    //     Config::$isProduction = config('midtrans.is_production', false);
+    //     Config::$isSanitized = true;
+    //     Config::$is3ds = true;
 
-        Log::info('Midtrans Configuration:', [
-            'server_key_prefix' => substr(config('midtrans.server_key'), 0, 10),
-            'is_production' => config('midtrans.is_production', false),
-        ]);
-    }
+    //     Log::info('Midtrans Configuration:', [
+    //         'server_key_prefix' => substr(config('midtrans.server_key'), 0, 10),
+    //         'is_production' => config('midtrans.is_production', false),
+    //     ]);
+    // }
 
 
     /** LOGIN */
@@ -170,66 +170,66 @@ class APIMobileController extends Controller
     /**
      * Get recent notifications for polling
      */
-    public function getRecentNotifications(Request $request)
-    {
-        $user = $request->user(); // auth:sanctum
-        if (!$user) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
-        }
+    // public function getRecentNotifications(Request $request)
+    // {
+    //     $user = $request->user(); // auth:sanctum
+    //     if (!$user) {
+    //         return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+    //     }
 
-        $sinceParam = $request->query('since');
-        $limit      = (int) $request->query('limit', 50);
+    //     $sinceParam = $request->query('since');
+    //     $limit      = (int) $request->query('limit', 50);
 
-        $since = $sinceParam ? Carbon::parse($sinceParam) : now()->subDay();
+    //     $since = $sinceParam ? Carbon::parse($sinceParam) : now()->subDay();
 
-        $items = Notification::where('user_id', $user->id)
-            ->where('created_at', '>=', $since)
-            ->orderBy('created_at', 'desc')
-            ->limit($limit)
-            ->get();
+    //     $items = Notification::where('user_id', $user->id)
+    //         ->where('created_at', '>=', $since)
+    //         ->orderBy('created_at', 'desc')
+    //         ->limit($limit)
+    //         ->get();
 
-        return response()->json([
-            'success' => true,
-            'data'    => $items,
-        ]);
-    }
+    //     return response()->json([
+    //         'success' => true,
+    //         'data'    => $items,
+    //     ]);
+    // }
 
     /**
      * Mark notification as read
      */
-    public function markNotificationAsRead(Request $request, $id)
-    {
-        $user = $request->user(); // auth:sanctum
-        if (!$user) {
-            return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
-        }
+    // public function markNotificationAsRead(Request $request, $id)
+    // {
+    //     $user = $request->user(); // auth:sanctum
+    //     if (!$user) {
+    //         return response()->json(['success' => false, 'message' => 'Unauthorized'], 401);
+    //     }
 
-        $notif = Notification::where('id', $id)
-            ->where('user_id', $user->id)
-            ->firstOrFail();
+    //     $notif = Notification::where('id', $id)
+    //         ->where('user_id', $user->id)
+    //         ->firstOrFail();
 
-        $notif->is_read = true;
-        $notif->save();
+    //     $notif->is_read = true;
+    //     $notif->save();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Notification marked as read',
-        ]);
-    }
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Notification marked as read',
+    //     ]);
+    // }
 
     /**
      * Create notification (internal use)
      */
-    protected function createNotification(int $userId, string $title, string $body, array $data = []): Notification
-    {
-        return Notification::create([
-            'user_id' => $userId,
-            'title'   => $title,
-            'body'    => $body,
-            'data'    => $data,
-            'is_read' => false,
-        ]);
-    }
+    // protected function createNotification(int $userId, string $title, string $body, array $data = []): Notification
+    // {
+    //     return Notification::create([
+    //         'user_id' => $userId,
+    //         'title'   => $title,
+    //         'body'    => $body,
+    //         'data'    => $data,
+    //         'is_read' => false,
+    //     ]);
+    // }
 
 
     public function getProfile(Request $request)
@@ -715,31 +715,64 @@ class APIMobileController extends Controller
             }
 
             $tanggalKunjungan = $request->tanggal_kunjungan;
-            $poliId = $request->poli_id; // GANTI dari dokter_id
+            $poliId = $request->poli_id;
             $pasienId = $request->pasien_id;
 
             Log::info("🎯 Processing booking for pasien_id: $pasienId, poli_id: $poliId, tanggal: $tanggalKunjungan");
 
-            // GANTI logika pengecekan existing booking
-            $existingBooking = Kunjungan::where('pasien_id', $pasienId)
-                ->where('poli_id', $poliId) // GANTI ke poli_id
+            // ENHANCED: Cek existing booking dengan status yang tidak boleh duplikasi
+            $activeStatuses = ['Pending', 'Confirmed', 'Waiting', 'Engaged'];
+            $existingActiveBooking = Kunjungan::where('pasien_id', $pasienId)
+                ->where('poli_id', $poliId)
                 ->where('tanggal_kunjungan', $tanggalKunjungan)
-                ->whereIn('status', ['Pending', 'Confirmed', 'Waiting', 'Engaged'])
+                ->whereIn('status', $activeStatuses)
                 ->first();
 
-            if ($existingBooking) {
-                Log::info("❌ Duplicate booking found for pasien_id: $pasienId, poli_id: $poliId, tanggal: $tanggalKunjungan");
+            if ($existingActiveBooking) {
+                Log::info("❌ Active booking found for pasien_id: $pasienId, poli_id: $poliId, tanggal: $tanggalKunjungan, status: {$existingActiveBooking->status}");
+
+                // Pesan yang lebih spesifik berdasarkan status
+                $statusMessages = [
+                    'Pending' => 'Anda sudah memiliki janji yang menunggu konfirmasi dengan poli ini pada tanggal yang sama.',
+                    'Confirmed' => 'Anda sudah memiliki janji yang telah dikonfirmasi dengan poli ini pada tanggal yang sama.',
+                    'Waiting' => 'Anda sudah terdaftar dalam antrian dengan poli ini pada tanggal yang sama.',
+                    'Engaged' => 'Anda sedang dalam proses konsultasi dengan poli ini pada tanggal yang sama.'
+                ];
+
+                $message = $statusMessages[$existingActiveBooking->status] ??
+                    'Anda sudah memiliki jadwal dengan poli ini pada tanggal yang sama.';
+
+                $message .= ' Silakan pilih tanggal lain atau batalkan janji yang sudah ada.';
 
                 return response()->json([
                     'success' => false,
-                    'message' => 'Anda sudah memiliki jadwal dengan poli ini pada tanggal yang sama. Silakan pilih tanggal lain.',
+                    'message' => $message,
+                    'error_code' => 'DUPLICATE_ACTIVE_BOOKING',
+                    'existing_booking' => [
+                        'id' => $existingActiveBooking->id,
+                        'status' => $existingActiveBooking->status,
+                        'no_antrian' => $existingActiveBooking->no_antrian,
+                        'tanggal_kunjungan' => $existingActiveBooking->tanggal_kunjungan
+                    ]
                 ], 422);
+            }
+
+            // OPTIONAL: Cek apakah ada booking dengan status Cancelled atau Success pada hari yang sama
+            // Ini untuk memberikan informasi tambahan, tapi tidak menghalangi booking baru
+            $previousBookings = Kunjungan::where('pasien_id', $pasienId)
+                ->where('poli_id', $poliId)
+                ->where('tanggal_kunjungan', $tanggalKunjungan)
+                ->whereIn('status', ['Cancelled', 'Success', 'Completed'])
+                ->get();
+
+            if ($previousBookings->count() > 0) {
+                Log::info("ℹ️ Found {$previousBookings->count()} previous booking(s) with Cancelled/Success status for same date");
             }
 
             $result = DB::transaction(function () use ($tanggalKunjungan, $poliId, $pasienId, $request) {
                 // GANTI query untuk mencari kunjungan terakhir berdasarkan poli
                 $lastKunjungan = Kunjungan::where('tanggal_kunjungan', $tanggalKunjungan)
-                    ->where('poli_id', $poliId) // GANTI ke poli_id
+                    ->where('poli_id', $poliId)
                     ->orderByDesc('no_antrian')
                     ->lockForUpdate()
                     ->first();
@@ -757,10 +790,10 @@ class APIMobileController extends Controller
                 $formattedNumber = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
                 Log::info("🎫 Formatted number: $formattedNumber");
 
-                // GANTI data yang akan dibuat
+                // Create new booking
                 $kunjungan = new Kunjungan;
                 $kunjungan->pasien_id = $pasienId;
-                $kunjungan->poli_id = $poliId; // GANTI ke poli_id
+                $kunjungan->poli_id = $poliId;
                 $kunjungan->tanggal_kunjungan = $tanggalKunjungan;
                 $kunjungan->no_antrian = $formattedNumber;
                 $kunjungan->keluhan_awal = $request->keluhan_awal;
@@ -775,9 +808,16 @@ class APIMobileController extends Controller
                 ];
             });
 
+            $responseMessage = 'Kunjungan berhasil dibuat';
+
+            // Tambahkan informasi jika ada booking sebelumnya yang dibatalkan/selesai
+            if (isset($previousBookings) && $previousBookings->count() > 0) {
+                $responseMessage .= '. Catatan: Anda pernah memiliki janji dengan poli ini pada tanggal yang sama yang telah selesai/dibatalkan.';
+            }
+
             return response()->json([
                 'success' => true,
-                'message' => 'Kunjungan berhasil dibuat',
+                'message' => $responseMessage,
                 'Data Kunjungan' => $result['kunjungan'],
                 'Data No Antrian' => $result['no_antrian'],
             ], 200);
@@ -1110,7 +1150,9 @@ class APIMobileController extends Controller
         try {
             $login = Auth::user()->id;
 
-            $dataDokter = Dokter::with('user')->where('user_id', $login)->get();
+            $dataDokter = Dokter::with(['user', 'poli'])
+                ->where('user_id', $login)
+                ->get();
 
             return response()->json([
                 'success' => true,
@@ -1436,7 +1478,7 @@ class APIMobileController extends Controller
                     }
                 }
 
-                // 🔥 AMBIL SEMUA DIAGNOSIS SEBELUMNYA DARI EMR PASIEN INI
+                // Auto-fill riwayat diagnosis dari EMR sebelumnya
                 $riwayatDiagnosisPasien = EMR::whereHas('kunjungan', function ($query) use ($kunjungan) {
                     $query->where('pasien_id', $kunjungan->pasien_id);
                 })
@@ -1457,7 +1499,7 @@ class APIMobileController extends Controller
                     $riwayatDiagnosisFormatted = "Tidak ada riwayat penyakit sebelumnya";
                 }
 
-                Log::info('🩺 Riwayat diagnosis pasien:', [
+                Log::info('Riwayat diagnosis pasien:', [
                     'pasien_id' => $kunjungan->pasien_id,
                     'jumlah_riwayat' => $riwayatDiagnosisPasien->count(),
                     'riwayat_formatted' => $riwayatDiagnosisFormatted,
@@ -1468,17 +1510,17 @@ class APIMobileController extends Controller
                     'kunjungan_id' => $kunjungan->id,
                     'resep_id' => $resepId,
                     'keluhan_utama' => $request->keluhan_utama,
-                    'riwayat_penyakit_dahulu' => $riwayatDiagnosisFormatted, // 🔥 AUTO-FILL
+                    'riwayat_penyakit_dahulu' => $riwayatDiagnosisFormatted,
                     'riwayat_penyakit_keluarga' => $request->riwayat_penyakit_keluarga,
                     'tekanan_darah' => $request->tekanan_darah,
                     'suhu_tubuh' => $request->suhu_tubuh,
                     'nadi' => $request->nadi,
                     'pernapasan' => $request->pernapasan,
                     'saturasi_oksigen' => $request->saturasi_oksigen,
-                    'diagnosis' => $request->diagnosis, // 🔥 DIAGNOSIS BARU
+                    'diagnosis' => $request->diagnosis,
                 ]);
 
-                Log::info('✅ EMR created with auto-filled riwayat:', [
+                Log::info('EMR created with auto-filled riwayat:', [
                     'emr_id' => $emr->id,
                     'diagnosis_baru' => $request->diagnosis,
                     'riwayat_count' => $riwayatDiagnosisPasien->count(),
@@ -1507,16 +1549,17 @@ class APIMobileController extends Controller
                 // Calculate total billing
                 $totalTagihan = $this->calculateTotalTagihan($kunjungan, $resepId);
 
-                // Create pembayaran record
+                // Create pembayaran record - CASH ONLY
                 $pembayaran = Pembayaran::create([
                     'emr_id' => $emr->id,
                     'total_tagihan' => $totalTagihan,
                     'uang_yang_diterima' => 0,
                     'kembalian' => 0,
                     'kode_transaksi' => strtoupper(uniqid('TRX_')),
-                    'metode_pembayaran' => 'Cash',
-                    'tanggal_pembayaran' => now(),
+                    'metode_pembayaran' => 'Cash', // FIXED: Only Cash
+                    'tanggal_pembayaran' => null, // Will be set when paid at cashier
                     'status' => 'Belum Bayar',
+                    'catatan' => 'Pembayaran di kasir - menunggu proses',
                 ]);
 
                 return [
@@ -1529,13 +1572,14 @@ class APIMobileController extends Controller
                         'total_tagihan' => $totalTagihan,
                         'layanan_count' => count($request->layanan ?? []),
                         'resep_count' => count($request->resep ?? []),
+                        'metode_pembayaran' => 'Cash',
                     ],
                 ];
             });
 
             return response()->json([
                 'success' => true,
-                'message' => 'EMR berhasil disimpan dengan riwayat diagnosis otomatis.',
+                'message' => 'EMR berhasil disimpan. Pasien dapat melakukan pembayaran di kasir.',
                 'data' => [
                     'emr' => $result['emr'],
                     'resep' => $result['resep'],
@@ -1562,7 +1606,6 @@ class APIMobileController extends Controller
             ], 500);
         }
     }
-
 
     public function getRiwayatDiagnosisPasien($pasienId)
     {
@@ -2737,7 +2780,178 @@ class APIMobileController extends Controller
             'data'    => $pembayaran,
         ]);
     }
+    public function prosesPembayaranKasir(Request $request)
+    {
+        try {
+            $request->validate([
+                'pembayaran_id' => 'required|exists:pembayaran,id',
+                'uang_yang_diterima' => 'required|numeric|min:0',
+                'catatan' => 'nullable|string|max:255',
+            ]);
 
+            Log::info('Processing cash payment at cashier:', [
+                'pembayaran_id' => $request->pembayaran_id,
+                'uang_diterima' => $request->uang_yang_diterima,
+            ]);
+
+            $pembayaran = Pembayaran::with(['emr.kunjungan', 'emr.resep.obat'])->find($request->pembayaran_id);
+
+            if (!$pembayaran) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data pembayaran tidak ditemukan',
+                ], 404);
+            }
+
+            if ($pembayaran->status === 'Sudah Bayar') {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Pembayaran sudah selesai sebelumnya',
+                ], 400);
+            }
+
+            $uangDiterima = (float) $request->uang_yang_diterima;
+            $totalTagihan = (float) $pembayaran->total_tagihan;
+
+            if ($uangDiterima < $totalTagihan) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Uang yang diterima kurang dari total tagihan',
+                    'data' => [
+                        'total_tagihan' => $totalTagihan,
+                        'uang_diterima' => $uangDiterima,
+                        'kekurangan' => $totalTagihan - $uangDiterima,
+                    ],
+                ], 400);
+            }
+
+            $kembalian = $uangDiterima - $totalTagihan;
+
+            // Process payment
+            DB::transaction(function () use ($pembayaran, $uangDiterima, $kembalian, $request) {
+                // Update pembayaran
+                $pembayaran->update([
+                    'status' => 'Sudah Bayar',
+                    'uang_yang_diterima' => $uangDiterima,
+                    'kembalian' => $kembalian,
+                    'tanggal_pembayaran' => now(),
+                    'catatan' => $request->catatan ?? 'Pembayaran tunai di kasir',
+                ]);
+
+                // Update kunjungan status
+                if ($pembayaran->emr && $pembayaran->emr->kunjungan) {
+                    $pembayaran->emr->kunjungan->update([
+                        'status' => 'Succeed'
+                    ]);
+
+                    Log::info('Kunjungan status updated to Succeed:', [
+                        'kunjungan_id' => $pembayaran->emr->kunjungan->id,
+                    ]);
+                }
+
+                // Update status resep obat ke "Belum Diambil" (ready for pickup)
+                if ($pembayaran->emr && $pembayaran->emr->resep) {
+                    DB::table('resep_obat')
+                        ->where('resep_id', $pembayaran->emr->resep->id)
+                        ->update([
+                            'status' => 'Belum Diambil', // Ready for pickup after payment
+                            'updated_at' => now(),
+                        ]);
+
+                    Log::info('Resep obat status updated to Belum Diambil');
+                }
+            });
+
+            $pembayaran->refresh();
+
+            Log::info('Cash payment completed successfully:', [
+                'pembayaran_id' => $pembayaran->id,
+                'total_tagihan' => $totalTagihan,
+                'uang_diterima' => $uangDiterima,
+                'kembalian' => $kembalian,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Pembayaran tunai berhasil diproses',
+                'data' => [
+                    'pembayaran' => $pembayaran,
+                    'total_tagihan' => $totalTagihan,
+                    'uang_diterima' => $uangDiterima,
+                    'kembalian' => $kembalian,
+                    'tanggal_pembayaran' => $pembayaran->tanggal_pembayaran,
+                ],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            Log::error('Cash payment validation error: ', $e->errors());
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Cash payment error: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memproses pembayaran: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    // NEW: Get pending cash payments for cashier
+    public function getPendingCashPayments()
+    {
+        try {
+            $pendingPayments = Pembayaran::with([
+                'emr.kunjungan.pasien',
+                'emr.kunjungan.poli',
+                'emr.resep.obat'
+            ])
+                ->where('status', 'Belum Bayar')
+                ->where('metode_pembayaran', 'Cash')
+                ->orderBy('created_at', 'asc')
+                ->get();
+
+            $formattedPayments = $pendingPayments->map(function ($pembayaran) {
+                $kunjungan = $pembayaran->emr->kunjungan;
+                $pasien = $kunjungan->pasien;
+
+                return [
+                    'pembayaran_id' => $pembayaran->id,
+                    'kode_transaksi' => $pembayaran->kode_transaksi,
+                    'total_tagihan' => $pembayaran->total_tagihan,
+                    'created_at' => $pembayaran->created_at,
+                    'pasien' => [
+                        'nama_pasien' => $pasien->nama_pasien,
+                        'id' => $pasien->id,
+                    ],
+                    'kunjungan' => [
+                        'id' => $kunjungan->id,
+                        'no_antrian' => $kunjungan->no_antrian,
+                        'tanggal_kunjungan' => $kunjungan->tanggal_kunjungan,
+                    ],
+                    'poli' => [
+                        'nama_poli' => $kunjungan->poli->nama_poli ?? 'Umum',
+                    ],
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data pembayaran pending berhasil diambil',
+                'data' => $formattedPayments,
+                'total_pending' => $formattedPayments->count(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error getting pending cash payments: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data pembayaran pending: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
     // midtrans
     public function updateStatusResepObat(Request $request)
     {
@@ -2784,39 +2998,39 @@ class APIMobileController extends Controller
         }
     }
 
-    public function checkout(Request $request)
-    {
-        try {
-            // Konfigurasi Midtrans
-            Config::$serverKey = config('midtrans.server_key');
-            Config::$isProduction = config('midtrans.is_production');
-            Config::$isSanitized = true;
-            Config::$is3ds = true;
+    // public function checkout(Request $request)
+    // {
+    //     try {
+    //         // Konfigurasi Midtrans
+    //         Config::$serverKey = config('midtrans.server_key');
+    //         Config::$isProduction = config('midtrans.is_production');
+    //         Config::$isSanitized = true;
+    //         Config::$is3ds = true;
 
-            // Data transaksi (bisa ambil dari DB)
-            $params = [
-                'transaction_details' => [
-                    'order_id' => rand(),
-                    'gross_amount' => 150000, // nominal transaksi
-                ],
-                'customer_details' => [
-                    'first_name' => 'Budi',
-                    'email' => 'budi@example.com',
-                ],
-            ];
+    //         // Data transaksi (bisa ambil dari DB)
+    //         $params = [
+    //             'transaction_details' => [
+    //                 'order_id' => rand(),
+    //                 'gross_amount' => 150000, // nominal transaksi
+    //             ],
+    //             'customer_details' => [
+    //                 'first_name' => 'Budi',
+    //                 'email' => 'budi@example.com',
+    //             ],
+    //         ];
 
-            $snapToken = Snap::getSnapToken($params);
+    //         $snapToken = Snap::getSnapToken($params);
 
-            // Kirim ke view
-            return view('payment', compact('snapToken'));
-        } catch (\Exception $e) {
-            Log::error('Checkout error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan sistem',
-            ], 500);
-        }
-    }
+    //         // Kirim ke view
+    //         return view('payment', compact('snapToken'));
+    //     } catch (\Exception $e) {
+    //         Log::error('Checkout error: ' . $e->getMessage());
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Terjadi kesalahan sistem',
+    //         ], 500);
+    //     }
+    // }
 
     public function notificationHandler(Request $request)
     {
@@ -2840,326 +3054,326 @@ class APIMobileController extends Controller
         }
     }
 
-    public function createMidtransTransaction(Request $request)
-    {
-        try {
-            Config::$serverKey = config('midtrans.server_key');
-            Config::$isProduction = config('midtrans.is_production');
-            Config::$isSanitized = true;
-            Config::$is3ds = true;
+    // public function createMidtransTransaction(Request $request)
+    // {
+    //     try {
+    //         Config::$serverKey = config('midtrans.server_key');
+    //         Config::$isProduction = config('midtrans.is_production');
+    //         Config::$isSanitized = true;
+    //         Config::$is3ds = true;
 
-            $request->validate([
-                'pembayaran_id' => 'nullable|exists:pembayaran,id',
-                'kunjungan_id' => 'nullable|exists:kunjungan,id',
-            ]);
+    //         $request->validate([
+    //             'pembayaran_id' => 'nullable|exists:pembayaran,id',
+    //             'kunjungan_id' => 'nullable|exists:kunjungan,id',
+    //         ]);
 
-            Log::info('🔥 Creating Midtrans transaction:', [
-                'pembayaran_id' => $request->pembayaran_id,
-                'kunjungan_id' => $request->kunjungan_id,
-            ]);
+    //         Log::info('🔥 Creating Midtrans transaction:', [
+    //             'pembayaran_id' => $request->pembayaran_id,
+    //             'kunjungan_id' => $request->kunjungan_id,
+    //         ]);
 
-            // Cari pembayaran
-            $pembayaran = null;
-            if ($request->filled('pembayaran_id')) {
-                $pembayaran = Pembayaran::with([
-                    'emr.kunjungan.pasien.user',
-                    'emr.kunjungan.layanan', // FIXED: Load layanan
-                    'emr.resep.obat'
-                ])->find($request->pembayaran_id);
-            } elseif ($request->filled('kunjungan_id')) {
-                $pembayaran = Pembayaran::whereHas('emr', function ($query) use ($request) {
-                    $query->where('kunjungan_id', $request->kunjungan_id);
-                })->with([
-                    'emr.kunjungan.pasien.user',
-                    'emr.kunjungan.layanan', // FIXED: Load layanan
-                    'emr.resep.obat'
-                ])->first();
-            }
+    //         // Cari pembayaran
+    //         $pembayaran = null;
+    //         if ($request->filled('pembayaran_id')) {
+    //             $pembayaran = Pembayaran::with([
+    //                 'emr.kunjungan.pasien.user',
+    //                 'emr.kunjungan.layanan', // FIXED: Load layanan
+    //                 'emr.resep.obat'
+    //             ])->find($request->pembayaran_id);
+    //         } elseif ($request->filled('kunjungan_id')) {
+    //             $pembayaran = Pembayaran::whereHas('emr', function ($query) use ($request) {
+    //                 $query->where('kunjungan_id', $request->kunjungan_id);
+    //             })->with([
+    //                 'emr.kunjungan.pasien.user',
+    //                 'emr.kunjungan.layanan', // FIXED: Load layanan
+    //                 'emr.resep.obat'
+    //             ])->first();
+    //         }
 
-            if (!$pembayaran) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data pembayaran tidak ditemukan',
-                ], 404);
-            }
+    //         if (!$pembayaran) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Data pembayaran tidak ditemukan',
+    //             ], 404);
+    //         }
 
-            if ($pembayaran->status === 'Sudah Bayar') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Pembayaran sudah selesai',
-                ], 400);
-            }
+    //         if ($pembayaran->status === 'Sudah Bayar') {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Pembayaran sudah selesai',
+    //             ], 400);
+    //         }
 
-            $pasien = $pembayaran->emr->kunjungan->pasien;
-            $kunjungan = $pembayaran->emr->kunjungan;
+    //         $pasien = $pembayaran->emr->kunjungan->pasien;
+    //         $kunjungan = $pembayaran->emr->kunjungan;
 
-            // Generate order_id
-            $orderId = 'KLINIK-' . $pembayaran->id . '-' . time();
+    //         // Generate order_id
+    //         $orderId = 'KLINIK-' . $pembayaran->id . '-' . time();
 
-            // FIXED: Buat item details dari layanan (bukan hardcode konsultasi)
-            $itemDetails = [];
+    //         // FIXED: Buat item details dari layanan (bukan hardcode konsultasi)
+    //         $itemDetails = [];
 
-            // Tambahkan layanan dari kunjungan
-            if ($kunjungan->layanan && $kunjungan->layanan->isNotEmpty()) {
-                foreach ($kunjungan->layanan as $layanan) {
-                    $jumlah = (int) $layanan->pivot->jumlah;
-                    $hargaLayanan = (int) $layanan->harga_layanan;
+    //         // Tambahkan layanan dari kunjungan
+    //         if ($kunjungan->layanan && $kunjungan->layanan->isNotEmpty()) {
+    //             foreach ($kunjungan->layanan as $layanan) {
+    //                 $jumlah = (int) $layanan->pivot->jumlah;
+    //                 $hargaLayanan = (int) $layanan->harga_layanan;
 
-                    $itemDetails[] = [
-                        'id' => 'layanan-' . $layanan->id,
-                        'price' => $hargaLayanan,
-                        'quantity' => $jumlah,
-                        'name' => $layanan->nama_layanan,
-                    ];
+    //                 $itemDetails[] = [
+    //                     'id' => 'layanan-' . $layanan->id,
+    //                     'price' => $hargaLayanan,
+    //                     'quantity' => $jumlah,
+    //                     'name' => $layanan->nama_layanan,
+    //                 ];
 
-                    Log::info('Added layanan to Midtrans items:', [
-                        'id' => 'layanan-' . $layanan->id,
-                        'name' => $layanan->nama_layanan,
-                        'price' => $hargaLayanan,
-                        'quantity' => $jumlah,
-                        'subtotal' => $hargaLayanan * $jumlah,
-                    ]);
-                }
-            } else {
-                // Fallback: Jika tidak ada layanan, gunakan default konsultasi
-                $itemDetails[] = [
-                    'id' => 'konsultasi-' . $pembayaran->id,
-                    'price' => 150000,
-                    'quantity' => 1,
-                    'name' => 'Konsultasi Dokter',
-                ];
+    //                 Log::info('Added layanan to Midtrans items:', [
+    //                     'id' => 'layanan-' . $layanan->id,
+    //                     'name' => $layanan->nama_layanan,
+    //                     'price' => $hargaLayanan,
+    //                     'quantity' => $jumlah,
+    //                     'subtotal' => $hargaLayanan * $jumlah,
+    //                 ]);
+    //             }
+    //         } else {
+    //             // Fallback: Jika tidak ada layanan, gunakan default konsultasi
+    //             $itemDetails[] = [
+    //                 'id' => 'konsultasi-' . $pembayaran->id,
+    //                 'price' => 150000,
+    //                 'quantity' => 1,
+    //                 'name' => 'Konsultasi Dokter',
+    //             ];
 
-                Log::warning('No layanan found, using default consultation fee');
-            }
+    //             Log::warning('No layanan found, using default consultation fee');
+    //         }
 
-            // Tambahkan obat jika ada
-            if ($pembayaran->emr && $pembayaran->emr->resep && $pembayaran->emr->resep->obat) {
-                foreach ($pembayaran->emr->resep->obat as $obat) {
-                    $jumlah = (int) $obat->pivot->jumlah;
-                    $hargaObat = (int) $obat->total_harga;
+    //         // Tambahkan obat jika ada
+    //         if ($pembayaran->emr && $pembayaran->emr->resep && $pembayaran->emr->resep->obat) {
+    //             foreach ($pembayaran->emr->resep->obat as $obat) {
+    //                 $jumlah = (int) $obat->pivot->jumlah;
+    //                 $hargaObat = (int) $obat->total_harga;
 
-                    $itemDetails[] = [
-                        'id' => 'obat-' . $obat->id,
-                        'price' => $hargaObat,
-                        'quantity' => $jumlah,
-                        'name' => $obat->nama_obat,
-                    ];
+    //                 $itemDetails[] = [
+    //                     'id' => 'obat-' . $obat->id,
+    //                     'price' => $hargaObat,
+    //                     'quantity' => $jumlah,
+    //                     'name' => $obat->nama_obat,
+    //                 ];
 
-                    Log::info('Added obat to Midtrans items:', [
-                        'id' => 'obat-' . $obat->id,
-                        'name' => $obat->nama_obat,
-                        'price' => $hargaObat,
-                        'quantity' => $jumlah,
-                        'subtotal' => $hargaObat * $jumlah,
-                    ]);
-                }
-            }
+    //                 Log::info('Added obat to Midtrans items:', [
+    //                     'id' => 'obat-' . $obat->id,
+    //                     'name' => $obat->nama_obat,
+    //                     'price' => $hargaObat,
+    //                     'quantity' => $jumlah,
+    //                     'subtotal' => $hargaObat * $jumlah,
+    //                 ]);
+    //             }
+    //         }
 
-            // Hitung total untuk validasi
-            $calculatedTotal = 0;
-            foreach ($itemDetails as $item) {
-                $calculatedTotal += ($item['price'] * $item['quantity']);
-            }
+    //         // Hitung total untuk validasi
+    //         $calculatedTotal = 0;
+    //         foreach ($itemDetails as $item) {
+    //             $calculatedTotal += ($item['price'] * $item['quantity']);
+    //         }
 
-            Log::info('Midtrans transaction totals:', [
-                'calculated_total' => $calculatedTotal,
-                'pembayaran_total_tagihan' => $pembayaran->total_tagihan,
-                'item_details_count' => count($itemDetails),
-            ]);
+    //         Log::info('Midtrans transaction totals:', [
+    //             'calculated_total' => $calculatedTotal,
+    //             'pembayaran_total_tagihan' => $pembayaran->total_tagihan,
+    //             'item_details_count' => count($itemDetails),
+    //         ]);
 
-            // Parameter Midtrans
-            $params = [
-                'transaction_details' => [
-                    'order_id' => $orderId,
-                    'gross_amount' => (int) $pembayaran->total_tagihan, // Gunakan dari database
-                ],
-                'customer_details' => [
-                    'first_name' => $pasien->nama_pasien ?? 'Pasien',
-                    'last_name' => 'Klinik',
-                    'email' => $pasien->user->email ?? 'pasien@klinik.com',
-                    'phone' => '08123456789',
-                ],
-                'item_details' => $itemDetails,
-            ];
+    //         // Parameter Midtrans
+    //         $params = [
+    //             'transaction_details' => [
+    //                 'order_id' => $orderId,
+    //                 'gross_amount' => (int) $pembayaran->total_tagihan, // Gunakan dari database
+    //             ],
+    //             'customer_details' => [
+    //                 'first_name' => $pasien->nama_pasien ?? 'Pasien',
+    //                 'last_name' => 'Klinik',
+    //                 'email' => $pasien->user->email ?? 'pasien@klinik.com',
+    //                 'phone' => '08123456789',
+    //             ],
+    //             'item_details' => $itemDetails,
+    //         ];
 
-            Log::info('📋 Midtrans params:', $params);
+    //         Log::info('📋 Midtrans params:', $params);
 
-            // Generate Snap Token
-            $snapToken = Snap::getSnapToken($params);
+    //         // Generate Snap Token
+    //         $snapToken = Snap::getSnapToken($params);
 
-            // Update pembayaran
-            $pembayaran->update([
-                'metode_pembayaran' => 'Midtrans',
-            ]);
+    //         // Update pembayaran
+    //         $pembayaran->update([
+    //             'metode_pembayaran' => 'Midtrans',
+    //         ]);
 
-            // Simpan order_id dalam cache
-            Cache::put('midtrans_order_' . $orderId, $pembayaran->id, now()->addHours(24));
+    //         // Simpan order_id dalam cache
+    //         Cache::put('midtrans_order_' . $orderId, $pembayaran->id, now()->addHours(24));
 
-            Log::info('✅ Midtrans token generated successfully:', [
-                'order_id' => $orderId,
-                'pembayaran_id' => $pembayaran->id,
-                'snap_token' => substr($snapToken, 0, 20) . '...',
-                'gross_amount' => $pembayaran->total_tagihan,
-            ]);
+    //         Log::info('✅ Midtrans token generated successfully:', [
+    //             'order_id' => $orderId,
+    //             'pembayaran_id' => $pembayaran->id,
+    //             'snap_token' => substr($snapToken, 0, 20) . '...',
+    //             'gross_amount' => $pembayaran->total_tagihan,
+    //         ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Token Midtrans berhasil dibuat',
-                'data' => [
-                    'snap_token' => $snapToken,
-                    'order_id' => $orderId,
-                    'amount' => $pembayaran->total_tagihan,
-                    'client_key' => config('midtrans.client_key'),
-                    'is_sandbox' => !config('midtrans.is_production'),
-                ],
-            ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('❌ Validation error: ', $e->errors());
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (\Exception $e) {
-            Log::error('❌ Error creating Midtrans transaction: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal membuat transaksi Midtrans: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Token Midtrans berhasil dibuat',
+    //             'data' => [
+    //                 'snap_token' => $snapToken,
+    //                 'order_id' => $orderId,
+    //                 'amount' => $pembayaran->total_tagihan,
+    //                 'client_key' => config('midtrans.client_key'),
+    //                 'is_sandbox' => !config('midtrans.is_production'),
+    //             ],
+    //         ]);
+    //     } catch (\Illuminate\Validation\ValidationException $e) {
+    //         Log::error('❌ Validation error: ', $e->errors());
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Validation error',
+    //             'errors' => $e->errors(),
+    //         ], 422);
+    //     } catch (\Exception $e) {
+    //         Log::error('❌ Error creating Midtrans transaction: ' . $e->getMessage());
+    //         Log::error('Stack trace: ' . $e->getTraceAsString());
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Gagal membuat transaksi Midtrans: ' . $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
 
-    public function midtransCallback(Request $request)
-    {
-        try {
-            Log::info('🔔 Midtrans Sandbox callback received:', $request->all());
+    // public function midtransCallback(Request $request)
+    // {
+    //     try {
+    //         Log::info('🔔 Midtrans Sandbox callback received:', $request->all());
 
-            // Menggunakan Midtrans Notification SDK
-            $notification = new Notification();
+    //         // Menggunakan Midtrans Notification SDK
+    //         $notification = new Notification();
 
-            $transactionStatus = $notification->transaction_status;
-            $orderId = $notification->order_id;
-            $fraudStatus = isset($notification->fraud_status) ? $notification->fraud_status : 'accept';
+    //         $transactionStatus = $notification->transaction_status;
+    //         $orderId = $notification->order_id;
+    //         $fraudStatus = isset($notification->fraud_status) ? $notification->fraud_status : 'accept';
 
-            Log::info('Processing callback:', [
-                'order_id' => $orderId,
-                'transaction_status' => $transactionStatus,
-                'fraud_status' => $fraudStatus,
-            ]);
+    //         Log::info('Processing callback:', [
+    //             'order_id' => $orderId,
+    //             'transaction_status' => $transactionStatus,
+    //             'fraud_status' => $fraudStatus,
+    //         ]);
 
-            // Cari pembayaran berdasarkan order_id dari cache atau parsing
-            $pembayaranId = Cache::get('midtrans_order_' . $orderId);
+    //         // Cari pembayaran berdasarkan order_id dari cache atau parsing
+    //         $pembayaranId = Cache::get('midtrans_order_' . $orderId);
 
-            if (!$pembayaranId) {
-                // Fallback: parse order_id untuk mendapatkan pembayaran_id
-                if (preg_match('/KLINIK-(\d+)-\d+/', $orderId, $matches)) {
-                    $pembayaranId = $matches[1];
-                    Log::info('📋 Pembayaran ID parsed from order_id: ' . $pembayaranId);
-                }
-            }
+    //         if (!$pembayaranId) {
+    //             // Fallback: parse order_id untuk mendapatkan pembayaran_id
+    //             if (preg_match('/KLINIK-(\d+)-\d+/', $orderId, $matches)) {
+    //                 $pembayaranId = $matches[1];
+    //                 Log::info('📋 Pembayaran ID parsed from order_id: ' . $pembayaranId);
+    //             }
+    //         }
 
-            if (!$pembayaranId) {
-                Log::error('❌ Cannot find pembayaran for order_id: ' . $orderId);
-                return response()->json(['status' => 'error', 'message' => 'Pembayaran not found'], 404);
-            }
+    //         if (!$pembayaranId) {
+    //             Log::error('❌ Cannot find pembayaran for order_id: ' . $orderId);
+    //             return response()->json(['status' => 'error', 'message' => 'Pembayaran not found'], 404);
+    //         }
 
-            $pembayaran = Pembayaran::with(['emr.kunjungan', 'emr.resep.obat'])->find($pembayaranId);
+    //         $pembayaran = Pembayaran::with(['emr.kunjungan', 'emr.resep.obat'])->find($pembayaranId);
 
-            if (!$pembayaran) {
-                Log::error('❌ Pembayaran not found in DB: ' . $pembayaranId);
-                return response()->json(['status' => 'error', 'message' => 'Pembayaran record not found'], 404);
-            }
+    //         if (!$pembayaran) {
+    //             Log::error('❌ Pembayaran not found in DB: ' . $pembayaranId);
+    //             return response()->json(['status' => 'error', 'message' => 'Pembayaran record not found'], 404);
+    //         }
 
-            Log::info('✅ Found pembayaran:', [
-                'pembayaran_id' => $pembayaran->id,
-                'current_status' => $pembayaran->status,
-                'emr_id' => $pembayaran->emr_id,
-                'kunjungan_id' => $pembayaran->emr->kunjungan->id ?? null,
-            ]);
+    //         Log::info('✅ Found pembayaran:', [
+    //             'pembayaran_id' => $pembayaran->id,
+    //             'current_status' => $pembayaran->status,
+    //             'emr_id' => $pembayaran->emr_id,
+    //             'kunjungan_id' => $pembayaran->emr->kunjungan->id ?? null,
+    //         ]);
 
-            DB::transaction(function () use ($pembayaran, $transactionStatus, $fraudStatus, $orderId) {
-                if ($transactionStatus == 'capture') {
-                    if ($fraudStatus == 'challenge') {
-                        Log::info('⚠️ Payment challenge - waiting verification');
-                        $this->updatePembayaranStatus($pembayaran, 'Pending', $orderId);
-                    } else if ($fraudStatus == 'accept') {
-                        Log::info('✅ Payment capture accepted');
-                        $this->completeMidtransPayment($pembayaran, $orderId);
-                    }
-                } else if ($transactionStatus == 'settlement') {
-                    Log::info('✅ Payment settlement - completing payment');
-                    $this->completeMidtransPayment($pembayaran, $orderId);
-                } else if ($transactionStatus == 'pending') {
-                    Log::info('⏳ Payment pending');
-                    $this->updatePembayaranStatus($pembayaran, 'Belum Bayar', $orderId);
-                } else if (in_array($transactionStatus, ['deny', 'expire', 'cancel'])) {
-                    Log::error('❌ Payment failed: ' . $transactionStatus);
-                    $this->updatePembayaranStatus($pembayaran, 'Belum Bayar', $orderId);
-                }
-            });
+    //         DB::transaction(function () use ($pembayaran, $transactionStatus, $fraudStatus, $orderId) {
+    //             if ($transactionStatus == 'capture') {
+    //                 if ($fraudStatus == 'challenge') {
+    //                     Log::info('⚠️ Payment challenge - waiting verification');
+    //                     $this->updatePembayaranStatus($pembayaran, 'Pending', $orderId);
+    //                 } else if ($fraudStatus == 'accept') {
+    //                     Log::info('✅ Payment capture accepted');
+    //                     $this->completeMidtransPayment($pembayaran, $orderId);
+    //                 }
+    //             } else if ($transactionStatus == 'settlement') {
+    //                 Log::info('✅ Payment settlement - completing payment');
+    //                 $this->completeMidtransPayment($pembayaran, $orderId);
+    //             } else if ($transactionStatus == 'pending') {
+    //                 Log::info('⏳ Payment pending');
+    //                 $this->updatePembayaranStatus($pembayaran, 'Belum Bayar', $orderId);
+    //             } else if (in_array($transactionStatus, ['deny', 'expire', 'cancel'])) {
+    //                 Log::error('❌ Payment failed: ' . $transactionStatus);
+    //                 $this->updatePembayaranStatus($pembayaran, 'Belum Bayar', $orderId);
+    //             }
+    //         });
 
-            Log::info('✅ Callback processed successfully');
-            return response()->json(['status' => 'ok']);
-        } catch (\Exception $e) {
-            Log::error('❌ Midtrans callback error: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
-        }
-    }
+    //         Log::info('✅ Callback processed successfully');
+    //         return response()->json(['status' => 'ok']);
+    //     } catch (\Exception $e) {
+    //         Log::error('❌ Midtrans callback error: ' . $e->getMessage());
+    //         Log::error('Stack trace: ' . $e->getTraceAsString());
+    //         return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
+    //     }
+    // }
 
-    private function completeMidtransPayment($pembayaran, $orderId)
-    {
-        Log::info('💰 Completing Midtrans payment:', [
-            'pembayaran_id' => $pembayaran->id,
-            'order_id' => $orderId,
-            'before_status' => $pembayaran->status,
-        ]);
+    // private function completeMidtransPayment($pembayaran, $orderId)
+    // {
+    //     Log::info('💰 Completing Midtrans payment:', [
+    //         'pembayaran_id' => $pembayaran->id,
+    //         'order_id' => $orderId,
+    //         'before_status' => $pembayaran->status,
+    //     ]);
 
-        // Update pembayaran
-        $updateResult = $pembayaran->update([
-            'status' => 'Sudah Bayar',
-            'metode_pembayaran' => 'Midtrans',
-            'tanggal_pembayaran' => now(),
-            'uang_yang_diterima' => $pembayaran->total_tagihan,
-            'kembalian' => 0,
-        ]);
+    //     // Update pembayaran
+    //     $updateResult = $pembayaran->update([
+    //         'status' => 'Sudah Bayar',
+    //         'metode_pembayaran' => 'Midtrans',
+    //         'tanggal_pembayaran' => now(),
+    //         'uang_yang_diterima' => $pembayaran->total_tagihan,
+    //         'kembalian' => 0,
+    //     ]);
 
-        Log::info('📝 Pembayaran update result: ' . ($updateResult ? 'SUCCESS' : 'FAILED'));
+    //     Log::info('📝 Pembayaran update result: ' . ($updateResult ? 'SUCCESS' : 'FAILED'));
 
-        // Update kunjungan status
-        if ($pembayaran->emr && $pembayaran->emr->kunjungan) {
-            $kunjunganUpdateResult = $pembayaran->emr->kunjungan->update([
-                'status' => 'Succeed'
-            ]);
+    //     // Update kunjungan status
+    //     if ($pembayaran->emr && $pembayaran->emr->kunjungan) {
+    //         $kunjunganUpdateResult = $pembayaran->emr->kunjungan->update([
+    //             'status' => 'Succeed'
+    //         ]);
 
-            Log::info('📝 Kunjungan update result: ' . ($kunjunganUpdateResult ? 'SUCCESS' : 'FAILED'), [
-                'kunjungan_id' => $pembayaran->emr->kunjungan->id,
-                'new_status' => 'Succeed',
-            ]);
-        }
+    //         Log::info('📝 Kunjungan update result: ' . ($kunjunganUpdateResult ? 'SUCCESS' : 'FAILED'), [
+    //             'kunjungan_id' => $pembayaran->emr->kunjungan->id,
+    //             'new_status' => 'Succeed',
+    //         ]);
+    //     }
 
-        // Update status resep obat otomatis ke "Sudah Diambil"
-        if ($pembayaran->emr && $pembayaran->emr->resep) {
-            DB::table('resep_obat')
-                ->where('resep_id', $pembayaran->emr->resep->id)
-                ->update([
-                    'status' => 'Sudah Diambil',
-                    'updated_at' => now(),
-                ]);
+    //     // Update status resep obat otomatis ke "Sudah Diambil"
+    //     if ($pembayaran->emr && $pembayaran->emr->resep) {
+    //         DB::table('resep_obat')
+    //             ->where('resep_id', $pembayaran->emr->resep->id)
+    //             ->update([
+    //                 'status' => 'Sudah Diambil',
+    //                 'updated_at' => now(),
+    //             ]);
 
-            Log::info('💊 Resep obat updated to Sudah Diambil');
-        }
+    //         Log::info('💊 Resep obat updated to Sudah Diambil');
+    //     }
 
-        // Hapus dari cache
-        Cache::forget('midtrans_order_' . $orderId);
+    //     // Hapus dari cache
+    //     Cache::forget('midtrans_order_' . $orderId);
 
-        Log::info('✅ Payment completion successful', [
-            'pembayaran_id' => $pembayaran->id,
-            'status' => 'Sudah Bayar',
-            'kunjungan_status' => 'Succeed',
-        ]);
-    }
+    //     Log::info('✅ Payment completion successful', [
+    //         'pembayaran_id' => $pembayaran->id,
+    //         'status' => 'Sudah Bayar',
+    //         'kunjungan_status' => 'Succeed',
+    //     ]);
+    // }
 
     private function updatePembayaranStatus($pembayaran, $status, $orderId)
     {
@@ -3176,273 +3390,277 @@ class APIMobileController extends Controller
         Log::info("✅ Payment status updated successfully");
     }
 
-    public function checkPaymentStatus(Request $request, $orderId)
-    {
-        try {
-            // Cari pembayaran berdasarkan order_id
-            $pembayaranId = Cache::get('midtrans_order_' . $orderId);
+    // public function checkPaymentStatus(Request $request, $orderId)
+    // {
+    //     try {
+    //         // Cari pembayaran berdasarkan order_id
+    //         $pembayaranId = Cache::get('midtrans_order_' . $orderId);
 
-            if (!$pembayaranId && preg_match('/KLINIK-(\d+)-\d+/', $orderId, $matches)) {
-                $pembayaranId = $matches[1];
-            }
+    //         if (!$pembayaranId && preg_match('/KLINIK-(\d+)-\d+/', $orderId, $matches)) {
+    //             $pembayaranId = $matches[1];
+    //         }
 
-            if (!$pembayaranId) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Order tidak ditemukan',
-                ], 404);
-            }
+    //         if (!$pembayaranId) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Order tidak ditemukan',
+    //             ], 404);
+    //         }
 
-            $pembayaran = Pembayaran::find($pembayaranId);
+    //         $pembayaran = Pembayaran::find($pembayaranId);
 
-            if (!$pembayaran) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Pembayaran tidak ditemukan',
-                ], 404);
-            }
+    //         if (!$pembayaran) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Pembayaran tidak ditemukan',
+    //             ], 404);
+    //         }
 
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'order_id' => $orderId,
-                    'status' => $pembayaran->status,
-                    'amount' => $pembayaran->total_tagihan,
-                    'payment_method' => $pembayaran->metode_pembayaran,
-                    'paid_at' => $pembayaran->tanggal_pembayaran,
-                ],
-            ]);
-        } catch (\Exception $e) {
-            Log::error('Error checking payment status: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengecek status: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
-    public function forceUpdatePaymentStatus(Request $request)
-    {
-        try {
-            $request->validate([
-                'pembayaran_id' => 'required|exists:pembayaran,id',
-                'metode_pembayaran' => 'required|in:Cash,Midtrans',
-            ]);
+    //         return response()->json([
+    //             'success' => true,
+    //             'data' => [
+    //                 'order_id' => $orderId,
+    //                 'status' => $pembayaran->status,
+    //                 'amount' => $pembayaran->total_tagihan,
+    //                 'payment_method' => $pembayaran->metode_pembayaran,
+    //                 'paid_at' => $pembayaran->tanggal_pembayaran,
+    //             ],
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         Log::error('Error checking payment status: ' . $e->getMessage());
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Gagal mengecek status: ' . $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
 
-            Log::info('🚨 Force update payment status requested:', [
-                'pembayaran_id' => $request->pembayaran_id,
-                'metode_pembayaran' => $request->metode_pembayaran,
-            ]);
 
-            $pembayaran = Pembayaran::with(['emr.kunjungan', 'emr.resep.obat'])->find($request->pembayaran_id);
+    // public function forceUpdatePaymentStatus(Request $request)
+    // {
+    //     try {
+    //         $request->validate([
+    //             'pembayaran_id' => 'required|exists:pembayaran,id',
+    //             'metode_pembayaran' => 'required|in:Cash,Midtrans',
+    //         ]);
 
-            if (!$pembayaran) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data pembayaran tidak ditemukan',
-                ], 404);
-            }
+    //         Log::info('🚨 Force update payment status requested:', [
+    //             'pembayaran_id' => $request->pembayaran_id,
+    //             'metode_pembayaran' => $request->metode_pembayaran,
+    //         ]);
 
-            if ($pembayaran->status === 'Sudah Bayar') {
-                Log::info('⚠️ Payment already paid:', [
-                    'pembayaran_id' => $pembayaran->id,
-                ]);
+    //         $pembayaran = Pembayaran::with(['emr.kunjungan', 'emr.resep.obat'])->find($request->pembayaran_id);
 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Pembayaran sudah selesai sebelumnya',
-                    'data' => $pembayaran,
-                ]);
-            }
+    //         if (!$pembayaran) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Data pembayaran tidak ditemukan',
+    //             ], 404);
+    //         }
 
-            // Force update pembayaran
-            DB::transaction(function () use ($pembayaran, $request) {
-                Log::info('💪 Force updating payment:', [
-                    'pembayaran_id' => $pembayaran->id,
-                    'metode' => $request->metode_pembayaran,
-                    'total_tagihan' => $pembayaran->total_tagihan,
-                ]);
+    //         if ($pembayaran->status === 'Sudah Bayar') {
+    //             Log::info('⚠️ Payment already paid:', [
+    //                 'pembayaran_id' => $pembayaran->id,
+    //             ]);
 
-                $updateResult = $pembayaran->update([
-                    'status' => 'Sudah Bayar',
-                    'metode_pembayaran' => $request->metode_pembayaran,
-                    'tanggal_pembayaran' => now(),
-                    'uang_yang_diterima' => $pembayaran->total_tagihan,
-                    'kembalian' => 0,
-                    'catatan' => 'Force update - pembayaran dikonfirmasi manual',
-                ]);
+    //             return response()->json([
+    //                 'success' => true,
+    //                 'message' => 'Pembayaran sudah selesai sebelumnya',
+    //                 'data' => $pembayaran,
+    //             ]);
+    //         }
 
-                Log::info('📝 Force update payment result: ' . ($updateResult ? 'SUCCESS' : 'FAILED'));
+    //         // Force update pembayaran
+    //         DB::transaction(function () use ($pembayaran, $request) {
+    //             Log::info('💪 Force updating payment:', [
+    //                 'pembayaran_id' => $pembayaran->id,
+    //                 'metode' => $request->metode_pembayaran,
+    //                 'total_tagihan' => $pembayaran->total_tagihan,
+    //             ]);
 
-                // Update kunjungan status
-                if ($pembayaran->emr && $pembayaran->emr->kunjungan) {
-                    $kunjunganUpdateResult = $pembayaran->emr->kunjungan->update([
-                        'status' => 'Succeed'
-                    ]);
+    //             $updateResult = $pembayaran->update([
+    //                 'status' => 'Sudah Bayar',
+    //                 'metode_pembayaran' => $request->metode_pembayaran,
+    //                 'tanggal_pembayaran' => now(),
+    //                 'uang_yang_diterima' => $pembayaran->total_tagihan,
+    //                 'kembalian' => 0,
+    //                 'catatan' => 'Force update - pembayaran dikonfirmasi manual',
+    //             ]);
 
-                    Log::info('📝 Force update kunjungan result: ' . ($kunjunganUpdateResult ? 'SUCCESS' : 'FAILED'), [
-                        'kunjungan_id' => $pembayaran->emr->kunjungan->id,
-                        'new_status' => 'Succeed',
-                    ]);
-                }
+    //             Log::info('📝 Force update payment result: ' . ($updateResult ? 'SUCCESS' : 'FAILED'));
 
-                // Update status resep obat otomatis ke "Sudah Diambil" jika Midtrans
-                if ($request->metode_pembayaran === 'Midtrans' && $pembayaran->emr && $pembayaran->emr->resep) {
-                    DB::table('resep_obat')
-                        ->where('resep_id', $pembayaran->emr->resep->id)
-                        ->update([
-                            'status' => 'Sudah Diambil',
-                            'updated_at' => now(),
-                        ]);
+    //             // Update kunjungan status
+    //             if ($pembayaran->emr && $pembayaran->emr->kunjungan) {
+    //                 $kunjunganUpdateResult = $pembayaran->emr->kunjungan->update([
+    //                     'status' => 'Succeed'
+    //                 ]);
 
-                    Log::info('💊 Force update resep obat to Sudah Diambil');
-                }
-            });
+    //                 Log::info('📝 Force update kunjungan result: ' . ($kunjunganUpdateResult ? 'SUCCESS' : 'FAILED'), [
+    //                     'kunjungan_id' => $pembayaran->emr->kunjungan->id,
+    //                     'new_status' => 'Succeed',
+    //                 ]);
+    //             }
 
-            $pembayaran->refresh();
+    //             // Update status resep obat otomatis ke "Sudah Diambil" jika Midtrans
+    //             if ($request->metode_pembayaran === 'Midtrans' && $pembayaran->emr && $pembayaran->emr->resep) {
+    //                 DB::table('resep_obat')
+    //                     ->where('resep_id', $pembayaran->emr->resep->id)
+    //                     ->update([
+    //                         'status' => 'Sudah Diambil',
+    //                         'updated_at' => now(),
+    //                     ]);
 
-            Log::info('✅ Force update completed successfully:', [
-                'pembayaran_id' => $pembayaran->id,
-                'status' => $pembayaran->status,
-                'metode_pembayaran' => $pembayaran->metode_pembayaran,
-                'tanggal_pembayaran' => $pembayaran->tanggal_pembayaran,
-            ]);
+    //                 Log::info('💊 Force update resep obat to Sudah Diambil');
+    //             }
+    //         });
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Status pembayaran berhasil diperbarui',
-                'data' => $pembayaran,
-            ]);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('❌ Force update validation error: ', $e->errors());
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation error',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (\Exception $e) {
-            Log::error('❌ Force update error: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
+    //         $pembayaran->refresh();
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal memperbarui status pembayaran: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
-    public function simulateMidtransCallback(Request $request)
-    {
-        try {
-            // HANYA untuk SANDBOX mode
-            if (config('midtrans.is_production')) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Endpoint hanya tersedia di sandbox mode',
-                ], 403);
-            }
+    //         Log::info('✅ Force update completed successfully:', [
+    //             'pembayaran_id' => $pembayaran->id,
+    //             'status' => $pembayaran->status,
+    //             'metode_pembayaran' => $pembayaran->metode_pembayaran,
+    //             'tanggal_pembayaran' => $pembayaran->tanggal_pembayaran,
+    //         ]);
 
-            $request->validate([
-                'order_id' => 'required|string',
-                'transaction_status' => 'required|in:settlement,capture,pending,deny,cancel,expire',
-            ]);
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Status pembayaran berhasil diperbarui',
+    //             'data' => $pembayaran,
+    //         ]);
+    //     } catch (\Illuminate\Validation\ValidationException $e) {
+    //         Log::error('❌ Force update validation error: ', $e->errors());
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Validation error',
+    //             'errors' => $e->errors(),
+    //         ], 422);
+    //     } catch (\Exception $e) {
+    //         Log::error('❌ Force update error: ' . $e->getMessage());
+    //         Log::error('Stack trace: ' . $e->getTraceAsString());
 
-            $orderId = $request->order_id;
-            $transactionStatus = $request->transaction_status;
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Gagal memperbarui status pembayaran: ' . $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
 
-            Log::info('🧪 Simulating Midtrans callback:', [
-                'order_id' => $orderId,
-                'transaction_status' => $transactionStatus,
-            ]);
 
-            // Cari pembayaran berdasarkan order_id
-            $pembayaranId = Cache::get('midtrans_order_' . $orderId);
+    // public function simulateMidtransCallback(Request $request)
+    // {
+    //     try {
+    //         // HANYA untuk SANDBOX mode
+    //         if (config('midtrans.is_production')) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Endpoint hanya tersedia di sandbox mode',
+    //             ], 403);
+    //         }
 
-            if (!$pembayaranId && preg_match('/KLINIK-(\d+)-\d+/', $orderId, $matches)) {
-                $pembayaranId = $matches[1];
-            }
+    //         $request->validate([
+    //             'order_id' => 'required|string',
+    //             'transaction_status' => 'required|in:settlement,capture,pending,deny,cancel,expire',
+    //         ]);
 
-            if (!$pembayaranId) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Order ID tidak ditemukan',
-                ], 404);
-            }
+    //         $orderId = $request->order_id;
+    //         $transactionStatus = $request->transaction_status;
 
-            $pembayaran = Pembayaran::with(['emr.kunjungan', 'emr.resep.obat'])->find($pembayaranId);
+    //         Log::info('🧪 Simulating Midtrans callback:', [
+    //             'order_id' => $orderId,
+    //             'transaction_status' => $transactionStatus,
+    //         ]);
 
-            if (!$pembayaran) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Pembayaran tidak ditemukan',
-                ], 404);
-            }
+    //         // Cari pembayaran berdasarkan order_id
+    //         $pembayaranId = Cache::get('midtrans_order_' . $orderId);
 
-            // Simulasi proses callback
-            if (in_array($transactionStatus, ['settlement', 'capture'])) {
-                $this->completeMidtransPayment($pembayaran, $orderId);
+    //         if (!$pembayaranId && preg_match('/KLINIK-(\d+)-\d+/', $orderId, $matches)) {
+    //             $pembayaranId = $matches[1];
+    //         }
 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Callback berhasil disimulasi - pembayaran selesai',
-                    'data' => $pembayaran->fresh(),
-                ]);
-            } else {
-                $this->updatePembayaranStatus($pembayaran, 'Belum Bayar', $orderId);
+    //         if (!$pembayaranId) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Order ID tidak ditemukan',
+    //             ], 404);
+    //         }
 
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Callback berhasil disimulasi - status: ' . $transactionStatus,
-                    'data' => $pembayaran->fresh(),
-                ]);
-            }
-        } catch (\Exception $e) {
-            Log::error('❌ Simulate callback error: ' . $e->getMessage());
+    //         $pembayaran = Pembayaran::with(['emr.kunjungan', 'emr.resep.obat'])->find($pembayaranId);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mensimulasi callback: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
+    //         if (!$pembayaran) {
+    //             return response()->json([
+    //                 'success' => false,
+    //                 'message' => 'Pembayaran tidak ditemukan',
+    //             ], 404);
+    //         }
+
+    //         // Simulasi proses callback
+    //         if (in_array($transactionStatus, ['settlement', 'capture'])) {
+    //             $this->completeMidtransPayment($pembayaran, $orderId);
+
+    //             return response()->json([
+    //                 'success' => true,
+    //                 'message' => 'Callback berhasil disimulasi - pembayaran selesai',
+    //                 'data' => $pembayaran->fresh(),
+    //             ]);
+    //         } else {
+    //             $this->updatePembayaranStatus($pembayaran, 'Belum Bayar', $orderId);
+
+    //             return response()->json([
+    //                 'success' => true,
+    //                 'message' => 'Callback berhasil disimulasi - status: ' . $transactionStatus,
+    //                 'data' => $pembayaran->fresh(),
+    //             ]);
+    //         }
+    //     } catch (\Exception $e) {
+    //         Log::error('❌ Simulate callback error: ' . $e->getMessage());
+
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Gagal mensimulasi callback: ' . $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
 
     /**
      * Cek apakah pembayaran sudah expired dan perlu dibatalkan
      */
-    public function checkExpiredPayments()
-    {
-        try {
-            // Cari pembayaran yang belum dibayar dan sudah lebih dari 30 menit
-            $expiredPayments = Pembayaran::where('status', 'Belum Bayar')
-                ->where('metode_pembayaran', 'Midtrans')
-                ->where('created_at', '<', now()->subMinutes(30))
-                ->with(['emr.kunjungan'])
-                ->get();
+    // public function checkExpiredPayments()
+    // {
+    //     try {
+    //         // Cari pembayaran yang belum dibayar dan sudah lebih dari 30 menit
+    //         $expiredPayments = Pembayaran::where('status', 'Belum Bayar')
+    //             ->where('metode_pembayaran', 'Midtrans')
+    //             ->where('created_at', '<', now()->subMinutes(30))
+    //             ->with(['emr.kunjungan'])
+    //             ->get();
 
-            Log::info('🕐 Checking expired payments, found: ' . $expiredPayments->count());
+    //         Log::info('🕐 Checking expired payments, found: ' . $expiredPayments->count());
 
-            $expiredCount = 0;
-            foreach ($expiredPayments as $pembayaran) {
-                // Update status kunjungan kembali ke Payment jika diperlukan
-                if ($pembayaran->emr && $pembayaran->emr->kunjungan && $pembayaran->emr->kunjungan->status === 'Succeed') {
-                    $pembayaran->emr->kunjungan->update(['status' => 'Payment']);
-                    Log::info('⏰ Reset kunjungan status for expired payment: ' . $pembayaran->id);
-                    $expiredCount++;
-                }
-            }
+    //         $expiredCount = 0;
+    //         foreach ($expiredPayments as $pembayaran) {
+    //             // Update status kunjungan kembali ke Payment jika diperlukan
+    //             if ($pembayaran->emr && $pembayaran->emr->kunjungan && $pembayaran->emr->kunjungan->status === 'Succeed') {
+    //                 $pembayaran->emr->kunjungan->update(['status' => 'Payment']);
+    //                 Log::info('⏰ Reset kunjungan status for expired payment: ' . $pembayaran->id);
+    //                 $expiredCount++;
+    //             }
+    //         }
 
-            return response()->json([
-                'success' => true,
-                'message' => "Ditemukan {$expiredCount} pembayaran yang expired",
-                'expired_count' => $expiredCount,
-            ]);
-        } catch (\Exception $e) {
-            Log::error('❌ Check expired payments error: ' . $e->getMessage());
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => "Ditemukan {$expiredCount} pembayaran yang expired",
+    //             'expired_count' => $expiredCount,
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         Log::error('❌ Check expired payments error: ' . $e->getMessage());
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengecek expired payments: ' . $e->getMessage(),
-            ], 500);
-        }
-    }
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Gagal mengecek expired payments: ' . $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
 
     // Add these functions to your APIMobileController class
 
