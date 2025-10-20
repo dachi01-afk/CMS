@@ -25,7 +25,9 @@ class DokterController extends Controller
             'email_akun_dokter'  => 'required|email|max:255|unique:user,email',
             'spesialis_dokter'   => 'required|integer|exists:jenis_spesialis,id',
             'password_dokter'    => 'required|string|min:8|confirmed',
-            'foto_dokter'        => 'nullable|file|mimetypes:image/jpeg,image/png,image/gif,image/webp,image/svg+xml|max:5120',
+            'foto_dokter'        => 'nullable|file|mimetypes:image/jpeg,image/png,image/gif,image/webp,image/svg+xml,image/pjpeg,image/jfif,<image>
+            <jpg></jpg>|max:5120',
+            // 'foto_dokter' => 'nullable|mimes:jpeg,jpg,png,gif,webp,svg|max:5120',
             'deskripsi_dokter'   => 'nullable|string',
             'pengalaman_dokter'  => 'nullable|string|max:255',
             'no_hp_dokter'       => 'nullable|string|max:20',
