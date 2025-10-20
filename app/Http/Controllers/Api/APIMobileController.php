@@ -10,6 +10,7 @@ use App\Models\Obat;
 use App\Models\Pasien;
 use App\Models\Pembayaran;
 use App\Models\Resep;
+use App\Models\MetodePembayaran;
 use App\Models\Testimoni;
 use App\Models\User;
 use Carbon\Carbon;
@@ -219,7 +220,7 @@ class APIMobileController extends Controller
     /**
      * Create notification (internal use)
      */
-        protected function createNotification(int $userId, string $title, string $body, array $data = []): Notification
+    protected function createNotification(int $userId, string $title, string $body, array $data = []): Notification
     {
         return Notification::create([
             'user_id' => $userId,
@@ -1448,7 +1449,7 @@ class APIMobileController extends Controller
                 if ($riwayatDiagnosisPasien->isNotEmpty()) {
                     $riwayatList = [];
                     foreach ($riwayatDiagnosisPasien as $emrLama) {
-                        $tanggal = \Carbon\Carbon::parse($emrLama->created_at)->format('d/m/Y');
+                        $tanggal = Carbon::parse($emrLama->created_at)->format('d/m/Y');
                         $riwayatList[] = "- {$emrLama->diagnosis} ({$tanggal})";
                     }
                     $riwayatDiagnosisFormatted = implode("\n", $riwayatList);
@@ -1702,7 +1703,7 @@ class APIMobileController extends Controller
             Log::info('Getting layanan for poli_id: ' . $poli_id);
 
             // Validate poli exists
-            $poli = \App\Models\Poli::find($poli_id);
+            $poli = Poli::find($poli_id);
             if (!$poli) {
                 return response()->json([
                     'success' => false,
@@ -2455,7 +2456,7 @@ class APIMobileController extends Controller
         }
     }
 
-protected function notifyPasienFromKunjungan(Kunjungan $kunjungan, string $title, string $body, array $extra = []): void
+    protected function notifyPasienFromKunjungan(Kunjungan $kunjungan, string $title, string $body, array $extra = []): void
     {
         try {
             // Ambil user_id dari relasi pasien
@@ -2469,7 +2470,7 @@ protected function notifyPasienFromKunjungan(Kunjungan $kunjungan, string $title
             }
 
             if (!$userId) {
-                Log::warning('notifyPasienFromKunjungan: user_id pasien tidak ditemukan. kunjungan_id='.$kunjungan->id);
+                Log::warning('notifyPasienFromKunjungan: user_id pasien tidak ditemukan. kunjungan_id=' . $kunjungan->id);
                 return;
             }
 
@@ -2482,7 +2483,7 @@ protected function notifyPasienFromKunjungan(Kunjungan $kunjungan, string $title
 
             $this->createNotification($userId, $title, $body, $payload);
         } catch (\Throwable $e) {
-            Log::warning('notifyPasienFromKunjungan error: '.$e->getMessage());
+            Log::warning('notifyPasienFromKunjungan error: ' . $e->getMessage());
         }
     }
 
@@ -2644,7 +2645,7 @@ protected function notifyPasienFromKunjungan(Kunjungan $kunjungan, string $title
         }
     }
 
-     public function updateStatusObat(Request $request, $id)
+    public function updateStatusObat(Request $request, $id)
     {
         $validated = $request->validate([
             'status' => 'required|string|max:50',
@@ -2677,7 +2678,7 @@ protected function notifyPasienFromKunjungan(Kunjungan $kunjungan, string $title
                 Log::warning('Gagal kirim notif updateStatusObat: ' . $e->getMessage());
             }
         } else {
-            Log::warning('updateStatusObat: kunjungan tidak ditemukan untuk resep_id='.$resep->id);
+            Log::warning('updateStatusObat: kunjungan tidak ditemukan untuk resep_id=' . $resep->id);
         }
 
         return response()->json([
@@ -2687,7 +2688,7 @@ protected function notifyPasienFromKunjungan(Kunjungan $kunjungan, string $title
         ]);
     }
 
-     public function prosesPembayaran(Request $request)
+    public function prosesPembayaran(Request $request)
     {
         $validated = $request->validate([
             'kunjungan_id' => 'required|integer|exists:kunjungans,id',

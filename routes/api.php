@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\APIMobileController;
 | PUBLIC ROUTES (No Auth)
 |--------------------------------------------------------------------------
 */
+
 Route::post('/login', [APIMobileController::class, 'login'])->name('api.login');
 Route::post('/register', [APIMobileController::class, 'register'])->name('api.register');
 Route::post('/login-dokter', [APIMobileController::class, 'loginDokter'])->name('api.login_dokter');
@@ -43,7 +44,7 @@ Route::get('/getAllDokter', [APIMobileController::class, 'getAllDokter'])->name(
 | PROTECTED ROUTES (Sanctum Auth)
 |--------------------------------------------------------------------------
 */
-Route::middleware('auth:sanctum')->group(function () {
+Route::middleware(['auth:sanctum', 'role:Pasien'])->group(function () {
     // Auth
     Route::post('/logout', [APIMobileController::class, 'logout'])->name('api.logout');
 
