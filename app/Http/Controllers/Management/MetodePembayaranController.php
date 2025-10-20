@@ -67,16 +67,4 @@ class MetodePembayaranController extends Controller
             'message' => "Berhasil Menghapus Data Metode Pembayaran"
         ]);
     }
-
-    public function getDataMetodePembayaran()
-    {
-        $dataMetodePembayaran = MetodePembayaran::all();
-
-        return response()->json([
-            'success' => true,
-            'status' => 200,
-            'data' => $dataMetodePembayaran,
-            'message' => 'Berhasil Memunculkan Data Metode Pembayaran'
-        ]);
-    }
 }
