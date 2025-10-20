@@ -33,6 +33,8 @@
                     <th class="px-6 py-3">Nama Obat</th>
                     <th class="px-6 py-3">Dosis</th>
                     <th class="px-6 py-3">Jumlah Obat</th>
+                    <th class="px-6 py-3">Nama Layanan</th>
+                    <th class="px-6 py-3">Jumlah Layanan</th>
                     <th class="px-6 py-3">Total</th>
                     <th class="px-6 py-3">Metode Pembayaran</th>
                     <th class="px-6 py-3">Status</th>

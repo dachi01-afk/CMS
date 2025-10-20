@@ -13,8 +13,7 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
     <!-- Font-Awesome -->
-    <link rel="stylesheet"
-        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer" />
 
     <!-- Flowbite JS -->
@@ -50,13 +49,27 @@
                                 @foreach ($dataPembayaran->emr->resep->obat as $o)
                                     <tr>
                                         <td class="whitespace-nowrap py-4 md:w-[384px]">
-                                            <label>{{ $o->nama_obat }}</label>
+                                            <label>{{ $o->nama_obat }}</label>  
                                         </td>
                                         <td class="p-4 text-base font-normal text-gray-900 dark:text-white">
                                             x{{ $o->pivot->jumlah }}
                                         </td>
                                         <td class="p-4 text-right text-base font-bold text-gray-900 dark:text-white">
                                             Rp{{ number_format(($o->total_harga ?? 0) * ($o->pivot->jumlah ?? 1), 0, ',', '.') }}
+                                        </td>
+                                    </tr>
+                                @endforeach
+
+                                @foreach ($dataPembayaran->emr->kunjungan->layanan as $l)
+                                    <tr>
+                                        <td class="whitespace-nowrap py-4 md:w-[384px]">
+                                            <label>{{ $l->nama_layanan }}</label>
+                                        </td>
+                                        <td class="p-4 text-base font-normal text-gray-900 dark:text-white">
+                                            x{{ $l->pivot->jumlah }}
+                                        </td>
+                                        <td class="p-4 text-right text-base font-bold text-gray-900 dark:text-white">
+                                            Rp{{ number_format(($l->harga_layanan ?? 0) * ($l->pivot->jumlah ?? 1), 0, ',', '.') }}
                                         </td>
                                     </tr>
                                 @endforeach
@@ -75,7 +88,8 @@
                                 </dd>
                             </dl>
 
-                            <dl class="flex items-center justify-between gap-4 border-t border-gray-200 pt-2 dark:border-gray-700">
+                            <dl
+                                class="flex items-center justify-between gap-4 border-t border-gray-200 pt-2 dark:border-gray-700">
                                 <dt class="text-lg font-bold text-gray-900 dark:text-white">Total Tagihan</dt>
                                 <dd class="text-lg font-bold text-gray-900 dark:text-white">
                                     Rp{{ number_format($dataPembayaran->total_tagihan, 0, ',', '.') }}
@@ -172,127 +186,128 @@
 
     <!-- JS Section -->
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const totalInput = document.getElementById('total_tagihan');
-        const uangDiterimaInput = document.getElementById('uang_diterima');
-        const uangKembalianInput = document.getElementById('uang_kembalian');
-        const form = document.getElementById('formPembayaran');
-        const submitBtn = document.getElementById('btnSubmitPembayaran');
+        document.addEventListener('DOMContentLoaded', function() {
+            const totalInput = document.getElementById('total_tagihan');
+            const uangDiterimaInput = document.getElementById('uang_diterima');
+            const uangKembalianInput = document.getElementById('uang_kembalian');
+            const form = document.getElementById('formPembayaran');
+            const submitBtn = document.getElementById('btnSubmitPembayaran');
 
-        // tambahkan class pl-3 ke uang_kembalian
-        uangKembalianInput.classList.add('pl-3');
+            // tambahkan class pl-3 ke uang_kembalian
+            uangKembalianInput.classList.add('pl-3');
 
-        // Fungsi bantu: hapus semua karakter non-digit
-        function onlyDigits(value) {
-            return value ? String(value).replace(/[^\d]/g, '') : '';
-        }
-
-        // Hitung otomatis uang kembalian
-        uangDiterimaInput.addEventListener('input', function() {
-            const total = parseFloat(onlyDigits(totalInput.value)) || 0;
-            const diterima = parseFloat(onlyDigits(this.value)) || 0;
-            const kembalian = diterima - total;
-
-            uangKembalianInput.value = (kembalian >= 0)
-                ? 'Rp ' + kembalian.toLocaleString('id-ID')
-                : 'Rp 0';
-        });
-
-        // Submit form pembayaran
-        form.addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            const totalClean = parseFloat(onlyDigits(totalInput.value)) || 0;
-            const uangDiterimaClean = parseFloat(onlyDigits(uangDiterimaInput.value)) || 0;
-            const kembalianClean = uangDiterimaClean - totalClean;
-
-            if (uangDiterimaClean === 0 || uangDiterimaClean < totalClean) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Uang Kurang',
-                    text: 'Nominal uang yang diterima belum cukup untuk membayar tagihan.'
-                });
-                return;
+            // Fungsi bantu: hapus semua karakter non-digit
+            function onlyDigits(value) {
+                return value ? String(value).replace(/[^\d]/g, '') : '';
             }
 
-            // buat salinan FormData dan isi ulang nilai bersih
-            const formData = new FormData(form);
-            formData.set('uang_yang_diterima', uangDiterimaClean);
-            formData.set('kembalian', kembalianClean);
-            formData.set('total_tagihan', totalClean);
+            // Hitung otomatis uang kembalian
+            uangDiterimaInput.addEventListener('input', function() {
+                const total = parseFloat(onlyDigits(totalInput.value)) || 0;
+                const diterima = parseFloat(onlyDigits(this.value)) || 0;
+                const kembalian = diterima - total;
 
-            submitBtn.disabled = true;
-            submitBtn.classList.add('opacity-60', 'cursor-not-allowed');
+                uangKembalianInput.value = (kembalian >= 0) ?
+                    'Rp ' + kembalian.toLocaleString('id-ID') :
+                    'Rp 0';
+            });
 
-            try {
-                const response = await fetch(form.action, {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: {
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                        'Accept': 'application/json'
-                    },
-                    body: formData
-                });
+            // Submit form pembayaran
+            form.addEventListener('submit', async function(e) {
+                e.preventDefault();
 
-                if (response.redirected || response.status === 302) {
+                const totalClean = parseFloat(onlyDigits(totalInput.value)) || 0;
+                const uangDiterimaClean = parseFloat(onlyDigits(uangDiterimaInput.value)) || 0;
+                const kembalianClean = uangDiterimaClean - totalClean;
+
+                if (uangDiterimaClean === 0 || uangDiterimaClean < totalClean) {
                     Swal.fire({
-                        icon: 'error',
-                        title: 'Ter-redirect',
-                        text: 'Server meredirect permintaan. Kemungkinan Anda belum login atau session berakhir.'
+                        icon: 'warning',
+                        title: 'Uang Kurang',
+                        text: 'Nominal uang yang diterima belum cukup untuk membayar tagihan.'
                     });
                     return;
                 }
 
-                if (response.status === 401) {
+                // buat salinan FormData dan isi ulang nilai bersih
+                const formData = new FormData(form);
+                formData.set('uang_yang_diterima', uangDiterimaClean);
+                formData.set('kembalian', kembalianClean);
+                formData.set('total_tagihan', totalClean);
+
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-60', 'cursor-not-allowed');
+
+                try {
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
+                                .content,
+                            'Accept': 'application/json'
+                        },
+                        body: formData
+                    });
+
+                    if (response.redirected || response.status === 302) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Ter-redirect',
+                            text: 'Server meredirect permintaan. Kemungkinan Anda belum login atau session berakhir.'
+                        });
+                        return;
+                    }
+
+                    if (response.status === 401) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Tidak Terautentikasi',
+                            text: 'Silakan login ulang.'
+                        });
+                        return;
+                    }
+
+                    if (response.status === 419) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Token CSRF Tidak Valid',
+                            text: 'Session kadaluwarsa, silakan muat ulang halaman dan coba lagi.'
+                        });
+                        return;
+                    }
+
+                    const data = await response.json();
+
+                    if (data.success) {
+                        await Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil!',
+                            text: data.message || 'Pembayaran berhasil diproses.',
+                            confirmButtonText: 'OK'
+                        });
+                        window.location.href = "{{ route('kasir.index') }}";
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: data.message || 'Terjadi kesalahan saat memproses pembayaran.'
+                        });
+                    }
+                } catch (err) {
+                    console.error('Fetch error:', err);
                     Swal.fire({
                         icon: 'error',
-                        title: 'Tidak Terautentikasi',
-                        text: 'Silakan login ulang.'
+                        title: 'Error',
+                        text: 'Tidak dapat terhubung ke server. Periksa koneksi atau lihat log server.'
                     });
-                    return;
+                } finally {
+                    submitBtn.disabled = false;
+                    submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
                 }
-
-                if (response.status === 419) {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Token CSRF Tidak Valid',
-                        text: 'Session kadaluwarsa, silakan muat ulang halaman dan coba lagi.'
-                    });
-                    return;
-                }
-
-                const data = await response.json();
-
-                if (data.success) {
-                    await Swal.fire({
-                        icon: 'success',
-                        title: 'Berhasil!',
-                        text: data.message || 'Pembayaran berhasil diproses.',
-                        confirmButtonText: 'OK'
-                    });
-                    window.location.href = "{{ route('kasir.index') }}";
-                } else {
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Gagal',
-                        text: data.message || 'Terjadi kesalahan saat memproses pembayaran.'
-                    });
-                }
-            } catch (err) {
-                console.error('Fetch error:', err);
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: 'Tidak dapat terhubung ke server. Periksa koneksi atau lihat log server.'
-                });
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
-            }
+            });
         });
-    });
-</script>
+    </script>
 
 </body>
 

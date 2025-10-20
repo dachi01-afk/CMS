@@ -33,10 +33,10 @@ class Kunjungan extends Model
     // }
 
     // Dokter langsung belongsTo lewat poli_id
-public function dokter()
-{
-    return $this->belongsTo(Dokter::class, 'poli_id', 'poli_id');
-}
+    public function dokter()
+    {
+        return $this->belongsTo(Dokter::class, 'poli_id', 'poli_id');
+    }
 
     public function poli()
     {
@@ -54,7 +54,8 @@ public function dokter()
         return $this->hasOne(EMR::class);
     }
 
-    public function kunjunganLayanan() {
+    public function kunjunganLayanan()
+    {
         return $this->belongsToMany(Layanan::class, 'kunjungan_layanan', 'kunjungan_id', 'layanan_id')->withPivot(['jumlah']);
     }
 
@@ -82,9 +83,9 @@ public function dokter()
         return $this->tanggal_kunjungan->format('d M Y H:i');
     }
     public function layanan()
-{
-    return $this->belongsToMany(Layanan::class, 'kunjungan_layanan', 'kunjungan_id', 'layanan_id')
-                ->withPivot('jumlah')
-                ->withTimestamps();
-}
+    {
+        return $this->belongsToMany(Layanan::class, 'kunjungan_layanan', 'kunjungan_id', 'layanan_id')
+            ->withPivot('jumlah')
+            ->withTimestamps();
+    }
 }

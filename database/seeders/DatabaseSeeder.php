@@ -5,7 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use App\Models\KategoriObat;
 use App\Models\MetodePembayaran;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
+use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 
@@ -28,15 +28,13 @@ class DatabaseSeeder extends Seeder
             ObatSeeder::class,
             JadwalDokterSeeder::class,
             KunjunganSeeder::class,
-            // KunjunganLayananSeeder::class,
+            KunjunganLayananSeeder::class,
             // TestimoniSeeder::class,
             ResepSeeder::class,
             ResepObatSeeder::class,
             EMRSeeder::class,
             MetodePembayaranSeeder::class,
             // TesLabSeeder::class,
-
-            // PembayaranSeeder::class,
             PembayaranSeeder::class,
             // AdministrasiSeeder::class,
         ]);

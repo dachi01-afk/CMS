@@ -690,104 +690,145 @@ class APIMobileController extends Controller
     }
 
 
-    public function bookingDokter(Request $request)
-    {
-        try {
-            Log::info('🔥 bookingDokter called with data: ', $request->all());
+ public function bookingDokter(Request $request)
+{
+    try {
+        Log::info('🔥 bookingDokter called with data: ', $request->all());
 
-            $request->validate([
-                'pasien_id' => ['required', 'exists:pasien,id'],
-                'poli_id' => ['required', 'exists:poli,id'],
-                'tanggal_kunjungan' => ['required', 'date'],
-                'keluhan_awal' => ['required', 'string'],
-            ]);
+        $request->validate([
+            'pasien_id' => ['required', 'exists:pasien,id'],
+            'poli_id' => ['required', 'exists:poli,id'],
+            'tanggal_kunjungan' => ['required', 'date'],
+            'keluhan_awal' => ['required', 'string'],
+        ]);
 
-            $pasienId = $request->pasien_id;
+        $pasienId = $request->pasien_id;
 
-            // VALIDASI PROFIL LENGKAP
-            if (!$this->isProfileComplete($pasienId)) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Mohon lengkapi data profil Anda terlebih dahulu sebelum membuat janji',
-                    'error_code' => 'PROFILE_INCOMPLETE'
-                ], 422);
-            }
-
-            $tanggalKunjungan = $request->tanggal_kunjungan;
-            $poliId = $request->poli_id; // GANTI dari dokter_id
-            $pasienId = $request->pasien_id;
-
-            Log::info("🎯 Processing booking for pasien_id: $pasienId, poli_id: $poliId, tanggal: $tanggalKunjungan");
-
-            // GANTI logika pengecekan existing booking
-            $existingBooking = Kunjungan::where('pasien_id', $pasienId)
-                ->where('poli_id', $poliId) // GANTI ke poli_id
-                ->where('tanggal_kunjungan', $tanggalKunjungan)
-                ->whereIn('status', ['Pending', 'Confirmed', 'Waiting', 'Engaged'])
-                ->first();
-
-            if ($existingBooking) {
-                Log::info("❌ Duplicate booking found for pasien_id: $pasienId, poli_id: $poliId, tanggal: $tanggalKunjungan");
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda sudah memiliki jadwal dengan poli ini pada tanggal yang sama. Silakan pilih tanggal lain.',
-                ], 422);
-            }
-
-            $result = DB::transaction(function () use ($tanggalKunjungan, $poliId, $pasienId, $request) {
-                // GANTI query untuk mencari kunjungan terakhir berdasarkan poli
-                $lastKunjungan = Kunjungan::where('tanggal_kunjungan', $tanggalKunjungan)
-                    ->where('poli_id', $poliId) // GANTI ke poli_id
-                    ->orderByDesc('no_antrian')
-                    ->lockForUpdate()
-                    ->first();
-
-                Log::info('🔍 Last kunjungan found: ', $lastKunjungan ? $lastKunjungan->toArray() : ['none']);
-
-                if ($lastKunjungan && $lastKunjungan->no_antrian) {
-                    $nextNumber = (int) $lastKunjungan->no_antrian + 1;
-                    Log::info("📈 Next number calculated from existing: $nextNumber");
-                } else {
-                    $nextNumber = 1;
-                    Log::info("🆕 Starting fresh with number: $nextNumber");
-                }
-
-                $formattedNumber = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
-                Log::info("🎫 Formatted number: $formattedNumber");
-
-                // GANTI data yang akan dibuat
-                $kunjungan = new Kunjungan;
-                $kunjungan->pasien_id = $pasienId;
-                $kunjungan->poli_id = $poliId; // GANTI ke poli_id
-                $kunjungan->tanggal_kunjungan = $tanggalKunjungan;
-                $kunjungan->no_antrian = $formattedNumber;
-                $kunjungan->keluhan_awal = $request->keluhan_awal;
-                $kunjungan->status = 'Pending';
-                $kunjungan->save();
-
-                Log::info('✅ Kunjungan created: ', $kunjungan->toArray());
-
-                return [
-                    'kunjungan' => $kunjungan,
-                    'no_antrian' => $formattedNumber,
-                ];
-            });
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Kunjungan berhasil dibuat',
-                'Data Kunjungan' => $result['kunjungan'],
-                'Data No Antrian' => $result['no_antrian'],
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('❌ Exception in bookingDokter: ' . $e->getMessage());
+        // VALIDASI PROFIL LENGKAP
+        if (!$this->isProfileComplete($pasienId)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal membuat kunjungan: ' . $e->getMessage(),
-            ], 500);
+                'message' => 'Mohon lengkapi data profil Anda terlebih dahulu sebelum membuat janji',
+                'error_code' => 'PROFILE_INCOMPLETE'
+            ], 422);
         }
+
+        $tanggalKunjungan = $request->tanggal_kunjungan;
+        $poliId = $request->poli_id;
+        $pasienId = $request->pasien_id;
+
+        Log::info("🎯 Processing booking for pasien_id: $pasienId, poli_id: $poliId, tanggal: $tanggalKunjungan");
+
+        // ENHANCED: Cek existing booking dengan status yang tidak boleh duplikasi
+        $activeStatuses = ['Pending', 'Confirmed', 'Waiting', 'Engaged'];
+        $existingActiveBooking = Kunjungan::where('pasien_id', $pasienId)
+            ->where('poli_id', $poliId)
+            ->where('tanggal_kunjungan', $tanggalKunjungan)
+            ->whereIn('status', $activeStatuses)
+            ->first();
+
+        if ($existingActiveBooking) {
+            Log::info("❌ Active booking found for pasien_id: $pasienId, poli_id: $poliId, tanggal: $tanggalKunjungan, status: {$existingActiveBooking->status}");
+
+            // Pesan yang lebih spesifik berdasarkan status
+            $statusMessages = [
+                'Pending' => 'Anda sudah memiliki janji yang menunggu konfirmasi dengan poli ini pada tanggal yang sama.',
+                'Confirmed' => 'Anda sudah memiliki janji yang telah dikonfirmasi dengan poli ini pada tanggal yang sama.',
+                'Waiting' => 'Anda sudah terdaftar dalam antrian dengan poli ini pada tanggal yang sama.',
+                'Engaged' => 'Anda sedang dalam proses konsultasi dengan poli ini pada tanggal yang sama.'
+            ];
+
+            $message = $statusMessages[$existingActiveBooking->status] ?? 
+                      'Anda sudah memiliki jadwal dengan poli ini pada tanggal yang sama.';
+            
+            $message .= ' Silakan pilih tanggal lain atau batalkan janji yang sudah ada.';
+
+            return response()->json([
+                'success' => false,
+                'message' => $message,
+                'error_code' => 'DUPLICATE_ACTIVE_BOOKING',
+                'existing_booking' => [
+                    'id' => $existingActiveBooking->id,
+                    'status' => $existingActiveBooking->status,
+                    'no_antrian' => $existingActiveBooking->no_antrian,
+                    'tanggal_kunjungan' => $existingActiveBooking->tanggal_kunjungan
+                ]
+            ], 422);
+        }
+
+        // OPTIONAL: Cek apakah ada booking dengan status Cancelled atau Success pada hari yang sama
+        // Ini untuk memberikan informasi tambahan, tapi tidak menghalangi booking baru
+        $previousBookings = Kunjungan::where('pasien_id', $pasienId)
+            ->where('poli_id', $poliId)
+            ->where('tanggal_kunjungan', $tanggalKunjungan)
+            ->whereIn('status', ['Cancelled', 'Success', 'Completed'])
+            ->get();
+
+        if ($previousBookings->count() > 0) {
+            Log::info("ℹ️ Found {$previousBookings->count()} previous booking(s) with Cancelled/Success status for same date");
+        }
+
+        $result = DB::transaction(function () use ($tanggalKunjungan, $poliId, $pasienId, $request) {
+            // GANTI query untuk mencari kunjungan terakhir berdasarkan poli
+            $lastKunjungan = Kunjungan::where('tanggal_kunjungan', $tanggalKunjungan)
+                ->where('poli_id', $poliId)
+                ->orderByDesc('no_antrian')
+                ->lockForUpdate()
+                ->first();
+
+            Log::info('🔍 Last kunjungan found: ', $lastKunjungan ? $lastKunjungan->toArray() : ['none']);
+
+            if ($lastKunjungan && $lastKunjungan->no_antrian) {
+                $nextNumber = (int) $lastKunjungan->no_antrian + 1;
+                Log::info("📈 Next number calculated from existing: $nextNumber");
+            } else {
+                $nextNumber = 1;
+                Log::info("🆕 Starting fresh with number: $nextNumber");
+            }
+
+            $formattedNumber = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+            Log::info("🎫 Formatted number: $formattedNumber");
+
+            // Create new booking
+            $kunjungan = new Kunjungan;
+            $kunjungan->pasien_id = $pasienId;
+            $kunjungan->poli_id = $poliId;
+            $kunjungan->tanggal_kunjungan = $tanggalKunjungan;
+            $kunjungan->no_antrian = $formattedNumber;
+            $kunjungan->keluhan_awal = $request->keluhan_awal;
+            $kunjungan->status = 'Pending';
+            $kunjungan->save();
+
+            Log::info('✅ Kunjungan created: ', $kunjungan->toArray());
+
+            return [
+                'kunjungan' => $kunjungan,
+                'no_antrian' => $formattedNumber,
+            ];
+        });
+
+        $responseMessage = 'Kunjungan berhasil dibuat';
+        
+        // Tambahkan informasi jika ada booking sebelumnya yang dibatalkan/selesai
+        if (isset($previousBookings) && $previousBookings->count() > 0) {
+            $responseMessage .= '. Catatan: Anda pernah memiliki janji dengan poli ini pada tanggal yang sama yang telah selesai/dibatalkan.';
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $responseMessage,
+            'Data Kunjungan' => $result['kunjungan'],
+            'Data No Antrian' => $result['no_antrian'],
+        ], 200);
+        
+    } catch (\Exception $e) {
+        Log::error('❌ Exception in bookingDokter: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal membuat kunjungan: ' . $e->getMessage(),
+        ], 500);
     }
+}
 
     // Di APIMobileController.php - Ganti method getRiwayatKunjungan
 
@@ -1105,27 +1146,29 @@ class APIMobileController extends Controller
     }
 
     public function getDataDokter()
-    {
-        try {
-            $login = Auth::user()->id;
+{
+    try {
+        $login = Auth::user()->id;
 
-            $dataDokter = Dokter::with('user')->where('user_id', $login)->get();
+        $dataDokter = Dokter::with(['user', 'poli']) 
+            ->where('user_id', $login)
+            ->get();
 
-            return response()->json([
-                'success' => true,
-                'status' => 200,
-                'Data Dokter' => $dataDokter,
-                'message' => 'Berhasil Mengambil Data Dokter',
-            ], 200);
-        } catch (\Exception $e) {
-            Log::error('Error getting data dokter: ' . $e->getMessage());
+        return response()->json([
+            'success' => true,
+            'status' => 200,
+            'Data Dokter' => $dataDokter,
+            'message' => 'Berhasil Mengambil Data Dokter',
+        ], 200);
+    } catch (\Exception $e) {
+        Log::error('Error getting data dokter: ' . $e->getMessage());
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengambil data dokter: ' . $e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil data dokter: ' . $e->getMessage(),
+        ], 500);
     }
+}
 
     public function loginDokter(Request $request)
     {

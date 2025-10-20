@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Pembayaran;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Yajra\DataTables\DataTables;
 
 class KasirController extends Controller
@@ -20,6 +21,8 @@ class KasirController extends Controller
         $dataPembayaran = Pembayaran::with([
             'emr.kunjungan.pasien',
             'emr.resep.obat',
+            'emr.kunjungan.layanan',
+            'metodePembayaran',
         ])->where('status', 'Belum Bayar')->get();
 
         return DataTables::of($dataPembayaran)
@@ -67,6 +70,34 @@ class KasirController extends Controller
                 return $output;
             })
 
+            ->addColumn('nama_layanan', function ($p) {
+                $layanan = $p->emr->kunjungan->layanan ?? collect();
+                if ($layanan->isEmpty()) {
+                    return '<span class="text-gray-400 italic">Tidak ada</span>';
+                }
+
+                $output = '<ul class="list-disc pl-4">';
+                foreach ($layanan as $l) {
+                    $output .= '<li>' . e($l->nama_layanan ?? '-') . '</li>';
+                }
+                $output .= '</ul>';
+                return $output;
+            })
+
+            ->addColumn('jumlah_layanan', function ($p) {
+                $layanan = $p->emr->kunjungan->layanan ?? collect();
+                if ($layanan->isEmpty()) {
+                    return '<span class="text-gray-400 italic">Tidak ada</span>';
+                }
+
+                $output = '<ul class="list-disc pl-4">';
+                foreach ($layanan as $l) {
+                    $output .= '<li>' . e($l->pivot->jumlah ?? '-') . '</li>';
+                }
+                $output .= '</ul>';
+                return $output;
+            })
+
             ->addColumn('total_tagihan', fn($p) => 'Rp ' .  number_format($p->total_tagihan, 0, ',', '.')  ?? '-')
             ->addColumn('metode_pembayaran', fn($p) => $p->metode_pembayaran ?? '-')
             ->addColumn('status', fn($p) => $p->status ?? '-')
@@ -96,13 +127,25 @@ class KasirController extends Controller
 
                 return $output;
             })
-            ->rawColumns(['nama_obat', 'dosis', 'jumlah', 'action'])
+            ->rawColumns(['nama_obat', 'dosis', 'jumlah', 'nama_layanan', 'jumlah_layanan', 'action'])
             ->make(true);
     }
 
     public function transaksi($kodeTransaksi)
     {
-        $dataPembayaran = Pembayaran::with('emr.kunjungan.pasien', 'emr.resep.obat')->where('kode_transaksi', $kodeTransaksi)->firstOrFail();
+        $dataPembayaran = Pembayaran::with([
+            'emr.kunjungan.pasien',
+            'emr.kunjungan.poli',
+            'emr.kunjungan.layanan', // ambil layanan langsung dari kunjungan
+            'emr.resep.obat',
+            'metodePembayaran', // kalau kamu punya relasi ini
+        ])->where('kode_transaksi', $kodeTransaksi)
+            ->firstOrFail();
+
+        // Debug (kalau masih mau cek hasil, bisa pakai info log biar nggak ganggu tampilan)
+        Log::info($dataPembayaran);
+
+        // dd($dataPembayaran);
 
         return view('admin.pembayaran.transaksi', compact('dataPembayaran'));
     }

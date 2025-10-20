@@ -25,6 +25,8 @@ $(function () {
             { data: "nama_obat", name: "nama_obat" },
             { data: "dosis", name: "dosis" },
             { data: "jumlah", name: "jumlah" },
+            { data: "nama_layanan", name: "nama_layanan" },
+            { data: "jumlah_layanan", name: "jumlah_layanan" },
             { data: "total_tagihan", name: "total_tagihan" },
             { data: "metode_pembayaran", name: "metode_pembayaran" },
             { data: "status", name: "status" },
