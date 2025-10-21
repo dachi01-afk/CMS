@@ -1,5 +1,4 @@
 import axios from "axios";
-import { initFlowbite } from "flowbite";
 import $ from "jquery";
 
 // data jenis spesialis dokter
@@ -28,7 +27,6 @@ $(function () {
                 name: "action",
                 orderable: false,
                 searchable: false,
-                className: "text-center whitespace-nowrap",
             },
         ],
         dom: "t",
@@ -189,288 +187,64 @@ $(function () {
 });
 
 // update data jenis spesialis dokter
-// $(function () {
-//     const editModalEl = document.getElementById(
-//         "updateJenisSpesialisDokterModal"
-//     );
-//     const modalUpdateJenisSpesialis = editModalEl
-//         ? new Modal(editModalEl)
-//         : null;
-//     const $formEdit = $("#formUpdateJenisSpesialisDokter");
-
-//     function showModalFix() {
-//         const modalEl = modalUpdateJenisSpesialis;
-//         modalEl.classList.remove("hidden");
-//         modalEl.classList.add("flex");
-//         modalEl.style.zIndex = "99999";
-//         modalEl.style.opacity = "1";
-//         modalEl.querySelector(".bg-white").style.opacity = "1";
-//     }
-
-//     function resetEditForm() {
-//         $formEdit[0].reset();
-//         $formEdit.find(".is-invalid").removeClass("is-invalid");
-//         $formEdit.find(".text-red-600").empty();
-//     }
-
-//     $("body").on("click", ".btn-edit-jenis-spesialis-dokter", function () {
-//         resetEditForm();
-//         const id = $(this).data("id");
-
-//         axios
-//             .get(`jenis-spesialis/get-data-jenis-spesialis/${id}`)
-//             .then((response) => {
-//                 const spesialis = response.data.data;
-
-//                 console.log(spesialis);
-//                 const baseUrl = $formEdit
-//                     .data("url")
-//                     .replace("/0", "/" + spesialis.id);
-//                 $formEdit.data("url", baseUrl);
-
-//                 $("#id_update").val(spesialis.id);
-//                 $("#update-jenis-spesialis-dokter-nama-spesialis").val(
-//                     spesialis.nama_spesialis
-//                 );
-
-//                 // modalUpdateJenisSpesialis?.show();
-//                 showModalFix();
-//             })
-//             .catch(() => {
-//                 Swal.fire({
-//                     icon: "error",
-//                     title: "Gagal!",
-//                     text: "Tidak dapat memuat data jadwal.",
-//                 });
-//             });
-//     });
-
-//     $formEdit.on("submit", function (e) {
-//         e.preventDefault();
-//         const url = $formEdit.data("url");
-
-//         const formData = {
-//             id: $("#id_update").val(),
-//             nama_poli: $("#update-jenis-spesialis-dokter-nama-spesialis").val(),
-//         };
-
-//         axios
-//             .post(url, formData)
-//             .then((response) => {
-//                 Swal.fire({
-//                     icon: "success",
-//                     title: "Berhasil!",
-//                     text: response.data.message,
-//                     timer: 2000,
-//                     showConfirmButton: false,
-//                 });
-//                 showModalFix();
-//                 $("#poliTable").DataTable().ajax.reload(null, false);
-//             })
-//             .catch((error) => {
-//                 if (error.response?.status === 422) {
-//                     const errors = error.response.data.errors;
-//                     for (const field in errors) {
-//                         $(`#${field}_edit`).addClass("is-invalid");
-//                         $(`#${field}_edit-error`).html(errors[field][0]);
-//                     }
-//                     Swal.fire({
-//                         icon: "error",
-//                         title: "Validasi Gagal!",
-//                         text: "Periksa kembali input Anda.",
-//                     });
-//                 } else {
-//                     Swal.fire({
-//                         icon: "error",
-//                         title: "Error Server!",
-//                         text: "Terjadi kesalahan server.",
-//                     });
-//                 }
-//             });
-//     });
-
-//     $("#buttonCloseModalUpdatePoli").on("click", function () {
-//         resetEditForm();
-//         showModalFix();
-//     });
-// });
-
-// $(function () {
-//     const editModalEl = document.getElementById(
-//         "updateJenisSpesialisDokterModal"
-//     );
-//     const modalUpdateJenisSpesialis = editModalEl
-//         ? new Modal(editModalEl)
-//         : null;
-//     const $formEdit = $("#formUpdateJenisSpesialisDokter");
-
-//     function showModalFix() {
-//         editModalEl.classList.remove("hidden");
-//         editModalEl.classList.add("flex");
-//         editModalEl.style.zIndex = "99999";
-//         editModalEl.style.opacity = "1";
-//         editModalEl.querySelector(".bg-white").style.opacity = "1";
-//     }
-
-//     function resetEditForm() {
-//         $formEdit[0].reset();
-//         $formEdit.find(".is-invalid").removeClass("is-invalid");
-//         $formEdit.find(".text-red-600").empty();
-//     }
-
-//     // 🔹 Klik tombol edit
-//     $("body").on("click", ".btn-edit-jenis-spesialis-dokter", function () {
-//         resetEditForm();
-//         const id = $(this).data("id");
-
-//         axios
-//             .get(`jenis-spesialis/get-data-jenis-spesialis/${id}`)
-//             .then((response) => {
-//                 const spesialis = response.data.data;
-//                 const baseUrl = $formEdit
-//                     .data("url")
-//                     .replace("/0", "/" + spesialis.id);
-//                 $formEdit.data("url", baseUrl);
-
-//                 $("#id_update").val(spesialis.id);
-//                 $("#update-jenis-spesialis-dokter-nama-spesialis").val(
-//                     spesialis.nama_spesialis
-//                 );
-//                 if (modalUpdateJenisSpesialis) modalUpdateJenisSpesialis.show();
-//                 // 🔹 tampilkan modal
-//                 // showModalFix();
-//                 // showModalFix();
-//             })
-//             .catch(() => {
-//                 Swal.fire({
-//                     icon: "error",
-//                     title: "Gagal!",
-//                     text: "Tidak dapat memuat data spesialis.",
-//                 });
-//             });
-//     });
-
-//     // 🔹 Submit form update
-//     $formEdit.on("submit", function (e) {
-//         e.preventDefault();
-//         const url = $formEdit.data("url");
-
-//         const formData = {
-//             id: $("#id_update").val(),
-//             nama_spesialis: $(
-//                 "#update-jenis-spesialis-dokter-nama-spesialis"
-//             ).val(),
-//         };
-
-//         axios
-//             .post(url, formData)
-//             .then((response) => {
-//                 Swal.fire({
-//                     icon: "success",
-//                     title: "Berhasil!",
-//                     text: response.data.message,
-//                     timer: 2000,
-//                     showConfirmButton: false,
-//                 });
-//                 modalUpdateJenisSpesialis?.hide();
-//                 $("#poliTable").DataTable().ajax.reload(null, false);
-//             })
-//             .catch((error) => {
-//                 if (error.response?.status === 422) {
-//                     const errors = error.response.data.errors;
-//                     for (const field in errors) {
-//                         $(`#${field}_edit`).addClass("is-invalid");
-//                         $(`#${field}_edit-error`).html(errors[field][0]);
-//                     }
-//                     Swal.fire({
-//                         icon: "error",
-//                         title: "Validasi Gagal!",
-//                         text: "Periksa kembali input Anda.",
-//                     });
-//                 } else {
-//                     Swal.fire({
-//                         icon: "error",
-//                         title: "Error Server!",
-//                         text: "Terjadi kesalahan server.",
-//                     });
-//                 }
-//             });
-//     });
-
-//     // 🔹 Tombol Close modal
-//     $("#closeAddJenisSpesialisDokterModal").on("click", function () {
-//         modalUpdateJenisSpesialis?.hide();
-//         resetEditForm();
-//     });
-// });
-
 $(function () {
-    const editModalEl = document.getElementById(
-        "updateJenisSpesialisDokterModal"
+    const updateModalElement = document.getElementById(
+        "modalUpdateJenisSpesialis"
     );
-    const modalUpdateJenisSpesialis = editModalEl
-        ? new Modal(editModalEl, {
-              placement: "center",
-              backdrop: "dynamic",
-              backdropClasses:
-                  "bg-gray-900/50 dark:bg-gray-900/80 fixed inset-0 z-40",
-              closable: true,
-          })
+    const updateModal = updateModalElement
+        ? new Modal(updateModalElement)
         : null;
+    const $formEdit = $("#formUpdateModalJenisSpesialis");
 
-    const $formEdit = $("#formUpdateJenisSpesialisDokter");
-
+    // 🔁 Reset form edit setiap kali modal ditutup
     function resetEditForm() {
         $formEdit[0].reset();
         $formEdit.find(".is-invalid").removeClass("is-invalid");
         $formEdit.find(".text-red-600").empty();
     }
 
-    // 🔹 Klik tombol edit
+    // ✏️ Klik tombol Edit
     $("body").on("click", ".btn-edit-jenis-spesialis-dokter", function () {
         resetEditForm();
         const id = $(this).data("id");
 
         axios
-            .get(`jenis-spesialis/get-data-jenis-spesialis/${id}`)
+            .get(`/jenis-spesialis/get-data-jenis-spesialis/${id}`)
             .then((response) => {
-                const spesialis = response.data.data;
+                const jenisSpesialis = response.data.data;
+
+                console.log(jenisSpesialis);
+
+                // Set action URL
                 const baseUrl = $formEdit
                     .data("url")
-                    .replace("/0", "/" + spesialis.id);
+                    .replace("/0", "/" + jenisSpesialis.id);
                 $formEdit.data("url", baseUrl);
 
-                $("#id_update").val(spesialis.id);
-                $("#update-jenis-spesialis-dokter-nama-spesialis").val(
-                    spesialis.nama_spesialis
-                );
+                // Isi form dengan data dari backend
+                $("#id_update").val(jenisSpesialis.id);
+                $("#nama_spesialis_update").val(jenisSpesialis.nama_spesialis);
 
-                // 🔹 Tampilkan modal
-                if (modalUpdateJenisSpesialis) {
-                    modalUpdateJenisSpesialis.show();
-                }
+                updateModal?.show();
             })
-            .catch((error) => {
-                console.error("Error:", error);
+            .catch(() => {
                 Swal.fire({
                     icon: "error",
                     title: "Gagal!",
-                    text: "Tidak dapat memuat data spesialis.",
+                    text: "Tidak dapat memuat data jenis spesialis.",
                 });
             });
     });
 
-    // 🔹 Submit form update
+    // 💾 Submit form edit
     $formEdit.on("submit", function (e) {
         e.preventDefault();
         const url = $formEdit.data("url");
 
         const formData = {
             id: $("#id_update").val(),
-            nama_spesialis: $(
-                "#update-jenis-spesialis-dokter-nama-spesialis"
-            ).val(),
-            _token: $('meta[name="csrf-token"]').attr("content"),
+            nama_spesialis: $("#nama_spesialis_update").val(),
+            method: "POST",
         };
 
         axios
@@ -483,28 +257,15 @@ $(function () {
                     timer: 2000,
                     showConfirmButton: false,
                 });
-
-                if (modalUpdateJenisSpesialis) {
-                    modalUpdateJenisSpesialis.hide();
-                }
-
-                // Reload DataTable jika ada
-                if ($.fn.DataTable.isDataTable("#jenisSpesialisTable")) {
-                    $("#jenisSpesialisTable")
-                        .DataTable()
-                        .ajax.reload(null, false);
-                }
-
-                resetEditForm();
+                updateModal?.hide();
+                $("#jenisSpesialisDokter").DataTable().ajax.reload(null, false);
             })
             .catch((error) => {
                 if (error.response?.status === 422) {
                     const errors = error.response.data.errors;
                     for (const field in errors) {
-                        $(`#update-jenis-spesialis-dokter-${field}`).addClass(
-                            "border-red-500"
-                        );
-                        $(`#${field}-error`).html(errors[field][0]);
+                        $(`#${field}_edit`).addClass("is-invalid");
+                        $(`#${field}_edit-error`).html(errors[field][0]);
                     }
                     Swal.fire({
                         icon: "error",
@@ -515,32 +276,20 @@ $(function () {
                     Swal.fire({
                         icon: "error",
                         title: "Error Server!",
-                        text:
-                            error.response?.data?.message ||
-                            "Terjadi kesalahan server.",
+                        text: "Terjadi kesalahan server.",
                     });
                 }
             });
     });
 
-    // 🔹 Tombol Close modal (X button)
-    $("#closeUpdateJenisSpesialisDokterModal").on("click", function () {
-        if (modalUpdateJenisSpesialis) {
-            modalUpdateJenisSpesialis.hide();
-        }
-        resetEditForm();
-    });
-
-    // 🔹 Tombol Batal
-    $("#btnCancelUpdateJenisSpesialis").on("click", function () {
-        if (modalUpdateJenisSpesialis) {
-            modalUpdateJenisSpesialis.hide();
-        }
+    // ❌ Tutup modal
+    $("#buttonCloseModalUpdateJenisSpesialis").on("click", function () {
+        updateModal?.hide();
         resetEditForm();
     });
 });
 
-// edit data jenis spesialis dokter
+// delete data jenis spesialis dokter
 // $(function () {
 //     // 🔹 Inisialisasi modal
 //     const editModalElement = document.getElementById(
@@ -659,9 +408,9 @@ $(function () {
 
 // delete data dokter
 $(function () {
-    $("body").on("click", ".btn-delete-apoteker", function () {
-        const dokterId = $(this).data("id");
-        if (!dokterId) return;
+    $("body").on("click", ".btn-delete-jenis-spesialis-dokter", function () {
+        const id = $(this).data("id");
+        if (!id) return;
 
         Swal.fire({
             title: "Apakah Anda yakin?",
@@ -675,12 +424,12 @@ $(function () {
         }).then((result) => {
             if (result.isConfirmed) {
                 axios
-                    .delete(`/manajemen_pengguna/delete_apoteker/${dokterId}`)
+                    .post(`/jenis-spesialis/delete-data-jenis-spesialis/${id}`)
                     .then((response) => {
                         Swal.fire({
                             icon: "success",
                             title: "Berhasil!",
-                            text: response.data.success,
+                            text: response.data.message,
                             showConfirmButton: false,
                             timer: 1500,
                         }).then(() => {
@@ -705,68 +454,3 @@ $(function () {
         });
     });
 });
-
-// edit foto
-// document.addEventListener("DOMContentLoaded", function () {
-//     const fileInput = document.getElementById("edit_foto_apoteker");
-//     const previewImg = document.getElementById("edit_preview_foto_apoteker");
-//     const placeholder = document.getElementById(
-//         "edit_placeholder_foto_apoteker"
-//     );
-//     const dropArea = document.getElementById("edit_foto_drop_area_apoteker");
-//     const closeButton = document.getElementById(
-//         "closeEditJenisSpesialisDokterModal"
-//     );
-//     const formEdit = document.getElementById("formEditApoteker");
-
-//     function resetFotoPreview() {
-//         if (fileInput) fileInput.value = "";
-//         if (previewImg) {
-//             previewImg.src = "";
-//             previewImg.classList.add("hidden");
-//         }
-//         if (placeholder) placeholder.classList.remove("hidden");
-//         if (dropArea) {
-//             dropArea.classList.add("border-dashed", "border-gray-400");
-//             dropArea.classList.remove("border-solid", "border-gray-300");
-//         }
-//     }
-
-//     // Saat user pilih file baru
-//     if (fileInput) {
-//         fileInput.addEventListener("change", function (e) {
-//             const file = e.target.files[0];
-//             if (file) {
-//                 const reader = new FileReader();
-//                 reader.onload = function (event) {
-//                     previewImg.src = event.target.result;
-//                     previewImg.classList.remove("hidden");
-//                     placeholder.classList.add("hidden");
-//                     dropArea.classList.remove(
-//                         "border-dashed",
-//                         "border-gray-400"
-//                     );
-//                     dropArea.classList.add("border-solid", "border-gray-300");
-//                 };
-//                 reader.readAsDataURL(file);
-//             }
-//             // ❌ jangan reset kalau batal pilih file (biar foto lama tetap tampil)
-//         });
-//     }
-
-//     // Tutup modal via tombol X
-//     closeButton?.addEventListener("click", function () {
-//         resetFotoPreview();
-//         formEdit.reset();
-//     });
-
-//     // Tutup modal via backdrop klik (optional)
-//     const modalElement = document.getElementById("editDokterModal");
-//     modalElement?.addEventListener("click", function (e) {
-//         if (e.target === modalElement) {
-//             modalElement.classList.add("hidden");
-//             resetFotoPreview();
-//             formEdit.reset();
-//         }
-//     });
-// });

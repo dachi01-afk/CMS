@@ -58,9 +58,6 @@
                     {{ $search ?? '' }}
                 </div>
 
-
-
-
                 <!-- Kanan: Ikon & Akun -->
                 <div class="flex items-center space-x-3">
                     {{-- <a href="#" class="hidden sm:block text-gray-500 hover:text-gray-700 p-2 rounded-full">
@@ -109,9 +106,9 @@
                         Dashboard
                     </x-mycomponents.sidebar_link>
 
-                    {{-- <x-mycomponents.sidebar_link href="jenis.spesialis.index" class="fa-solid fa-user-doctor">
+                    <x-mycomponents.sidebar_link href="jenis.spesialis.index" class="fa-solid fa-user-doctor">
                         Jenis Sepsialis Dokter
-                    </x-mycomponents.sidebar_link> --}}
+                    </x-mycomponents.sidebar_link>
 
                     <x-mycomponents.sidebar_link href="poli.index" class="fa-solid fa-stethoscope">
                         Poli

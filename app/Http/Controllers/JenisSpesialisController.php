@@ -25,12 +25,12 @@ class JenisSpesialisController extends Controller
             <button class="btn-edit-jenis-spesialis-dokter text-blue-600 hover:text-blue-800 mr-2" data-id="' . $jenisSpesialis->id . '" title="Edit">
                 <i class="fa-regular fa-pen-to-square text-lg"></i>
             </button>
-            <button class="btn-delete-apoteker text-red-600 hover:text-red-800" data-id="' . $jenisSpesialis->id . '" title="Hapus">
+            <button class="btn-delete-jenis-spesialis-dokter text-red-600 hover:text-red-800" data-id="' . $jenisSpesialis->id . '" title="Hapus">
                 <i class="fa-regular fa-trash-can text-lg"></i>
             </button>
             ';
             })
-            ->rawColumns(['foto', 'action'])
+            ->rawColumns(['action'])
             ->make(true);
     }
 
@@ -69,7 +69,9 @@ class JenisSpesialisController extends Controller
             'nama_spesialis' => ['required']
         ]);
 
-        $dataJenisSpesialisDokter = JenisSpesialis::create([
+        $dataJenisSpesialisDokter = JenisSpesialis::findOrFail($request->id);
+
+        $dataJenisSpesialisDokter->update([
             'nama_spesialis' => $request->nama_spesialis,
         ]);
 
@@ -78,6 +80,20 @@ class JenisSpesialisController extends Controller
             'status' => 200,
             'Data Jenis Spesialis' => $dataJenisSpesialisDokter,
             'message' => 'Berhasil Menambahkan Data Jenis Spesialis Dokter',
+        ]);
+    }
+
+    public function deleteJenisSpesialisDokter($id)
+    {
+        $dataJenisSpesialisDokter = JenisSpesialis::findOrFail($id);
+
+        $dataJenisSpesialisDokter->delete();
+
+        return response()->json([
+            'success' => true,
+            'status' => 200,
+            'Data Jenis Spesialis Dokter' => $dataJenisSpesialisDokter,
+            'message' => 'Berhasil Menghapus Data Jenis Spesialis Dokter',
         ]);
     }
 }

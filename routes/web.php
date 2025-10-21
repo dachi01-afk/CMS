@@ -201,7 +201,8 @@ Route::middleware('auth')->group(function () {
         Route::get('/data-jenis-spesialis', [JenisSpesialisController::class, 'dataJenisSpesialisDokter'])->name('get.data.jenis.spesialis.dokter');
         Route::post('/create-data-jenis-spesialis', [JenisSpesialisController::class, 'createJenisSpesialisDokter'])->name('create.data.jenis.spesialis.dokter');
         Route::get('/get-data-jenis-spesialis/{id}', [JenisSpesialisController::class, 'getDataJenisSPesialisById'])->name('get.data.jenis.spesialis.dokter.by.id');
-        Route::post('/update-data-jenis-spesialis', [JenisSpesialisController::class, 'updateJenisSpesialisDokter'])->name('update.data.jenis.spesialis.dokter.by.id');
+        Route::post('/update-data-jenis-spesialis', [JenisSpesialisController::class, 'updateJenisSpesialisDokter'])->name('update.data.jenis.spesialis.dokter');
+        Route::post('/delete-data-jenis-spesialis/{id}', [JenisSpesialisController::class, 'deleteJenisSpesialisDokter'])->name('delete.data.jenis.spesialis.dokter');
     });
 
     Route::prefix('poli')->group(function () {

@@ -34,7 +34,7 @@
                 <tr>
                     <th class="px-6 py-3">No</th>
                     <th class="px-6 py-3">Nama Spesialis</th>
-                    <th class="px-6 py-3 text-center">Aksi</th>
+                    <th class="px-6 py-3">Aksi</th>
                 </tr>
             </thead>
             <tbody></tbody>
@@ -45,6 +45,46 @@
         <div id="jenis-spesialis-dokter_customInfo" class="text-sm text-gray-700 dark:text-gray-300"></div>
         <ul id="jenis-spesialis-dokter_customPagination" class="inline-flex -space-x-px text-sm"></ul>
     </div>
+
+    {{-- Update Jenis Spesialis --}}
+    <div id="modalUpdateJenisSpesialis" aria-hidden="true"
+        class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 justify-center items-center w-full h-full p-4 bg-black bg-opacity-50">
+        <div class="relative w-full max-w-xl max-h-full">
+            <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
+                <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-600">
+                    <h3 class="text-xl font-bold text-gray-900 dark:text-white">Edit Data Jenis Spesialis Dokter</h3>
+                </div>
+
+                <form id="formUpdateModalJenisSpesialis" class="p-5 flex flex-col gap-4"
+                    data-url="{{ route('update.data.jenis.spesialis.dokter') }}" method="POST">
+                    @csrf
+                    <input type="hidden" id="id_update" name="id">
+
+                    <div>
+                        <label for="nama-spesialis-update"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Username</label>
+                        <input type="text" name="nama_spesialis" id="nama_spesialis_update"
+                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                            focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="Username" required>
+                        <div id="nama-spesialis-update-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    <div class="flex justify-end gap-3 mt-5 border-t border-gray-200 pt-4 dark:border-gray-600">
+                        <button type="button" id="buttonCloseModalUpdateJenisSpesialis"
+                            class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-white">
+                            Close
+                        </button>
+                        <button type="submit"
+                            class="px-5 py-2.5 text-sm font-medium text-white bg-blue-700 rounded-lg hover:bg-blue-800">
+                            Save
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 {{-- Modal Add Data Jenis Spesialis Dokter --}}
@@ -55,7 +95,7 @@
 
             {{-- Header --}}
             <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-600">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Tambah Data Apoteker</h3>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Tambah Data Jenis Spesialis Dokter</h3>
             </div>
 
             {{-- Form --}}
@@ -65,7 +105,7 @@
                 <!-- Grid Form -->
                 <div class="grid grid-cols-1">
 
-                    {{-- Username --}}
+                    {{-- Nama Spesialis --}}
                     <div>
                         <label for="nama_spesialis"
                             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama Spesialis</label>
@@ -95,151 +135,6 @@
     </div>
 </div>
 
-{{-- Modal Update Data Jenis Spesialis Dokter --}}
-{{-- <div id="updateJenisSpesialisDokterModal" 
-    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 bg-black bg-opacity-50">
-    <div class="relative w-full max-w-xl max-h-full">
-        <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
-
-            <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-600">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Tambah Data Apoteker</h3>
-            </div>
-
-            <form id="formUpdateJenisSpesialisDokter" class="p-5 flex flex-col gap-4"
-                data-url="{{ route('create.data.jenis.spesialis.dokter') }}" method="POST">
-                @csrf
-
-                <input type="hidden" name="id" id="id_update"><input>
-                <!-- Grid Form -->
-                <div class="grid grid-cols-1">
-
-                    <div>
-                        <label for="nama_spesialis"
-                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama Spesialis</label>
-                        <input type="text" name="nama_spesialis" id="update-jenis-spesialis-dokter-nama-spesialis"
-                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
-                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                            placeholder="Nama Spesialis" required>
-                        <div id="nama_spesialis-error" class="text-red-600 text-sm mt-1"></div>
-                    </div>
-
-                    <div class="flex justify-end gap-3 mt-5 border-t border-gray-200 pt-4 dark:border-gray-600">
-                        <button type="button" id="closeAddJenisSpesialisDokterModal"
-                            class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg
-                        hover:bg-gray-300 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500">
-                            Close
-                        </button>
-                        <button type="submit"
-                            class="px-5 py-2.5 text-sm font-medium text-white bg-blue-700 rounded-lg hover:bg-blue-800
-                        focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700
-                        dark:focus:ring-blue-800">
-                            Save
-                        </button>
-                    </div>
-            </form>
-        </div>
-    </div>
-</div> --}}
-
-
-{{-- Update Jenis Spesialis --}}
-<div id="updateJenisSpesialisDokterModal" tabindex="-1" aria-hidden="true"
-    class="hidden overflow-y-auto overflow-x-hidden fixed top-0 right-0 left-0 z-50 justify-center items-center w-full md:inset-0 h-[calc(100%-1rem)] max-h-full">
-    <div class="relative p-4 w-full max-w-xl max-h-full">
-        <div class="relative bg-white rounded-lg shadow dark:bg-gray-700">
-            <!-- Modal header -->
-            <div class="flex items-center justify-between p-5 border-b rounded-t dark:border-gray-600">
-                <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
-                    Edit Jenis Spesialis Dokter
-                </h3>
-                <button type="button" id="closeUpdateJenisSpesialisDokterModal"
-                    class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 ms-auto inline-flex justify-center items-center dark:hover:bg-gray-600 dark:hover:text-white">
-                    <svg class="w-3 h-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none"
-                        viewBox="0 0 14 14">
-                        <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="m1 1 6 6m0 0 6 6M7 7l6-6M7 7l-6 6" />
-                    </svg>
-                    <span class="sr-only">Close modal</span>
-                </button>
-            </div>
-
-            <!-- Modal body -->
-            <form id="formUpdateJenisSpesialisDokter" class="p-5"
-                data-url="{{ route('update.data.jenis.spesialis.dokter.by.id') }}" method="POST">
-                @csrf
-
-                <input type="hidden" name="id" id="id_update">
-                
-                <div class="mb-4">
-                    <label for="update-jenis-spesialis-dokter-nama-spesialis"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
-                        Nama Spesialis
-                    </label>
-                    <input type="text" name="nama_spesialis" id="update-jenis-spesialis-dokter-nama-spesialis"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:placeholder-gray-400 dark:text-white"
-                        placeholder="Masukkan Nama Spesialis" required>
-                    <div id="nama_spesialis-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
-
-                <!-- Modal footer -->
-                <div class="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-600">
-                    <button type="button" id="btnCancelUpdateJenisSpesialis"
-                        class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-100 focus:ring-4 focus:outline-none focus:ring-gray-200 dark:bg-gray-600 dark:text-white dark:border-gray-600 dark:hover:bg-gray-700 dark:hover:border-gray-700 dark:focus:ring-gray-700">
-                        Batal
-                    </button>
-                    <button type="submit"
-                        class="px-5 py-2.5 text-sm font-medium text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
-                        Simpan
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-{{-- Update Jenis Spesialis --}}
-{{-- <div id="updateJenisSpesialisDokterModal" aria-hidden="true"
-    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 justify-center items-center w-full h-full p-4">
-    <div class="relative w-full max-w-xl max-h-full">
-        <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
-            <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-600">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Edit Jadwal Dokter</h3>
-            </div>
-
-            <form id="formUpdateJenisSpesialisDokter" class="p-5 flex flex-col gap-4"
-                data-url="{{ route('update.data.jenis.spesialis.dokter.by.id') }}" method="POST">
-                @csrf
-
-                <input type="hidden" name="id" id="id_update"><input>
-                <!-- Grid Form -->
-                <div class="grid grid-cols-1">
-                    <div>
-                        <label for="nama_spesialis"
-                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama Spesialis</label>
-                        <input type="text" name="nama_spesialis" id="update-jenis-spesialis-dokter-nama-spesialis"
-                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
-                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                            placeholder="Nama Spesialis" required>
-                        <div id="nama_spesialis-error" class="text-red-600 text-sm mt-1"></div>
-                    </div>
-
-                    <div class="flex justify-end gap-3 mt-5 border-t border-gray-200 pt-4 dark:border-gray-600">
-                        <button type="button" id="closeAddJenisSpesialisDokterModal"
-                            class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg
-                        hover:bg-gray-300 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500">
-                            Close
-                        </button>
-                        <button type="submit"
-                            class="px-5 py-2.5 text-sm font-medium text-white bg-blue-700 rounded-lg hover:bg-blue-800
-                        focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700
-                        dark:focus:ring-blue-800">
-                            Save
-                        </button>
-                    </div>
-            </form>
-        </div>
-    </div>
-</div> --}}
 
 
 
