@@ -283,7 +283,7 @@ class KasirController extends Controller
 
                 return $output;
             })
-            ->rawColumns(['nama_obat', 'dosis', 'jumlah', 'nama_layanan', 'jumlah_layanan', 'action'])
+            ->rawColumns(['nama_obat', 'dosis', 'jumlah', 'nama_layanan', 'jumlah_layanan'])
             ->make(true);
     }
 
