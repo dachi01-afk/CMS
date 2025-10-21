@@ -15,7 +15,12 @@ $(function () {
         info: false,
         ajax: "/pengaturan_klinik/jadwal_dokter",
         columns: [
-            { data: "id", name: "id" },
+            {
+                data: "DT_RowIndex",
+                name: "DT_RowIndex",
+                orderable: false,
+                searchable: false,
+            },
             { data: "dokter", name: "dokter" },
             { data: "nama_poli", name: "nama_poli" },
             { data: "hari_formatted", name: "hari" },

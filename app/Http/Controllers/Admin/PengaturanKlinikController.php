@@ -24,6 +24,7 @@ class PengaturanKlinikController extends Controller
         $query = Obat::select(['id', 'nama_obat', 'jumlah', 'dosis', 'total_harga']);
 
         return DataTables::of($query)
+            ->addIndexColumn()
             ->addColumn('action', function ($obat) {
                 return '
         <button class="btn-edit-obat text-blue-600 hover:text-blue-800 mr-2" data-id="' . $obat->id . '" title="Edit">
@@ -46,6 +47,7 @@ class PengaturanKlinikController extends Controller
         $query = JadwalDokter::with('dokter', 'dokter.poli')->get();
 
         return DataTables::of($query)
+            ->addIndexColumn()
             ->addColumn('dokter', function ($jadwal) {
                 return $jadwal->dokter->nama_dokter ?? '-';
             })

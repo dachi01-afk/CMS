@@ -15,7 +15,12 @@ $(function () {
         info: false,
         ajax: "/pengaturan_klinik/data_obat",
         columns: [
-            { data: "id", name: "id" },
+            {
+                data: "DT_RowIndex",
+                name: "DT_RowIndex",
+                orderable: false,
+                searchable: false,
+            },
             { data: "nama_obat", name: "nama_obat" },
             {
                 data: "jumlah",

@@ -204,7 +204,6 @@
     </div>
 </div>
 
-
 <!-- Modal Edit Pasien -->
 <div id="editPasienModal" aria-hidden="true"
     class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 bg-black bg-opacity-50">
@@ -364,9 +363,5 @@
         </div>
     </div>
 </div>
-
-
-
-
 
 @vite(['resources/js/admin/manajemenPengguna/data_pasien.js'])
