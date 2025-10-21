@@ -263,25 +263,21 @@ class KasirController extends Controller
             // kolom action
             ->addColumn('action', function ($p) {
                 $resep = $p->emr->resep ?? null;
+
+                // kalau tidak ada resep / obat
                 if (!$resep || $resep->obat->isEmpty()) {
                     return '<span class="text-gray-400 italic">Tidak ada tindakan</span>';
                 }
 
-                $output = '<ul class="pl-0">';
+                // tampilkan hanya 1 tombol saja
                 $url = route('kasir.show.kwitansi', ['kodeTransaksi' => $p->kode_transaksi]);
-                foreach ($resep->obat as $obat) {
-                    $output .= '
-                    <li class="list-none mb-1">
-                        <button class="cetakKuitansi text-blue-600 hover:text-blue-800" 
-                                data-url="' . $url . '"
-                                title="Cetak Status">
-                            <i class="fa-solid fa-print"></i> Cetak Kwitansi
-                        </button>
-                    </li>';
-                }
-                $output .= '</ul>';
-
-                return $output;
+                return '
+            <button class="cetakKuitansi text-blue-600 hover:text-blue-800"
+                data-url="' . $url . '"
+                title="Cetak Kwitansi">
+                <i class="fa-solid fa-print"></i> Cetak Kwitansi
+                </button>
+    ';
             })
             ->rawColumns(['nama_obat', 'dosis', 'jumlah', 'nama_layanan', 'jumlah_layanan', 'action'])
             ->make(true);
