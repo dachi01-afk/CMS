@@ -37,7 +37,7 @@
                     <dl>
                         <dt class="text-base font-medium text-gray-900 dark:text-white">Tanggal Kunjungan</dt>
                         <dd class="mt-1 text-base font-normal text-gray-500 dark:text-gray-400">
-                            {{ \Carbon\Carbon::parse($dataPembayaran->emr->kunjungan->tanggal_kunjungan)->timezone('Asia/Jakarta')->translatedFormat('l, d F Y H:i') }}
+                            {{ \Carbon\Carbon::parse($dataPembayaran->emr->kunjungan->tanggal_kunjungan)->timezone('Asia/Jakarta')->translatedFormat('l, d F Y') }}
                         </dd>
                     </dl>
                 </div>
@@ -49,7 +49,7 @@
                                 @foreach ($dataPembayaran->emr->resep->obat as $o)
                                     <tr>
                                         <td class="whitespace-nowrap py-4 md:w-[384px]">
-                                            <label>{{ $o->nama_obat }}</label>  
+                                            <label>{{ $o->nama_obat }}</label>
                                         </td>
                                         <td class="p-4 text-base font-normal text-gray-900 dark:text-white">
                                             x{{ $o->pivot->jumlah }}
@@ -88,6 +88,17 @@
                                 </dd>
                             </dl>
 
+                            <dl
+                                class="flex items-center justify-between gap-4 border-t border-gray-200 pt-2 dark:border-gray-700">
+                                <dt class="text-lg font-bold text-gray-900 dark:text-white">Metode Pembayaran</dt>
+                                <select class="text-lg font-bold text-gray-900 dark:text-white rounded-md"
+                                    name="nama_metode">
+                                    @foreach ($dataMetodePembayaran as $metodePembayaran)
+                                        <option value="{{ $metodePembayaran->id }}">
+                                            {{ $metodePembayaran->nama_metode }}</option>
+                                    @endforeach
+                                </select>
+                            </dl>
                             <dl
                                 class="flex items-center justify-between gap-4 border-t border-gray-200 pt-2 dark:border-gray-700">
                                 <dt class="text-lg font-bold text-gray-900 dark:text-white">Total Tagihan</dt>

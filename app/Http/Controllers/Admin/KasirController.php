@@ -138,17 +138,17 @@ class KasirController extends Controller
             'emr.kunjungan.pasien',
             'emr.kunjungan.poli',
             'emr.kunjungan.layanan', // ambil layanan langsung dari kunjungan
-            'emr.resep.obat',
-            'metodePembayaran', // kalau kamu punya relasi ini
+            'emr.resep.obat', // kalau kamu punya relasi ini
         ])->where('kode_transaksi', $kodeTransaksi)
             ->firstOrFail();
 
+        $dataMetodePembayaran = MetodePembayaran::all();
         // Debug (kalau masih mau cek hasil, bisa pakai info log biar nggak ganggu tampilan)
         Log::info($dataPembayaran);
 
         // dd($dataPembayaran);
 
-        return view('admin.pembayaran.transaksi', compact('dataPembayaran'));
+        return view('admin.pembayaran.transaksi', compact('dataPembayaran', 'dataMetodePembayaran'));
     }
 
     public function melakukanPembayaranCash(Request $request)
@@ -332,6 +332,4 @@ class KasirController extends Controller
             ->rawColumns(['action'])
             ->make(true);
     }
-
-    
 }
