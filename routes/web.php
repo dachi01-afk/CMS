@@ -16,6 +16,7 @@ use App\Http\Controllers\Management\UserController;
 use App\Http\Controllers\Management\MetodePembayaranController;
 use App\Http\Controllers\Testing\TestingController;
 use App\Http\Controllers\Testing\TestingChartController;
+use App\Http\Controllers\Testing\TestingQRCodeController;
 use App\Http\Controllers\Admin\PembayaranController;
 use App\Http\Controllers\Management\DokterController;
 use App\Http\Controllers\Management\PasienController;
@@ -139,6 +140,10 @@ Route::prefix('/testing-chart')->group(function () {
     Route::get('/', [TestingChartController::class, 'index'])->name('testing.chart.index');
     Route::get('/keuangan', [TestingChartController::class, 'chartKeuangan'])->name('testing.chart.keuangan');
     Route::get('/kunjungan', [TestingChartController::class, 'chartKunjungan'])->name('testing.chart.kunjungan');
+});
+
+Route::prefix('/testing-qr-code')->group(function () {
+    Route::get('/', [TestingQRCodeController::class, 'index'])->name('testing.qr.code.index');
 });
 
 Route::get('/contoh-kuitansi', function () {
