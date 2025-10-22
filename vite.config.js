@@ -46,7 +46,7 @@ export default defineConfig({
                 "resources/js/admin/dataMedisPasien/data_hasil_lab.js",
 
                 // transaksi
-                "resources/js/admin/pengambilanObat/transaksi-menunggu.js",
+                "resources/js/admin/pembayaran/transaksi-menunggu.js",
                 "resources/js/admin/pembayaran/riwayat-transaksi.js",
                 "resources/js/admin/pembayaran/metode-pembayaran.js",
             ],
