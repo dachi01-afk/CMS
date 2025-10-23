@@ -50,13 +50,13 @@
 </div>
 
 
-<!-- Modal Add Jadwal Dokter -->
+<!-- Modal Create Layanan -->
 <div id="modalCreateLayanan" aria-hidden="true"
     class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 bg-black bg-opacity-50">
     <div class="relative w-full max-w-xl max-h-full">
         <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
             <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-600">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Tambah Jadwal Dokter</h3>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Tambah Data Layanan</h3>
             </div>
 
             <form id="formCreateLayanan" class="p-5 flex flex-col gap-4" data-url="{{ route('layanan.create.data') }}"
@@ -96,7 +96,7 @@
                     <div class="relative mt-1">
                         <span
                             class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-300">Rp</span>
-                        <input type="number" step="0.01" name="harga_layanan" id="harga_layanan_create"
+                        <input type="text" name="harga_layanan" id="harga_layanan_create"
                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white pl-10"
                             placeholder="Masukkan Harga" required>
                         <div id="harga_layanan-error" class="text-red-600 text-sm mt-1"></div>
@@ -168,7 +168,7 @@
                     <div class="relative mt-1">
                         <span
                             class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-300">Rp</span>
-                        <input type="number" step="0.01" name="harga_layanan" id="harga_layanan_update"
+                        <input type="text" name="harga_layanan" id="harga_layanan_update"
                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white pl-10"
                             placeholder="Masukkan Harga" required>
                         <div id="harga_layanan-error" class="text-red-600 text-sm mt-1"></div>

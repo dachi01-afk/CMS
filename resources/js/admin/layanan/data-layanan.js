@@ -145,6 +145,15 @@ $(function () {
         resetAddForm();
     });
 
+    // 💰 Auto Format Rupiah Input
+    $("#harga_layanan_create").on("input", function () {
+        let value = $(this).val().replace(/\D/g, ""); // hapus semua selain angka
+        if (value) {
+            value = new Intl.NumberFormat("id-ID").format(value);
+        }
+        $(this).val(value);
+    });
+
     $formAdd.on("submit", function (e) {
         e.preventDefault();
         const url = $formAdd.data("url");
@@ -203,6 +212,15 @@ $(function () {
         $formEdit.find(".text-red-600").empty();
     }
 
+    // 💰 Auto Format Rupiah Input (Edit)
+    $("#harga_layanan_update").on("input", function () {
+        let value = $(this).val().replace(/\D/g, ""); // hapus semua selain angka
+        if (value) {
+            value = new Intl.NumberFormat("id-ID").format(value);
+        }
+        $(this).val(value);
+    });
+
     $("body").on("click", ".btn-edit-layanan", function () {
         resetEditForm();
         const id = $(this).data("id");
@@ -217,10 +235,15 @@ $(function () {
                     .replace("/0", "/" + layanan.id);
                 $formEdit.data("url", baseUrl);
 
+                // Format harga ke format ribuan (contoh: 500.000)
+                const hargaFormatted = new Intl.NumberFormat("id-ID").format(
+                    layanan.harga_layanan
+                );
+
                 $("#id_update").val(layanan.id);
                 $("#poli_id_update").val(poliId);
                 $("#nama_layanan_update").val(layanan.nama_layanan);
-                $("#harga_layanan_update").val(layanan.harga_layanan);
+                $("#harga_layanan_update").val(hargaFormatted);
                 editModal?.show();
             })
             .catch(() => {

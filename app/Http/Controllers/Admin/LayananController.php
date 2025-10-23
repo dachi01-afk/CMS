@@ -47,10 +47,15 @@ class LayananController extends Controller
 
     public function createDataLayanan(Request $request)
     {
+        // --- Ubah format total_harga dari teks jadi numeric ---
+        $request->merge([
+            'harga_layanan' => floatval(str_replace(['.', ','], ['', '.'], $request->harga_layanan))
+        ]);
+
         $request->validate([
             'poli_id' => ['required', 'exists:poli,id'],
             'nama_layanan' => ['required'],
-    'harga_layanan' => ['required', 'numeric', 'min:0'],
+            'harga_layanan' => ['required', 'numeric', 'min:0', 'max:999999999'],
         ]);
 
         $dataPoli = Poli::findOrFail($request->poli_id);
@@ -77,6 +82,12 @@ class LayananController extends Controller
 
     public function updateDataLayanan(Request $request)
     {
+
+        // --- Ubah format total_harga dari teks jadi numeric ---
+        $request->merge([
+            'harga_layanan' => floatval(str_replace(['.', ','], ['', '.'], $request->harga_layanan))
+        ]);
+
         $request->validate([
             'poli_id' => ['required', 'exists:poli,id'],
             'nama_layanan' => ['required'],
