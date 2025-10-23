@@ -10,6 +10,11 @@ class ObatController extends Controller
 {
     public function createObat(Request $request)
     {
+        // --- Ubah format total_harga dari teks jadi numeric ---
+        $request->merge([
+            'total_harga' => floatval(str_replace(['.', ','], ['', '.'], $request->total_harga))
+        ]);
+
         $request->validate([
             'nama_obat' => ['required'],
             'jumlah' => ['required', 'integer', 'min:1'],
@@ -40,6 +45,10 @@ class ObatController extends Controller
     public function updateObat(Request $request, $id)
     {
         $dataObat = Obat::findOrFail($id);
+
+        $request->merge([
+            'total_harga' => floatval(str_replace(['.', ','], ['', '.'], $request->total_harga))
+        ]);
 
         $request->validate([
             'nama_obat' => ['required'],

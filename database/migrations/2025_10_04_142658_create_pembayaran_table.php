@@ -22,9 +22,6 @@ return new class extends Migration
             $table->decimal('uang_yang_diterima', 10, 2)->nullable();
             $table->decimal('kembalian', 10, 2)->nullable();
 
-            // ✅ TETAP ADA ENUM (untuk backward compatibility)
-            $table->enum('metode_pembayaran', ['Cash', 'Midtrans'])->nullable();
-
             // ✅ FOREIGN KEY KE METODE_PEMBAYARAN (untuk fitur baru)
             $table->foreignId('metode_pembayaran_id')
                 ->nullable() // ⚠️ PENTING: HARUS NULLABLE

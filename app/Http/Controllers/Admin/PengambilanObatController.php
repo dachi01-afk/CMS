@@ -22,7 +22,7 @@ class PengambilanObatController extends Controller
     public function getDataResepObat()
     {
         // $query = Resep::with('obat', 'kunjungan.pasien', 'kunjungan.dokter')->get();
-    $query = Resep::with('obat', 'kunjungan.pasien', 'kunjungan.poli.dokter')->whereHas('obat', function ($q) {
+        $query = Resep::with('obat', 'kunjungan.pasien', 'kunjungan.poli.dokter')->whereHas('obat', function ($q) {
             $q->where('resep_obat.status', 'Belum Diambil');
         })->get();
 
@@ -30,9 +30,9 @@ class PengambilanObatController extends Controller
             ->addIndexColumn()
 
             ->addColumn('nama_dokter', function ($row) {
-    $dokter = $row->kunjungan->poli->dokter->first();
-    return $dokter->nama_dokter ?? '-';
-})
+                $dokter = $row->kunjungan->poli->dokter->first();
+                return $dokter->nama_dokter ?? '-';
+            })
 
             ->addColumn('nama_pasien', fn($row) => $row->kunjungan->pasien->nama_pasien ?? '-')
             ->addColumn('no_antrian', fn($row) => $row->kunjungan->no_antrian ?? '-')
@@ -100,6 +100,7 @@ class PengambilanObatController extends Controller
                         <button class="btnUpdateStatus text-blue-600 hover:text-blue-800" 
                                 data-resep-id="' . $row->id . '" 
                                 data-obat-id="' . $obat->id . '" 
+                                data-jumlah=" ' . $obat->pivot->jumlah . '"
                                 title="Update Status">
                             <i class="fa-regular fa-pen-to-square"></i> Update Status
                         </button>
@@ -121,6 +122,7 @@ class PengambilanObatController extends Controller
         $request->validate([
             'resep_id' => ['required', 'exists:resep,id'],
             'obat_id'  => ['required', 'exists:obat,id'],
+            'jumlah_obat' => ['required'],
         ]);
 
         try {
@@ -142,7 +144,22 @@ class PengambilanObatController extends Controller
                 }
 
                 // 🔹 Pastikan obat benar-benar ada dalam resep
-                $obat = $resep->obat()->where('obat_id', $request->obat_id)->firstOrFail();
+                $obatPivot = $resep->obat()->where('obat_id', $request->obat_id)->firstOrFail();
+
+                // 🔹 Ambil jumlah obat dari pivot
+                $jumlahObat = $obatPivot->pivot->jumlah ?? 0;
+
+                // 🔹 Ambil data stok obat
+                $obat = \App\Models\Obat::findOrFail($request->obat_id);
+
+                // 🔹 Validasi stok cukup
+                if ($obat->jumlah < $jumlahObat) {
+                    throw new Exception("Stok obat '{$obat->nama_obat}' tidak mencukupi. Stok saat ini: {$obat->stok}");
+                }
+
+                // 🔹 Kurangi stok obat
+                $obat->jumlah = $obat->jumlah - $jumlahObat;
+                $obat->save();
 
                 // 🔹 Update status pivot jadi "Sudah Diambil"
                 $resep->obat()->updateExistingPivot($request->obat_id, [

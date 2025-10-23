@@ -156,6 +156,7 @@ class KasirController extends Controller
         $request->validate([
             'uang_yang_diterima' => ['required'],
             'kembalian' => ['required'],
+            'metode_pembayaran_id' => ['required'],
         ]);
 
         $dataPembayaran = Pembayaran::findOrFail($request->id);
@@ -165,6 +166,7 @@ class KasirController extends Controller
             'kembalian' => $request->kembalian,
             'tanggal_pembayaran' => now(),
             'status' => 'Sudah Bayar',
+            'metode_pembayaran_id' => $request->metode_pembayaran_id,
         ]);
 
         return response()->json([

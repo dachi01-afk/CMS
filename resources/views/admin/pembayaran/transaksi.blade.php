@@ -88,11 +88,12 @@
                                 </dd>
                             </dl>
 
+                            {{-- Metode Pembayar --}}
                             <dl
                                 class="flex items-center justify-between gap-4 border-t border-gray-200 pt-2 dark:border-gray-700">
                                 <dt class="text-lg font-bold text-gray-900 dark:text-white">Metode Pembayaran</dt>
                                 <select class="text-lg font-bold text-gray-900 dark:text-white rounded-md"
-                                    name="nama_metode">
+                                    id="select_metode_pembayaran">
                                     @foreach ($dataMetodePembayaran as $metodePembayaran)
                                         <option value="{{ $metodePembayaran->id }}">
                                             {{ $metodePembayaran->nama_metode }}</option>
@@ -143,6 +144,8 @@
                     @csrf
                     <div class="p-4 space-y-4">
                         <input type="hidden" name="id" value="{{ $dataPembayaran->id }}">
+                        <input type="hidden" name="metode_pembayaran_id" id="metode_pembayaran_id"
+                            value="{{ $dataPembayaran->id }}">
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Total
@@ -204,6 +207,16 @@
             const form = document.getElementById('formPembayaran');
             const submitBtn = document.getElementById('btnSubmitPembayaran');
 
+            const selectMetode = document.getElementById("select_metode_pembayaran");
+            const inputHidden = document.getElementById("metode_pembayaran_id");
+
+            // Saat user mengganti pilihan
+            selectMetode.addEventListener("change", function() {
+                const selectedValue = this.value; // ambil value dari option terpilih
+                inputHidden.value = selectedValue; // masukkan ke input hidden
+                console.log("Metode Pembayaran dipilih:", selectedValue); // debug di console
+            });
+
             // tambahkan class pl-3 ke uang_kembalian
             uangKembalianInput.classList.add('pl-3');
 
@@ -230,6 +243,7 @@
                 const totalClean = parseFloat(onlyDigits(totalInput.value)) || 0;
                 const uangDiterimaClean = parseFloat(onlyDigits(uangDiterimaInput.value)) || 0;
                 const kembalianClean = uangDiterimaClean - totalClean;
+                const namaMetode = inputHidden.value;
 
                 if (uangDiterimaClean === 0 || uangDiterimaClean < totalClean) {
                     Swal.fire({
@@ -245,6 +259,7 @@
                 formData.set('uang_yang_diterima', uangDiterimaClean);
                 formData.set('kembalian', kembalianClean);
                 formData.set('total_tagihan', totalClean);
+                formData.set('metode_pembayaran_id', namaMetode);
 
                 submitBtn.disabled = true;
                 submitBtn.classList.add('opacity-60', 'cursor-not-allowed');

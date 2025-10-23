@@ -159,15 +159,27 @@ $(function () {
         if (addModal) addModal.hide();
     });
 
+    // 💰 Auto Format Rupiah Input
+    $("#total_harga").on("input", function () {
+        let value = $(this).val().replace(/\D/g, ""); // hapus semua selain angka
+        if (value) {
+            value = new Intl.NumberFormat("id-ID").format(value);
+        }
+        $(this).val(value);
+    });
+
     $formAdd.on("submit", function (e) {
         e.preventDefault();
         const url = $formAdd.data("url");
+
+        // 🧹 Bersihkan titik sebelum dikirim ke server
+        const hargaBersih = $("#total_harga").val().replace(/\./g, "");
 
         const formData = {
             nama_obat: $("#nama_obat").val(),
             jumlah: $("#jumlah").val(),
             dosis: $("#dosis").val(),
-            total_harga: $("#total_harga").val(),
+            total_harga: hargaBersih,
         };
 
         $(".text-danger").empty();
@@ -227,6 +239,15 @@ $(function () {
         $formEdit.find(".text-danger").empty();
     }
 
+    // 💰 Auto Format Rupiah Input (Edit)
+    $("#total_harga_edit").on("input", function () {
+        let value = $(this).val().replace(/\D/g, ""); // hapus semua selain angka
+        if (value) {
+            value = new Intl.NumberFormat("id-ID").format(value);
+        }
+        $(this).val(value);
+    });
+
     $("body").on("click", ".btn-edit-obat", function () {
         resetEditForm();
         const obatId = $(this).data("id");
@@ -244,7 +265,9 @@ $(function () {
                 $("#nama_obat_edit").val(obat.nama_obat);
                 $("#jumlah_edit").val(obat.jumlah);
                 $("#dosis_edit").val(obat.dosis);
-                $("#total_harga_edit").val(obat.total_harga);
+                $("#total_harga_edit").val(
+                    new Intl.NumberFormat("id-ID").format(obat.total_harga)
+                );
 
                 if (editModal) editModal.show();
             })

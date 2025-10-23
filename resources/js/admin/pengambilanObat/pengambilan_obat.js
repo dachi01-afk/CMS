@@ -131,6 +131,7 @@ $(function () {
     $("body").on("click", ".btnUpdateStatus", function () {
         const resepId = $(this).data("resep-id");
         const obatId = $(this).data("obat-id");
+        const jumlah = $(this).data("jumlah");
 
         if (!resepId || !obatId) {
             Swal.fire({
@@ -154,6 +155,7 @@ $(function () {
                     .post(`/pengambilan_obat/update-status-resep-obat`, {
                         resep_id: resepId,
                         obat_id: obatId,
+                        jumlah_obat: jumlah,
                     })
                     .then((response) => {
                         Swal.fire({

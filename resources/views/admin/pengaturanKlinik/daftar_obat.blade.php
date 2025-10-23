@@ -103,7 +103,7 @@
                     <div class="relative mt-1">
                         <span
                             class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-300">Rp</span>
-                        <input type="number" step="0.01" name="total_harga" id="total_harga"
+                        <input type="text" name="total_harga" id="total_harga"
                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white pl-10"
                             placeholder="Masukkan Harga" required>
                         <div id="total_harga-error" class="text-red-600 text-sm mt-1"></div>
@@ -182,7 +182,7 @@
                     <div class="relative mt-1">
                         <span
                             class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-300">Rp</span>
-                        <input type="number" step="0.01" name="total_harga_edit" id="total_harga_edit"
+                        <input type="text" name="total_harga_edit" id="total_harga_edit"
                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white pl-10"
                             placeholder="Masukkan Harga" required>
                         <div id="total_harga_edit-error" class="text-red-600 text-sm mt-1"></div>
