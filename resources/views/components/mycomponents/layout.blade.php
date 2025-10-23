@@ -146,9 +146,9 @@
                         Kasir
                     </x-mycomponents.sidebar_link>
 
-                    {{-- <x-mycomponents.sidebar_link href="laporan.index" class="fa-solid fa-chart-line text-blue-600">
+                    <x-mycomponents.sidebar_link href="laporan.index" class="fa-solid fa-chart-line text-blue-600">
                         Laporan
-                    </x-mycomponents.sidebar_link> --}}
+                    </x-mycomponents.sidebar_link>
 
                     <hr class="my-4 border-gray-300">
                     <x-mycomponents.sidebar_link href="settings.index" class="fa-solid fa-gear">

@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\KunjunganExport;
 use App\Models\Kunjungan;
 use App\Models\Pembayaran;
 use App\Models\Administrasi;
 use Illuminate\Http\Request;
 use App\Models\TransaksiApoteker;
 use App\Http\Controllers\Controller;
+use Maatwebsite\Excel\Facades\Excel;
 use Yajra\DataTables\Facades\DataTables;
 
 class LaporanController extends Controller
@@ -19,12 +21,12 @@ class LaporanController extends Controller
 
     public function dataKunjungan()
     {
-        $query = Kunjungan::with(['dokter:id,nama_dokter', 'pasien:id,nama_pasien'])
-            ->select(['id', 'dokter_id', 'pasien_id', 'tanggal_kunjungan', 'no_antrian', 'status', 'keluhan_awal']);
+        $dataKunjungan = Kunjungan::with('poli.dokter', 'pasien')->get();
 
-        return DataTables::of($query)
+        return DataTables::of($dataKunjungan)
             ->addIndexColumn()
-            ->addColumn('nama_dokter', fn($row) => $row->dokter->nama_dokter ?? '-')
+            ->addColumn('no_antrian', fn($row) => $row->no_antrian ?? '-')
+            ->addColumn('nama_dokter', fn($row) => $row->poli->dokter->nama_dokter ?? '-')
             ->addColumn('nama_pasien', fn($row) => $row->pasien->nama_pasien ?? '-')
             ->editColumn('tanggal_kunjungan', function ($row) {
                 return $row->tanggal_kunjungan
@@ -83,5 +85,11 @@ class LaporanController extends Controller
 
         return DataTables::of($query)
             ->make(true);
+    }
+
+    public function exportKunjungan(Request $request)
+    {
+        $periode = $request->input('periode'); // ambil dari form
+        return Excel::download(new KunjunganExport($periode), 'kunjungan.xlsx');
     }
 }

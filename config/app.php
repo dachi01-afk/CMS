@@ -129,4 +129,6 @@ return [
 
         'DataTables' => Yajra\DataTables\Facades\DataTables::class,
     ])->toArray(),
+
+    'Excel' => Maatwebsite\Excel\Facades\Excel::class,
 ];

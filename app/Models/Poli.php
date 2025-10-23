@@ -11,7 +11,7 @@ class Poli extends Model
 
     public function dokter()
     {
-        return $this->hasMany(Dokter::class);
+        return $this->hasOne(Dokter::class);
     }
     public function layanan()
     {

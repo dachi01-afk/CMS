@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\KunjunganExport;
 use App\Http\Controllers\Controller;
 use App\Models\Kunjungan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Maatwebsite\Excel\Excel;
 
 class KunjunganController extends Controller
 {
@@ -115,4 +117,6 @@ class KunjunganController extends Controller
             'message' => 'Berhasil Merubah Status Kunjungan Dari Pending Menjadi Canceled',
         ]);
     }
+
+    
 }
