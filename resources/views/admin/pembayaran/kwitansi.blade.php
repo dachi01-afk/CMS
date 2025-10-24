@@ -9,6 +9,13 @@
     @vite(['resources/css/app.css'])
     <style>
         @media print {
+            @page {
+                size: A5 portrait;
+                /* bisa A4, A5, Letter, Legal, dll */
+                margin: 10mm;
+                /* atur margin dalam kertas cetak */
+            }
+
             .print\:hidden {
                 display: none !important;
             }

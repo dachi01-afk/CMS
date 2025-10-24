@@ -16,7 +16,7 @@ class PoliController extends Controller
 
     public function getDataPoli()
     {
-        $dataPoli = Poli::get();
+        $dataPoli = Poli::latest()->get();
 
         return DataTables::of($dataPoli)
             ->addIndexColumn()

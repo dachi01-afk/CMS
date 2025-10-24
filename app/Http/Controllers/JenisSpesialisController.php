@@ -15,7 +15,7 @@ class JenisSpesialisController extends Controller
 
     public function dataJenisSpesialisDokter()
     {
-        $query = JenisSpesialis::all();
+        $query = JenisSpesialis::latest()->get();
 
         return DataTables::of($query)
             ->addIndexColumn()

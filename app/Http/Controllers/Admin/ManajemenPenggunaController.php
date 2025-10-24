@@ -16,8 +16,8 @@ class ManajemenPenggunaController extends Controller
 {
     public function index()
     {
-        $spesialis = JenisSpesialis::all();
-        $dataPoli = Poli::all();
+        $spesialis = JenisSpesialis::latest()->get();
+        $dataPoli = Poli::latest()->get();
         return view('admin.manajemen_pengguna', compact('spesialis', 'dataPoli'));
     }
 
@@ -44,7 +44,7 @@ class ManajemenPenggunaController extends Controller
 
     public function dataDokter()
     {
-        $query = Dokter::with(['user', 'jenisSpesialis', 'poli'])->get();
+        $query = Dokter::with(['user', 'jenisSpesialis', 'poli'])->latest()->get();
 
         return DataTables::of($query)
             ->addIndexColumn()
@@ -77,7 +77,7 @@ class ManajemenPenggunaController extends Controller
 
     public function dataPasien()
     {
-        $query = Pasien::with('user')->select('pasien.*');
+        $query = Pasien::with('user')->select('pasien.*')->latest()->get();
 
         return DataTables::of($query)
             ->addIndexColumn()
@@ -108,7 +108,7 @@ class ManajemenPenggunaController extends Controller
 
     public function dataApoteker()
     {
-        $query = Apoteker::with('user')->select('apoteker.*');
+        $query = Apoteker::with('user')->select('apoteker.*')->latest()->get();
 
         return DataTables::of($query)
             ->addIndexColumn()

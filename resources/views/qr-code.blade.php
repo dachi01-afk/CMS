@@ -10,21 +10,10 @@
 </head>
 
 <body>
-    <div
-        class="max-w-7xl mx-auto bg-blue-500 mt-10 p-4 h-full grid items-center justify-center w-full rounded-md text-white">
-
-        <h2 class="text-xl">Generate QR Code</h2>
-
-
-        <div class="items-start w-full">
-            <div>1</div>
-            <div>1</div>
-            <div>1</div>
-            <div>1</div>
-            <div>1</div>
-            <div>1</div>
-            <div>1</div>
-            <div>1</div>
+    <div class="flex flex-col items-center justify-center h-screen gap-3">
+        <h1>Your QR Code</h1>
+        <div>
+            {!! $qrCode !!}
         </div>
     </div>
 </body>

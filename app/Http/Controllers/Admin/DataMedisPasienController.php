@@ -24,7 +24,7 @@ class DataMedisPasienController extends Controller
             'kunjungan.pasien',
             'kunjungan.poli.dokter', // cukup sekali
             'resep.obat',
-        ])->get();
+        ])->latest()->get();
 
         return DataTables::of($dataEMR)
             ->addIndexColumn()

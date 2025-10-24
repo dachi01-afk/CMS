@@ -24,7 +24,7 @@ class KasirController extends Controller
             'emr.resep.obat',
             'emr.kunjungan.layanan',
             'metodePembayaran',
-        ])->where('status', 'Belum Bayar')->get();
+        ])->where('status', 'Belum Bayar')->latest()->get();
 
         return DataTables::of($dataPembayaran)
             ->addIndexColumn()
@@ -183,7 +183,7 @@ class KasirController extends Controller
             'emr.resep.obat',
             'emr.kunjungan.layanan',
             'metodePembayaran',
-        ])->where('status', 'Sudah Bayar')->get();
+        ])->where('status', 'Sudah Bayar')->latest()->get();
 
         return DataTables::of($dataPembayaran)
             ->addIndexColumn()
@@ -312,7 +312,7 @@ class KasirController extends Controller
 
     public function getDataMetodePembayaran()
     {
-        $dataMetodePembayaran = MetodePembayaran::all();
+        $dataMetodePembayaran = MetodePembayaran::latest()->get();
 
         return DataTables::of($dataMetodePembayaran)
             ->addIndexColumn()

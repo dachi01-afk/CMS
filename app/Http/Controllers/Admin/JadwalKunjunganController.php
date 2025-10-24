@@ -31,7 +31,7 @@ class JadwalKunjunganController extends Controller
         ];
 
         // Ambil semua jadwal dokter
-        $jadwalSemua = JadwalDokter::with(['dokter', 'poli'])->get();
+        $jadwalSemua = JadwalDokter::with(['dokter', 'poli'])->latest()->get();
 
         // Proses jadwal yang akan datang berdasarkan hari
         $jadwalYangAkanDatang = $jadwalSemua->map(function ($jadwal) use ($mapHari) {
@@ -68,7 +68,7 @@ class JadwalKunjunganController extends Controller
         // Ambil jadwal berdasarkan hari ini
         $jadwalHariIni = JadwalDokter::with(['dokter', 'poli'])
             ->where('hari', $hariIni)->where('jam_selesai', '>', $jamSekarang)
-            ->get();
+            ->latest()->get();
 
         // Kirim ke view
         return view('admin.jadwal_kunjungan', compact('jadwalHariIni', 'hariIni', 'jadwalYangAkanDatang', 'tanggalHariIni'));

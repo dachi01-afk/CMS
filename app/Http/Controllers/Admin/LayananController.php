@@ -18,7 +18,7 @@ class LayananController extends Controller
 
     public function getDataLayanan()
     {
-        $dataLayanan = Layanan::with('poli')->get();
+        $dataLayanan = Layanan::with('poli')->latest()->get();
 
         return DataTables::of($dataLayanan)
             ->addIndexColumn()

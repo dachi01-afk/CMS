@@ -30,6 +30,7 @@ use App\Http\Controllers\Management\JadwalDokterController;
 use App\Http\Controllers\Admin\AturJadwalKunjunganController;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use App\Http\Controllers\Dokter\DokterController as DokterDokterController;
+use App\Http\Controllers\QrCodeController;
 
 // API Routes - Enhanced for better booking functionality
 // Route::prefix('api')->withoutMiddleware(['web'])->group(function () {
@@ -143,7 +144,7 @@ Route::prefix('/testing-chart')->group(function () {
 });
 
 Route::prefix('/testing-qr-code')->group(function () {
-    Route::get('/', [TestingQRCodeController::class, 'index'])->name('testing.qr.code.index');
+    Route::get('/', [QrCodeController::class, 'generate'])->name('testing.qr.code.index');
 });
 
 Route::get('/contoh-kuitansi', function () {

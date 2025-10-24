@@ -68,7 +68,8 @@
                 <!-- Search Dokter -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Cari Dokter</label>
-                    <input type="text" id="search_dokter_create" name="search_dokter_create" placeholder="Ketik nama dokter..."
+                    <input type="text" id="search_dokter_create" name="search_dokter_create"
+                        placeholder="Ketik nama dokter..."
                         class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
                     <div id="search_results_create"
                         class="mt-2 bg-white border border-gray-200 rounded-lg shadow max-h-40 overflow-y-auto hidden">
@@ -80,9 +81,10 @@
                 <div id="dokter_data_create" class="hidden">
                     <input type="hidden" name="dokter_id" id="dokter_id_create">
                     <input type="hidden" name="poli_id" id="poli_id_create">
-                    <p class="text-sm text-gray-600"><strong>Nama Dokter:</strong> <span id="nama_dokter_create"></span></p>
-                    <p class="text-sm text-gray-600"><strong>Poli Dokter:</strong> <span id="nama_poli_create"></span></p>
-                    {{-- <p class="text-sm text-gray-600"><strong>Jenis Kelamin:</strong> <span id="deskripsi_dokter"></span> --}}
+                    <p class="text-sm text-gray-600"><strong>Nama Dokter:</strong> <span id="nama_dokter_create"></span>
+                    </p>
+                    <p class="text-sm text-gray-600"><strong>Poli Dokter:</strong> <span id="nama_poli_create"></span>
+                    </p>
                     </p>
                 </div>
 
@@ -157,7 +159,8 @@
                 <!-- Search Dokter -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Cari Dokter</label>
-                    <input type="text" id="search_dokter_update" name="search_dokter_update" placeholder="Ketik nama dokter..."
+                    <input type="text" id="search_dokter_update" name="search_dokter_update"
+                        placeholder="Ketik nama dokter..."
                         class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
                     <div id="search_results_update"
                         class="mt-2 bg-white border border-gray-200 rounded-lg shadow max-h-40 overflow-y-auto hidden">
@@ -169,8 +172,10 @@
                 <div id="dokter_data_update" class="hidden">
                     <input type="hidden" name="dokter_id" id="dokter_id_update">
                     <input type="hidden" name="poli_id" id="poli_id_update">
-                    <p class="text-sm text-gray-600"><strong>Nama Dokter:</strong> <span id="nama_dokter_update"></span></p>
-                    <p class="text-sm text-gray-600"><strong>Poli Dokter:</strong> <span id="nama_poli_update"></span></p>
+                    <p class="text-sm text-gray-600"><strong>Nama Dokter:</strong> <span
+                            id="nama_dokter_update"></span></p>
+                    <p class="text-sm text-gray-600"><strong>Poli Dokter:</strong> <span id="nama_poli_update"></span>
+                    </p>
                     {{-- <p class="text-sm text-gray-600"><strong>Jenis Kelamin:</strong> <span id="deskripsi_dokter"></span> --}}
                     </p>
                 </div>

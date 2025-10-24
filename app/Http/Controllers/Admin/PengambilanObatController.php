@@ -24,7 +24,7 @@ class PengambilanObatController extends Controller
         // $query = Resep::with('obat', 'kunjungan.pasien', 'kunjungan.dokter')->get();
         $query = Resep::with('obat', 'kunjungan.pasien', 'kunjungan.poli.dokter')->whereHas('obat', function ($q) {
             $q->where('resep_obat.status', 'Belum Diambil');
-        })->get();
+        })->latest()->get();
 
         return DataTables::of($query)
             ->addIndexColumn()

@@ -126,7 +126,7 @@
     <div class="relative w-full max-w-xl max-h-full">
         <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
             <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-600">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Edit Jadwal Dokter</h3>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Edit Data Layanan</h3>
             </div>
 
             <form id="formUpdateLayanan" class="p-5 flex flex-col gap-4" data-url="{{ route('layanan.update.data') }}"
