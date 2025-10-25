@@ -24,4 +24,11 @@ class Pasien extends Model
     {
         return $this->hasMany(Testimoni::class);
     }
+
+    public function obat()
+    {
+        return $this->belongsToMany(Obat::class, 'penjualan_obat', 'pasien_id', 'obat_id')
+            ->withPivot('kode_transaksi', 'jumlah', 'sub_total', 'tanggal_transaksi')
+            ->withTimestamps();
+    }
 }

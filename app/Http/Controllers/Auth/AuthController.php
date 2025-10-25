@@ -10,6 +10,7 @@ use App\Models\Kunjungan;
 use App\Models\Pasien;
 use App\Models\Testimoni;
 use App\Models\User;
+use App\Models\Apoteker;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -35,8 +36,8 @@ class AuthController extends Controller
             'status' => 'success',
             'available' => ! $exists,
             'message' => $exists
-                ? ucfirst($request->type).' sudah digunakan'
-                : ucfirst($request->type).' tersedia',
+                ? ucfirst($request->type) . ' sudah digunakan'
+                : ucfirst($request->type) . ' tersedia',
         ]);
     }
 
@@ -163,6 +164,19 @@ class AuthController extends Controller
             }
         }
 
+        if ($user->role === 'Apoteker') {
+            $apoteker = Apoteker::where('user_id', $user->id)->first();
+
+            if (! $apoteker) {
+                // Try alternative approach - find by email
+                $apoteker = Apoteker::where('email', $user->email)->first();
+            }
+
+            if ($apoteker) {
+                $responseData['account']['apoteker_id'] = $apoteker->user_id ?? $apoteker->id;
+            }
+        }
+
         return response()->json([
             'status' => 'success',
             'message' => 'Login berhasil.',
@@ -237,27 +251,27 @@ class AuthController extends Controller
     }
 
     public function getDataSpesialisasiDokter()
-{
-    try {
-        // Get specialties from jenis_spesialis table
-        $dataSpesialis = DB::table('jenis_spesialis')
-            ->select('id', 'nama_spesialis as spesialisasi')
-            ->orderBy('nama_spesialis')
-            ->get();
+    {
+        try {
+            // Get specialties from jenis_spesialis table
+            $dataSpesialis = DB::table('jenis_spesialis')
+                ->select('id', 'nama_spesialis as spesialisasi')
+                ->orderBy('nama_spesialis')
+                ->get();
 
-        return response()->json([
-            'status' => 'success',
-            'Data Spesialis Dokter' => $dataSpesialis,
-        ]);
-    } catch (\Exception $e) {
-        Log::error('Error fetching specialties: '.$e->getMessage());
+            return response()->json([
+                'status' => 'success',
+                'Data Spesialis Dokter' => $dataSpesialis,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching specialties: ' . $e->getMessage());
 
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Failed to fetch specialties: '.$e->getMessage(),
-        ], 500);
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch specialties: ' . $e->getMessage(),
+            ], 500);
+        }
     }
-}
 
     public function getDoctorsWithSpecialties()
     {
@@ -281,11 +295,11 @@ class AuthController extends Controller
                 'data' => $doctors,
             ]);
         } catch (\Exception $e) {
-            Log::error('Error fetching doctors with specialties: '.$e->getMessage());
+            Log::error('Error fetching doctors with specialties: ' . $e->getMessage());
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to fetch doctors: '.$e->getMessage(),
+                'message' => 'Failed to fetch doctors: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -303,149 +317,148 @@ class AuthController extends Controller
                 'data' => $specialties,
             ]);
         } catch (\Exception $e) {
-            Log::error('Error fetching specialties: '.$e->getMessage());
+            Log::error('Error fetching specialties: ' . $e->getMessage());
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Failed to fetch specialties: '.$e->getMessage(),
+                'message' => 'Failed to fetch specialties: ' . $e->getMessage(),
             ], 500);
         }
     }
-public function getDoctorSchedules()
-{
-    try {
-        $schedules = DB::table('jadwal_dokter')
-            ->join('dokter', 'jadwal_dokter.dokter_id', '=', 'dokter.id')
-            ->leftJoin('jenis_spesialis', 'dokter.jenis_spesialis_id', '=', 'jenis_spesialis.id')
-            ->select(
-                'jadwal_dokter.*',
-                'dokter.nama_dokter',
-                'jenis_spesialis.nama_spesialis'
-            )
-            ->get();
+    public function getDoctorSchedules()
+    {
+        try {
+            $schedules = DB::table('jadwal_dokter')
+                ->join('dokter', 'jadwal_dokter.dokter_id', '=', 'dokter.id')
+                ->leftJoin('jenis_spesialis', 'dokter.jenis_spesialis_id', '=', 'jenis_spesialis.id')
+                ->select(
+                    'jadwal_dokter.*',
+                    'dokter.nama_dokter',
+                    'jenis_spesialis.nama_spesialis'
+                )
+                ->get();
 
-        return response()->json([
-            'status' => 'success',
-            'data' => $schedules
-        ]);
-    } catch (\Exception $e) {
-        Log::error('Error fetching doctor schedules: ' . $e->getMessage());
-        
-        return response()->json([
-            'status' => 'error',
-            'message' => 'Failed to fetch doctor schedules: ' . $e->getMessage()
-        ], 500);
+            return response()->json([
+                'status' => 'success',
+                'data' => $schedules
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error fetching doctor schedules: ' . $e->getMessage());
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Failed to fetch doctor schedules: ' . $e->getMessage()
+            ], 500);
+        }
     }
-}
 
-public function createKunjungan(Request $request)
-{
-    // Log incoming request for debugging
-    Log::info('=== CREATE KUNJUNGAN AUTH CONTROLLER DEBUG ===', [
-        'request_data' => $request->all(),
-        'headers' => $request->headers->all()
-    ]);
+    public function createKunjungan(Request $request)
+    {
+        // Log incoming request for debugging
+        Log::info('=== CREATE KUNJUNGAN AUTH CONTROLLER DEBUG ===', [
+            'request_data' => $request->all(),
+            'headers' => $request->headers->all()
+        ]);
 
-    $request->validate([
-        'pasien_id' => 'required|integer',
-        'dokter_id' => 'required|integer', 
-        'tanggal_kunjungan' => 'required|date',
-        'keluhan_awal' => 'required|string',
-    ]);
+        $request->validate([
+            'pasien_id' => 'required|integer',
+            'dokter_id' => 'required|integer',
+            'tanggal_kunjungan' => 'required|date',
+            'keluhan_awal' => 'required|string',
+        ]);
 
-    try {
-        $user = $request->user();
-        
-        // Verify user is authenticated
-        if (!$user) {
-            return response()->json([
-                'success' => false,
-                'status' => 'error',
-                'message' => 'User tidak terautentikasi'
-            ], 401);
-        }
+        try {
+            $user = $request->user();
 
-        // Verify pasien exists and belongs to user
-        $pasien = Pasien::find($request->pasien_id);
-        if (!$pasien) {
-            return response()->json([
-                'success' => false,
-                'status' => 'error',
-                'message' => 'Data pasien tidak ditemukan'
-            ], 404);
-        }
-
-        // For additional security, verify pasien belongs to authenticated user
-        if ($user->role === 'Pasien') {
-            $userPasien = Pasien::where('user_id', $user->id)->first();
-            if (!$userPasien) {
-                $userPasien = Pasien::where('email', $user->email)->first();
-            }
-            
-            if (!$userPasien || $userPasien->id !== $request->pasien_id) {
+            // Verify user is authenticated
+            if (!$user) {
                 return response()->json([
                     'success' => false,
                     'status' => 'error',
-                    'message' => 'Akses ditolak. Pasien tidak sesuai dengan user yang login.'
-                ], 403);
+                    'message' => 'User tidak terautentikasi'
+                ], 401);
             }
-        }
 
-        // Verify dokter exists
-        $dokter = Dokter::find($request->dokter_id);
-        if (!$dokter) {
+            // Verify pasien exists and belongs to user
+            $pasien = Pasien::find($request->pasien_id);
+            if (!$pasien) {
+                return response()->json([
+                    'success' => false,
+                    'status' => 'error',
+                    'message' => 'Data pasien tidak ditemukan'
+                ], 404);
+            }
+
+            // For additional security, verify pasien belongs to authenticated user
+            if ($user->role === 'Pasien') {
+                $userPasien = Pasien::where('user_id', $user->id)->first();
+                if (!$userPasien) {
+                    $userPasien = Pasien::where('email', $user->email)->first();
+                }
+
+                if (!$userPasien || $userPasien->id !== $request->pasien_id) {
+                    return response()->json([
+                        'success' => false,
+                        'status' => 'error',
+                        'message' => 'Akses ditolak. Pasien tidak sesuai dengan user yang login.'
+                    ], 403);
+                }
+            }
+
+            // Verify dokter exists
+            $dokter = Dokter::find($request->dokter_id);
+            if (!$dokter) {
+                return response()->json([
+                    'success' => false,
+                    'status' => 'error',
+                    'message' => 'Data dokter tidak ditemukan'
+                ], 404);
+            }
+
+            // Create kunjungan
+            $kunjungan = Kunjungan::create([
+                'pasien_id' => $request->pasien_id,
+                'dokter_id' => $request->dokter_id,
+                'tanggal_kunjungan' => $request->tanggal_kunjungan,
+                'keluhan_awal' => $request->keluhan_awal,
+                'status' => 'menunggu',
+            ]);
+
+            Log::info('Kunjungan created successfully', [
+                'kunjungan_id' => $kunjungan->id,
+                'pasien_id' => $request->pasien_id,
+                'dokter_id' => $request->dokter_id
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'status' => 'success',
+                'message' => 'Kunjungan berhasil dibuat',
+                'data' => [
+                    'kunjungan_id' => $kunjungan->id,
+                    'pasien_id' => $kunjungan->pasien_id,
+                    'dokter_id' => $kunjungan->dokter_id,
+                    'tanggal_kunjungan' => $kunjungan->tanggal_kunjungan,
+                    'keluhan_awal' => $kunjungan->keluhan_awal,
+                    'status' => $kunjungan->status,
+                    'dokter_nama' => $dokter->nama_dokter,
+                    'pasien_nama' => $pasien->nama_pasien,
+                ]
+            ], 201);
+        } catch (\Exception $e) {
+            Log::error('Error creating kunjungan', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all()
+            ]);
+
             return response()->json([
                 'success' => false,
                 'status' => 'error',
-                'message' => 'Data dokter tidak ditemukan'
-            ], 404);
+                'message' => 'Gagal membuat kunjungan: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Create kunjungan
-        $kunjungan = Kunjungan::create([
-            'pasien_id' => $request->pasien_id,
-            'dokter_id' => $request->dokter_id,
-            'tanggal_kunjungan' => $request->tanggal_kunjungan,
-            'keluhan_awal' => $request->keluhan_awal,
-            'status' => 'menunggu',
-        ]);
-
-        Log::info('Kunjungan created successfully', [
-            'kunjungan_id' => $kunjungan->id,
-            'pasien_id' => $request->pasien_id,
-            'dokter_id' => $request->dokter_id
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'status' => 'success',
-            'message' => 'Kunjungan berhasil dibuat',
-            'data' => [
-                'kunjungan_id' => $kunjungan->id,
-                'pasien_id' => $kunjungan->pasien_id,
-                'dokter_id' => $kunjungan->dokter_id,
-                'tanggal_kunjungan' => $kunjungan->tanggal_kunjungan,
-                'keluhan_awal' => $kunjungan->keluhan_awal,
-                'status' => $kunjungan->status,
-                'dokter_nama' => $dokter->nama_dokter,
-                'pasien_nama' => $pasien->nama_pasien,
-            ]
-        ], 201);
-
-    } catch (\Exception $e) {
-        Log::error('Error creating kunjungan', [
-            'error' => $e->getMessage(),
-            'trace' => $e->getTraceAsString(),
-            'request_data' => $request->all()
-        ]);
-
-        return response()->json([
-            'success' => false,
-            'status' => 'error',
-            'message' => 'Gagal membuat kunjungan: ' . $e->getMessage()
-        ], 500);
     }
-}
 
 
     // UpdateProfile - FIXED
@@ -675,7 +688,7 @@ public function createKunjungan(Request $request)
 
         return response()->json([
             'status' => 'success',
-            'message' => 'OTP berhasil diverifikasi. Username Anda adalah: '.$user->username,
+            'message' => 'OTP berhasil diverifikasi. Username Anda adalah: ' . $user->username,
             'data' => [
                 'username' => $user->username,
             ],
@@ -791,7 +804,7 @@ public function createKunjungan(Request $request)
                     'email' => $user->email,
                 ]);
             } catch (\Exception $e) {
-                Log::error('Failed to create pasien: '.$e->getMessage());
+                Log::error('Failed to create pasien: ' . $e->getMessage());
 
                 return response()->json([
                     'status' => 'error',
@@ -835,7 +848,7 @@ public function createKunjungan(Request $request)
                         'keluhan_awal' => $kunjungan->keluhan_awal,
                         'status' => $kunjungan->status,
                         'dokter_nama' => $dokter->nama_dokter ?? 'Unknown',
-                        'jadwal' => $request->day.', '.$request->time,
+                        'jadwal' => $request->day . ', ' . $request->time,
                     ],
                     'emr' => [
                         'pasien_id' => $kunjungan->pasien_id,
@@ -843,13 +856,12 @@ public function createKunjungan(Request $request)
                     ],
                 ],
             ], 201);
-
         } catch (\Exception $e) {
-            Log::error('Error creating kunjungan: '.$e->getMessage());
+            Log::error('Error creating kunjungan: ' . $e->getMessage());
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal memesan jadwal: '.$e->getMessage(),
+                'message' => 'Gagal memesan jadwal: ' . $e->getMessage(),
             ], 500);
         }
     }
@@ -960,7 +972,6 @@ public function createKunjungan(Request $request)
                 'message' => 'Data EMR berhasil diambil',
                 'data' => $emrData->values(),
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error fetching EMR data', [
                 'pasien_id' => $id,
@@ -970,7 +981,7 @@ public function createKunjungan(Request $request)
 
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal mengambil data EMR: '.$e->getMessage(),
+                'message' => 'Gagal mengambil data EMR: ' . $e->getMessage(),
                 'data' => [],
             ], 500);
         }
@@ -1039,7 +1050,6 @@ public function createKunjungan(Request $request)
                 'status' => 'success',
                 'data' => $data,
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error fetching kunjungan detail', [
                 'kunjungan_id' => $kunjunganId,
@@ -1108,7 +1118,6 @@ public function createKunjungan(Request $request)
                 'status' => 'success',
                 'data' => $appointments,
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error fetching appointments', [
                 'error' => $e->getMessage(),
@@ -1160,7 +1169,7 @@ public function createKunjungan(Request $request)
             if (! in_array($kunjungan->status ?? 'menunggu', ['menunggu'])) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Kunjungan tidak dapat dibatalkan. Status saat ini: '.($kunjungan->status ?? 'menunggu'),
+                    'message' => 'Kunjungan tidak dapat dibatalkan. Status saat ini: ' . ($kunjungan->status ?? 'menunggu'),
                 ], 400);
             }
 
@@ -1174,7 +1183,6 @@ public function createKunjungan(Request $request)
                     'status' => $kunjungan->status,
                 ],
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error cancelling appointment', [
                 'error' => $e->getMessage(),
@@ -1231,7 +1239,7 @@ public function createKunjungan(Request $request)
             if (! in_array($kunjungan->status ?? 'menunggu', ['menunggu'])) {
                 return response()->json([
                     'status' => 'error',
-                    'message' => 'Jadwal kunjungan tidak dapat diubah. Status saat ini: '.($kunjungan->status ?? 'menunggu'),
+                    'message' => 'Jadwal kunjungan tidak dapat diubah. Status saat ini: ' . ($kunjungan->status ?? 'menunggu'),
                 ], 400);
             }
 
@@ -1260,7 +1268,6 @@ public function createKunjungan(Request $request)
                     'status' => $kunjungan->status,
                 ],
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error rescheduling appointment', [
                 'error' => $e->getMessage(),
@@ -1324,7 +1331,6 @@ public function createKunjungan(Request $request)
                 'status' => 'success',
                 'data' => $stats,
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error fetching doctor dashboard stats', [
                 'error' => $e->getMessage(),
@@ -1371,7 +1377,7 @@ public function createKunjungan(Request $request)
                 ->orderBy('tanggal_kunjungan', 'asc')
                 ->get()
                 ->map(function ($kunjungan, $index) {
-                    $noAntrian = 'A'.str_pad($index + 1, 3, '0', STR_PAD_LEFT);
+                    $noAntrian = 'A' . str_pad($index + 1, 3, '0', STR_PAD_LEFT);
                     $waktu = Carbon::parse($kunjungan->tanggal_kunjungan)->format('H:i');
 
                     return [
@@ -1396,7 +1402,6 @@ public function createKunjungan(Request $request)
                 'status' => 'success',
                 'data' => $todayPatients,
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error fetching today patients', [
                 'error' => $e->getMessage(),
@@ -1467,7 +1472,6 @@ public function createKunjungan(Request $request)
                     'status' => $kunjungan->status,
                 ],
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error updating patient status', [
                 'error' => $e->getMessage(),
@@ -1551,7 +1555,6 @@ public function createKunjungan(Request $request)
                     'emr_id' => $emr->id,
                 ],
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error submitting examination', [
                 'error' => $e->getMessage(),
@@ -1587,7 +1590,6 @@ public function createKunjungan(Request $request)
                 'status' => 'success',
                 'data' => $obatList,
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error fetching obat list', [
                 'error' => $e->getMessage(),
@@ -1677,7 +1679,6 @@ public function createKunjungan(Request $request)
                 'status' => 'success',
                 'message' => 'Resep obat berhasil dibuat',
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error creating prescription', [
                 'error' => $e->getMessage(),
@@ -1720,7 +1721,6 @@ public function createKunjungan(Request $request)
                 'status' => 'success',
                 'data' => $prescriptions,
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error fetching prescriptions', [
                 'error' => $e->getMessage(),
@@ -1806,7 +1806,6 @@ public function createKunjungan(Request $request)
                 'status' => 'success',
                 'data' => $result,
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error fetching patient history', [
                 'error' => $e->getMessage(),
@@ -1864,7 +1863,6 @@ public function createKunjungan(Request $request)
                 'status' => 'success',
                 'data' => $schedules,
             ]);
-
         } catch (\Exception $e) {
             Log::error('Error fetching doctor schedule', [
                 'error' => $e->getMessage(),
@@ -1888,7 +1886,7 @@ public function createKunjungan(Request $request)
                 $jamMulai = $jadwal->jam_mulai ?? $jadwal->jam_awal ?? '08:00';
                 $jamSelesai = $jadwal->jam_selesai ?? '17:00';
 
-                return $jamMulai.' - '.$jamSelesai;
+                return $jamMulai . ' - ' . $jamSelesai;
             }
 
             return '08:00 - 17:00'; // Default

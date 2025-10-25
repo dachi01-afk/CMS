@@ -14,6 +14,10 @@ use Illuminate\Support\Facades\Validator;
 
 class ApotekerController extends Controller
 {
+    public function index()
+    {
+        return view('apoteker.dashboard');
+    }
 
     public function createApoteker(Request $request)
     {

@@ -15,4 +15,11 @@ class Obat extends Model
         return $this->belongsToMany(Resep::class, 'resep_obat', 'obat_id', 'resep_id')
             ->withPivot('jumlah', 'dosis', 'keterangan', 'status');
     }
+
+    public function pasien()
+    {
+        return $this->belongsToMany(Pasien::class, 'penjualan_obat', 'obat_id', 'pasien_id')
+            ->withPivot('kode_transaksi', 'jumlah', 'sub_total', 'tanggal_transaksi')
+            ->withTimestamps();
+    }
 }

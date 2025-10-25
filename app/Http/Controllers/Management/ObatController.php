@@ -5,9 +5,39 @@ namespace App\Http\Controllers\Management;
 use App\Http\Controllers\Controller;
 use App\Models\Obat;
 use Illuminate\Http\Request;
+use Yajra\DataTables\Facades\DataTables;
 
 class ObatController extends Controller
 {
+    public function index()
+    {
+        return view('apoteker.obat.obat');
+    }
+
+    public function getDataObat()
+    {
+        $dataObat = Obat::latest()->get();
+
+        return DataTables::of($dataObat)
+            ->addIndexColumn()
+            ->addColumn('nama_obat', fn($obat) => $obat->nama_obat ?? '-')
+            ->addColumn('jumlah', fn($obat) => $obat->jumlah ?? '-')
+            ->addColumn('dosis', fn($obat) => $obat->dosis ?? '-')
+            ->addColumn('total_harga', fn($obat) => $obat->total_harga ?? '-')
+            ->addColumn('action', function ($obat) {
+                return '
+        <button class="btn-edit-obat text-blue-600 hover:text-blue-800 mr-2" data-id="' . $obat->id . '" title="Edit">
+            <i class="fa-regular fa-pen-to-square text-lg"></i>
+        </button>
+        <button class="btn-delete-obat text-red-600 hover:text-red-800" data-id="' . $obat->id . '" title="Hapus">
+            <i class="fa-regular fa-trash-can text-lg"></i>
+        </button>
+        ';
+            })
+            ->rawColumns(['action'])
+            ->make(true);
+    }
+
     public function createObat(Request $request)
     {
         // --- Ubah format total_harga dari teks jadi numeric ---
@@ -29,7 +59,11 @@ class ObatController extends Controller
             'total_harga' => $request->total_harga,
         ]);
 
-        return response()->json(['status' => 200, 'data' => $dataObat, 'message' => 'Data Berhasil Di Tambahkan']);
+        return response()->json([
+            'status' => 200,
+            'data' => $dataObat,
+            'message' => 'Berhasil Menambahkan Data Obat!'
+        ]);
     }
 
     public function getObatById($id)
@@ -65,13 +99,21 @@ class ObatController extends Controller
             'total_harga' => $request->total_harga,
         ]);
 
-        return response()->json(['status' => 200, 'data' => $dataObat, 'massage' => 'Data Berhasil Di Update']);
+        return response()->json([
+            'status' => 200,
+            'data' => $dataObat,
+            'message' => 'Berhasil Mengupdate Data Obat!'
+        ]);
     }
 
     public function deleteObat($id)
     {
         $dataObat = Obat::findOrFail($id);
         $dataObat->delete();
-        return response()->json(['status' => 200, 'data' => $dataObat, 'massage' => 'Data Berhasil Dihapus']);
+        return response()->json([
+            'status' => 200,
+            'data' => $dataObat,
+            'message' => 'Berhasil Menghapus Data Obat!'
+        ]);
     }
 }

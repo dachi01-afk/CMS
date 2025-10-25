@@ -31,6 +31,7 @@ use App\Http\Controllers\Admin\AturJadwalKunjunganController;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use App\Http\Controllers\Dokter\DokterController as DokterDokterController;
 use App\Http\Controllers\QrCodeController;
+use App\Http\Controllers\Apoteker\Obat\PenjualanObatController;
 
 // API Routes - Enhanced for better booking functionality
 // Route::prefix('api')->withoutMiddleware(['web'])->group(function () {
@@ -188,7 +189,7 @@ Route::middleware('auth')->group(function () {
     });
 });
 
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
@@ -337,6 +338,24 @@ Route::middleware('auth')->group(function () {
         Route::post('/update-metode-pembayaran', [MetodePembayaranController::class, 'updateData'])->name('update.data.metode.pembayaran');
         Route::post('/delete-metode-pembayaran/{id}', [MetodePembayaranController::class, 'deleteData'])->name('delete.data.metode.pembayaran');
         Route::get('/get-data-metode-pembayaran/{id}', [MetodePembayaranController::class, 'getDataMetodePembayaran'])->name('get.data.metode.pembayaran.by.id');
+    });
+});
+
+Route::middleware(['auth', 'role:Apoteker'])->group(function () {
+    Route::prefix('dashboard')->group(function () {
+        Route::get('/', [ApotekerController::class, 'index'])->name('apoteker.dashboard');
+    });
+
+
+    Route::prefix('obat')->group(function () {
+        Route::get('/', [ObatController::class, 'index'])->name('obat.index');
+        Route::get('/get-data-obat', [ObatController::class, 'getDataObat'])->name('obat.get.data.obat');
+        Route::get('/get-data-penjualan-obat', [PenjualanObatController::class, 'getDataPenjualanObat'])->name('obat.penjualan.obat');
+        Route::post('/create-data-obat', [ObatController::class, 'createObat'])->name('obat.create');
+        Route::get('/get-data-obat-by/{id}', [ObatController::class, 'getObatById'])->name('obat.get.data.by.id');
+        Route::post('update-data-obat/{id}', [ObatController::class, 'updateObat'])->name('obat.update');
+        Route::delete('/delete-data-obat/{id}', [ObatController::class, 'deleteObat'])->name("obat.delete");
+        // Route::get('jual-obat', [ApotekerController::class, 'index'])->name('obat.jual.obat');
     });
 });
 
