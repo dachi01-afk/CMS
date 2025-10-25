@@ -350,12 +350,16 @@ Route::middleware(['auth', 'role:Apoteker'])->group(function () {
     Route::prefix('obat')->group(function () {
         Route::get('/', [ObatController::class, 'index'])->name('obat.index');
         Route::get('/get-data-obat', [ObatController::class, 'getDataObat'])->name('obat.get.data.obat');
-        Route::get('/get-data-penjualan-obat', [PenjualanObatController::class, 'getDataPenjualanObat'])->name('obat.penjualan.obat');
         Route::post('/create-data-obat', [ObatController::class, 'createObat'])->name('obat.create');
         Route::get('/get-data-obat-by/{id}', [ObatController::class, 'getObatById'])->name('obat.get.data.by.id');
         Route::post('update-data-obat/{id}', [ObatController::class, 'updateObat'])->name('obat.update');
         Route::delete('/delete-data-obat/{id}', [ObatController::class, 'deleteObat'])->name("obat.delete");
         // Route::get('jual-obat', [ApotekerController::class, 'index'])->name('obat.jual.obat');
+
+        Route::get('/get-data-penjualan-obat', [PenjualanObatController::class, 'getDataPenjualanObat'])->name('obat.penjualan.obat');
+        Route::get('/search-data-pasien', [PenjualanObatController::class, 'search'])->name('obat.search.data.pasien');
+        Route::get('/search-data-obat', [PenjualanObatController::class, 'searchObat'])->name('obat.search.data.obat');
+        Route::post('/pesan-obat', [PenjualanObatController::class, 'pesanObat'])->name('obat.pesan.obat');
     });
 });
 
