@@ -72,19 +72,6 @@ class DataMedisPasienController extends Controller
             ->addColumn('pernapasan', fn($emr) => $emr->pernapasan ?? '-')
             ->addColumn('saturasi_oksigen', fn($emr) => $emr->saturasi_oksigen ?? '-')
             ->addColumn('diagnosis', fn($emr) => $emr->diagnosis ?? '-')
-            // ->addColumn('action', function ($emr) {
-            //     $namaDokter = $emr->kunjungan?->poli?->dokter?->first()?->nama_dokter ?? '-';
-            //     // amankan attribute HTML kalau perlu
-            //     $namaAttr = e($namaDokter);
-            //     return '
-            //     <button class="btn-detail-emr text-blue-600 hover:text-blue-800 mr-2 text-center items-center"
-            //             data-id="' . $emr->id . '"
-            //             data-dokter="' . $namaAttr . '"
-            //             title="Detail">
-            //         <i class="fa-solid fa-circle-info text-lg"></i> Lihat Detail
-            //     </button>
-            // ';
-            // })
             ->addColumn('action', function ($emr) {
                 $dokter = $emr->kunjungan?->poli?->dokter?->first();
                 $namaDokter = $dokter?->nama_dokter ?? '-';

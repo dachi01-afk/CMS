@@ -154,6 +154,7 @@ $(function () {
                     data.riwayat_penyakit_keluarga || "-"
                 );
                 $("#tekanan_darah").text(data.tekanan_darah || "-");
+                $("#suhu_tubuh").text(data.suhu_tubuh || "-");
                 $("#nadi").text(data.nadi || "-");
                 $("#pernapasan").text(data.pernapasan || "-");
                 $("#saturasi_oksigen").text(data.saturasi_oksigen || "-");
