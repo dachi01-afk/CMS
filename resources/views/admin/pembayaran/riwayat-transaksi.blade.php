@@ -38,6 +38,7 @@
                     <th class="px-6 py-3">Total</th>
                     <th class="px-6 py-3">Metode Pembayaran</th>
                     <th class="px-6 py-3">Status</th>
+                    <th class="px-6 py-3">Bukti Pembayaran</th>
                     <th class="px-6 py-3">Action</th>
                 </tr>
             </thead>

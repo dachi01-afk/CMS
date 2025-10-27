@@ -216,7 +216,7 @@
                     @csrf
                     <div class="p-4 space-y-4">
                         <input type="hidden" name="id" value="{{ $dataPembayaran->id }}">
-                        <input type="hidden" name="metode_pembayaran" id="metode-pembayaran-transfer"
+                        <input type="hidden" name="metode_pembayaran_id" id="metode-pembayaran-transfer"
                             value="">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Total
@@ -598,7 +598,7 @@
                     formData.set('uang_yang_diterima', uangDiterimaClean);
                     formData.set('kembalian', kembalianClean);
                     formData.set('total_tagihan', totalClean);
-                    formData.set('metode_pembayaran', metodeCash?.value);
+                    formData.set('metode_pembayaran_id', metodeCash?.value);
 
 
                     const submitBtn = this.querySelector('button[type="submit"]');
@@ -657,7 +657,7 @@
 
                     const metodeInput = document.getElementById('metode-pembayaran-transfer');
                     const formData = new FormData(this);
-                    if (metodeInput) formData.set('metode_pembayaran', metodeInput.value);
+                    if (metodeInput) formData.set('metode_pembayaran_id', metodeInput.value);
 
                     // === FIX UNTUK FILE ===
                     const fileInput = document.getElementById('upload');

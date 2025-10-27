@@ -102,7 +102,7 @@ class KasirController extends Controller
             })
 
             ->addColumn('total_tagihan', fn($p) => 'Rp ' .  number_format($p->total_tagihan, 0, ',', '.')  ?? '-')
-            ->addColumn('metode_pembayaran', fn($p) => $p->metode_pembayaran ?? '-')
+            ->addColumn('metode_pembayaran', fn($p) => $p->metodePembayaran->nama_metode ?? '-')
             ->addColumn('status', fn($p) => $p->status ?? '-')
 
             // kolom action
@@ -161,6 +161,8 @@ class KasirController extends Controller
             'metode_pembayaran_id' => ['required'],
         ]);
 
+        return $request;
+
         $dataPembayaran = Pembayaran::findOrFail($request->id);
 
         $dataPembayaran->update([
@@ -184,7 +186,7 @@ class KasirController extends Controller
         $request->validate([
             'id' => ['required', 'exists:pembayaran,id'],
             'bukti_pembayaran' => ['required', 'file', 'mimes:jpeg,jpg,png,gif,webp,svg,jfif', 'max:5120'],
-            'metode_pembayaran' => ['required', 'exists:metode_pembayaran,id'],
+            'metode_pembayaran_id' => ['required', 'exists:metode_pembayaran,id'],
         ]);
 
         // cari record transaksi
@@ -249,7 +251,7 @@ class KasirController extends Controller
             'kembalian'            => 0,
             'tanggal_pembayaran'   => now(),
             'status'               => 'Sudah Bayar', // atau "Sudah Bayar" jika otomatis terima
-            'metode_pembayaran_id' => $request->metode_pembayaran,
+            'metode_pembayaran_id' => $request->metode_pembayaran_id,
         ]);
 
         return response()->json([
@@ -342,8 +344,16 @@ class KasirController extends Controller
             })
 
             ->addColumn('total_tagihan', fn($p) => 'Rp ' .  number_format($p->total_tagihan, 0, ',', '.')  ?? '-')
-            ->addColumn('metode_pembayaran', fn($p) => $p->metode_pembayaran ?? '-')
+            ->addColumn('metode_pembayaran', fn($p) => $p->metodePembayaran->nama_metode ?? '-')
             ->addColumn('status', fn($p) => $p->status ?? '-')
+            ->addColumn('bukti_pembayaran', function ($p) {
+                if ($p->bukti_pembayaran) {
+                    $url = asset('storage/' . $p->bukti_pembayaran);
+                    return '<img src="' . $url . '" alt="Foto Bukti Pembayaran" class="w-12 h-12 rounded-lg object-cover mx-auto shadow">';
+                } else {
+                    return '<span class="text-gray-400 italic">Tidak ada</span>';
+                }
+            })
 
             // kolom action
             ->addColumn('action', function ($p) {
@@ -364,7 +374,7 @@ class KasirController extends Controller
                 </button>
     ';
             })
-            ->rawColumns(['nama_obat', 'dosis', 'jumlah', 'nama_layanan', 'jumlah_layanan', 'action'])
+            ->rawColumns(['nama_obat', 'dosis', 'jumlah', 'nama_layanan', 'jumlah_layanan', 'bukti_pembayaran', 'action'])
             ->make(true);
     }
 

@@ -39,10 +39,6 @@ Route::get('/', function () {
     return redirect()->route('login');
 });
 
-// Route::get('/dashboard', function () {
-//     return view('admin.dashboard');
-// })->middleware(['auth', 'verified'])->name('dashboard');
-
 Route::get('/testing', [TestingController::class, 'testing'])->name('testing');
 Route::post('/testing-create-kunjungan', [TestingController::class, 'testingCreateKunjungan'])->name('testing.create.kunjungan');
 Route::post('/testing-ubah-status-kunjungan', [TestingController::class, 'ubahStatusKunjungan'])->name('testing.ubah.status.kunjungan');
@@ -266,8 +262,9 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
 });
 
 Route::middleware(['auth', 'role:Apoteker'])->group(function () {
-    Route::prefix('dashboard')->group(function () {
-        Route::get('/', [ApotekerController::class, 'index'])->name('apoteker.dashboard');
+
+    Route::prefix('apoteker')->group(function () {
+        Route::get('/dashboard', [ApotekerController::class, 'index'])->name('apoteker.dashboard');
     });
 
 
