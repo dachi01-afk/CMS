@@ -35,9 +35,7 @@ use App\Http\Controllers\Apoteker\Obat\PenjualanObatController;
 use App\Http\Controllers\Admin\TransaksiObatController;
 
 // Rest of your web routes remain the same...
-Route::get('/', function () {
-    return redirect()->route('login');
-});
+Route::get('/')->middleware(['role']);
 
 Route::get('/testing', [TestingController::class, 'testing'])->name('testing');
 Route::post('/testing-create-kunjungan', [TestingController::class, 'testingCreateKunjungan'])->name('testing.create.kunjungan');
