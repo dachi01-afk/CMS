@@ -20,7 +20,24 @@ $(function () {
                 searchable: false,
             },
             { data: "nama_pasien", name: "nama_pasien" },
-            { data: "tanggal_kunjungan", name: "tanggal_kunjungan" },
+            {
+                data: "tanggal_kunjungan",
+                name: "tanggal_kunjungan",
+                render: function (data) {
+                    if (!data) return "-";
+                    const date = new Date(data);
+                    const waktuIndonesia = date.toLocaleString("id-ID", {
+                        timeZone: "Asia/Jakarta",
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                    });
+
+                    return waktuIndonesia;
+                },
+            },
             { data: "no_antrian", name: "no_antrian" },
             { data: "nama_obat", name: "nama_obat" },
             { data: "dosis", name: "dosis" },

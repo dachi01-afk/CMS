@@ -713,6 +713,7 @@
                     uangKembalianInput.value = (kembalian >= 0) ? "Rp " + formatRupiah(kembalian) : "Rp 0";
                 }
             }
+            
             if (uangDiterimaInput) {
                 uangDiterimaInput.addEventListener("input", (e) => {
                     let angka = onlyDigits(e.target.value);

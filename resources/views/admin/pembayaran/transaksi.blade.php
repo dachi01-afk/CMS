@@ -165,7 +165,7 @@
                             <div class="relative mt-1">
                                 <span
                                     class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-300">Rp</span>
-                                <input type="number" name="uang_yang_diterima" id="uang_diterima"
+                                <input type="text" name="uang_yang_diterima" id="uang_diterima"
                                     placeholder="Masukkan nominal"
                                     class="w-full pl-10 rounded-lg border-gray-300 dark:bg-gray-700 dark:text-white" />
                             </div>
@@ -237,7 +237,7 @@
                             </label>
                             <div class="flex items-center justify-center w-full px-5 py-3">
                                 <label for="upload"
-                                    class="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600">
+                                    class="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500">
                                     <div class="flex flex-col items-center justify-center w-full h-full pt-5 pb-6"
                                         id="preview-bukti-pembayaran">
                                         <svg class="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400" aria-hidden="true"
@@ -282,142 +282,6 @@
     </div>
 
     <!-- JS Section -->
-    {{-- <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const totalInput = document.getElementById('total_tagihan');
-            const uangDiterimaInput = document.getElementById('uang_diterima');
-            const uangKembalianInput = document.getElementById('uang_kembalian');
-            const form = document.getElementById('formPembayaran');
-            const submitBtn = document.getElementById('btnSubmitPembayaran');
-
-            const selectMetode = document.getElementById("select_metode_pembayaran");
-            const inputHidden = document.getElementById("metode_pembayaran_id");
-
-            // Saat user mengganti pilihan
-            selectMetode.addEventListener("change", function() {
-                const selectedValue = this.value; // ambil value dari option terpilih
-                inputHidden.value = selectedValue; // masukkan ke input hidden
-                console.log("Metode Pembayaran dipilih:", selectedValue); // debug di console
-            });
-
-            // tambahkan class pl-3 ke uang_kembalian
-            uangKembalianInput.classList.add('pl-3');
-
-            // Fungsi bantu: hapus semua karakter non-digit
-            function onlyDigits(value) {
-                return value ? String(value).replace(/[^\d]/g, '') : '';
-            }
-
-            // Hitung otomatis uang kembalian
-            uangDiterimaInput.addEventListener('input', function() {
-                const total = parseFloat(onlyDigits(totalInput.value)) || 0;
-                const diterima = parseFloat(onlyDigits(this.value)) || 0;
-                const kembalian = diterima - total;
-
-                uangKembalianInput.value = (kembalian >= 0) ?
-                    'Rp ' + kembalian.toLocaleString('id-ID') :
-                    'Rp 0';
-            });
-
-            // Submit form pembayaran
-            form.addEventListener('submit', async function(e) {
-                e.preventDefault();
-
-                const totalClean = parseFloat(onlyDigits(totalInput.value)) || 0;
-                const uangDiterimaClean = parseFloat(onlyDigits(uangDiterimaInput.value)) || 0;
-                const kembalianClean = uangDiterimaClean - totalClean;
-                const namaMetode = inputHidden.value;
-
-                if (uangDiterimaClean === 0 || uangDiterimaClean < totalClean) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Uang Kurang',
-                        text: 'Nominal uang yang diterima belum cukup untuk membayar tagihan.'
-                    });
-                    return;
-                }
-
-                // buat salinan FormData dan isi ulang nilai bersih
-                const formData = new FormData(form);
-                formData.set('uang_yang_diterima', uangDiterimaClean);
-                formData.set('kembalian', kembalianClean);
-                formData.set('total_tagihan', totalClean);
-                formData.set('metode_pembayaran_id', namaMetode);
-
-                submitBtn.disabled = true;
-                submitBtn.classList.add('opacity-60', 'cursor-not-allowed');
-
-                try {
-                    const response = await fetch(form.action, {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
-                                .content,
-                            'Accept': 'application/json'
-                        },
-                        body: formData
-                    });
-
-                    if (response.redirected || response.status === 302) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Ter-redirect',
-                            text: 'Server meredirect permintaan. Kemungkinan Anda belum login atau session berakhir.'
-                        });
-                        return;
-                    }
-
-                    if (response.status === 401) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Tidak Terautentikasi',
-                            text: 'Silakan login ulang.'
-                        });
-                        return;
-                    }
-
-                    if (response.status === 419) {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Token CSRF Tidak Valid',
-                            text: 'Session kadaluwarsa, silakan muat ulang halaman dan coba lagi.'
-                        });
-                        return;
-                    }
-
-                    const data = await response.json();
-
-                    if (data.success) {
-                        await Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil!',
-                            text: data.message || 'Pembayaran berhasil diproses.',
-                            confirmButtonText: 'OK'
-                        });
-                        window.location.href = "{{ route('kasir.index') }}";
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Gagal',
-                            text: data.message || 'Terjadi kesalahan saat memproses pembayaran.'
-                        });
-                    }
-                } catch (err) {
-                    console.error('Fetch error:', err);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'Tidak dapat terhubung ke server. Periksa koneksi atau lihat log server.'
-                    });
-                } finally {
-                    submitBtn.disabled = false;
-                    submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
-                }
-            });
-        });
-    </script> --}}
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const totalInput = document.getElementById('total_tagihan');
@@ -537,6 +401,7 @@
                     uangKembalianInput.value = (kembalian >= 0) ? "Rp " + formatRupiah(kembalian) : "Rp 0";
                 }
             }
+
             if (uangDiterimaInput) {
                 uangDiterimaInput.addEventListener("input", (e) => {
                     let angka = onlyDigits(e.target.value);

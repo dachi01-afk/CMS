@@ -10,35 +10,42 @@
     <title>Testing Chart Js</title>
 </head>
 
-<body class=" overflow-auto">
-    <div class="max-w-7xl mx-auto grid items-center justify-center h-screen py-12 px-8 lg:px-0 ">
-        <div >
-            <h2 class="text-xl font-semibold text-center">Laporan Kunjungan</h2>
+<body class="bg-gray-50 text-gray-800 overflow-auto">
+    <div class="max-w-5xl mx-auto min-h-screen py-12 px-6 flex flex-col gap-16">
 
-            <div class="flex justify-end">
-                <select id="filterKunjungan" class="border rounded p-2">
+        <!-- Laporan Kunjungan -->
+        <section class="bg-white shadow-md rounded-2xl p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-semibold text-gray-700">📊 Laporan Kunjungan</h2>
+                <select id="filterKunjungan"
+                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-blue-200">
                     <option value="mingguan">Per Minggu</option>
                     <option value="bulanan">Per Bulan</option>
                     <option value="tahunan">Per Tahun</option>
                 </select>
             </div>
-            <canvas id="myChartJs" class=""></canvas>
-        </div>
+            <div class="h-80">
+                <canvas id="myChartJs"></canvas>
+            </div>
+        </section>
 
-        <div class="mt-10">
-            <h2 class="text-xl font-semibold text-center">Laporan Keuangan</h2>
-
-            <div class="flex justify-end">
-                <select id="filterKeuangan" class="border rounded p-2">
+        <!-- Laporan Keuangan -->
+        <section class="bg-white shadow-md rounded-2xl p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-semibold text-gray-700">💰 Laporan Keuangan</h2>
+                <select id="filterKeuangan"
+                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring focus:ring-blue-200">
                     <option value="mingguan">Per Minggu</option>
                     <option value="bulanan">Per Bulan</option>
                     <option value="tahunan">Per Tahun</option>
                 </select>
             </div>
-            <canvas id="chartKeuangan" class="pb-10"></canvas>
-        </div>
+            <div class="h-80">
+                <canvas id="chartKeuangan"></canvas>
+            </div>
+        </section>
+
     </div>
-
 </body>
 
 </html>

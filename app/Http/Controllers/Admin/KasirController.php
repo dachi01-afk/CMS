@@ -161,8 +161,6 @@ class KasirController extends Controller
             'metode_pembayaran_id' => ['required'],
         ]);
 
-        return $request;
-
         $dataPembayaran = Pembayaran::findOrFail($request->id);
 
         $dataPembayaran->update([
@@ -176,7 +174,7 @@ class KasirController extends Controller
         return response()->json([
             'success' => true,
             'data' => $dataPembayaran,
-            'message' => 'Uang Kembalian ' . $request->kembalian,
+            'message' => 'Uang Kembalian Rp.' . $request->kembalian,
         ]);
     }
 
