@@ -49,6 +49,11 @@ export default defineConfig({
                 "resources/js/admin/pembayaran/transaksi-menunggu.js",
                 "resources/js/admin/pembayaran/riwayat-transaksi.js",
                 "resources/js/admin/pembayaran/metode-pembayaran.js",
+
+                // transaksi obat
+                "resources/js/admin/pembayaran/transaksi-obat.js",
+                "resources/js/apoteker/obat/data-obat.js",
+                'resources/js/apoteker/obat/penjualan-obat.js'
             ],
             refresh: true,
         }),

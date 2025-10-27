@@ -69,16 +69,16 @@ Route::middleware(['auth:sanctum', 'role:Pasien'])->group(function () {
     Route::get('/pasien/riwayat-diagnosis/{pasien_id}', [APIMobileController::class, 'getRiwayatDiagnosisPasien'])->name('pasien.riwayat_diagnosis');
 
     // Pembayaran
+    // Dalam grup middleware(['auth:sanctum', 'role:Pasien'])
     Route::prefix('pembayaran')->name('pembayaran.')->group(function () {
+        Route::get('/list/{pasien_id}', [APIMobileController::class, 'getListPembayaran'])->name('list');
+
+        // Route yang sudah ada
         Route::get('/pasien/{pasien_id}', [APIMobileController::class, 'getPembayaranPasien'])->name('pasien');
-        Route::get('/detail/{kunjungan_id}', [APIMobileController::class, 'getDetailPembayaran'])->name('detail');
+        Route::get('/detail/{kunjungan_id}', [APIMobileController::class, 'getPembayaranDetail'])->name('detail');
         Route::put('/update-status-obat/{id}', [APIMobileController::class, 'updateStatusObat'])->name('update_status_obat');
-
         Route::post('/proses', [APIMobileController::class, 'prosesPembayaran'])->name('proses');
-        Route::post('/midtrans/create', [APIMobileController::class, 'createMidtransTransaction'])->name('midtrans.create');
         Route::get('/status/{order_id}', [APIMobileController::class, 'checkPaymentStatus'])->name('status');
-        Route::post('/force-update', [APIMobileController::class, 'forceUpdatePaymentStatus'])->name('force_update');
-
         Route::get('/get-data-metode-pembayaran', [APIMobileController::class, 'getDataMetodePembayaran']);
     });
 
