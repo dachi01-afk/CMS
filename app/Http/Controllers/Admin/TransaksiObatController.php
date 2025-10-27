@@ -238,7 +238,7 @@ class TransaksiObatController extends Controller
         return response()->json([
             'success' => true,
             'data' => $dataPembayaran,
-            'message' => 'Bukti transfer diterima. Nominal terbayar: Rp' . number_format($amount, 0, ',', '.') . '. Menunggu verifikasi admin.'
+            'message' => 'Bukti transfer diterima. Nominal terbayar: Rp' . number_format($amount, 0, ',', '.') . '. Terimakasih 😊😊😊'
         ]);
     }
 }

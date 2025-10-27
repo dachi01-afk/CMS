@@ -125,7 +125,7 @@
                 </div>
 
                 <!-- Body -->
-                <form id="formPembayaranCash" action="{{ route('kasir.pembayaran.cash') }}" method="POST">
+                <form id="formPembayaranCash" action="{{ route('kasir.transaksi.obat.cash') }}" method="POST">
                     @csrf
                     <div class="p-4 space-y-4">
                         <input type="hidden" name="id" value="{{ $id }}">
@@ -196,7 +196,7 @@
                 </div>
 
                 <!-- Body -->
-                <form id="formPembayaranTransfer" action="{{ route('kasir.transaksi.transfer') }}" method="POST"
+                <form id="formPembayaranTransfer" action="{{ route('kasir.transaksi.obat.transfer') }}" method="POST"
                     enctype="multipart/form-data">
                     @csrf
                     <div class="p-4 space-y-4">

@@ -8,6 +8,8 @@ use App\Models\MetodePembayaran;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Laravel\Facades\Image;
 use Yajra\DataTables\DataTables;
 
 class KasirController extends Controller
@@ -151,7 +153,7 @@ class KasirController extends Controller
         return view('admin.pembayaran.transaksi', compact('dataPembayaran', 'dataMetodePembayaran'));
     }
 
-    public function melakukanPembayaranCash(Request $request)
+    public function transaksiCash(Request $request)
     {
         $request->validate([
             'uang_yang_diterima' => ['required'],
@@ -173,6 +175,87 @@ class KasirController extends Controller
             'success' => true,
             'data' => $dataPembayaran,
             'message' => 'Uang Kembalian ' . $request->kembalian,
+        ]);
+    }
+
+    public function transaksiTransfer(Request $request)
+    {
+        // validasi minimal: pastikan id dan file bukti ada
+        $request->validate([
+            'id' => ['required', 'exists:pembayaran,id'],
+            'bukti_pembayaran' => ['required', 'file', 'mimes:jpeg,jpg,png,gif,webp,svg,jfif', 'max:5120'],
+            'metode_pembayaran' => ['required', 'exists:metode_pembayaran,id'],
+        ]);
+
+        // cari record transaksi
+        $dataPembayaran = Pembayaran::findOrFail($request->id);
+
+        // ambil nilai subtotal dari DB (fallback kalau nama kolom beda)
+        $amount = null;
+        if (isset($dataPembayaran->sub_total)) {
+            $amount = $dataPembayaran->sub_total;
+        } elseif (isset($dataPembayaran->total_tagihan)) {
+            $amount = $dataPembayaran->total_tagihan;
+        } elseif (isset($dataPembayaran->total)) {
+            $amount = $dataPembayaran->total;
+        } else {
+            // jika tidak ada field subtotal di model, batalkan dengan error
+            return response()->json([
+                'success' => false,
+                'message' => 'Kolom subtotal/total tidak ditemukan di record transaksi. Periksa nama kolom di database.'
+            ], 422);
+        }
+
+        // pastikan amount bernilai numeric
+        $amount = floatval($amount);
+        if ($amount <= 0) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Nilai tagihan tidak valid (<= 0).'
+            ], 422);
+        }
+
+        // 2️⃣ Upload + Kompres Gambar
+        $fotoPath = null;
+        if ($request->hasFile('bukti_pembayaran')) {
+            $file = $request->file('bukti_pembayaran');
+            $extension = strtolower($file->getClientOriginalExtension());
+
+            if ($extension === 'jfif') {
+                $extension = 'jpg';
+            }
+
+            $fileName = time() . '_' . uniqid() . '.' . $extension;
+            $path = 'bukti-transaksi/' . $fileName;
+
+            if ($extension === 'svg') {
+                Storage::disk('public')->put($path, file_get_contents($file));
+            } else {
+                // gunakan Intervention Image untuk resize/kompres
+                $image = Image::read($file);
+                $image->scale(width: 800);
+                Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+            }
+
+            $fotoPath = $path;
+        }
+
+        // 3️⃣ Update Data Transaksi:
+        // - isi uang_yang_diterima = subtotal dari DB
+        // - isi kembalian = 0 (karena uang pas sama tagihan)
+        $dataPembayaran->update([
+            'bukti_pembayaran'     => $fotoPath,
+            'uang_yang_diterima'   => $amount,
+            'kembalian'            => 0,
+            'tanggal_pembayaran'   => now(),
+            'status'               => 'Sudah Bayar', // atau "Sudah Bayar" jika otomatis terima
+            'metode_pembayaran_id' => $request->metode_pembayaran,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => $dataPembayaran,
+            'message' => 'Bukti transfer diterima. Nominal terbayar: Rp' . number_format($amount, 0, ',', '.') . '. Terimakasih 😊😊😊'
         ]);
     }
 
