@@ -13,4 +13,11 @@ class MetodePembayaran extends Model
     {
         return $this->hasMany(Pembayaran::class);
     }
+
+    public function transaksiObat()
+    {
+        return $this->hasMany(PenjualanObat::class);
+    }
+
+    
 }

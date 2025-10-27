@@ -32,6 +32,7 @@ use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use App\Http\Controllers\Dokter\DokterController as DokterDokterController;
 use App\Http\Controllers\QrCodeController;
 use App\Http\Controllers\Apoteker\Obat\PenjualanObatController;
+use App\Http\Controllers\Admin\TransaksiObatController;
 
 // API Routes - Enhanced for better booking functionality
 // Route::prefix('api')->withoutMiddleware(['web'])->group(function () {
@@ -338,6 +339,10 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::post('/update-metode-pembayaran', [MetodePembayaranController::class, 'updateData'])->name('update.data.metode.pembayaran');
         Route::post('/delete-metode-pembayaran/{id}', [MetodePembayaranController::class, 'deleteData'])->name('delete.data.metode.pembayaran');
         Route::get('/get-data-metode-pembayaran/{id}', [MetodePembayaranController::class, 'getDataMetodePembayaran'])->name('get.data.metode.pembayaran.by.id');
+
+        Route::get('/get-data-transaksi-obat', [TransaksiObatController::class, 'getDataTransaksiObat'])->name('get.data.transaksi.obat');
+        Route::get('/transaksi-obat/{kodeTransaksi}', [TransaksiObatController::class, 'transaksiObat'])->name('transaksi.obat');
+        Route::post('pembayaran-transfer', [TransaksiObatController::class, 'transaksiTransfer'])->name('transaksi.transfer');
     });
 });
 

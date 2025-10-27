@@ -28,7 +28,17 @@ class Pasien extends Model
     public function obat()
     {
         return $this->belongsToMany(Obat::class, 'penjualan_obat', 'pasien_id', 'obat_id')
-            ->withPivot('kode_transaksi', 'jumlah', 'sub_total', 'tanggal_transaksi')
+            ->withPivot(
+                'kode_transaksi',
+                'jumlah',
+                'uang_yang_diterima',
+                'kembalian',
+                'sub_total',
+                'tanggal_transaksi',
+                'bukti_pembayaran',
+                'status',
+                'metode_pembayaran_id',
+            )
             ->withTimestamps();
     }
 }

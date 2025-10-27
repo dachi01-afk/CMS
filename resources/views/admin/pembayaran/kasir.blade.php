@@ -47,6 +47,13 @@
                         Metode Pembayaran
                     </button>
                 </li>
+                <li class="me-2" role="presentation">
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="transaksi-obat-tab"
+                        data-tabs-target="#data-transaksi-obat" type="button" role="tab"
+                        aria-controls="data-transaksi-obat" aria-selected="false">
+                        Transaksi Obat
+                    </button>
+                </li>
             </ul>
         </div>
 
@@ -66,6 +73,10 @@
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-metode-pembayaran"
                     role="tabpanel" aria-labelledby="metode-pembayaran-tab">
                     @include('admin.pembayaran.metode-pembayaran')
+                </div>
+                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-transaksi-obat"
+                    role="tabpanel" aria-labelledby="transaksi-obat-tab">
+                    @include('admin.pembayaran.transaksi-obat')
                 </div>
             </div>
         </div>

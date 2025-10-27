@@ -7,6 +7,7 @@ use App\Models\Dokter;
 use App\Models\EMR;
 use App\Models\JadwalDokter;
 use App\Models\Kunjungan;
+use App\Models\MetodePembayaran;
 use App\Models\Pasien;
 use App\Models\Pembayaran;
 use App\Models\Resep;
@@ -20,16 +21,8 @@ class TestingController extends Controller
 {
     public function testing()
     {
-        // $dataResepObat = Resep::with('obat', 'kunjungan.pasien', 'kunjungan.dokter')->paginate(10);
-
-        // dd($dataResepObat);
-
-        $dataEMR = EMR::with('kunjungan.pasien', 'kunjungan.dokter', 'kunjungan', 'resep.obat')->paginate(10);
-
-
-        // dd($dataEMR);
-
-        return view('testing.index', compact('dataEMR'));
+        $dataMetodePembayaran = MetodePembayaran::all();
+        return view('testing.index', compact('dataMetodePembayaran'));
     }
 
     public function ubahStatusKunjungan(Request $request)
@@ -249,9 +242,10 @@ class TestingController extends Controller
         }
     }
 
-    public function sebelumCheckout() {
+    public function sebelumCheckout()
+    {
         $dataPembayaran = Pembayaran::with('emr.kunjungan.pasien', 'emr.resep.obat')->get();
-        return view('sebelum-checkout' ,compact('dataPembayaran'));
+        return view('sebelum-checkout', compact('dataPembayaran'));
     }
 
     public function checkout(Request $request)
@@ -295,7 +289,8 @@ class TestingController extends Controller
         return response()->json(['status' => 'ok']);
     }
 
-    public function contohDetailEMR() {
+    public function contohDetailEMR()
+    {
         return view('contoh-detail-emr');
     }
 }
