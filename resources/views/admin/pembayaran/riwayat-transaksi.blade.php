@@ -1,6 +1,6 @@
 <!-- Header -->
 <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-    <h2 class="text-2xl font-bold text-gray-700">Transaksi Menunggu</h2>
+    <h2 class="text-2xl font-bold text-gray-700">Riwayat Transaksi</h2>
 </div>
 
 <!-- Tabel Laboratorium -->
