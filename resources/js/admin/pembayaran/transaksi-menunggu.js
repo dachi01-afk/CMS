@@ -20,7 +20,23 @@ $(function () {
                 searchable: false,
             },
             { data: "nama_pasien", name: "nama_pasien" },
-            { data: "tanggal_kunjungan", name: "tanggal_kunjungan" },
+            {
+                data: "tanggal_kunjungan",
+                name: "tanggal_kunjungan",
+                render: function (data) {
+                    if (!data) return "-";
+                    const date = new Date(data);
+                    const waktuIndonesia = date.toLocaleDateString("id-ID", {
+                        timeZone: "Asia/Jakarta",
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                    });
+                    return waktuIndonesia;
+                },
+            },
             { data: "no_antrian", name: "no_antrian" },
             { data: "nama_obat", name: "nama_obat" },
             { data: "dosis", name: "dosis" },
@@ -61,19 +77,32 @@ $(function () {
         const currentPage = info.page + 1;
         const totalPages = info.pages;
 
+        // Update text info
         $info.text(
             `Menampilkan ${info.start + 1}–${info.end} dari ${
                 info.recordsDisplay
             } data (Halaman ${currentPage} dari ${totalPages})`
         );
+
+        // Hapus pagination lama
         $pagination.empty();
 
+        // Kalau cuma 1 halaman, sembunyikan pagination dan selesai
+        if (totalPages <= 1) {
+            $pagination.hide();
+            return;
+        } else {
+            $pagination.show();
+        }
+
+        // Tombol Prev
         const prevDisabled =
             currentPage === 1 ? "opacity-50 cursor-not-allowed" : "";
         $pagination.append(
             `<li><a href="#" id="btnPrev" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 ${prevDisabled}">Previous</a></li>`
         );
 
+        // Tombol angka halaman
         const maxVisible = 5;
         let start = Math.max(currentPage - Math.floor(maxVisible / 2), 1);
         let end = Math.min(start + maxVisible - 1, totalPages);
@@ -90,6 +119,7 @@ $(function () {
             );
         }
 
+        // Tombol Next
         const nextDisabled =
             currentPage === totalPages ? "opacity-50 cursor-not-allowed" : "";
         $pagination.append(

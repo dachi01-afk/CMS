@@ -85,7 +85,7 @@ class Kunjungan extends Model
     public function layanan()
     {
         return $this->belongsToMany(Layanan::class, 'kunjungan_layanan', 'kunjungan_id', 'layanan_id')
-            ->withPivot('jumlah')
+            ->withPivot(['jumlah'])
             ->withTimestamps();
     }
 }

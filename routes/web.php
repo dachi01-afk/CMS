@@ -33,6 +33,7 @@ use App\Http\Controllers\Dokter\DokterController as DokterDokterController;
 use App\Http\Controllers\QrCodeController;
 use App\Http\Controllers\Apoteker\Obat\PenjualanObatController;
 use App\Http\Controllers\Admin\TransaksiObatController;
+use App\Http\Controllers\Management\EMRController;
 
 // Rest of your web routes remain the same...
 Route::get('/')->middleware('checkAuth');
@@ -55,7 +56,12 @@ Route::prefix('/testing-chart')->group(function () {
 });
 
 Route::prefix('/testing-qr-code')->group(function () {
-    Route::get('/', [QrCodeController::class, 'generate'])->name('testing.qr.code.index');
+    // Route::get('/', [QrCodeController::class, 'generate'])->name('testing.qr.code.index');
+    Route::get('/qr/generate/all', [QrCodeController::class, 'generateAll'])->name('qr.generate.all');
+    Route::get('/qr/generate/{id}', [QrCodeController::class, 'generate'])->name('qr.generate');
+    Route::get('/pasien/{id}/qr-view', [QrCodeController::class, 'showPasien'])->name('qr.show');
+
+    Route::get('/emr/generate-no-rm', [EMRController::class, 'generateAll'])->name('emr.generate');
 });
 
 Route::get('/contoh-kuitansi', function () {
@@ -199,6 +205,7 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::get('/laporan_keuangan', [LaporanController::class, 'dataPembayaran'])->name('laporan_keuangan');
         Route::get('/laporan_transaksi_apoteker', [LaporanController::class, 'dataTransaksiApoteker'])->name('laporan_transaksi_apoteker');
         Route::get('/laporan_administrasi', [LaporanController::class, 'dataAdministrasi'])->name('laporan_administrasi');
+        Route::get('/export-laporan-keuangan', [LaporanController::class, 'exportKeuangan'])->name('export.laporan.keuangan');
     });
 
     Route::prefix('data_medis_pasien')->name('data_medis_pasien.')->group(function () {

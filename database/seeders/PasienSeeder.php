@@ -15,7 +15,7 @@ class PasienSeeder extends Seeder
     public function run(): void
     {
         $rolePasien = User::where('role', 'Pasien')->get();
-        $faker = Faker::create();
+        $faker = Faker::create('id_ID');
         $jenisKelamin = ['Laki-laki', 'Perempuan'];
         $foto = 'foto_dokter.jpg';
 

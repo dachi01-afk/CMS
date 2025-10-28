@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Exports\KunjunganExport;
+use App\Exports\LaporanKeuanganExport;
 use App\Models\Kunjungan;
 use App\Models\Pembayaran;
 use App\Models\Administrasi;
@@ -91,5 +92,55 @@ class LaporanController extends Controller
     {
         $periode = $request->input('periode'); // ambil dari form
         return Excel::download(new KunjunganExport($periode), 'kunjungan.xlsx');
+    }
+
+    // public function exportKeuangan(Request $request)
+    // {
+    //     $filter = $request->get('filter', 'mingguan');
+    //     $bulan = $request->get('bulan');
+    //     $tahun = $request->get('tahun', now()->year);
+
+    //     return Excel::download(new LaporanKeuanganExport($filter, $bulan, $tahun), "laporan_keuangan_{$filter}_{$tahun}.xlsx");
+    // }
+
+    public function exportKeuangan(Request $request)
+    {
+        $filter = $request->get('filter', 'mingguan');
+        $bulan = $request->get('bulan');
+        $tahun = $request->get('tahun', now()->year);
+
+        // 🔹 Ambil data pembayaran beserta relasi pasien & metode pembayaran
+        $data = Pembayaran::with([
+            'emr.kunjungan.pasien',
+            'emr.kunjungan.layanan', // ini penting
+            'emr.resep.obat',
+            'metodePembayaran',
+        ])
+            ->when(
+                $filter === 'tahunan',
+                fn($q) =>
+                $q->whereYear('tanggal_pembayaran', $tahun)
+            )
+            ->when(
+                $filter === 'bulanan',
+                fn($q) =>
+                $q->whereMonth('tanggal_pembayaran', $bulan)
+                    ->whereYear('tanggal_pembayaran', $tahun)
+            )
+            ->when(
+                $filter === 'mingguan',
+                fn($q) =>
+                $q->whereBetween('tanggal_pembayaran', [
+                    now()->startOfWeek(),
+                    now()->endOfWeek(),
+                ])
+            )
+            ->orderBy('tanggal_pembayaran', 'asc')
+            ->get();
+
+        return Excel::download(
+            new LaporanKeuanganExport($data, $filter, $bulan, $tahun),
+            "laporan_keuangan_{$filter}_{$tahun}.xlsx"
+        );
     }
 }

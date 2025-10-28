@@ -2,20 +2,48 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Pasien;
 use Illuminate\Http\Request;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 
 class QrCodeController extends Controller
 {
-    public function generate()
+    public function generateAll()
     {
-        $url = 'https://www.youtube.com/watch?v=76ptEG7WxSA&list=RD76ptEG7WxSA&start_radio=1';
-        // Generate QR code for a specific URL or text
-        $qrCode = QrCode::size(200)->generate($url);
+        $pasienList = Pasien::all();
 
-        // You can also customize the QR code further
-        // $qrCode = QrCode::format('png')->size(200)->color(255,0,0)->generate('Your Text Here');
+        foreach ($pasienList as $pasien) {
+            $url = route('qr.show', $pasien->id); // URL tujuan ketika QR discan
+            $qrCodeSvg = QrCode::size(250)->generate($url);
 
-        return view('qr-code', compact('qrCode'));
+            // Simpan link QR ke database (bisa juga simpan file PNG)
+            $pasien->update([
+                'qr_code_pasien' => $url,
+            ]);
+        }
+
+        return view('qr-code-list', compact('pasienList'));
+    }
+
+    // Fungsi untuk membuat QR code per pasien
+    public function generate($id)
+    {
+        $pasien = Pasien::findOrFail($id);
+        $url = route('qr.show', $pasien->id);
+        $qrCode = QrCode::size(250)->generate($url);
+
+        $pasien->update([
+            'qr_code_pasien' => $url,
+        ]);
+
+        return view('qr-code', compact('qrCode', 'pasien'));
+    }
+
+    // Fungsi untuk menampilkan data pasien dari QR
+    public function showPasien($id)
+    {
+        $pasien = Pasien::findOrFail($id);
+
+        return view('qr-view', compact('pasien'));
     }
 }

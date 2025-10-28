@@ -13,4 +13,15 @@ class Layanan extends Model
     {
         return $this->belongsTo(Poli::class);
     }
+
+    public function kunjungan()
+    {
+        return $this->belongsToMany(
+            Kunjungan::class,
+            'kunjungan_layanan',
+            'layanan_id',
+            'kunjungan_id'
+        )->withPivot('jumlah')
+            ->withTimestamps();
+    }
 }
