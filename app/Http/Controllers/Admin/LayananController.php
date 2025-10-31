@@ -82,15 +82,13 @@ class LayananController extends Controller
         ]);
 
         $request->validate([
-            'poli_id' => ['required', 'exists:poli,id'],
             'nama_layanan' => ['required'],
             'harga_layanan' => ['required'],
         ]);
 
-        $dataLayanan = Layanan::with('poli')->findOrFail($request->id);
+        $dataLayanan = Layanan::findOrFail($request->id);
 
         $dataLayanan->update([
-            'poli_id' => $request->poli_id,
             'nama_layanan' => $request->nama_layanan,
             'harga_layanan' => $request->harga_layanan,
         ]);
