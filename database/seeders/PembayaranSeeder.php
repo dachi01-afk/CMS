@@ -18,7 +18,6 @@ class PembayaranSeeder extends Seeder
         // Ambil semua data EMR beserta relasi pentingnya
         $dataEMRList = EMR::with([
             'kunjungan.pasien',
-            'kunjungan.poli.layanan',
             'resep.obat',
         ])->get();
 
@@ -39,9 +38,8 @@ class PembayaranSeeder extends Seeder
 
         // Loop setiap EMR dan buat data pembayaran
         foreach ($dataEMRList as $emr) {
-            $kunjungan = $emr->kunjungan;
-            $pasien = $kunjungan?->pasien?->nama_pasien ?? 'Pasien Tidak Dikenal';
             $layananList = $kunjungan?->layanan ?? collect();
+            $pasien = $kunjungan?->pasien?->nama_pasien ?? 'Pasien Tidak Dikenal';
             $obatList = $emr->resep?->obat ?? collect();
 
             // Hitung total layanan
@@ -50,6 +48,7 @@ class PembayaranSeeder extends Seeder
                 $jumlah = $layanan->pivot->jumlah ?? 1;
                 return $harga * $jumlah;
             });
+
 
             // Hitung total obat
             $totalObat = $obatList->sum(function ($obat) {
