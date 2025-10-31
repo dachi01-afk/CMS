@@ -290,39 +290,30 @@ $(function () {
                 });
             })
             .catch((error) => {
-                console.error("AXIOS ERROR:", error);
-
+                console.error("AXIOS ERROR OBJECT:", error);
                 if (error.response) {
-                    const status = error.response.status;
-
-                    if (status === 422) {
-                        const errors = error.response.data.errors;
-                        for (const field in errors) {
-                            $(`#edit_${field}`).addClass("is-invalid");
-                            $(`#edit_${field}-error`).html(errors[field][0]);
-                        }
-                    } else if (status === 413) {
-                        Swal.fire({
-                            icon: "error",
-                            title: "Ukuran File Terlalu Besar!",
-                            text: "Maksimal ukuran file yang diperbolehkan adalah 5 MB.",
-                        });
-                    } else {
-                        Swal.fire({
-                            icon: "error",
-                            title: "Error!",
-                            text:
-                                error.response.data.message ||
-                                "Terjadi kesalahan server.",
-                        });
-                    }
+                    console.error("Response status:", error.response.status);
+                    console.error("Response data:", error.response.data);
+                    console.error("Response headers:", error.response.headers);
+                } else if (error.request) {
+                    console.error(
+                        "No response received, request:",
+                        error.request
+                    );
                 } else {
-                    Swal.fire({
-                        icon: "error",
-                        title: "Error!",
-                        text: "Tidak ada respon dari server.",
-                    });
+                    console.error("Error message:", error.message);
                 }
+
+                Swal.fire({
+                    icon: "error",
+                    title: "Error!",
+                    text:
+                        error.response &&
+                        error.response.data &&
+                        error.response.data.message
+                            ? error.response.data.message
+                            : "Terjadi kesalahan server. Silakan coba lagi.",
+                });
             });
     });
 
@@ -369,38 +360,11 @@ $(function () {
                         });
                     })
                     .catch((error) => {
-                        console.error("AXIOS ERROR OBJECT:", error);
-                        if (error.response) {
-                            console.error(
-                                "Response status:",
-                                error.response.status
-                            );
-                            console.error(
-                                "Response data:",
-                                error.response.data
-                            );
-                            console.error(
-                                "Response headers:",
-                                error.response.headers
-                            );
-                        } else if (error.request) {
-                            console.error(
-                                "No response received, request:",
-                                error.request
-                            );
-                        } else {
-                            console.error("Error message:", error.message);
-                        }
-
+                        console.error("SERVER ERROR:", error);
                         Swal.fire({
                             icon: "error",
                             title: "Error!",
-                            text:
-                                error.response &&
-                                error.response.data &&
-                                error.response.data.message
-                                    ? error.response.data.message
-                                    : "Terjadi kesalahan server. Silakan coba lagi.",
+                            text: "Terjadi kesalahan server. Silakan coba lagi.",
                         });
                     });
             }
