@@ -21,57 +21,78 @@ class ApotekerController extends Controller
 
     public function createApoteker(Request $request)
     {
-        $request->validate([
-            'foto_apoteker'     => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
-            'username_apoteker' => 'required|string|max:255|unique:user,username',
-            'nama_apoteker'     => 'required|string|max:255',
-            'email_apoteker'    => 'required|email|unique:user,email',
-            'no_hp_apoteker'    => 'nullable|string|max:20',
-            'password_apoteker' => 'required|string|min:8|confirmed',
-        ]);
+        try {
+            // 🧩 Validasi input
+            $request->validate([
+                'foto_apoteker'     => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
+                'username_apoteker' => 'required|string|max:255|unique:user,username',
+                'nama_apoteker'     => 'required|string|max:255',
+                'email_apoteker'    => 'required|email|unique:user,email',
+                'no_hp_apoteker'    => 'nullable|string|max:20',
+                'password_apoteker' => 'required|string|min:8|confirmed',
+            ]);
 
-        $user = User::create([
-            'username' => $request->username_apoteker,
-            'email'    => $request->email_apoteker,
-            'password' => Hash::make($request->password_apoteker),
-            'role'     => 'Apoteker',
-        ]);
+            // 🧑‍💻 Buat user baru
+            $user = User::create([
+                'username' => $request->username_apoteker,
+                'email'    => $request->email_apoteker,
+                'password' => Hash::make($request->password_apoteker),
+                'role'     => 'Apoteker',
+            ]);
 
-        // 2️⃣ Upload + Kompres Foto
-        $fotoPath = null;
-        if ($request->hasFile('foto_apoteker')) {
-            $file = $request->file('foto_apoteker');
+            // 📸 Upload + Kompres Foto
+            $fotoPath = null;
+            if ($request->hasFile('foto_apoteker')) {
+                $file = $request->file('foto_apoteker');
 
-            // ubah jfif ke jpg agar bisa di-encode
-            $extension = strtolower($file->getClientOriginalExtension());
-            if ($extension === 'jfif') {
-                $extension = 'jpg';
+                $extension = strtolower($file->getClientOriginalExtension());
+                if ($extension === 'jfif') {
+                    $extension = 'jpg';
+                }
+
+                $fileName = 'apoteker_' . time() . '.' . $extension;
+                $path = 'apoteker/' . $fileName;
+
+                if ($extension === 'svg') {
+                    Storage::disk('public')->put($path, file_get_contents($file));
+                } else {
+                    $image = Image::read($file);
+                    $image->scale(width: 800);
+                    Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+                }
+
+                $fotoPath = $path;
             }
 
-            $fileName = 'apoteker_' . time() . '.' . $extension;
-            $path = 'apoteker/' . $fileName;
+            // 🏥 Buat data apoteker
+            Apoteker::create([
+                'user_id'        => $user->id,
+                'foto_apoteker'  => $fotoPath,
+                'nama_apoteker'  => $request->nama_apoteker,
+                'no_hp_apoteker' => $request->no_hp_apoteker,
+            ]);
 
-            if ($extension === 'svg') {
-                Storage::disk('public')->put($path, file_get_contents($file));
-            } else {
-                // ✅ Gambar raster → resize & kompres
-                $image = Image::read($file);
-                $image->scale(width: 800);
-                Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
-            }
-
-            $fotoPath = $path;
+            return response()->json(['message' => 'Data apoteker berhasil ditambahkan.']);
+        } catch (\Illuminate\Http\Exceptions\PostTooLargeException $e) {
+            // 🚫 File terlalu besar
+            return response()->json([
+                'message' => 'Ukuran file terlalu besar! Maksimal 5 MB.'
+            ], 413);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // ⚠️ Validasi gagal
+            return response()->json([
+                'message' => 'Validasi gagal.',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            // 💥 Error umum
+            return response()->json([
+                'message' => 'Tidak ada respon dari server.', // 🔥 ini pesan yang kamu mau
+                'error_detail' => $e->getMessage(), // opsional, untuk debugging (bisa kamu hapus kalau gak mau tampil)
+            ], 500);
         }
-
-        Apoteker::create([
-            'user_id'        => $user->id,
-            'foto_apoteker'  => $fotoPath,
-            'nama_apoteker'  => $request->nama_apoteker,
-            'no_hp_apoteker' => $request->no_hp_apoteker,
-        ]);
-
-        return response()->json(['success' => 'Data apoteker berhasil ditambahkan.']);
     }
+
 
     public function getApotekerById($id)
     {
