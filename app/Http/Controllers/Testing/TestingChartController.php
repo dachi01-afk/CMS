@@ -150,9 +150,6 @@ class TestingChartController extends Controller
         ]);
     }
 
-
-
-
     public function chartKunjungan(Request $request)
     {
         $filter = $request->get('filter', 'mingguan');

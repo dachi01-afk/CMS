@@ -27,12 +27,14 @@ class LayananSeeder extends Seeder
 
         $faker = Faker::create('id_ID');
 
-        foreach ($listLayanan as $layanan) {
-            Layanan::create([
-                'poli_id' => $dataPoli->id,
-                'nama_layanan' => $layanan['nama_layanan'],
-                'harga_layanan' => $layanan['harga_layanan'],
-            ]);
+        for ($i = 0; $i < $dataPoli->count(); $i++) {
+            foreach ($listLayanan as $layanan) {
+                Layanan::create([
+                    'poli_id' => $dataPoli->id,
+                    'nama_layanan' => $layanan['nama_layanan'],
+                    'harga_layanan' => $layanan['harga_layanan'],
+                ]);
+            }
         }
     }
 }

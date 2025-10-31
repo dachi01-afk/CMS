@@ -35,6 +35,7 @@ $(function () {
             { data: "alamat", name: "alamat" },
             { data: "tanggal_lahir", name: "tanggal_lahir" },
             { data: "jenis_kelamin", name: "jenis_kelamin" },
+            { data: "no_emr", name: "no_emr" },
             {
                 data: "action",
                 name: "action",

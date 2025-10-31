@@ -36,10 +36,10 @@
                 </li>
 
                 <li class="me-2" role="presentation">
-                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="jual-obat-tab"
-                        data-tabs-target="#data-jual-obat" type="button" role="tab" aria-controls="data-jual-obat"
-                        aria-selected="false">
-                        Jual Obat
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="order-obat-tab"
+                        data-tabs-target="#data-order-obat" type="button" role="tab"
+                        aria-controls="data-order-obat" aria-selected="false">
+                        Order Obat
                     </button>
                 </li>
             </ul>
@@ -55,9 +55,9 @@
                     @include('apoteker.obat.data-obat')
                 </div>
 
-                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-jual-obat" role="tabpanel"
+                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-order-obat" role="tabpanel"
                     aria-labelledby="daftar-obat-tab">
-                    @include('apoteker.obat.jual-obat')
+                    @include('apoteker.obat.order-obat')
                 </div>
             </div>
 

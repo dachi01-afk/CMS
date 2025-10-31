@@ -1,6 +1,6 @@
 <!-- Header -->
 <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-    <h2 class="text-2xl font-bold text-gray-700">Jual Obat</h2>
+    <h2 class="text-2xl font-bold text-gray-700">Order Obat</h2>
 
     <!-- Modal toggle -->
     <button id="btn-open-modal-penjualan-obat"
@@ -298,4 +298,4 @@
 
 
 
-@vite(['resources/js/apoteker/obat/penjualan-obat.js'])
+@vite(['resources/js/apoteker/obat/order-obat.js'])

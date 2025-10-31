@@ -11,9 +11,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('emr', function (Blueprint $table) {
-            if (!Schema::hasColumn('emr', 'no_rm')) {
-                $table->string('no_rm')->nullable()->after('resep_id');
+        Schema::table('pasien', function (Blueprint $table) {
+            if (!Schema::hasColumn('pasien', 'no_emr')) {
+                $table->string('no_emr')->nullable()->after('user_id');
             }
         });
     }
@@ -23,7 +23,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('emr', function (Blueprint $table) {
+        Schema::table('pasien', function (Blueprint $table) {
             //
         });
     }

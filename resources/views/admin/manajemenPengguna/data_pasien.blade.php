@@ -41,6 +41,7 @@
                     <th class="px-6 py-3">Alamat</th>
                     <th class="px-6 py-3">Tanggal Lahir</th>
                     <th class="px-6 py-3">Jenis Kelamin</th>
+                    <th class="px-6 py-3">Nomor EMR</th>
                     <th class="px-6 py-3 text-center">Aksi</th>
                 </tr>
             </thead>
