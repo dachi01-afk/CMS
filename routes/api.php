@@ -29,7 +29,7 @@ Route::middleware('throttle:6,1')->group(function () {
 
     // optional deprecated endpoint, tetap disediakan jika masih dipakai app lama
     Route::post('/forgot-username', [APIMobileController::class, 'sendForgotUsername'])->name('forgot_username.deprecated');
-}); // <-- penting: tutup group-nya
+});
 
 /* Midtrans callback (public, dipanggil server Midtrans) */
 Route::post('/pembayaran/midtrans/callback', [APIMobileController::class, 'midtransCallback'])->name('midtrans.callback');
@@ -44,10 +44,39 @@ Route::get('/getAllDokter', [APIMobileController::class, 'getAllDokter'])->name(
 | PROTECTED ROUTES (Sanctum Auth)
 |--------------------------------------------------------------------------
 */
-Route::middleware(['auth:sanctum', 'role:Pasien'])->group(function () {
+Route::middleware(['auth:sanctum'])->group(function () {
+    
     // Auth
     Route::post('/logout', [APIMobileController::class, 'logout'])->name('api.logout');
 
+    /*
+    |--------------------------------------------------------------------------
+    | PENJUALAN OBAT ROUTES (Pindahkan ke dalam auth:sanctum)
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('penjualan-obat')->name('penjualan_obat.')->group(function () {
+        Route::get('/obat/list', [APIMobileController::class, 'getDaftarObat'])->name('obat.list');
+        Route::get('/obat/all', [APIMobileController::class, 'getAllObat'])->name('obat.all');
+        Route::post('/store', [APIMobileController::class, 'storePenjualanObat'])->name('store');
+        Route::get('/riwayat/{pasienId}', [APIMobileController::class, 'getRiwayatPembelian'])->name('riwayat');
+        Route::get('/detail/{kodeTransaksi}', [APIMobileController::class, 'getDetailTransaksi'])->name('detail');
+        Route::get('/sales-summary', [APIMobileController::class, 'getSalesSummary'])->name('sales_summary');
+        Route::put('/update-stok/{obatId}', [APIMobileController::class, 'updateStokObat'])->name('update_stok');
+    });
+
+    // Notifications (polling)
+    Route::middleware('throttle:60,1')->group(function () {
+        Route::get('/notifications/recent', [APIMobileController::class, 'getRecentNotifications']);
+        Route::put('/notifications/{id}/read', [APIMobileController::class, 'markNotificationAsRead']);
+    });
+});
+
+/*
+|--------------------------------------------------------------------------
+| PASIEN-ONLY ROUTES
+|--------------------------------------------------------------------------
+*/
+Route::middleware(['auth:sanctum', 'role:Pasien'])->group(function () {
     // Profil Pasien
     Route::get('/pasien/profile', [APIMobileController::class, 'getProfile'])->name('pasien.profile');
     Route::post('/pasien/update', [APIMobileController::class, 'updateProfile'])->name('pasien.update');
@@ -69,23 +98,14 @@ Route::middleware(['auth:sanctum', 'role:Pasien'])->group(function () {
     Route::get('/pasien/riwayat-diagnosis/{pasien_id}', [APIMobileController::class, 'getRiwayatDiagnosisPasien'])->name('pasien.riwayat_diagnosis');
 
     // Pembayaran
-    // Dalam grup middleware(['auth:sanctum', 'role:Pasien'])
     Route::prefix('pembayaran')->name('pembayaran.')->group(function () {
         Route::get('/list/{pasien_id}', [APIMobileController::class, 'getListPembayaran'])->name('list');
-
-        // Route yang sudah ada
         Route::get('/pasien/{pasien_id}', [APIMobileController::class, 'getPembayaranPasien'])->name('pasien');
         Route::get('/detail/{kunjungan_id}', [APIMobileController::class, 'getPembayaranDetail'])->name('detail');
         Route::put('/update-status-obat/{id}', [APIMobileController::class, 'updateStatusObat'])->name('update_status_obat');
         Route::post('/proses', [APIMobileController::class, 'prosesPembayaran'])->name('proses');
         Route::get('/status/{order_id}', [APIMobileController::class, 'checkPaymentStatus'])->name('status');
         Route::get('/get-data-metode-pembayaran', [APIMobileController::class, 'getDataMetodePembayaran']);
-    });
-
-    // Notifications (polling)
-    Route::middleware('throttle:60,1')->group(function () {
-        Route::get('/notifications/recent', [APIMobileController::class, 'getRecentNotifications']);
-        Route::put('/notifications/{id}/read', [APIMobileController::class, 'markNotificationAsRead']);
     });
 });
 
@@ -102,8 +122,15 @@ Route::middleware(['auth:sanctum', 'role:Dokter'])
         Route::post('/update-profile', [APIMobileController::class, 'updateDataDokter'])->name('update_profile');
         Route::get('/get-data-kunjungan-by-id-dokter', [APIMobileController::class, 'getDataKunjunganBerdasarkanIdDokter'])->name('kunjungan_by_dokter');
         Route::get('/get-data-obat', [APIMobileController::class, 'getDataObat'])->name('obat');
-        Route::get('/get-layanan/{poli_id}', [APIMobileController::class, 'getLayananByPoli'])->name('layanan_by_poli');
+        
+        Route::get('/get-layanan', [APIMobileController::class, 'getLayanan'])->name('layanan');
+        
         Route::post('/save-emr', [APIMobileController::class, 'saveEMR'])->name('save_emr');
         Route::get('/riwayat-pasien-diperiksa', [APIMobileController::class, 'getRiwayatPasienDiperiksa'])->name('riwayat_pasien_diperiksa');
         Route::get('/detail-riwayat-pasien/{kunjunganId}', [APIMobileController::class, 'getDetailRiwayatPasien'])->name('detail_riwayat_pasien');
+        
+        // TAMBAHKAN routes yang hilang untuk pemeriksaan
+        Route::get('/get-data-kunjungan/{kunjungan_id}', [APIMobileController::class, 'getDataKunjunganById'])->name('get_data_kunjungan_by_id');
+        Route::get('/riwayat-diagnosis/{pasien_id}', [APIMobileController::class, 'getRiwayatDiagnosisDokter'])->name('riwayat_diagnosis_dokter');
+        Route::get('/detail-kunjungan/{kunjungan_id}', [APIMobileController::class, 'getDataKunjungan'])->name('get_data_kunjungan');
     });
