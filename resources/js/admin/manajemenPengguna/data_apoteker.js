@@ -290,17 +290,37 @@ $(function () {
                 });
             })
             .catch((error) => {
-                if (error.response && error.response.status === 422) {
-                    const errors = error.response.data.errors;
-                    for (const field in errors) {
-                        $(`#edit_${field}`).addClass("is-invalid");
-                        $(`#edit_${field}-error`).html(errors[field][0]);
+                console.error("AXIOS ERROR:", error);
+
+                if (error.response) {
+                    const status = error.response.status;
+
+                    if (status === 422) {
+                        const errors = error.response.data.errors;
+                        for (const field in errors) {
+                            $(`#edit_${field}`).addClass("is-invalid");
+                            $(`#edit_${field}-error`).html(errors[field][0]);
+                        }
+                    } else if (status === 413) {
+                        Swal.fire({
+                            icon: "error",
+                            title: "Ukuran File Terlalu Besar!",
+                            text: "Maksimal ukuran file yang diperbolehkan adalah 5 MB.",
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: "error",
+                            title: "Error!",
+                            text:
+                                error.response.data.message ||
+                                "Terjadi kesalahan server.",
+                        });
                     }
                 } else {
                     Swal.fire({
                         icon: "error",
                         title: "Error!",
-                        text: "Terjadi kesalahan server.",
+                        text: "Tidak ada respon dari server.",
                     });
                 }
             });
