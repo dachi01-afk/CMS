@@ -94,7 +94,7 @@ class LayananController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Berhasil Merubah Data Layanan Pada Poli ' . $dataLayanan->poli->nama_poli . '',
+            'message' => 'Berhasil Merubah Data Layanan Pada Poli ',
         ]);
     }
 
