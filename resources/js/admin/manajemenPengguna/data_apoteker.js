@@ -291,8 +291,12 @@ $(function () {
             .catch((error) => {
                 console.error("AXIOS ERROR:", error);
 
+                // Jika server memberikan respon (status code 4xx/5xx)
                 if (error.response) {
                     const status = error.response.status;
+                    const message =
+                        (error.response.data && error.response.data.message) ||
+                        "Terjadi kesalahan server.";
 
                     if (status === 422) {
                         const errors = error.response.data.errors;
@@ -300,31 +304,34 @@ $(function () {
                             $(`#edit_${field}`).addClass("is-invalid");
                             $(`#edit_${field}-error`).html(errors[field][0]);
                         }
-                    } else if (status === 413) {
-                        Swal.fire({
-                            icon: "error",
-                            title: "Ukuran File Terlalu Besar!",
-                            text: "Maksimal ukuran file yang diperbolehkan adalah 5 MB.",
-                        });
                     } else {
                         Swal.fire({
                             icon: "error",
                             title: "Error!",
-                            text:
-                                error.response.data.message ||
-                                "Terjadi kesalahan server.",
+                            text: message, // ✅ Langsung ambil dari controller
                         });
                     }
-                } else {
+                }
+
+                // Jika tidak ada respon dari server sama sekali (misal koneksi putus)
+                else if (error.request) {
                     Swal.fire({
                         icon: "error",
                         title: "Error!",
-                        text: "Tidak ada respon dari server.",
+                        text: "Server tidak merespons atau koneksi gagal.",
+                    });
+                }
+
+                // Jika error muncul sebelum request dikirim (setup Axios error)
+                else {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Error!",
+                        text: "Terjadi kesalahan tak terduga.",
                     });
                 }
             });
     });
-
     $("#closeEditApotekerModal").on("click", function () {
         resetEditForm();
         if (editModal) editModal.hide();
