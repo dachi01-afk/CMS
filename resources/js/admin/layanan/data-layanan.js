@@ -22,7 +22,6 @@ $(function () {
                 orderable: false,
                 searchable: false,
             },
-            { data: "nama_poli", name: "nama_poli" },
             { data: "nama_layanan", name: "nama_layanan" },
             {
                 data: "harga_layanan",
@@ -159,7 +158,6 @@ $(function () {
         const url = $formAdd.data("url");
 
         const formData = {
-            poli_id: $("#poli_id_create").val(),
             nama_layanan: $("#nama_layanan_create").val(),
             harga_layanan: $("#harga_layanan_create").val(),
         };
@@ -241,7 +239,6 @@ $(function () {
                 );
 
                 $("#id_update").val(layanan.id);
-                $("#poli_id_update").val(poliId);
                 $("#nama_layanan_update").val(layanan.nama_layanan);
                 $("#harga_layanan_update").val(hargaFormatted);
                 editModal?.show();
@@ -261,7 +258,6 @@ $(function () {
 
         const formData = {
             id: $("#id_update").val(),
-            poli_id: $("#poli_id_update").val(),
             nama_layanan: $("#nama_layanan_update").val(),
             harga_layanan: $("#harga_layanan_update").val(),
         };

@@ -33,7 +33,6 @@
             <thead class="text-xs uppercase bg-sky-500 text-white">
                 <tr>
                     <th class="px-6 py-3">No</th>
-                    <th class="px-6 py-3">Nama Poli</th>
                     <th class="px-6 py-3">Nama Layanan</th>
                     <th class="px-6 py-3">Tarif Layanan</th>
                     <th class="px-6 py-3 text-center">Aksi</th>
@@ -62,21 +61,6 @@
             <form id="formCreateLayanan" class="p-5 flex flex-col gap-4" data-url="{{ route('layanan.create.data') }}"
                 method="POST">
                 @csrf
-
-                {{-- Nama Poli --}}
-                <div>
-                    <label for="nama_poli"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Poli</label>
-                    <select id="poli_id_create" name="poli_id" required
-                        class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
-                            focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
-                        <option value="" disabled selected>Pilih Poli</option>
-                        @foreach ($dataPoli as $poli)
-                            <option value="{{ $poli->id }}">{{ $poli->nama_poli }}</option>
-                        @endforeach
-                    </select>
-                    <div id="nama_poli-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
 
                 {{-- Nama Layanan --}}
                 <div>
@@ -134,25 +118,9 @@
                 @csrf
                 <input type="hidden" id="id_update" name="id">
 
-                {{-- Nama Poli --}}
-                <div>
-                    <label for="nama_poli"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Poli</label>
-                    <select id="poli_id_update" name="poli_id" required
-                        class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
-                            focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
-                        <option value="" disabled selected>Pilih Poli</option>
-                        @foreach ($dataPoli as $poli)
-                            <option value="{{ $poli->id }}">{{ $poli->nama_poli }}</option>
-                        @endforeach
-                    </select>
-                    <div id="nama_poli-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
-
                 {{-- Nama Layanan --}}
                 <div>
-                    <label for="nama_layanan"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama
+                    <label for="nama_layanan" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama
                         Layanan</label>
                     <input type="text" name="nama_layanan" id="nama_layanan_update"
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5

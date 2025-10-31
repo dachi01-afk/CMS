@@ -12,30 +12,26 @@ class LayananController extends Controller
 {
     public function index()
     {
-        $dataPoli = Poli::all();
-        return view('admin.layanan.layanan', compact('dataPoli'));
+        return view('admin.layanan.layanan');
     }
 
     public function getDataLayanan()
     {
-        $dataLayanan = Layanan::with('poli')->latest()->get();
+        $dataLayanan = Layanan::latest()->get();
 
         return DataTables::of($dataLayanan)
             ->addIndexColumn()
-            ->addColumn('nama_poli', fn($row) => $row->poli->nama_poli ?? '-')
             ->addColumn('nama_layanan', fn($row) => $row->nama_layanan ?? '-')
             ->addColumn('harga_layanan', fn($row) => $row->harga_layanan ?? '-')
             ->addColumn('action', function ($l) {
                 return '
                 <button class="btn-edit-layanan text-blue-600 hover:text-blue-800 mr-2" 
-                        data-id="' . $l->id . '" 
-                        data-poli-id="' . $l->poli->id . '"     
+                        data-id="' . $l->id . '"  
                         title="Edit">
                     <i class="fa-regular fa-pen-to-square text-lg"></i>
                 </button>
                 <button class="btn-delete-layanan text-red-600 hover:text-red-800" 
                         data-id="' . $l->id . '" 
-                        data-poli-id="' . $l->poli->id . '"  
                         title="Hapus">
                     <i class="fa-regular fa-trash-can text-lg"></i>
                 </button>
@@ -53,27 +49,24 @@ class LayananController extends Controller
         ]);
 
         $request->validate([
-            'poli_id' => ['required', 'exists:poli,id'],
             'nama_layanan' => ['required'],
             'harga_layanan' => ['required', 'numeric', 'min:0', 'max:999999999'],
         ]);
 
-        $dataPoli = Poli::findOrFail($request->poli_id);
 
         $dataLayanan = Layanan::create([
-            'poli_id' => $request->poli_id,
             'nama_layanan' => $request->nama_layanan,
             'harga_layanan' => $request->harga_layanan,
         ]);
 
         return response()->json([
-            'message' => 'Berhasil Menambahkan Data Layanan Pada Poli ' . $dataPoli->nama_poli . ' ',
+            'message' => 'Berhasil Menambahkan Data Layanan Pada Poli ',
         ]);
     }
 
     public function getDataLayananById($id)
     {
-        $dataLayanan = Layanan::with('poli')->where('id', $id)->firstOrFail();
+        $dataLayanan = Layanan::where('id', $id)->firstOrFail();
 
         return response()->json([
             'data' => $dataLayanan,
