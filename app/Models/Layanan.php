@@ -9,11 +9,6 @@ class Layanan extends Model
     protected $table = 'layanan';
     protected $guarded = [];
 
-    public function poli()
-    {
-        return $this->belongsTo(Poli::class);
-    }
-
     public function kunjungan()
     {
         return $this->belongsToMany(
