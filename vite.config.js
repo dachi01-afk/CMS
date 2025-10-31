@@ -53,7 +53,7 @@ export default defineConfig({
                 // transaksi obat
                 "resources/js/admin/pembayaran/transaksi-obat.js",
                 "resources/js/apoteker/obat/data-obat.js",
-                'resources/js/apoteker/obat/penjualan-obat.js'
+                "resources/js/apoteker/obat/order-obat.js",
             ],
             refresh: true,
         }),
