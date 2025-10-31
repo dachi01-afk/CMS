@@ -100,12 +100,12 @@ class LayananController extends Controller
 
     public function deleteDataLayanan(Request $request)
     {
-        $dataLayanan = Layanan::with('poli')->findOrFail($request->id);
+        $dataLayanan = Layanan::findOrFail($request->id);
 
         $dataLayanan->delete();
 
         return response()->json([
-            'message' => "Berhasil Menghapus 1 Data Layanan Dari Poli " . $dataLayanan->poli->nama_poli . '',
+            'message' => "Berhasil Menghapus 1 Data Layanan Dari Poli ",
         ]);
     }
 }
