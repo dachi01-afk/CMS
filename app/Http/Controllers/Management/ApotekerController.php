@@ -81,70 +81,87 @@ class ApotekerController extends Controller
 
     public function updateApoteker(Request $request, $id)
     {
-        $apoteker = Apoteker::findOrFail($id);
-        $user = $apoteker->user;
+        try {
+            $apoteker = Apoteker::findOrFail($id);
+            $user = $apoteker->user;
 
-        $request->validate([
-            'edit_username_apoteker'    => 'required|string|max:255|unique:user,username,' . $user->id,
-            'edit_nama_apoteker'        => 'required|string|max:255',
-            'edit_email_apoteker'       => 'required|email|unique:user,email,' . $user->id,
-            'edit_foto_apoteker'        => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
-            'edit_no_hp_apoteker'       => 'nullable|string|max:20',
-            'edit_password_apoteker'    => 'nullable|string|min:8|confirmed',
-        ]);
+            $request->validate([
+                'edit_username_apoteker'    => 'required|string|max:255|unique:user,username,' . $user->id,
+                'edit_nama_apoteker'        => 'required|string|max:255',
+                'edit_email_apoteker'       => 'required|email|unique:user,email,' . $user->id,
+                'edit_foto_apoteker'        => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
+                'edit_no_hp_apoteker'       => 'nullable|string|max:20',
+                'edit_password_apoteker'    => 'nullable|string|min:8|confirmed',
+            ]);
 
-        // Update user
-        $user->username = $request->input('edit_username_apoteker');
-        $user->email    = $request->input('edit_email_apoteker');
+            // Update user
+            $user->username = $request->input('edit_username_apoteker');
+            $user->email    = $request->input('edit_email_apoteker');
 
-        if ($request->filled('edit_password_apoteker')) {
-            $user->password = Hash::make($request->input('edit_password_apoteker'));
-        }
-
-        // Handle foto upload (jika ada)
-        $fotoPath = null;
-        if ($request->hasFile('edit_foto_apoteker')) {
-            $file = $request->file('edit_foto_apoteker');
-
-            $extension = strtolower($file->getClientOriginalExtension());
-            if ($extension === 'jfif') {
-                $extension = 'jpg';
+            if ($request->filled('edit_password_apoteker')) {
+                $user->password = Hash::make($request->input('edit_password_apoteker'));
             }
 
-            $fileName = 'apoteker_' . time() . '.' . $extension;
-            $path = 'apoteker/' . $fileName;
+            // Handle foto upload
+            $fotoPath = null;
+            if ($request->hasFile('edit_foto_apoteker')) {
+                $file = $request->file('edit_foto_apoteker');
 
-            if ($extension === 'svg') {
-                Storage::disk('public')->put($path, file_get_contents($file));
-            } else {
-                // ✅ Gambar raster → resize & kompres
-                $image = Image::read($file);
-                $image->scale(width: 800);
-                Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+                $extension = strtolower($file->getClientOriginalExtension());
+                if ($extension === 'jfif') {
+                    $extension = 'jpg';
+                }
+
+                $fileName = 'apoteker_' . time() . '.' . $extension;
+                $path = 'apoteker/' . $fileName;
+
+                if ($extension === 'svg') {
+                    Storage::disk('public')->put($path, file_get_contents($file));
+                } else {
+                    $image = Image::read($file);
+                    $image->scale(width: 800);
+                    Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+                }
+
+                $fotoPath = $path;
+
+                if ($apoteker->foto_apoteker && Storage::disk('public')->exists($apoteker->foto_apoteker)) {
+                    Storage::disk('public')->delete($apoteker->foto_apoteker);
+                }
             }
 
-            $fotoPath = $path;
+            // Update apoteker
+            $updateData = [
+                'nama_apoteker'  => $request->edit_nama_apoteker,
+                'no_hp_apoteker' => $request->edit_no_hp_apoteker,
+            ];
 
-            // opsional: hapus foto lama jika ada
-            if ($apoteker->foto_apoteker && Storage::disk('public')->exists($apoteker->foto_apoteker)) {
-                Storage::disk('public')->delete($apoteker->foto_apoteker);
+            if ($fotoPath) {
+                $updateData['foto_apoteker'] = $fotoPath;
             }
+
+            $apoteker->update($updateData);
+
+            return response()->json(['message' => 'Data apoteker berhasil diperbarui.']);
+        } catch (\Illuminate\Http\Exceptions\PostTooLargeException $e) {
+            // 📛 Jika file melebihi batas upload
+            return response()->json([
+                'message' => 'Ukuran file terlalu besar! Maksimal 5 MB.'
+            ], 413);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // 📛 Jika validasi gagal
+            return response()->json([
+                'message' => 'Validasi gagal.',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            // 📛 Error umum
+            return response()->json([
+                'message' => 'Terjadi kesalahan di server: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Update apoteker
-        $updateData = [
-            'nama_apoteker'  => $request->edit_nama_apoteker,
-            'no_hp_apoteker' => $request->edit_no_hp_apoteker,
-        ];
-
-        if ($fotoPath) {
-            $updateData['foto_apoteker'] = $fotoPath;
-        }
-
-        $apoteker->update($updateData);
-
-        return response()->json(['message' => 'Data apoteker berhasil diperbarui.']);
     }
+
 
     public function deleteApoteker($id)
     {
