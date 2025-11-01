@@ -93,23 +93,13 @@ class PengambilanObatController extends Controller
                     return '<span class="text-gray-400 italic">Tidak ada tindakan</span>';
                 }
 
-                $output = '<ul class="pl-0">';
-                foreach ($row->obat as $obat) {
-                    $output .= '
-                    <li class="list-none mb-1">
-                        <button class="btnUpdateStatus text-blue-600 hover:text-blue-800" 
-                                data-resep-id="' . $row->id . '" 
-                                data-obat-id="' . $obat->id . '" 
-                                data-jumlah=" ' . $obat->pivot->jumlah . '"
-                                title="Update Status">
-                            <i class="fa-regular fa-pen-to-square"></i> Update Status
-                        </button>
-                    </li>
-                ';
-                }
-                $output .= '</ul>';
-
-                return $output;
+                return '
+        <button class="btnUpdateStatus text-blue-600 hover:text-blue-800" 
+                data-resep-id="' . $row->id . '" 
+                title="Update Status">
+            <i class="fa-regular fa-pen-to-square"></i> Update Status
+        </button>
+    ';
             })
 
             ->rawColumns(['nama_obat', 'jumlah', 'keterangan', 'status', 'action'])
