@@ -87,20 +87,32 @@ class PengambilanObatController extends Controller
                 return $output;
             })
 
-            // 🔹 Kolom action — per obat
             ->addColumn('action', function ($row) {
                 if ($row->obat->isEmpty()) {
                     return '<span class="text-gray-400 italic">Tidak ada tindakan</span>';
                 }
 
+                // Kumpulkan semua id obat dan jumlahnya
+                $dataObat = $row->obat->map(function ($obat) {
+                    return [
+                        'id' => $obat->id,
+                        'jumlah' => $obat->pivot->jumlah,
+                    ];
+                });
+
+                // Encode ke JSON (agar bisa dibaca JS nanti)
+                $jsonObat = e(json_encode($dataObat));
+
                 return '
-        <button class="btnUpdateStatus text-blue-600 hover:text-blue-800" 
-                data-resep-id="' . $row->id . '" 
+        <button class="btnUpdateStatus text-blue-600 hover:text-blue-800"
+                data-resep-id="' . $row->id . '"
+                data-obat=\'' . $jsonObat . '\'
                 title="Update Status">
             <i class="fa-regular fa-pen-to-square"></i> Update Status
         </button>
     ';
             })
+
 
             ->rawColumns(['nama_obat', 'jumlah', 'keterangan', 'status', 'action'])
             ->make(true);
