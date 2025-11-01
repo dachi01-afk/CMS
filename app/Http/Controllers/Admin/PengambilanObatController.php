@@ -87,6 +87,7 @@ class PengambilanObatController extends Controller
                 return $output;
             })
 
+            // 🔹 Kolom action — per obat
             ->addColumn('action', function ($row) {
                 if ($row->obat->isEmpty()) {
                     return '<span class="text-gray-400 italic">Tidak ada tindakan</span>';
@@ -123,8 +124,9 @@ class PengambilanObatController extends Controller
     {
         $request->validate([
             'resep_id' => ['required', 'exists:resep,id'],
-            'obat_id'  => ['required', 'exists:obat,id'],
-            'jumlah_obat' => ['required'],
+            'obat_list' => ['required', 'array', 'min:1'],
+            'obat_list.*.id' => ['required', 'exists:obat,id'],
+            'obat_list.*.jumlah' => ['required', 'integer', 'min:1'],
         ]);
 
         try {
