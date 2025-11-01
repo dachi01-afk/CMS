@@ -275,8 +275,8 @@
                         <input type="file" name="edit_foto_dokter" id="edit_foto_dokter" accept="image/*"
                             class="absolute inset-0 opacity-0 cursor-pointer">
                     </div>
-                    <div id="edit_foto_dokter-error" class="text-red-600 text-sm mt-1 text-center"></div>
                 </div>
+                <div id="edit_foto_dokter-error" class="text-red-600 text-sm mt-1 text-center"></div>
 
                 <!-- Grid Form -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

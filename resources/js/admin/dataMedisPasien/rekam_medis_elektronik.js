@@ -24,7 +24,23 @@ $(function () {
             },
             { data: "nama_pasien", name: "nama_pasien" },
             { data: "nama_dokter", name: "nama_dokter" },
-            { data: "tanggal_kunjungan", name: "tanggal_kunjungan" },
+            {
+                data: "tanggal_kunjungan",
+                name: "tanggal_kunjungan",
+                render: function (data) {
+                    if (!data) return "-";
+                    const date = new Date(data);
+                    const waktuIndonesia = date.toLocaleDateString("id-ID", {
+                        timeZone: "Asia/Jakarta",
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                    });
+                    return waktuIndonesia;
+                },
+            },
             { data: "keluhan_awal", name: "keluhan_awal" },
             { data: "keluhan_utama", name: "keluhan_utama" },
             {
@@ -134,15 +150,21 @@ $(function () {
             .get(`/data_medis_pasien/get-data-emr-by-id/${id}`)
             .then((response) => {
                 const data = response.data.data;
-                console.log(data);
+                const tanggal = data.kunjungan.tanggal_kunjungan
+                    ? new Date(
+                          data.kunjungan.tanggal_kunjungan
+                      ).toLocaleDateString("id-ID", {
+                          day: "2-digit",
+                          month: "long",
+                          year: "numeric",
+                      })
+                    : "-";
 
                 $("#detail_nama_pasien").text(
                     data.kunjungan.pasien.nama_pasien || "-"
                 );
                 $("#detail_nama_dokter").text(dokter || "-");
-                $("#detail_tanggal_kunjungan").text(
-                    data.kunjungan.tanggal_kunjungan || "-"
-                );
+                $("#detail_tanggal_kunjungan").text(tanggal);
                 $("#detail_keluhan_awal").text(
                     data.kunjungan.keluhan_awal || "-"
                 );

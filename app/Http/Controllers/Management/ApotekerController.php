@@ -176,9 +176,10 @@ class ApotekerController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            // 📛 Error umum
+            // 💥 Error umum
             return response()->json([
-                'message' => 'Terjadi kesalahan di server: ' . $e->getMessage()
+                'message' => 'Tidak ada respon dari server.', // 🔥 ini pesan yang kamu mau
+                'error_detail' => $e->getMessage(), // opsional, untuk debugging (bisa kamu hapus kalau gak mau tampil)
             ], 500);
         }
     }

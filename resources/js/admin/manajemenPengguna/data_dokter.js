@@ -190,61 +190,29 @@ $(function () {
                 Swal.fire({
                     icon: "success",
                     title: "Berhasil!",
-                    text: response.data.success,
+                    text: response.data.message,
                 });
 
                 form[0].reset();
                 $("#addDokterModal").addClass("hidden");
             })
             .catch((error) => {
-                if (error.response) {
-                    const status = error.response.status;
-
-                    // 🧩 Jika error validasi
-                    if (status === 422) {
-                        const errors = error.response.data.errors;
-
-                        for (const field in errors) {
-                            // tampilkan pesan di bawah input
-                            $(`#${field}`).addClass("is-invalid");
-                            $(`#${field}-error`).html(errors[field][0]);
-                        }
-
-                        Swal.fire({
-                            icon: "error",
-                            title: "Validasi Gagal!",
-                            text: "Periksa kembali input Anda.",
-                        });
-                    }
-                    // 🧩 Jika error file terlalu besar
-                    else if (status === 413) {
-                        Swal.fire({
-                            icon: "error",
-                            title: "Ukuran File Terlalu Besar!",
-                            text: error.response.data.message,
-                        });
-                    }
-                    // 🧩 Error server
-                    else {
-                        Swal.fire({
-                            icon: "error",
-                            title: "Terjadi Kesalahan!",
-                            text:error.response.data.message || "Server error.",
-                        });
-                    }
-                }
-                // 🧩 Tidak ada respon dari server
-                else if (error.request) {
+                if (error.response && error.response.status === 422) {
+                    const errors = error.response.data.errors;
                     Swal.fire({
                         icon: "error",
-                        title: "Error!",
-                        text: "Tidak ada respon dari server.",
+                        title: "Validasi Gagal!",
+                        text: "Silakan periksa kembali isian formulir Anda.",
                     });
+                    for (const field in errors) {
+                        $(`#${field}`).addClass("is-invalid");
+                        $(`#${field}-error`).html(errors[field][0]);
+                    }
                 } else {
                     Swal.fire({
                         icon: "error",
-                        title: "Error!",
-                        text: "Kesalahan tak terduga.",
+                        title: "Error Server!",
+                        text: "Terjadi kesalahan server. Silakan coba lagi.",
                     });
                 }
             });
@@ -346,54 +314,22 @@ $(function () {
                 });
             })
             .catch((error) => {
-                if (error.response) {
-                    const status = error.response.status;
-
-                    // 🧩 Jika error validasi
-                    if (status === 422) {
-                        const errors = error.response.data.errors;
-
-                        for (const field in errors) {
-                            // tampilkan pesan di bawah input
-                            $(`#edit_${field}`).addClass("is-invalid");
-                            $(`#edit_${field}-error`).html(errors[field][0]);
-                        }
-
-                        Swal.fire({
-                            icon: "error",
-                            title: "Validasi Gagal!",
-                            text: "Periksa kembali input Anda.",
-                        });
-                    }
-                    // 🧩 Jika error file terlalu besar
-                    else if (status === 413) {
-                        Swal.fire({
-                            icon: "error",
-                            title: "Ukuran File Terlalu Besar!",
-                            text: error.response.data.message,
-                        });
-                    }
-                    // 🧩 Error server
-                    else {
-                        Swal.fire({
-                            icon: "error",
-                            title: "Terjadi Kesalahan!",
-                            text:error.response.data.message || "Server error.",
-                        });
-                    }
-                }
-                // 🧩 Tidak ada respon dari server
-                else if (error.request) {
+                if (error.response && error.response.status === 422) {
+                    const errors = error.response.data.errors;
                     Swal.fire({
                         icon: "error",
-                        title: "Error!",
-                        text: "Tidak ada respon dari server.",
+                        title: "Validasi Gagal!",
+                        text: "Silakan periksa kembali isian formulir Anda.",
                     });
+                    for (const field in errors) {
+                        $(`#edit_${field}`).addClass("is-invalid");
+                        $(`#${field}-error`).html(errors[field][0]);
+                    }
                 } else {
                     Swal.fire({
                         icon: "error",
-                        title: "Error!",
-                        text: "Kesalahan tak terduga.",
+                        title: "Error Server!",
+                        text: "Terjadi kesalahan server. Silakan coba lagi.",
                     });
                 }
             });
