@@ -16,95 +16,96 @@ class TransaksiObatController extends Controller
 {
     public function getDataTransaksiObat()
     {
-        $transaksiObat = Pasien::with([
-            'obat' => function ($query) {
-                $query->select('obat.id', 'obat.nama_obat', 'obat.jumlah', 'obat.dosis', 'obat.total_harga')
-                    ->where('penjualan_obat.status', 'Belum Bayar'); // filter obat yg pivot.status = Belum Bayar;
-            },
-        ])->latest()->get();
+        // Ambil data dari tabel penjualan_obat + relasi
+        $dataTransaksi = PenjualanObat::with(['pasien', 'obat', 'metodePembayaran'])
+            ->where('status', 'Belum Bayar')
+            ->latest()
+            ->get()
+            ->groupBy('kode_transaksi'); // 🔥 Gabungkan berdasarkan kode_transaksi
 
-        $dataTransaksi = $transaksiObat->map(function ($pasien) {
-            if ($pasien->obat->isEmpty()) {
-                return null;
-            }
+        // Map hasil group ke bentuk tabel
+        $transaksiData = $dataTransaksi->map(function ($group) {
+            // Ambil data pertama dari grup (untuk data pasien, tanggal, dll)
+            $first = $group->first();
 
-            $namaObat = $pasien->obat->pluck('nama_obat')->implode(', ');
-            $dosis = $pasien->obat->pluck('dosis')->implode(', ');
-            $jumlahObat = $pasien->obat->pluck('pivot.jumlah')->implode(', ');
-            $subTotal = $pasien->obat->sum(function ($obat) {
-                return $obat->pivot->jumlah * $obat->total_harga;
-            });
-            $tanggalTransaksi = $pasien->obat->max('pivot.tanggal_transaksi');
+            // Gabungkan semua nama obat dan jumlah dalam satu baris
+            $namaObat = $group->pluck('obat.nama_obat')->implode(', ');
+            $dosis    = $group->pluck('obat.dosis')->implode(', ');
+            $jumlah   = $group->pluck('jumlah')->implode(', ');
 
-            // ambil metode pembayaran dari salah satu obat (karena 1 transaksi biasanya 1 metode)
-            $metodePembayaranId = $pasien->obat->first()->pivot->metode_pembayaran_id ?? null;
-            $namaMetode = $metodePembayaranId
-                ? MetodePembayaran::find($metodePembayaranId)->nama_metode
+            // Hitung total keseluruhan dari semua item
+            $totalSub = $group->sum('sub_total');
+
+            // Ambil metode pembayaran & status
+            $namaMetode = $first->metodePembayaran->nama_metode ?? '-';
+            $status     = $first->status ?? '-';
+
+            // Ambil tanggal transaksi
+            $tanggalTransaksi = $first->tanggal_transaksi
+                ? (is_string($first->tanggal_transaksi)
+                    ? date('d-m-Y H:i', strtotime($first->tanggal_transaksi))
+                    : $first->tanggal_transaksi->format('d-m-Y H:i'))
                 : '-';
 
-            // ambil bukti pembayaran dari salah satu pivot (karena per transaksi 1 bukti)
-            $buktiPembayaranPath = $pasien->obat->first()->pivot->bukti_pembayaran ?? null;
-
-            // kalau ada isinya, buat URL storage-nya
-            $buktiPembayaranUrl = $buktiPembayaranPath
-                ? asset('storage/' . $buktiPembayaranPath)
+            // Bukti pembayaran (ambil salah satu)
+            $buktiPembayaranUrl = $first->bukti_pembayaran
+                ? asset('storage/' . $first->bukti_pembayaran)
                 : null;
 
-            // format jadi <img> langsung biar bisa dibaca DataTables
             $buktiPembayaranHTML = $buktiPembayaranUrl
                 ? '<img src="' . $buktiPembayaranUrl . '" alt="Bukti Pembayaran" class="w-12 h-12 rounded-lg object-cover mx-auto shadow">'
                 : '<span class="text-gray-400 italic">Tidak ada</span>';
 
             return [
-                'nama_pasien'       => $pasien->nama_pasien,
+                'nama_pasien'       => $first->pasien->nama_pasien ?? '-',
                 'nama_obat'         => $namaObat,
                 'dosis'             => $dosis,
-                'jumlah'            => $jumlahObat,
-                'sub_total'         => $subTotal,
+                'jumlah'            => $jumlah,
+                'sub_total'         => $totalSub,
                 'metode_pembayaran' => $namaMetode,
-                'kode_transaksi'    => $pasien->obat->first()->pivot->kode_transaksi ?? '-',
+                'kode_transaksi'    => $first->kode_transaksi,
                 'tanggal_transaksi' => $tanggalTransaksi,
-                'status'            => $pasien->obat->first()->pivot->status ?? '-',
+                'status'            => $status,
                 'bukti_pembayaran'  => $buktiPembayaranHTML,
             ];
-        })->filter()->values();
+        })->values();
 
-
-        return DataTables::of($dataTransaksi)
+        // Kirim ke DataTables
+        return DataTables::of($transaksiData)
             ->addIndexColumn()
             ->addColumn('action', function ($row) {
                 $kode = $row['kode_transaksi'] ?? '';
                 $url = route('kasir.transaksi.obat', ['kodeTransaksi' => $kode]);
-                // fallback supaya tidak menampilkan "null"
+
                 $namaPasien = e($row['nama_pasien'] ?? '-');
                 $namaObat   = e($row['nama_obat'] ?? '-');
                 $jumlah     = e($row['jumlah'] ?? '-');
                 $subTotal   = $row['sub_total'] ?? 0;
                 $tanggal    = e($row['tanggal_transaksi'] ?? '-');
-
-                // Format subtotal agar lebih enak dibaca (opsional)
                 $subTotalFormatted = number_format($subTotal, 0, ',', '.');
 
                 return '
-        <button 
-        class="text-green-600 hover:text-green-800 mr-2 bayarSekarang"
-        title="Bayar Sekarang"
-        data-url="' . $url . '"
-        data-kode="' . $kode . '"
-        data-nama-pasien="' . $namaPasien . '"
-        data-nama-obat="' . $namaObat . '"
-        data-jumlah="' . $jumlah . '"
-        data-subtotal="' . $subTotal . '"
-        data-subtotal-formatted="Rp ' . $subTotalFormatted . '"
-        data-tanggal="' . $tanggal . '"
-    >
-        <i class="fa-solid fa-money-bill text-lg"></i> Bayar Sekarang
-    </button>
-    ';
+                <button 
+                    class="text-green-600 hover:text-green-800 mr-2 bayarSekarang"
+                    title="Bayar Sekarang"
+                    data-url="' . $url . '"
+                    data-kode="' . $kode . '"
+                    data-nama-pasien="' . $namaPasien . '"
+                    data-nama-obat="' . $namaObat . '"
+                    data-jumlah="' . $jumlah . '"
+                    data-subtotal="' . $subTotal . '"
+                    data-subtotal-formatted="Rp ' . $subTotalFormatted . '"
+                    data-tanggal="' . $tanggal . '"
+                >
+                    <i class="fa-solid fa-money-bill text-lg"></i> Bayar Sekarang
+                </button>
+            ';
             })
             ->rawColumns(['bukti_pembayaran', 'action'])
             ->make(true);
     }
+
+
 
     public function transaksiObat($kodeTransaksi)
     {
@@ -118,7 +119,9 @@ class TransaksiObatController extends Controller
             abort(404, 'Transaksi tidak ditemukan');
         }
 
-        $tanggalTransaksi = $dataTransaksiObat->first()->tanggalTransaksi;
+        $first = $dataTransaksiObat->first();
+
+        $tanggalTransaksi = $first->first()->tanggalTransaksi;
 
         // Ambil data pasien dari salah satu record (semuanya sama)
         $dataPasien = $dataTransaksiObat->first()->pasien;
@@ -127,13 +130,23 @@ class TransaksiObatController extends Controller
 
         $id = $dataTransaksiObat->first()->id;
 
+        $kodeTransaksi = $first->kode_transaksi;
+
         $dataMetodePembayaran = MetodePembayaran::all();
         // Debug (kalau masih mau cek hasil, bisa pakai info log biar nggak ganggu tampilan)
         Log::info($dataTransaksiObat);
 
         // dd($dataTransaksiObat);
 
-        return view('admin.pembayaran.detail-transaksi-obat', compact('dataTransaksiObat', 'dataMetodePembayaran', 'dataPasien', 'subTotal', 'tanggalTransaksi', 'id'));
+        return view('admin.pembayaran.detail-transaksi-obat', compact(
+            'dataTransaksiObat',
+            'dataMetodePembayaran',
+            'dataPasien',
+            'subTotal',
+            'tanggalTransaksi',
+            'id',
+            'kodeTransaksi',
+        ));
     }
 
     public function transaksiCash(Request $request)
@@ -141,17 +154,18 @@ class TransaksiObatController extends Controller
         $request->validate([
             'uang_yang_diterima' => ['required'],
             'kembalian' => ['required'],
-            'metode_pembayaran_id' => ['required'],
+            'metode_pembayaran' => ['required'],
         ]);
 
-        $dataPembayaran = PenjualanObat::findOrFail($request->id);
+        $dataPembayaran = PenjualanObat::where('kode_transaksi', $request->kode_transaksi);
 
         $dataPembayaran->update([
+            'total_tagihan' => $request->uang_yang_diterima,
             'uang_yang_diterima' => $request->uang_yang_diterima,
             'kembalian' => $request->kembalian,
-            'tanggal_pembayaran' => now(),
+            'tanggal_transaksi' => now(),
             'status' => 'Sudah Bayar',
-            'metode_pembayaran_id' => $request->metode_pembayaran_id,
+            'metode_pembayaran_id' => $request->metode_pembayaran,
         ]);
 
         return response()->json([

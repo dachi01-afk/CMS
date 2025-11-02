@@ -130,6 +130,7 @@
                     <div class="p-4 space-y-4">
                         <input type="hidden" name="id" value="{{ $id }}">
                         <input type="hidden" name="metode_pembayaran" id="metode-pembayaran-cash" value="">
+                        <input type="hidden" name="kode_transaksi" id="kode-transaksi" value="{{ $kodeTransaksi }}">
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Total
@@ -196,8 +197,8 @@
                 </div>
 
                 <!-- Body -->
-                <form id="formPembayaranTransfer" action="{{ route('kasir.transaksi.obat.transfer') }}" method="POST"
-                    enctype="multipart/form-data">
+                <form id="formPembayaranTransfer" action="{{ route('kasir.transaksi.obat.transfer') }}"
+                    method="POST" enctype="multipart/form-data">
                     @csrf
                     <div class="p-4 space-y-4">
                         <input type="hidden" name="id" value="{{ $id }}">
@@ -713,7 +714,7 @@
                     uangKembalianInput.value = (kembalian >= 0) ? "Rp " + formatRupiah(kembalian) : "Rp 0";
                 }
             }
-            
+
             if (uangDiterimaInput) {
                 uangDiterimaInput.addEventListener("input", (e) => {
                     let angka = onlyDigits(e.target.value);
@@ -761,6 +762,7 @@
                     const uangDiterimaClean = parseFloat(onlyDigits(uangDiterimaInput?.value)) || 0;
                     const kembalianClean = uangDiterimaClean - totalClean;
                     const metodeCash = document.getElementById('metode-pembayaran-cash');
+                    const pasienId = document.getElementById('pasien-id')?.value;
 
                     if (uangDiterimaClean === 0 || uangDiterimaClean < totalClean) {
                         Swal.fire({
@@ -776,6 +778,7 @@
                     formData.set('kembalian', kembalianClean);
                     formData.set('total_tagihan', totalClean);
                     formData.set('metode_pembayaran', metodeCash?.value);
+                    formData.set('pasien_id', pasienId)
 
 
                     const submitBtn = this.querySelector('button[type="submit"]');

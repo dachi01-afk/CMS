@@ -39,7 +39,7 @@
                     <th class="px-6 py-3">Jumlah Obat</th>
                     <th class="px-6 py-3">Sub Total</th>
                     <th class="px-6 py-3">Tanggal Transaksi</th>
-                    <th class="px-6 py-3 text-center">Aksi</th>
+                    {{-- <th class="px-6 py-3 text-center">Aksi</th> --}}
                 </tr>
             </thead>
             <tbody></tbody>

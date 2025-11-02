@@ -75,13 +75,13 @@ $(function () {
                 },
             },
 
-            {
-                data: "action",
-                name: "action",
-                searchable: false,
-                orderable: false,
-                className: "text-center whitespace-nowrap",
-            },
+            // {
+            //     data: "action",
+            //     name: "action",
+            //     searchable: false,
+            //     orderable: false,
+            //     className: "text-center whitespace-nowrap",
+            // },
         ],
 
         dom: "t",

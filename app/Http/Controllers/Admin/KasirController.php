@@ -332,7 +332,6 @@ class KasirController extends Controller
 
             ->addColumn('total_tagihan', fn($p) => 'Rp ' .  number_format($p->total_tagihan, 0, ',', '.')  ?? '-')
             ->addColumn('metode_pembayaran', fn($p) => $p->metodePembayaran->nama_metode ?? '-')
-            ->addColumn('status', fn($p) => $p->status ?? '-')
             ->addColumn('bukti_pembayaran', function ($p) {
                 if ($p->bukti_pembayaran) {
                     $url = asset('storage/' . $p->bukti_pembayaran);
@@ -341,6 +340,7 @@ class KasirController extends Controller
                     return '<span class="text-gray-400 italic">Tidak ada</span>';
                 }
             })
+            ->addColumn('status', fn($p) => $p->status ?? '-')
 
             // kolom action
             ->addColumn('action', function ($p) {
