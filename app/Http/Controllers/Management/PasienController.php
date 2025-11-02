@@ -7,6 +7,7 @@ use App\Models\Pasien;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Schema;
 use Intervention\Image\Laravel\Facades\Image;
@@ -199,5 +200,58 @@ class PasienController extends Controller
         $pasien->delete();
 
         return response()->json(['success' => 'Data pasien berhasil dihapus.']);
+    }
+
+    public function generateNoEmrPasien()
+    {
+        try {
+            DB::beginTransaction();
+
+            // 🔹 Cari pasien terakhir yang sudah punya no_emr
+            $lastPasien = \App\Models\Pasien::whereNotNull('no_emr')
+                ->orderByDesc('id')
+                ->first();
+
+            $lastNumber = 0;
+
+            // 🔹 Ambil angka terakhir dari format RM-00000001
+            if ($lastPasien && preg_match('/RM-(\d+)/', $lastPasien->no_emr, $matches)) {
+                $lastNumber = (int)$matches[1];
+            }
+
+            // 🔹 Ambil semua pasien yang belum punya no_emr
+            $pasienList = \App\Models\Pasien::whereNull('no_emr')
+                ->orderBy('id')
+                ->get();
+
+            $counter = $lastNumber;
+
+            foreach ($pasienList as $pasien) {
+                $counter++;
+
+                // 🔹 Format sama dengan createPasien(): RM-00000001
+                $newNoEmr = 'RM-' . str_pad($counter, 8, '0', STR_PAD_LEFT);
+
+                // 🔹 Pastikan unik (antisipasi edge case)
+                $exists = \App\Models\Pasien::where('no_emr', $newNoEmr)->exists();
+                if ($exists) {
+                    $newNoEmr .= '-' . substr(uniqid(), -3);
+                }
+
+                // 🔹 Update ke pasien
+                $pasien->update(['no_emr' => $newNoEmr]);
+            }
+
+            DB::commit();
+
+            // 🔹 Ambil ulang data untuk ditampilkan
+            $pasienList = \App\Models\Pasien::orderBy('id')->get();
+
+            return view('testing-emr', compact('pasienList'))
+                ->with('success', 'Generate no_emr selesai dan sinkron dengan format RM-00000001.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Gagal generate no_emr: ' . $e->getMessage());
+        }
     }
 }

@@ -61,7 +61,9 @@ Route::prefix('/testing-qr-code')->group(function () {
     Route::get('/qr/generate/{id}', [QrCodeController::class, 'generate'])->name('qr.generate');
     Route::get('/pasien/{id}/qr-view', [QrCodeController::class, 'showPasien'])->name('qr.show');
 
-    Route::get('/emr/generate-no-rm', [EMRController::class, 'generateAll'])->name('emr.generate');
+    // Route::get('/emr/generate-no-rm', [EMRController::class, 'generateAll'])->name('emr.generate');
+
+    Route::get('/generate-no-emr', [PasienController::class, 'generateNoEmrPasien']);
 });
 
 Route::get('/contoh-kuitansi', function () {
