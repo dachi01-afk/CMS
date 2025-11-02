@@ -51,12 +51,20 @@ return new class extends Migration
         });
 
         Schema::table('resep', function (Blueprint $table) {
-            $table->foreignId('kunjungan_id')
-                ->nullable(false)
-                ->constrained('kunjungan', 'id', 'resep_kunjungan_id')
-                ->cascadeOnDelete()
-                ->cascadeOnUpdate()
-                ->change();
+            if (Schema::hasColumn('resep', 'kunjungan_id')) {
+                // Lepas constraint lama
+                $table->dropForeign(['kunjungan_id']);
+
+                // Ubah jadi nullable
+                $table->unsignedBigInteger('kunjungan_id')->nullable()->change();
+
+                // Tambahkan foreign key baru
+                $table->foreign('kunjungan_id', 'resep_kunjungan_id')
+                    ->references('id')
+                    ->on('kunjungan')
+                    ->cascadeOnDelete()
+                    ->cascadeOnUpdate();
+            }
         });
 
         Schema::table('resep_obat', function (Blueprint $table) {
