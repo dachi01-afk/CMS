@@ -23,7 +23,6 @@ class LaporanController extends Controller
     public function dataKunjungan()
     {
         $dataKunjungan = Kunjungan::with('poli.dokter', 'pasien')->get();
-        dd($dataKunjungan);
 
         return DataTables::of($dataKunjungan)
             ->addIndexColumn()

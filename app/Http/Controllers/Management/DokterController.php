@@ -80,16 +80,16 @@ class DokterController extends Controller
                 'no_hp'              => $request->no_hp_dokter,
             ]);
 
-            return response()->json(['success' => 'Data dokter berhasil ditambahkan.']);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Terjadi Kesalahan Di Server ' . $e->getMessage()
-            ], 500);
+            return response()->json(['message' => 'Data dokter berhasil ditambahkan.']);
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validasi Gagal!',
                 'errors' => $e->errors()
             ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Terjadi Kesalahan Di Server ' . $e->getMessage()
+            ], 500);
         }
     }
 
@@ -181,15 +181,15 @@ class DokterController extends Controller
             $user->update($updateDataUser);
 
             return response()->json(['success' => 'Data dokter berhasil diperbarui.']);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Terjadi kesalahan di server ' . $e->getMessage()
-            ], 500);
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => "Validasi Gagal!",
                 'errors' => $e->errors(),
             ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Terjadi kesalahan di server ' . $e->getMessage()
+            ], 500);
         }
     }
 

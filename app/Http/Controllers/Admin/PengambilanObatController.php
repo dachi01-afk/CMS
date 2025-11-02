@@ -93,24 +93,27 @@ class PengambilanObatController extends Controller
                     return '<span class="text-gray-400 italic">Tidak ada tindakan</span>';
                 }
 
-                $output = '<ul class="pl-0">';
-                foreach ($row->obat as $obat) {
-                    $output .= '
-                    <li class="list-none mb-1">
-                        <button class="btnUpdateStatus text-blue-600 hover:text-blue-800" 
-                                data-resep-id="' . $row->id . '" 
-                                data-obat-id="' . $obat->id . '" 
-                                data-jumlah=" ' . $obat->pivot->jumlah . '"
-                                title="Update Status">
-                            <i class="fa-regular fa-pen-to-square"></i> Update Status
-                        </button>
-                    </li>
-                ';
-                }
-                $output .= '</ul>';
+                // Kumpulkan semua id obat dan jumlahnya
+                $dataObat = $row->obat->map(function ($obat) {
+                    return [
+                        'id' => $obat->id,
+                        'jumlah' => $obat->pivot->jumlah,
+                    ];
+                });
 
-                return $output;
+                // Encode ke JSON (agar bisa dibaca JS nanti)
+                $jsonObat = e(json_encode($dataObat));
+
+                return '
+        <button class="btnUpdateStatus text-blue-600 hover:text-blue-800"
+                data-resep-id="' . $row->id . '"
+                data-obat=\'' . $jsonObat . '\'
+                title="Update Status">
+            <i class="fa-regular fa-pen-to-square"></i> Update Status
+        </button>
+    ';
             })
+
 
             ->rawColumns(['nama_obat', 'jumlah', 'keterangan', 'status', 'action'])
             ->make(true);
@@ -121,8 +124,9 @@ class PengambilanObatController extends Controller
     {
         $request->validate([
             'resep_id' => ['required', 'exists:resep,id'],
-            'obat_id'  => ['required', 'exists:obat,id'],
-            'jumlah_obat' => ['required'],
+            'obat_list' => ['required', 'array', 'min:1'],
+            'obat_list.*.id' => ['required', 'exists:obat,id'],
+            'obat_list.*.jumlah' => ['required', 'integer', 'min:1'],
         ]);
 
         try {

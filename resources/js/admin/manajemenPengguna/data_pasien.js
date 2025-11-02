@@ -191,6 +191,12 @@ $(function () {
                         $(`#${field}`).addClass("is-invalid");
                         $(`#${field}-error`).html(errors[field][0]);
                     }
+                } else {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Error Server!",
+                        text: "Terjadi kesalahan server. Silakan coba lagi.",
+                    });
                 }
             });
     });
@@ -287,15 +293,20 @@ $(function () {
             .catch((error) => {
                 if (error.response && error.response.status === 422) {
                     const errors = error.response.data.errors;
+                    Swal.fire({
+                        icon: "error",
+                        title: "Validasi Gagal!",
+                        text: "Silakan periksa kembali isian formulir Anda.",
+                    });
                     for (const field in errors) {
                         $(`#edit_${field}`).addClass("is-invalid");
-                        $(`#edit_${field}-error`).html(errors[field][0]);
+                        $(`#${field}-error`).html(errors[field][0]);
                     }
                 } else {
                     Swal.fire({
                         icon: "error",
-                        title: "Error!",
-                        text: "Terjadi kesalahan server.",
+                        title: "Error Server!",
+                        text: "Terjadi kesalahan server. Silakan coba lagi.",
                     });
                 }
             });

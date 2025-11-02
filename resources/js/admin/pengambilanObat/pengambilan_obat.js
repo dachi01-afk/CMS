@@ -129,11 +129,10 @@ $(function () {
 
 $(function () {
     $("body").on("click", ".btnUpdateStatus", function () {
-        const resepId = $(this).data("resep-id");
-        const obatId = $(this).data("obat-id");
-        const jumlah = $(this).data("jumlah");
+        let resepId = $(this).data("resep-id");
+        let obatData = $(this).data("obat"); // ini array of {id, jumlah}
 
-        if (!resepId || !obatId) {
+        if (!resepId || !Array.isArray(obatData) || obatData.length === 0) {
             Swal.fire({
                 icon: "warning",
                 title: "Data tidak lengkap!",
@@ -154,8 +153,7 @@ $(function () {
                 axios
                     .post(`/pengambilan_obat/update-status-resep-obat`, {
                         resep_id: resepId,
-                        obat_id: obatId,
-                        jumlah_obat: jumlah,
+                        obat_list: obatData, // kirim array [{id, jumlah}, ...]
                     })
                     .then((response) => {
                         Swal.fire({
@@ -178,8 +176,6 @@ $(function () {
                         });
                     })
                     .catch((error) => {
-                        console.error("SERVER ERROR:", error);
-
                         // Ambil pesan dari backend
                         const msg =
                             error.response?.data?.message ||
@@ -199,7 +195,7 @@ $(function () {
                         } else {
                             Swal.fire({
                                 icon: "error",
-                                title: "Gagal!",
+                                title:  "Gagal!",
                                 text: msg,
                                 confirmButtonText: "OK",
                             });
