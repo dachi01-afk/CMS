@@ -202,8 +202,12 @@
                     @csrf
                     <div class="p-4 space-y-4">
                         <input type="hidden" name="id" value="{{ $id }}">
-                        <input type="hidden" name="metode_pembayaran" id="metode-pembayaran-transfer"
+                        <input type="hidden" name="metode_pembayaran_id" id="metode-pembayaran-transfer"
                             value="">
+                        <input type="hidden" name="kode_transaksi" value="{{ $kodeTransaksi }}">
+                        <input type="hidden" name="total_tagihan" id="total_tagihan_hidden"
+                            value="{{ $subTotal }}">
+
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Total
                                 Tagihan</label>
@@ -223,7 +227,7 @@
                             </label>
                             <div class="flex items-center justify-center w-full px-5 py-3">
                                 <label for="upload"
-                                    class="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600">
+                                    class="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500">
                                     <div class="flex flex-col items-center justify-center w-full h-full pt-5 pb-6"
                                         id="preview-bukti-pembayaran">
                                         <svg class="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400" aria-hidden="true"
@@ -838,6 +842,13 @@
                     const metodeInput = document.getElementById('metode-pembayaran-transfer');
                     const formData = new FormData(this);
                     if (metodeInput) formData.set('metode_pembayaran', metodeInput.value);
+
+                    const totalInput = document.getElementById('total_tagihan');
+                    if (totalInput) {
+                        const totalBersih = totalInput.value.replace(/[^\d]/g,
+                        ''); // hapus Rp dan titik
+                        formData.set('total_tagihan', totalBersih);
+                    }
 
                     // === FIX UNTUK FILE ===
                     const fileInput = document.getElementById('upload');

@@ -191,21 +191,30 @@ $(function () {
                     icon: "success",
                     title: "Berhasil!",
                     text: response.data.message,
+                    showConfirmButton: false,
+                    timer: 1500,
+                }).then(() => {
+                    addModal?.hide();
+                    $("#dokterTable").DataTable().ajax.reload(null, false);
+                    resetAddForm();
                 });
-
-                form[0].reset();
-                $("#addDokterModal").addClass("hidden");
             })
             .catch((error) => {
                 if (error.response && error.response.status === 422) {
                     const errors = error.response.data.errors;
+
+                    $formAdd.find(".is-invalid").removeClass("is-invalid");
+                    $formAdd.find(".text-red-600").empty();
+
                     Swal.fire({
                         icon: "error",
                         title: "Validasi Gagal!",
                         text: "Silakan periksa kembali isian formulir Anda.",
                     });
+
                     for (const field in errors) {
-                        $(`#${field}`).addClass("is-invalid");
+                        const inputField = $(`#${field}`);
+                        inputField.addClass("is-invalid");
                         $(`#${field}-error`).html(errors[field][0]);
                     }
                 } else {
@@ -316,15 +325,22 @@ $(function () {
             .catch((error) => {
                 if (error.response && error.response.status === 422) {
                     const errors = error.response.data.errors;
+
+                    $formEdit.find(".is-invalid").removeClass("is-invalid");
+                    $formEdit.find(".text-red-600").empty();
+
                     Swal.fire({
                         icon: "error",
                         title: "Validasi Gagal!",
                         text: "Silakan periksa kembali isian formulir Anda.",
                     });
+
                     for (const field in errors) {
-                        $(`#edit_${field}`).addClass("is-invalid");
+                        const inputField = $(`#${field}`);
+                        inputField.addClass("is-invalid");
                         $(`#${field}-error`).html(errors[field][0]);
                     }
+
                 } else {
                     Swal.fire({
                         icon: "error",

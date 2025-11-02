@@ -75,6 +75,27 @@ class JadwalKunjunganController extends Controller
     }
 
 
+    // public function index()
+    // {
+    //     $hariIni = ucfirst(Carbon::now()->locale('id')->dayName);
+    //     $tanggalHariIni = Carbon::now()->toDateString();
+
+    //     // Ambil semua kunjungan dengan status "Pending" atau "Waiting"
+    //     $kunjunganYangAkanDatang = Kunjungan::with(['poli.dokter', 'pasien'])
+    //         ->whereIn('status', ['Pending', 'Waiting'])
+    //         ->whereDate('tanggal_kunjungan', '>=', Carbon::today())
+    //         ->orderBy('tanggal_kunjungan', 'asc')
+    //         ->get();
+
+    //     // Ambil kunjungan yang berlangsung hari ini
+    //     $kunjunganHariIni = Kunjungan::with(['poli.dokter', 'pasien'])
+    //         ->whereDate('tanggal_kunjungan', '=', Carbon::today())
+    //         ->orderBy('tanggal_kunjungan', 'asc')
+    //         ->get();
+
+    //     return view('admin.jadwal_kunjungan', compact('hariIni', 'tanggalHariIni', 'kunjunganHariIni', 'kunjunganYangAkanDatang'));
+    // }
+
     public function search(Request $request)
     {
         $query = $request->get('query');
@@ -164,11 +185,25 @@ class JadwalKunjunganController extends Controller
         return response()->json(['success' => true, 'message' => 'Status kunjungan diperbarui menjadi Waiting.']);
     }
 
+    // public function masaDepan()
+    // {
+    //     $kunjunganMasaDepan = Kunjungan::with(['poli', 'dokter', 'pasien'])
+    //         ->where('status', 'Pending')
+    //         ->whereDate('tanggal_kunjungan', '>', Carbon::today())
+    //         ->orderBy('tanggal_kunjungan', 'asc')
+    //         ->orderBy('no_antrian', 'asc')
+    //         ->get();
+
+    //     return response()->json($kunjunganMasaDepan);
+    // }
+
     public function masaDepan()
     {
-        $kunjunganMasaDepan = Kunjungan::with(['poli', 'dokter', 'pasien'])
-            ->where('status', 'Pending')
-            ->whereDate('tanggal_kunjungan', '>', Carbon::today())
+        $besok = Carbon::tomorrow()->toDateString();
+        
+        $kunjunganMasaDepan = Kunjungan::with('poli.dokter', 'pasien')
+            ->whereRaw("LOWER(TRIM(status)) = ?", ['pending']) // biar aman dari kapitalisasi/spasi
+            ->whereDate('tanggal_kunjungan', '>=', $besok) // mulai dari besok
             ->orderBy('tanggal_kunjungan', 'asc')
             ->orderBy('no_antrian', 'asc')
             ->get();

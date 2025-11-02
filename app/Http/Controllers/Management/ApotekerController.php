@@ -67,8 +67,8 @@ class ApotekerController extends Controller
             // 🏥 Buat data apoteker
             Apoteker::create([
                 'user_id'        => $user->id,
-                'foto_apoteker'  => $fotoPath,
                 'nama_apoteker'  => $request->nama_apoteker,
+                'foto_apoteker'  => $fotoPath,
                 'no_hp_apoteker' => $request->no_hp_apoteker,
             ]);
 
@@ -157,11 +157,16 @@ class ApotekerController extends Controller
                 'no_hp_apoteker' => $request->edit_no_hp_apoteker,
             ];
 
+            $updateDataUser = ([
+                'username' => $request->edit_username_apoteker,
+            ]);
+
             if ($fotoPath) {
                 $updateData['foto_apoteker'] = $fotoPath;
             }
 
             $apoteker->update($updateData);
+            $user->update($updateDataUser);
 
             return response()->json(['message' => 'Data apoteker berhasil diperbarui.']);
         } catch (\Illuminate\Http\Exceptions\PostTooLargeException $e) {

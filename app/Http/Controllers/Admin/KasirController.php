@@ -7,8 +7,10 @@ use App\Models\Pembayaran;
 use App\Models\MetodePembayaran;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\ValidationException;
 use Intervention\Image\Laravel\Facades\Image;
 use Yajra\DataTables\DataTables;
 
@@ -145,106 +147,150 @@ class KasirController extends Controller
     public function transaksiCash(Request $request)
     {
         $request->validate([
-            'uang_yang_diterima' => ['required'],
-            'kembalian' => ['required'],
-            'metode_pembayaran_id' => ['required'],
+            'id' => ['required', 'exists:pembayaran,id'],
+            'uang_yang_diterima' => ['required', 'numeric'],
+            'kembalian' => ['required', 'numeric'],
+            'metode_pembayaran_id' => ['required', 'exists:metode_pembayaran,id'],
         ]);
 
-        $dataPembayaran = Pembayaran::findOrFail($request->id);
+        $pembayaran = DB::transaction(function () use ($request) {
+            $pemb = Pembayaran::with(['emr.resep.obat' /* pivot ikut otomatis */])
+                ->lockForUpdate()
+                ->findOrFail($request->id);
 
-        $dataPembayaran->update([
-            'uang_yang_diterima' => $request->uang_yang_diterima,
-            'kembalian' => $request->kembalian,
-            'tanggal_pembayaran' => now(),
-            'status' => 'Sudah Bayar',
-            'metode_pembayaran_id' => $request->metode_pembayaran_id,
-        ]);
+            // cegah double-decrement
+            $shouldReduceStock = $pemb->status !== 'Sudah Bayar';
+            if ($shouldReduceStock) {
+                $this->reduceObatFromPembayaran($pemb);
+            }
+
+            $pemb->update([
+                'uang_yang_diterima'   => $request->uang_yang_diterima,
+                'kembalian'            => $request->kembalian,
+                'tanggal_pembayaran'   => now(),
+                'status'               => 'Sudah Bayar',
+                'metode_pembayaran_id' => $request->metode_pembayaran_id,
+            ]);
+
+            return $pemb->fresh(['emr.resep.obat', 'emr.kunjungan.pasien', 'emr.kunjungan.layanan', 'metodePembayaran']);
+        });
 
         return response()->json([
             'success' => true,
-            'data' => $dataPembayaran,
-            'message' => 'Uang Kembalian Rp.' . $request->kembalian,
+            'data'    => $pembayaran,
+            'message' => 'Uang Kembalian Rp' . number_format($request->kembalian, 0, ',', '.') . '. Terimakasih 😊😊😊',
         ]);
     }
 
+    /**
+     * Kurangi stok obat berdasarkan detail resep pada sebuah pembayaran.
+     * Aman terhadap duplikasi pemanggilan (karena dibungkus transaction + lock).
+     */
+    private function reduceObatFromPembayaran(Pembayaran $pembayaran): void
+    {
+        $resep = optional($pembayaran->emr)->resep;
+        if (!$resep) return;
+
+        // relasi belongsToMany -> koleksi model Obat, qty di pivot
+        $obatItems = $resep->obat; // Collection<App\Models\Obat>
+        foreach ($obatItems as $obat) {
+            $obatId = (int) $obat->getKey();                 // id obat dari model Obat
+            $qty    = (int) ($obat->pivot->jumlah ?? 0);     // qty dari pivot
+
+            // (opsional) lewati item batal/retur jika Anda pakai status di pivot
+            // if (in_array($obat->pivot->status, ['batal','retur'])) continue;
+
+            $this->safeDecreaseObat($obatId, $qty);
+        }
+    }
+
+    /**
+     * Decrement stok obat secara aman (cek stok cukup + baris dikunci).
+     */
+    private function safeDecreaseObat(int $obatId, int $qty): void
+    {
+        if ($qty <= 0) return;
+
+        // Satu query, atomic: hanya jalan kalau stok cukup
+        $affected = DB::table('obat')
+            ->where('id', $obatId)
+            ->where('jumlah', '>=', $qty)
+            ->decrement('jumlah', $qty);
+
+        if ($affected === 0) {
+            // rollback otomatis karena di dalam DB::transaction caller
+            throw ValidationException::withMessages([
+                'obat' => "Stok obat ID {$obatId} tidak mencukupi untuk dikurangi {$qty}."
+            ]);
+        }
+    }
+
+
     public function transaksiTransfer(Request $request)
     {
-        // validasi minimal: pastikan id dan file bukti ada
         $request->validate([
             'id' => ['required', 'exists:pembayaran,id'],
             'bukti_pembayaran' => ['required', 'file', 'mimes:jpeg,jpg,png,gif,webp,svg,jfif', 'max:5120'],
             'metode_pembayaran_id' => ['required', 'exists:metode_pembayaran,id'],
         ]);
 
-        // cari record transaksi
-        $dataPembayaran = Pembayaran::findOrFail($request->id);
+        $pembayaran = DB::transaction(function () use ($request) {
+            // lock baris pembayaran
+            $pembayaran = Pembayaran::with('emr.resep.obat')
+                ->lockForUpdate()
+                ->findOrFail($request->id);
 
-        // ambil nilai subtotal dari DB (fallback kalau nama kolom beda)
-        $amount = null;
-        if (isset($dataPembayaran->sub_total)) {
-            $amount = $dataPembayaran->sub_total;
-        } elseif (isset($dataPembayaran->total_tagihan)) {
-            $amount = $dataPembayaran->total_tagihan;
-        } elseif (isset($dataPembayaran->total)) {
-            $amount = $dataPembayaran->total;
-        } else {
-            // jika tidak ada field subtotal di model, batalkan dengan error
-            return response()->json([
-                'success' => false,
-                'message' => 'Kolom subtotal/total tidak ditemukan di record transaksi. Periksa nama kolom di database.'
-            ], 422);
-        }
-
-        // pastikan amount bernilai numeric
-        $amount = floatval($amount);
-        if ($amount <= 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Nilai tagihan tidak valid (<= 0).'
-            ], 422);
-        }
-
-        // 2️⃣ Upload + Kompres Gambar
-        $fotoPath = null;
-        if ($request->hasFile('bukti_pembayaran')) {
-            $file = $request->file('bukti_pembayaran');
-            $extension = strtolower($file->getClientOriginalExtension());
-
-            if ($extension === 'jfif') {
-                $extension = 'jpg';
+            // ambil nominal dari salah satu kolom total
+            $amount = $pembayaran->total_tagihan ?? $pembayaran->sub_total ?? $pembayaran->total ?? null;
+            $amount = floatval($amount);
+            if (!$amount || $amount <= 0) {
+                throw ValidationException::withMessages([
+                    'id' => 'Kolom subtotal/total tidak ditemukan atau tidak valid.',
+                ]);
             }
 
-            $fileName = time() . '_' . uniqid() . '.' . $extension;
-            $path = 'bukti-transaksi/' . $fileName;
+            // upload bukti
+            $fotoPath = null;
+            if ($request->hasFile('bukti_pembayaran')) {
+                $file = $request->file('bukti_pembayaran');
+                $ext  = strtolower($file->getClientOriginalExtension());
+                if ($ext === 'jfif') $ext = 'jpg';
 
-            if ($extension === 'svg') {
-                Storage::disk('public')->put($path, file_get_contents($file));
-            } else {
-                // gunakan Intervention Image untuk resize/kompres
-                $image = Image::read($file);
-                $image->scale(width: 800);
-                Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+                $fileName = time() . '_' . uniqid() . '.' . $ext;
+                $path = 'bukti-transaksi/' . $fileName;
+
+                if ($ext === 'svg') {
+                    Storage::disk('public')->put($path, file_get_contents($file));
+                } else {
+                    $image = Image::read($file);
+                    $image->scale(width: 800);
+                    Storage::disk('public')->put($path, (string) $image->encodeByExtension($ext, quality: 80));
+                }
+                $fotoPath = $path;
             }
 
-            $fotoPath = $path;
-        }
+            $shouldReduceStock = $pembayaran->status !== 'Sudah Bayar';
 
-        // 3️⃣ Update Data Transaksi:
-        // - isi uang_yang_diterima = subtotal dari DB
-        // - isi kembalian = 0 (karena uang pas sama tagihan)
-        $dataPembayaran->update([
-            'bukti_pembayaran'     => $fotoPath,
-            'uang_yang_diterima'   => $amount,
-            'kembalian'            => 0,
-            'tanggal_pembayaran'   => now(),
-            'status'               => 'Sudah Bayar', // atau "Sudah Bayar" jika otomatis terima
-            'metode_pembayaran_id' => $request->metode_pembayaran_id,
-        ]);
+            if ($shouldReduceStock) {
+                $this->reduceObatFromPembayaran($pembayaran); // ⬅️ kurangi stok obat
+            }
+
+            $pembayaran->update([
+                'bukti_pembayaran'     => $fotoPath,
+                'uang_yang_diterima'   => $amount,
+                'kembalian'            => 0,
+                'tanggal_pembayaran'   => now(),
+                'status'               => 'Sudah Bayar',
+                'metode_pembayaran_id' => $request->metode_pembayaran_id,
+            ]);
+
+            return $pembayaran->fresh(['emr.resep.obat', 'emr.kunjungan.pasien', 'emr.kunjungan.layanan', 'metodePembayaran']);
+        });
 
         return response()->json([
             'success' => true,
-            'data' => $dataPembayaran,
-            'message' => 'Bukti transfer diterima. Nominal terbayar: Rp' . number_format($amount, 0, ',', '.') . '. Terimakasih 😊😊😊'
+            'data' => $pembayaran,
+            'message' => 'Bukti transfer diterima. Nominal terbayar: Rp' . number_format($pembayaran->uang_yang_diterima, 0, ',', '.') . '. Terimakasih 😊😊😊'
         ]);
     }
 

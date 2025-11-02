@@ -53,7 +53,7 @@
     <div class="relative w-full max-w-xl max-h-full">
         <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
             <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-600">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Tambah Jadwal Dokter</h3>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Tambah Data Metode Pembayaran</h3>
             </div>
 
             <form id="formCreateMetodePembayaran" class="p-5 flex flex-col gap-4"
@@ -95,7 +95,7 @@
     <div class="relative w-full max-w-xl max-h-full">
         <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
             <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-600">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Edit Jadwal Dokter</h3>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Edit Data Metode Pembayaran</h3>
             </div>
 
             <form id="formUpdateMetodePembayaran" class="p-5 flex flex-col gap-4"

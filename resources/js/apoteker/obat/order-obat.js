@@ -161,6 +161,7 @@ $(function () {
     updatePagination();
 });
 
+/* ===== ORDER OBAT ===== */
 $(function () {
     const elementModal = document.getElementById("modalJualObat");
     const modal = elementModal ? new Modal(elementModal) : null;
@@ -174,130 +175,172 @@ $(function () {
     const obatResultsDiv = document.getElementById("obat_results");
     const selectedObatList = document.getElementById("selected_obat_list");
 
+    // >>>> tambahkan ini:
+    const resepIdInput = document.getElementById("resep_id");
+    const pasienIdHidden = document.getElementById("pasien_id");
+
     function resetForm() {
         $form[0].reset();
         $form.find(".is-invalid").removeClass("is-invalid");
         $form.find(".text-danger").empty();
+        selectedObatList.innerHTML = "";
+        // reset hidden resep_id
+        if (resepIdInput) resepIdInput.value = "";
+        if (pasienDataDiv) pasienDataDiv.classList.add("hidden");
+        if (resultsDiv) resultsDiv.classList.add("hidden");
+        if (obatResultsDiv) obatResultsDiv.classList.add("hidden");
     }
+
+    // helper: ambil/buat resep aktif untuk pasien
+    async function fetchResepAktif(pasienId) {
+        try {
+            if (!pasienId) return null;
+            const url = `/apoteker/resep-aktif?pasien_id=${encodeURIComponent(
+                pasienId
+            )}`; // route yang kita buat di backend
+            const res = await fetch(url, {
+                headers: { "X-Requested-With": "XMLHttpRequest" },
+            });
+            const data = await res.json();
+            if (data && data.resep_id) {
+                resepIdInput.value = data.resep_id; // <<<<<< isi hidden input
+                return data;
+            }
+            return null;
+        } catch (e) {
+            console.error("Gagal ambil resep aktif:", e);
+            return null;
+        }
+    }
+
+    // simple debounce biar pencarian gak meledak
+    function debounce(fn, ms = 300) {
+        let t;
+        return (...args) => {
+            clearTimeout(t);
+            t = setTimeout(() => fn.apply(this, args), ms);
+        };
+    }
+
+    // supaya listener tidak nambah tiap kali modal dibuka, pasang SEKALI
+    const onSearchPasien = debounce(async () => {
+        const query = searchInput.value.trim();
+        if (query.length < 2) {
+            resultsDiv.classList.add("hidden");
+            return;
+        }
+        const response = await fetch(`/obat/search-data-pasien?query=${query}`);
+        const data = await response.json();
+
+        resultsDiv.innerHTML = "";
+        resultsDiv.classList.remove("hidden");
+        if (data.length === 0) {
+            resultsDiv.innerHTML = `<div class="px-4 py-2 text-gray-500 text-sm">Tidak ditemukan</div>`;
+            return;
+        }
+
+        data.forEach((pasien) => {
+            const item = document.createElement("div");
+            item.className =
+                "px-4 py-2 hover:bg-indigo-100 cursor-pointer text-sm";
+            item.textContent = pasien.nama_pasien;
+            item.onclick = async () => {
+                pasienIdHidden.value = pasien.id;
+                document.getElementById("nama_pasien").textContent =
+                    pasien.nama_pasien;
+                document.getElementById("alamat_pasien").textContent =
+                    pasien.alamat ?? "-";
+                document.getElementById("jk_pasien").textContent =
+                    pasien.jenis_kelamin ?? "-";
+                pasienDataDiv.classList.remove("hidden");
+                resultsDiv.classList.add("hidden");
+                searchInput.value = pasien.nama_pasien;
+
+                // <<<<<< ambil / buat resep & isi hidden resep_id
+                await fetchResepAktif(pasien.id);
+            };
+            resultsDiv.appendChild(item);
+        });
+    }, 300);
+
+    const onSearchObat = debounce(async () => {
+        const query = searchObatInput.value.trim();
+        if (query.length < 2) {
+            obatResultsDiv.classList.add("hidden");
+            return;
+        }
+        const response = await fetch(`/obat/search-data-obat?query=${query}`);
+        const data = await response.json();
+
+        obatResultsDiv.innerHTML = "";
+        obatResultsDiv.classList.remove("hidden");
+        if (data.length === 0) {
+            obatResultsDiv.innerHTML = `<div class="px-4 py-2 text-gray-500 text-sm">Obat tidak ditemukan</div>`;
+            return;
+        }
+        data.forEach((obat) => {
+            const item = document.createElement("div");
+            item.className =
+                "px-4 py-2 hover:bg-indigo-100 cursor-pointer text-sm";
+            item.textContent = `${obat.nama_obat} (Stok: ${obat.jumlah})`;
+            item.onclick = () => addObatToList(obat);
+            obatResultsDiv.appendChild(item);
+        });
+    }, 300);
+
+    function addObatToList(obat) {
+        const existingRow = document.querySelector(
+            `tr[data-obat-id='${obat.id}']`
+        );
+        if (existingRow) {
+            alert("Obat ini sudah ditambahkan.");
+            return;
+        }
+        const row = document.createElement("tr");
+        row.setAttribute("data-obat-id", obat.id);
+        row.innerHTML = `
+      <td class="px-3 py-2">${obat.nama_obat}
+        <input type="hidden" name="obat_id[]" value="${obat.id}">
+      </td>
+      <td class="px-3 py-2">${obat.jumlah}</td>
+      <td class="px-3 py-2">
+        <input type="number" name="jumlah[]" min="1" max="${obat.jumlah}" value="1"
+               class="border border-gray-300 rounded p-1 w-16">
+      </td>
+      <td class="px-3 py-2 text-center">
+        <button type="button" class="btn-remove text-red-500 hover:text-red-700">Hapus</button>
+      </td>`;
+        selectedObatList.appendChild(row);
+        obatResultsDiv.classList.add("hidden");
+        searchObatInput.value = "";
+    }
+
+    // pasang listener SEKALI
+    let listenersBound = false;
 
     $("#btn-open-modal-penjualan-obat").on("click", function () {
         resetForm();
         if (modal) modal.show();
 
-        searchInput.addEventListener("keyup", async () => {
-            const query = searchInput.value.trim();
-            if (query.length < 2) {
-                resultsDiv.classList.add("hidden");
-                return;
-            }
-
-            const response = await fetch(
-                `/obat/search-data-pasien?query=${query}`
-            );
-            const data = await response.json();
-
-            resultsDiv.innerHTML = "";
-            if (data.length > 0) {
-                resultsDiv.classList.remove("hidden");
-                data.forEach((pasien) => {
-                    const item = document.createElement("div");
-                    item.className =
-                        "px-4 py-2 hover:bg-indigo-100 cursor-pointer text-sm";
-                    item.textContent = pasien.nama_pasien;
-                    item.onclick = () => {
-                        document.getElementById("pasien_id").value = pasien.id;
-                        document.getElementById("nama_pasien").textContent =
-                            pasien.nama_pasien;
-                        document.getElementById("alamat_pasien").textContent =
-                            pasien.alamat;
-                        document.getElementById("jk_pasien").textContent =
-                            pasien.jenis_kelamin;
-                        pasienDataDiv.classList.remove("hidden");
-                        resultsDiv.classList.add("hidden");
-                        searchInput.value = pasien.nama_pasien;
-                    };
-                    resultsDiv.appendChild(item);
-                });
-            } else {
-                resultsDiv.classList.remove("hidden");
-                resultsDiv.innerHTML = `<div class="px-4 py-2 text-gray-500 text-sm">Tidak ditemukan</div>`;
-            }
-        });
-
-        searchObatInput.addEventListener("keyup", async () => {
-            const query = searchObatInput.value.trim();
-            if (query.length < 2) {
-                obatResultsDiv.classList.add("hidden");
-                return;
-            }
-
-            const response = await fetch(
-                `/obat/search-data-obat?query=${query}`
-            );
-            const data = await response.json();
-
-            obatResultsDiv.innerHTML = "";
-            if (data.length > 0) {
-                obatResultsDiv.classList.remove("hidden");
-                data.forEach((obat) => {
-                    const item = document.createElement("div");
-                    item.className =
-                        "px-4 py-2 hover:bg-indigo-100 cursor-pointer text-sm";
-                    item.textContent = `${obat.nama_obat} (Stok: ${obat.jumlah})`;
-                    item.onclick = () => addObatToList(obat);
-                    obatResultsDiv.appendChild(item);
-                });
-            } else {
-                obatResultsDiv.classList.remove("hidden");
-                obatResultsDiv.innerHTML = `<div class="px-4 py-2 text-gray-500 text-sm">Obat tidak ditemukan</div>`;
-            }
-        });
-
-        function addObatToList(obat) {
-            // Cek kalau obat sudah ada di daftar
-            const existingRow = document.querySelector(
-                `tr[data-obat-id='${obat.id}']`
-            );
-            if (existingRow) {
-                alert("Obat ini sudah ditambahkan.");
-                return;
-            }
-
-            const row = document.createElement("tr");
-            row.setAttribute("data-obat-id", obat.id);
-            row.innerHTML = `
-        <td class="px-3 py-2">${obat.nama_obat}
-            <input type="hidden" name="obat_id[]" value="${obat.id}">
-        </td>
-        <td class="px-3 py-2">${obat.jumlah}</td>
-        <td class="px-3 py-2">
-            <input type="number" name="jumlah[]" min="1" max="${obat.jumlah}" value="1"
-                class="border border-gray-300 rounded p-1 w-16">
-        </td>
-        <td class="px-3 py-2 text-center">
-            <button type="button" class="btn-remove text-red-500 hover:text-red-700">Hapus</button>
-        </td>
-    `;
-            selectedObatList.appendChild(row);
-            obatResultsDiv.classList.add("hidden");
-            searchObatInput.value = "";
+        if (!listenersBound) {
+            searchInput.addEventListener("keyup", onSearchPasien);
+            searchObatInput.addEventListener("keyup", onSearchObat);
+            $(document).on("click", ".btn-remove", function () {
+                $(this).closest("tr").remove();
+            });
+            listenersBound = true;
         }
-
-        $(document).on("click", ".btn-remove", function () {
-            $(this).closest("tr").remove();
-        });
     });
 
-    $("#btn-close-modal-penjualan-obat").on("click", function () {
-        resetForm();
-        if (modal) modal.hide();
-    });
+    $("#btn-close-modal-penjualan-obat, #closeModalBtn").on(
+        "click",
+        function () {
+            resetForm();
+            if (modal) modal.hide();
+        }
+    );
 
-    $("#closeModalBtn").on("click", function () {
-        resetForm();
-        if (modal) modal.hide();
-    });
-
+    // ===== submit form: kirim resep_id juga =====
     $form.on("submit", async function (e) {
         e.preventDefault();
 
@@ -315,32 +358,30 @@ $(function () {
 
         const formData = {
             pasien_id: $("#pasien_id").val(),
+            resep_id: $("#resep_id").val(), // <<<<<< penting
             obat_id: obatIds,
             jumlah: jumlahs,
+            // keterangan: [...], dosis: [...]  (kalau kamu punya inputnya)
         };
 
-        axios
-            .post("/obat/pesan-obat", formData)
-            .then((res) => {
-                Swal.fire({
-                    icon: "success",
-                    title: "Berhasil!",
-                    text: "Transaksi berhasil disimpan.",
-                    timer: 2000,
-                    showConfirmButton: false,
-                }).then(() => {
-                    window.location.reload();
-                });
-            })
-            .catch((err) => {
-                console.error(err.response?.data || err);
-                Swal.fire({
-                    icon: "error",
-                    title: "Gagal!",
-                    text:
-                        err.response?.data?.message ||
-                        "Terjadi kesalahan saat menyimpan transaksi.",
-                });
+        try {
+            await axios.post("/obat/pesan-obat", formData);
+            Swal.fire({
+                icon: "success",
+                title: "Berhasil!",
+                text: "Order obat tersimpan & masuk antrean pengambilan.",
+                timer: 1800,
+                showConfirmButton: false,
+            }).then(() => window.location.reload());
+        } catch (err) {
+            console.error(err.response?.data || err);
+            Swal.fire({
+                icon: "error",
+                title: "Gagal!",
+                text:
+                    err.response?.data?.message ||
+                    "Terjadi kesalahan saat menyimpan order.",
             });
+        }
     });
 });

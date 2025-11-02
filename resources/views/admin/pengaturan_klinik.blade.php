@@ -76,7 +76,7 @@
                     role="tabpanel" aria-labelledby="daftar-obat-tab">
                     @include('admin.pengaturanKlinik.daftar_obat')
                 </div>
-
+                {{-- 
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-daftar-layanan"
                     role="tabpanel" aria-labelledby="daftar-layanan-tab">
                     @include('admin.pengaturanKlinik.daftar_layanan')
@@ -85,7 +85,7 @@
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-jenis-tes-lab"
                     role="tabpanel" aria-labelledby="jenis-tes-lab-tab">
                     @include('admin.pengaturanKlinik.jenis_tes_lab')
-                </div>
+                </div> --}}
             </div>
 
         </div>

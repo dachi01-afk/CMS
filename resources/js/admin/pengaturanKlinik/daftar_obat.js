@@ -299,7 +299,7 @@ $(function () {
                 Swal.fire({
                     icon: "success",
                     title: "Berhasil!",
-                    text: response.data.massage,
+                    text: response.data.message,
                     showConfirmButton: false,
                     timer: 2000,
                 }).then(() => {

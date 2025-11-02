@@ -286,6 +286,7 @@ Route::middleware(['auth', 'role:Apoteker'])->group(function () {
         Route::get('/search-data-pasien', [PenjualanObatController::class, 'search'])->name('obat.search.data.pasien');
         Route::get('/search-data-obat', [PenjualanObatController::class, 'searchObat'])->name('obat.search.data.obat');
         Route::post('/pesan-obat', [PenjualanObatController::class, 'pesanObat'])->name('obat.pesan.obat');
+        Route::get('/apoteker/resep-aktif', [PenjualanObatController::class, 'ajaxResepAktif'])->name('resep.aktif');
     });
 });
 

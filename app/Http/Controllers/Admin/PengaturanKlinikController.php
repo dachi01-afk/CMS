@@ -48,7 +48,7 @@ class PengaturanKlinikController extends Controller
 
         return DataTables::of($query)
             ->addIndexColumn()
-            ->addColumn('dokter', function ($jadwal) {
+            ->addColumn('nama_dokter', function ($jadwal) {
                 return $jadwal->dokter->nama_dokter ?? '-';
             })
             ->addColumn('nama_poli', function ($jadwal) {

@@ -7,6 +7,7 @@ use App\Models\MetodePembayaran;
 use App\Models\Pasien;
 use App\Models\PenjualanObat;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Laravel\Facades\Image;
@@ -152,14 +153,24 @@ class TransaksiObatController extends Controller
     public function transaksiCash(Request $request)
     {
         $request->validate([
-            'uang_yang_diterima' => ['required'],
-            'kembalian' => ['required'],
-            'metode_pembayaran' => ['required'],
+            'uang_yang_diterima' => ['required', 'numeric'],
+            'kembalian' => ['required', 'numeric'],
+            'metode_pembayaran' => ['required', 'exists:metode_pembayaran,id'],
+            'kode_transaksi' => ['required', 'string'],
         ]);
 
-        $dataPembayaran = PenjualanObat::where('kode_transaksi', $request->kode_transaksi);
+        // 🔍 Ambil semua data transaksi berdasarkan kode_transaksi
+        $transaksiList = PenjualanObat::where('kode_transaksi', $request->kode_transaksi)->get();
 
-        $dataPembayaran->update([
+        if ($transaksiList->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Transaksi dengan kode tersebut tidak ditemukan.',
+            ], 404);
+        }
+
+        // 🔄 Update semua data dengan kode transaksi yang sama
+        PenjualanObat::where('kode_transaksi', $request->kode_transaksi)->update([
             'total_tagihan' => $request->uang_yang_diterima,
             'uang_yang_diterima' => $request->uang_yang_diterima,
             'kembalian' => $request->kembalian,
@@ -168,59 +179,51 @@ class TransaksiObatController extends Controller
             'metode_pembayaran_id' => $request->metode_pembayaran,
         ]);
 
+        // 🔽 Kurangi stok obat untuk setiap item di transaksi
+        foreach ($transaksiList as $item) {
+            DB::table('obat')->where('id', $item->obat_id)->decrement('jumlah', $item->jumlah);
+        }
+
         return response()->json([
             'success' => true,
-            'data' => $dataPembayaran,
-            'message' => 'Uang Kembalian ' . $request->kembalian,
+            'message' => 'Transaksi berhasil! Kembalian Rp ' . number_format($request->kembalian, 0, ',', '.') . '. Terimakasih 😊😊😊',
         ]);
     }
 
     public function transaksiTransfer(Request $request)
     {
-        // validasi minimal: pastikan id dan file bukti ada
         $request->validate([
-            'id' => ['required', 'exists:penjualan_obat,id'],
+            'kode_transaksi' => ['required', 'string'],
             'bukti_pembayaran' => ['required', 'file', 'mimes:jpeg,jpg,png,gif,webp,svg,jfif', 'max:5120'],
             'metode_pembayaran' => ['required', 'exists:metode_pembayaran,id'],
         ]);
 
-        // cari record transaksi
-        $dataPembayaran = PenjualanObat::findOrFail($request->id);
+        // Ambil salah satu record berdasarkan kode_transaksi
+        $record = PenjualanObat::where('kode_transaksi', $request->kode_transaksi)->get();
 
-        // ambil nilai subtotal dari DB (fallback kalau nama kolom beda)
-        $amount = null;
-        if (isset($dataPembayaran->sub_total)) {
-            $amount = $dataPembayaran->sub_total;
-        } elseif (isset($dataPembayaran->total_tagihan)) {
-            $amount = $dataPembayaran->total_tagihan;
-        } elseif (isset($dataPembayaran->total)) {
-            $amount = $dataPembayaran->total;
-        } else {
-            // jika tidak ada field subtotal di model, batalkan dengan error
+        if (!$record) {
             return response()->json([
                 'success' => false,
-                'message' => 'Kolom subtotal/total tidak ditemukan di record transaksi. Periksa nama kolom di database.'
+                'message' => 'Transaksi dengan kode tersebut tidak ditemukan.',
+            ], 404);
+        }
+
+        // Ambil nominal dari salah satu kolom total/subtotal
+        $amount = $request->total_tagihan;
+
+        if (!$amount) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Kolom sub_total / total_tagihan tidak ditemukan di record transaksi.',
             ], 422);
         }
 
-        // pastikan amount bernilai numeric
-        $amount = floatval($amount);
-        if ($amount <= 0) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Nilai tagihan tidak valid (<= 0).'
-            ], 422);
-        }
-
-        // 2️⃣ Upload + Kompres Gambar
+        // Upload + kompres gambar
         $fotoPath = null;
         if ($request->hasFile('bukti_pembayaran')) {
             $file = $request->file('bukti_pembayaran');
             $extension = strtolower($file->getClientOriginalExtension());
-
-            if ($extension === 'jfif') {
-                $extension = 'jpg';
-            }
+            if ($extension === 'jfif') $extension = 'jpg';
 
             $fileName = time() . '_' . uniqid() . '.' . $extension;
             $path = 'bukti-transaksi/' . $fileName;
@@ -228,7 +231,6 @@ class TransaksiObatController extends Controller
             if ($extension === 'svg') {
                 Storage::disk('public')->put($path, file_get_contents($file));
             } else {
-                // gunakan Intervention Image untuk resize/kompres
                 $image = Image::read($file);
                 $image->scale(width: 800);
                 Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
@@ -237,22 +239,25 @@ class TransaksiObatController extends Controller
             $fotoPath = $path;
         }
 
-        // 3️⃣ Update Data Transaksi:
-        // - isi uang_yang_diterima = subtotal dari DB
-        // - isi kembalian = 0 (karena uang pas sama tagihan)
-        $dataPembayaran->update([
+        // Update SEMUA data yang punya kode_transaksi sama
+        PenjualanObat::where('kode_transaksi', $request->kode_transaksi)->update([
             'bukti_pembayaran'     => $fotoPath,
             'uang_yang_diterima'   => $amount,
             'kembalian'            => 0,
-            'tanggal_transaksi'   => now(),
-            'status'               => 'Sudah Bayar', // atau "Sudah Bayar" jika otomatis terima
+            'sub_total'            => $amount,
+            'tanggal_transaksi'    => now(),
+            'status'               => 'Sudah Bayar',
             'metode_pembayaran_id' => $request->metode_pembayaran,
         ]);
 
+        // 🔽 Kurangi stok obat untuk setiap item di transaksi
+        foreach ($record as $item) {
+            DB::table('obat')->where('id', $item->obat_id)->decrement('jumlah', $item->jumlah);
+        }
+
         return response()->json([
             'success' => true,
-            'data' => $dataPembayaran,
-            'message' => 'Bukti transfer diterima. Nominal terbayar: Rp' . number_format($amount, 0, ',', '.') . '. Terimakasih 😊😊😊'
+            'message' => 'Transaksi dengan kode ' . $request->kode_transaksi . ' berhasil diperbarui. Nominal: Rp' . number_format($amount, 0, ',', '.') . ' ✅',
         ]);
     }
 }

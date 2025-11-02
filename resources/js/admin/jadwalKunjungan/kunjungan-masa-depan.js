@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", () => {
             row.innerHTML = `
                 <td class="px-6 py-3 font-semibold">${item.no_antrian}</td>
                 <td class="px-6 py-3">${item.pasien.nama_pasien}</td>
-                <td class="px-6 py-3">${item.dokter.nama_dokter}</td>
+                <td class="px-6 py-3">${item.poli.dokter.nama_dokter}</td>
                 <td class="px-6 py-3">${item.poli.nama_poli}</td>
                 <td class="px-6 py-3">${item.keluhan_awal}</td>
                 <td class="px-6 py-3">${new Date(
@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 })}</td>
                 <td class="px-6 py-3 text-center">
                     <button data-id="${item.id}" 
-                        data-dokter="${item.dokter.nama_dokter}"
+                        data-dokter="${item.poli.dokter.nama_dokter}"
                             class="ubahStatusBtn text-blue-600 hover:text-blue-800 mr-2 text-center items-center">
                         <i class="fa-solid fa-circle-info text-lg"></i>
                         Lihat Detail

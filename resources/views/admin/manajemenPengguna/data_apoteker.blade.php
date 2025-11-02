@@ -55,7 +55,7 @@
 {{-- Modal Add Apoteker --}}
 <div id="addApotekerModal" aria-hidden="true"
     class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 bg-black bg-opacity-50">
-    <div class="relative w-full max-w-xl max-h-full">
+    <div class="relative w-full max-w-3xl max-h-full">
         <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
 
             {{-- Header --}}
@@ -191,7 +191,7 @@
 {{-- Modal Edit Apoteker --}}
 <div id="editApotekerModal" aria-hidden="true"
     class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 bg-black bg-opacity-50">
-    <div class="relative w-full max-w-xl max-h-full">
+    <div class="relative w-full max-w-3xl max-h-full">
         <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
 
             {{-- Header --}}

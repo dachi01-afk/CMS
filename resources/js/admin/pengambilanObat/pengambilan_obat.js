@@ -24,7 +24,23 @@ $(function () {
             { data: "nama_dokter", name: "nama_dokter" },
             { data: "nama_pasien", name: "nama_pasien" },
             { data: "no_antrian", name: "no_antrian" },
-            { data: "tanggal_kunjungan", name: "tanggal_kunjungan" },
+            {
+                data: "tanggal_kunjungan",
+                name: "tanggal_kunjungan",
+                render: function (data) {
+                    if (!data) return "-";
+                    const date = new Date(data);
+                    const waktuIndonesia = date.toLocaleDateString("id-ID", {
+                        timeZone: "Asia/Jakarta",
+                        day: "2-digit",
+                        month: "long",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                    });
+                    return waktuIndonesia;
+                },
+            },
             {
                 data: "nama_obat",
                 name: "nama_obat",
@@ -195,7 +211,7 @@ $(function () {
                         } else {
                             Swal.fire({
                                 icon: "error",
-                                title:  "Gagal!",
+                                title: "Gagal!",
                                 text: msg,
                                 confirmButtonText: "OK",
                             });

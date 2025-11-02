@@ -159,7 +159,7 @@
                 <!-- Search Dokter -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700">Cari Dokter</label>
-                    <input type="text" id="search_dokter_update" name="search_dokter_update"
+                    <input type="text" id="search_dokter_update" name="search_dokter_update" readonly
                         placeholder="Ketik nama dokter..."
                         class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:ring-indigo-500 focus:border-indigo-500">
                     <div id="search_results_update"

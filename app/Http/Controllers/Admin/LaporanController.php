@@ -22,7 +22,7 @@ class LaporanController extends Controller
 
     public function dataKunjungan()
     {
-        $dataKunjungan = Kunjungan::with('poli.dokter', 'pasien')->get();
+        $dataKunjungan = Kunjungan::with('poli.dokter', 'pasien')->latest()->get();
 
         return DataTables::of($dataKunjungan)
             ->addIndexColumn()
@@ -31,7 +31,9 @@ class LaporanController extends Controller
             ->addColumn('nama_pasien', fn($row) => $row->pasien->nama_pasien ?? '-')
             ->editColumn('tanggal_kunjungan', function ($row) {
                 return $row->tanggal_kunjungan
-                    ? \Carbon\Carbon::parse($row->tanggal_kunjungan)->format('d/m/Y')
+                    ? \Carbon\Carbon::parse($row->tanggal_kunjungan)
+                    ->locale('id')
+                    ->translatedFormat('j F Y')
                     : '-';
             })
             ->editColumn('status', function ($row) {

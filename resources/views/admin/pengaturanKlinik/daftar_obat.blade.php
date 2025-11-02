@@ -10,7 +10,7 @@
 </div>
 
 <!-- Tabel -->
-<div class="overflow-hidden rounded-lg shadow-md">
+<div class="overflow-x-auto rounded-lg shadow-md">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 border-b border-gray-200">
         <div>
             <select id="obat_pageLength"
@@ -149,7 +149,7 @@
                     <label for="nama_obat_edit"
                         class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama
                         Obat</label>
-                    <input type="text" name="nama_obat_edit" id="nama_obat_edit"
+                    <input type="text" name="nama_obat_edit" id="nama_obat_edit" readonly
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                         placeholder="Nama Obat" required>
                     <div id="nama_obat_edit-error" class="text-red-600 text-sm mt-1"></div>

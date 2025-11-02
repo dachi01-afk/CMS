@@ -4,7 +4,7 @@
 </div>
 
 <!-- Tabel -->
-<div class="overflow-hidden rounded-lg shadow-md">
+<div class="overflow-x-auto rounded-lg shadow-md">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 border-b border-gray-200">
         <div>
             <select id="transaksi-obat-page-length"

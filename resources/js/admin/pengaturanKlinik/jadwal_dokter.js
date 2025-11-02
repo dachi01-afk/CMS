@@ -21,7 +21,7 @@ $(function () {
                 orderable: false,
                 searchable: false,
             },
-            { data: "dokter", name: "dokter" },
+            { data: "nama_dokter", name: "dokter" },
             { data: "nama_poli", name: "nama_poli" },
             { data: "hari_formatted", name: "hari" },
             { data: "jam_awal", name: "jam_awal" },
