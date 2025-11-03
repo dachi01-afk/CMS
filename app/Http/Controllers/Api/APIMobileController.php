@@ -106,96 +106,96 @@ class APIMobileController extends Controller
         }
     }
 
-/** REGISTER */
-public function register(Request $request)
-{
-    $validator = Validator::make($request->all(), [
-        'username' => 'required|string|min:3|unique:user,username',
-        'email' => 'required|email|unique:user,email',
-        'password' => 'required|string|min:6',
-    ], [
-        'username.required' => 'Username tidak boleh kosong.',
-        'username.min' => 'Username minimal 3 karakter.',
-        'username.unique' => 'Username sudah digunakan.',
-        'email.required' => 'Email tidak boleh kosong.',
-        'email.email' => 'Format email tidak valid.',
-        'email.unique' => 'Email sudah terdaftar.',
-        'password.required' => 'Password tidak boleh kosong.',
-        'password.min' => 'Password minimal 6 karakter.',
-    ]);
+    /** REGISTER */
+    public function register(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'username' => 'required|string|min:3|unique:user,username',
+            'email' => 'required|email|unique:user,email',
+            'password' => 'required|string|min:6',
+        ], [
+            'username.required' => 'Username tidak boleh kosong.',
+            'username.min' => 'Username minimal 3 karakter.',
+            'username.unique' => 'Username sudah digunakan.',
+            'email.required' => 'Email tidak boleh kosong.',
+            'email.email' => 'Format email tidak valid.',
+            'email.unique' => 'Email sudah terdaftar.',
+            'password.required' => 'Password tidak boleh kosong.',
+            'password.min' => 'Password minimal 6 karakter.',
+        ]);
 
-    if ($validator->fails()) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Validasi gagal',
-            'errors' => $validator->errors(),
-        ], 422);
-    }
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
 
-    try {
-        return DB::transaction(function () use ($request) {
-            // ✅ GENERATE NO_EMR DENGAN PREFIX RMB (Mobile)
-            $lastPasien = Pasien::where('no_emr', 'LIKE', 'RMB-%')
-                ->orderBy('id', 'desc')
-                ->first();
-            
-            $lastNumber = 0;
-            if ($lastPasien && preg_match('/RMB-(\d+)/', $lastPasien->no_emr, $matches)) {
-                $lastNumber = (int)$matches[1];
-            }
+        try {
+            return DB::transaction(function () use ($request) {
+                // ✅ GENERATE NO_EMR DENGAN PREFIX RMB (Mobile)
+                $lastPasien = Pasien::where('no_emr', 'LIKE', 'RMB-%')
+                    ->orderBy('id', 'desc')
+                    ->first();
 
-            $nextNumber = $lastNumber + 1;
-            $no_emr = 'RMB-' . str_pad($nextNumber, 8, '0', STR_PAD_LEFT);
+                $lastNumber = 0;
+                if ($lastPasien && preg_match('/RMB-(\d+)/', $lastPasien->no_emr, $matches)) {
+                    $lastNumber = (int) $matches[1];
+                }
 
-            Log::info('Generating EMR for mobile registration:', [
-                'no_emr' => $no_emr,
-                'last_number' => $lastNumber,
-                'next_number' => $nextNumber,
-            ]);
+                $nextNumber = $lastNumber + 1;
+                $no_emr = 'RMB-'.str_pad($nextNumber, 8, '0', STR_PAD_LEFT);
 
-            // Create user
-            $user = User::create([
-                'username' => $request->username,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'role' => 'Pasien',
-            ]);
+                Log::info('Generating EMR for mobile registration:', [
+                    'no_emr' => $no_emr,
+                    'last_number' => $lastNumber,
+                    'next_number' => $nextNumber,
+                ]);
 
-            // Create pasien WITH no_emr
-            $pasien = Pasien::create([
-                'user_id' => $user->id,
-                'no_emr' => $no_emr,  // ✅ LANGSUNG SET
-                'nama_pasien' => null,
-                'alamat' => null,
-                'tanggal_lahir' => null,
-                'jenis_kelamin' => null,
-            ]);
+                // Create user
+                $user = User::create([
+                    'username' => $request->username,
+                    'email' => $request->email,
+                    'password' => Hash::make($request->password),
+                    'role' => 'Pasien',
+                ]);
 
-            Log::info('Mobile registration successful:', [
-                'user_id' => $user->id,
-                'pasien_id' => $pasien->id,
-                'no_emr' => $no_emr,
-            ]);
+                // Create pasien WITH no_emr
+                $pasien = Pasien::create([
+                    'user_id' => $user->id,
+                    'no_emr' => $no_emr,  // ✅ LANGSUNG SET
+                    'nama_pasien' => null,
+                    'alamat' => null,
+                    'tanggal_lahir' => null,
+                    'jenis_kelamin' => null,
+                ]);
+
+                Log::info('Mobile registration successful:', [
+                    'user_id' => $user->id,
+                    'pasien_id' => $pasien->id,
+                    'no_emr' => $no_emr,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Registrasi berhasil',
+                    'data' => [
+                        'user' => $user,
+                        'pasien' => $pasien,
+                        'no_emr' => $no_emr,
+                    ],
+                ], 201);
+            });
+        } catch (\Throwable $e) {
+            Log::error('Register error: '.$e->getMessage());
 
             return response()->json([
-                'success' => true,
-                'message' => 'Registrasi berhasil',
-                'data' => [
-                    'user' => $user,
-                    'pasien' => $pasien,
-                    'no_emr' => $no_emr,
-                ],
-            ], 201);
-        });
-    } catch (\Throwable $e) {
-        Log::error('Register error: ' . $e->getMessage());
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Terjadi kesalahan sistem',
-        ], 500);
+                'success' => false,
+                'message' => 'Terjadi kesalahan sistem',
+            ], 500);
+        }
     }
-}
 
     /**
      * Get recent notifications for polling
@@ -261,115 +261,115 @@ public function register(Request $request)
     //     ]);
     // }
 
-   public function getProfile(Request $request)
-{
-    $user = $request->user();
-    $pasien = \App\Models\Pasien::where('user_id', $user->id)->firstOrFail();
+    public function getProfile(Request $request)
+    {
+        $user = $request->user();
+        $pasien = \App\Models\Pasien::where('user_id', $user->id)->firstOrFail();
 
-    $this->ensureQrCodePasien($pasien);
-
-    return response()->json([
-        'success' => true,
-        'data' => [
-            'id' => $pasien->id,
-            'nama_pasien' => $pasien->nama_pasien,
-            'alamat' => $pasien->alamat,
-            'tanggal_lahir' => $pasien->tanggal_lahir,
-            'jenis_kelamin' => $pasien->jenis_kelamin,
-            'foto_pasien' => $pasien->foto_pasien,
-            'qr_code_pasien' => $pasien->qr_code_pasien,
-            'no_emr' => $pasien->no_emr,
-        ],
-    ]);
-}
-
-    public function updateProfile(Request $request)
-{
-    try {
-        $user = Auth::user();
-        if (!$user) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Unauthorized',
-            ], 401);
-        }
-
-        $pasien = Pasien::where('user_id', $user->id)->first();
-        if (!$pasien) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data pasien tidak ditemukan',
-            ], 404);
-        }
-
-        // ✅ AUTO-GENERATE NO_EMR JIKA BELUM ADA (untuk pasien mobile lama)
-        if (empty($pasien->no_emr)) {
-            $lastPasien = Pasien::where('no_emr', 'LIKE', 'RMB-%')
-                ->orderBy('id', 'desc')
-                ->first();
-            
-            $lastNumber = 0;
-            if ($lastPasien && preg_match('/RMB-(\d+)/', $lastPasien->no_emr, $matches)) {
-                $lastNumber = (int)$matches[1];
-            }
-
-            $nextNumber = $lastNumber + 1;
-            $pasien->no_emr = 'RMB-' . str_pad($nextNumber, 8, '0', STR_PAD_LEFT);
-            
-            Log::info('Auto-generated EMR for existing mobile user:', [
-                'pasien_id' => $pasien->id,
-                'no_emr' => $pasien->no_emr,
-            ]);
-        }
-
-        $validated = $request->validate([
-            'nama_pasien' => 'required|string|max:255',
-            'alamat' => 'nullable|string|max:255',
-            'tanggal_lahir' => 'nullable|date',
-            'jenis_kelamin' => 'nullable|string|in:Laki-laki,Perempuan',
-            'foto_pasien' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-        ]);
-
-        $pathFotoPasien = $pasien->foto_pasien;
-
-        if ($request->hasFile('foto_pasien')) {
-            if ($pasien->foto_pasien && Storage::disk('public')->exists($pasien->foto_pasien)) {
-                Storage::disk('public')->delete($pasien->foto_pasien);
-            }
-
-            $fileFoto = $request->file('foto_pasien');
-            $namaFoto = 'pasien_' . $user->id . '_' . time() . '.' . $fileFoto->getClientOriginalExtension();
-            $pathFotoPasien = $fileFoto->storeAs('Foto-Pasien', $namaFoto, 'public');
-        }
-
-        $pasien->update([
-            'nama_pasien' => $validated['nama_pasien'],
-            'alamat' => $validated['alamat'],
-            'tanggal_lahir' => $validated['tanggal_lahir'],
-            'jenis_kelamin' => $validated['jenis_kelamin'],
-            'foto_pasien' => $pathFotoPasien,
-        ]);
+        $this->ensureQrCodePasien($pasien);
 
         return response()->json([
             'success' => true,
-            'message' => 'Profil berhasil diperbarui',
-            'data' => $pasien->fresh(),
+            'data' => [
+                'id' => $pasien->id,
+                'nama_pasien' => $pasien->nama_pasien,
+                'alamat' => $pasien->alamat,
+                'tanggal_lahir' => $pasien->tanggal_lahir,
+                'jenis_kelamin' => $pasien->jenis_kelamin,
+                'foto_pasien' => $pasien->foto_pasien,
+                'qr_code_pasien' => $pasien->qr_code_pasien,
+                'no_emr' => $pasien->no_emr,
+            ],
         ]);
-    } catch (\Illuminate\Validation\ValidationException $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Validation error',
-            'errors' => $e->errors(),
-        ], 422);
-    } catch (\Exception $e) {
-        Log::error('Error updating profile: ' . $e->getMessage());
-
-        return response()->json([
-            'success' => false,
-            'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
-        ], 500);
     }
-}
+
+    public function updateProfile(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            if (! $user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized',
+                ], 401);
+            }
+
+            $pasien = Pasien::where('user_id', $user->id)->first();
+            if (! $pasien) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data pasien tidak ditemukan',
+                ], 404);
+            }
+
+            // ✅ AUTO-GENERATE NO_EMR JIKA BELUM ADA (untuk pasien mobile lama)
+            if (empty($pasien->no_emr)) {
+                $lastPasien = Pasien::where('no_emr', 'LIKE', 'RMB-%')
+                    ->orderBy('id', 'desc')
+                    ->first();
+
+                $lastNumber = 0;
+                if ($lastPasien && preg_match('/RMB-(\d+)/', $lastPasien->no_emr, $matches)) {
+                    $lastNumber = (int) $matches[1];
+                }
+
+                $nextNumber = $lastNumber + 1;
+                $pasien->no_emr = 'RMB-'.str_pad($nextNumber, 8, '0', STR_PAD_LEFT);
+
+                Log::info('Auto-generated EMR for existing mobile user:', [
+                    'pasien_id' => $pasien->id,
+                    'no_emr' => $pasien->no_emr,
+                ]);
+            }
+
+            $validated = $request->validate([
+                'nama_pasien' => 'required|string|max:255',
+                'alamat' => 'nullable|string|max:255',
+                'tanggal_lahir' => 'nullable|date',
+                'jenis_kelamin' => 'nullable|string|in:Laki-laki,Perempuan',
+                'foto_pasien' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            ]);
+
+            $pathFotoPasien = $pasien->foto_pasien;
+
+            if ($request->hasFile('foto_pasien')) {
+                if ($pasien->foto_pasien && Storage::disk('public')->exists($pasien->foto_pasien)) {
+                    Storage::disk('public')->delete($pasien->foto_pasien);
+                }
+
+                $fileFoto = $request->file('foto_pasien');
+                $namaFoto = 'pasien_'.$user->id.'_'.time().'.'.$fileFoto->getClientOriginalExtension();
+                $pathFotoPasien = $fileFoto->storeAs('Foto-Pasien', $namaFoto, 'public');
+            }
+
+            $pasien->update([
+                'nama_pasien' => $validated['nama_pasien'],
+                'alamat' => $validated['alamat'],
+                'tanggal_lahir' => $validated['tanggal_lahir'],
+                'jenis_kelamin' => $validated['jenis_kelamin'],
+                'foto_pasien' => $pathFotoPasien,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Profil berhasil diperbarui',
+                'data' => $pasien->fresh(),
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation error',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('Error updating profile: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: '.$e->getMessage(),
+            ], 500);
+        }
+    }
 
     public function getJadwalDokter(Request $request)
     {
@@ -596,6 +596,173 @@ public function register(Request $request)
             ], 500);
         }
     }
+
+    public function getRiwayatEMRPasien($pasienId)
+{
+    try {
+        $userId = Auth::id();
+
+        // optional: validasi dokter login (boleh di-skip kalau endpoint untuk semua role)
+        $dokterLogin = Dokter::where('user_id', $userId)->first();
+        if (! $dokterLogin) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data dokter tidak ditemukan',
+            ], 404);
+        }
+
+        // Validasi pasien
+        $pasien = Pasien::with('user')->find($pasienId);
+        if (! $pasien) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pasien tidak ditemukan',
+            ], 404);
+        }
+
+        Log::info('Getting riwayat EMR for pasien_id: '.$pasienId);
+
+        // Ambil kunjungan + emr + dokter(+spesialis) + poli
+        $riwayatKunjungan = Kunjungan::with([
+            'poli',
+            'dokter.jenisSpesialis', // <-- ganti ke 'dokter.jenis_spesialis' jika itu nama relasimu
+            'emr.resep.obat',
+        ])
+        ->where('pasien_id', $pasienId)
+        ->whereIn('status', ['Payment', 'Succeed', 'Completed'])
+        ->whereHas('emr')
+        ->orderBy('tanggal_kunjungan', 'desc')
+        ->get();
+
+        Log::info('Found '.$riwayatKunjungan->count().' EMR records for pasien');
+
+        $formattedData = $riwayatKunjungan->map(function ($kunjungan) {
+            $emr = $kunjungan->emr;
+
+            // ===== Resep obat
+            $resepData = [];
+            if ($emr && $emr->resep && $emr->resep->obat) {
+                foreach ($emr->resep->obat as $obat) {
+                    $resepData[] = [
+                        'id'           => $obat->id,
+                        'nama_obat'    => $obat->nama_obat,
+                        'dosis'        => $obat->pivot->dosis ?? $obat->dosis,
+                        'jumlah'       => (int)($obat->pivot->jumlah ?? 1),
+                        'keterangan'   => $obat->pivot->keterangan ?? '',
+                        'status'       => $obat->pivot->status ?? 'Belum Diambil',
+                        'harga_obat'   => (float)($obat->total_harga ?? 0),
+                        'subtotal'     => isset($obat->total_harga, $obat->pivot->jumlah)
+                                            ? (float)$obat->total_harga * (int)$obat->pivot->jumlah
+                                            : null,
+                    ];
+                }
+            }
+
+            // ===== Layanan
+            $layananData = [];
+            try {
+                $kunjunganLayanan = \App\Models\KunjunganLayanan::with('layanan')
+                    ->where('kunjungan_id', $kunjungan->id)
+                    ->get();
+
+                foreach ($kunjunganLayanan as $kl) {
+                    if ($kl->layanan) {
+                        $layananData[] = [
+                            'id'            => $kl->layanan->id,
+                            'nama_layanan'  => $kl->layanan->nama_layanan,
+                            'harga_layanan' => (float)$kl->layanan->harga_layanan,
+                            'jumlah'        => (int)($kl->jumlah ?? 1),
+                            'subtotal'      => isset($kl->layanan->harga_layanan, $kl->jumlah)
+                                                ? (float)$kl->layanan->harga_layanan * (int)$kl->jumlah
+                                                : null,
+                        ];
+                    }
+                }
+            } catch (\Exception $e) {
+                Log::warning('Error loading layanan: '.$e->getMessage());
+            }
+
+            // ===== Dokter + Spesialis + Poli
+            $dokter = optional($kunjungan->dokter);
+            $spesialisRel = optional($dokter->jenisSpesialis); // ganti ke jenis_spesialis bila perlu
+
+            return [
+                'kunjungan_id'      => $kunjungan->id,
+                'tanggal_kunjungan' => $kunjungan->tanggal_kunjungan,
+                'no_antrian'        => $kunjungan->no_antrian,
+                'keluhan_awal'      => $kunjungan->keluhan_awal,
+                'status_kunjungan'  => $kunjungan->status,
+
+                'poli' => [
+                    'id'        => optional($kunjungan->poli)->id,
+                    'nama_poli' => optional($kunjungan->poli)->nama_poli ?? 'Tidak diketahui',
+                ],
+
+                'dokter' => [
+                    'id'          => $dokter->id,
+                    'nama_dokter' => $dokter->nama_dokter
+                                     ?? $dokter->nama
+                                     ?? 'Tidak diketahui',
+                    'foto_dokter' => $dokter->foto_dokter,
+                ],
+
+                'spesialis' => [
+                    'id'             => $spesialisRel->id,
+                    'nama_spesialis' => $spesialisRel->nama_spesialis
+                                        // fallback ke kolom string jika model/relasi tidak ada
+                                        ?? ($dokter->spesialisasi ?? 'Tidak diketahui'),
+                ],
+
+                'emr' => [
+                    'id'                        => $emr->id,
+                    'keluhan_utama'             => $emr->keluhan_utama,
+                    'riwayat_penyakit_dahulu'   => $emr->riwayat_penyakit_dahulu,
+                    'riwayat_penyakit_keluarga' => $emr->riwayat_penyakit_keluarga,
+                    'diagnosis'                 => $emr->diagnosis,
+                    'tanggal_pemeriksaan'       => $emr->created_at,
+                    'tanda_vital' => [
+                        'tekanan_darah'    => $emr->tekanan_darah,
+                        'suhu_tubuh'       => $emr->suhu_tubuh,
+                        'nadi'             => $emr->nadi,
+                        'pernapasan'       => $emr->pernapasan,
+                        'saturasi_oksigen' => $emr->saturasi_oksigen,
+                    ],
+                ],
+
+                'resep_obat' => $resepData,
+                'layanan'    => $layananData,
+
+                // 🚫 pembayaran sengaja tidak dikirim
+                // 'pembayaran' => null,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Riwayat EMR berhasil diambil',
+            'data' => [
+                'pasien' => [
+                    'id'            => $pasien->id,
+                    'nama_pasien'   => $pasien->nama_pasien,
+                    'tanggal_lahir' => $pasien->tanggal_lahir,
+                    'jenis_kelamin' => $pasien->jenis_kelamin,
+                    'alamat'        => $pasien->alamat,
+                    'foto_pasien'   => $pasien->foto_pasien,
+                ],
+                'riwayat_emr'   => $formattedData,
+                'total_records' => $formattedData->count(),
+            ],
+        ]);
+    } catch (\Throwable $e) {
+        Log::error('Error getting riwayat EMR: '.$e->getMessage(), ['trace' => $e->getTraceAsString()]);
+
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal mengambil riwayat EMR: '.$e->getMessage(),
+        ], 500);
+    }
+}
+
 
     public function batalkanStatusKunjungan(Request $request)
     {
@@ -4162,7 +4329,6 @@ public function register(Request $request)
             ], 500);
         }
     }
-
 
     public function getLayanan()
     {
