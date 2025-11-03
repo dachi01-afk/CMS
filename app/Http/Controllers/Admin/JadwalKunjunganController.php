@@ -140,9 +140,8 @@ class JadwalKunjunganController extends Controller
     $kunjungan = DB::transaction(function () use ($validated, $dokterId) {
 
         // =========================
-        // (B) Anti-duplikat 60 detik
-        // Izinkan banyak kunjungan/hari, tapi kalau user double-click (entry identik
-        // dalam ≤60s), kembalikan record lama agar tidak dobel.
+        // Anti-duplikat 60 detik (izinkan multi-kunjungan/hari,
+        // tapi kalau entry identik ≤60s, kembalikan record terakhir)
         // =========================
         $dupe = Kunjungan::whereDate('tanggal_kunjungan', $validated['tanggal_kunjungan'])
             ->where('poli_id',   $validated['poli_id'])
@@ -171,14 +170,21 @@ class JadwalKunjunganController extends Controller
             ];
         }
 
-        // Nomor antrian per tgl+poli (tetap aman karena pakai lockForUpdate)
-        $maxNumber = DB::table('kunjungan')
+        // =========================
+        // HITUNG NOMOR ANTRIAN (per TANGGAL + POLI) aman dari race:
+        // kunci BARIS TERAKHIR lalu +1. Reset otomatis ke 001 saat tanggal beda.
+        // (Jika ingin global per-hari, hapus baris ->where('poli_id', ...))
+        // =========================
+        $lastRow = DB::table('kunjungan')
             ->whereDate('tanggal_kunjungan', $validated['tanggal_kunjungan'])
             ->where('poli_id', $validated['poli_id'])
+            ->orderByRaw('CAST(no_antrian AS UNSIGNED) DESC')
+            ->orderByDesc('id')
             ->lockForUpdate()
-            ->max(DB::raw('CAST(no_antrian AS UNSIGNED)'));
+            ->first();
 
-        $nextNumber  = (int)($maxNumber ?? 0) + 1;
+        $lastNumber  = $lastRow ? (int)$lastRow->no_antrian : 0;
+        $nextNumber  = $lastNumber + 1;
         $formattedNo = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
 
         // Simpan kunjungan baru
@@ -214,7 +220,7 @@ class JadwalKunjunganController extends Controller
             }
         }
 
-        // Simpan mapping dokter ke cache (shared cache disarankan: Redis)
+        // Simpan mapping dokter ke cache (disarankan Redis kalau multi server)
         Cache::forever("kunjungan_dokter:{$baru->id}", [
             'dokter_id'         => $chosenDokterId,
             'poli_id'           => (int)$validated['poli_id'],
@@ -250,6 +256,7 @@ class JadwalKunjunganController extends Controller
         ],
     ], $kunjungan['reuse'] ? 200 : 201);
 }
+
 
 
     public function waiting()
