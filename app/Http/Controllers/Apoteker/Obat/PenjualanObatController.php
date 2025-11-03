@@ -15,48 +15,11 @@ use Yajra\DataTables\Facades\DataTables;
 
 class PenjualanObatController extends Controller
 {
-    // public function getDataPenjualanObat()
-    // {
-    //     // Ambil semua pasien + data obat yang pernah dibeli
-    //     $dataPenjualanObat = Pasien::with('obat')->latest()->get();
-
-    //     // Flatten (karena pasien bisa punya banyak obat)
-    //     $penjualanData = collect();
-
-    //     foreach ($dataPenjualanObat as $pasien) {
-    //         foreach ($pasien->obat as $obat) {
-    //             $penjualanData->push([
-    //                 'nama_pasien'       => $pasien->nama_pasien,
-    //                 'nama_obat'         => $obat->nama_obat,
-    //                 'kode_transaksi'    => $obat->pivot->kode_transaksi,
-    //                 'jumlah'            => $obat->pivot->jumlah,
-    //                 'sub_total'         => $obat->pivot->sub_total,
-    //                 'tanggal_transaksi' => $obat->pivot->tanggal_transaksi,
-    //             ]);
-    //         }
-    //     }
-
-    //     return DataTables::of($penjualanData)
-    //         ->addIndexColumn()
-    //         ->addColumn('action', function ($row) {
-    //             return '
-    //             <button class="text-blue-600 hover:text-blue-800 mr-2">
-    //                 <i class="fa-regular fa-pen-to-square text-lg"></i>
-    //             </button>
-    //             <button class="text-red-600 hover:text-red-800">
-    //                 <i class="fa-regular fa-trash-can text-lg"></i>
-    //             </button>
-    //         ';
-    //         })
-    //         ->make(true);
-    // }
-
-
     public function getDataPenjualanObat()
     {
         // Ambil data dari tabel penjualan_obat beserta relasinya
         $dataPenjualan = PenjualanObat::with(['pasien', 'obat', 'metodePembayaran'])
-            ->latest('tanggal_transaksi')
+            ->latest()
             ->get()
             ->groupBy('kode_transaksi'); // 🔥 Kelompokkan per transaksi
 
@@ -112,6 +75,70 @@ class PenjualanObatController extends Controller
             // })
             ->make(true);
     }
+
+    public function getDataRiwayatTransaksiObat()
+    {
+        $rows = PenjualanObat::with(['pasien', 'obat', 'metodePembayaran'])
+            ->where('status', 'Sudah Bayar')
+            ->latest()
+            ->get()
+            ->groupBy('kode_transaksi');
+
+        $penjualanData = $rows->map(function ($group) {
+            $first = $group->first();
+
+            // ✅ Nama & Dosis & Jumlah
+            $namaObat = $group->pluck('obat.nama_obat')->implode(', ');
+            $dosis = $group->pluck('obat.dosis')->map(fn($item) => number_format((float) $item, 2) . ' mg')->implode(', ');
+            $jumlah = $group->pluck('jumlah')->map(fn($item) => $item . ' capsul')->implode(', ');
+
+            // ✅ Nominal & tanggal
+            $totalTagihan = $group->sum('sub_total');
+            $uangDiterima = $first->uang_yang_diterima ?? 0;
+            $kembalian    = $first->kembalian ?? 0;
+            $tanggalISO   = $first->tanggal_transaksi
+                ? \Carbon\Carbon::parse($first->tanggal_transaksi)->toIso8601String()
+                : null;
+
+            // ✅ Bukti Pembayaran (foto + teks)
+            $buktiPembayaran = '-';
+            if (!empty($first->bukti_pembayaran)) {
+                $url = asset('storage/' . $first->bukti_pembayaran);
+                $buktiPembayaran = '
+                <div class="flex flex-col items-center text-center space-y-2">
+                    <img src="' . $url . '" alt="Bukti Pembayaran" 
+                        class="w-24 h-24 object-cover rounded-lg border border-gray-300 shadow-sm hover:scale-105 transition-transform duration-200 cursor-pointer"
+                        onclick="window.open(\'' . $url . '\', \'_blank\')" />
+                    <a href="' . $url . '" target="_blank" 
+                        class="text-sky-600 underline text-sm font-medium">
+                        Lihat Bukti Pembayaran
+                    </a>
+                </div>
+            ';
+            }
+
+            return [
+                'kode_transaksi'    => $first->kode_transaksi,
+                'nama_pasien'       => $first->pasien->nama_pasien ?? '-',
+                'nama_obat'         => $namaObat,
+                'dosis'             => $dosis,
+                'jumlah'            => $jumlah,
+                'sub_total'         => $totalTagihan,
+                'metode_pembayaran' => $first->metodePembayaran->nama_metode ?? '-',
+                'status'            => $first->status ?? '-',
+                'tanggal_transaksi' => $tanggalISO,
+                'bukti_pembayaran'  => $buktiPembayaran,
+                'action'            => '-',
+            ];
+        })->values();
+
+        return DataTables::of($penjualanData)
+            ->addIndexColumn()
+            ->rawColumns(['bukti_pembayaran', 'action']) // penting agar HTML tampil
+            ->make(true);
+    }
+
+
 
 
 

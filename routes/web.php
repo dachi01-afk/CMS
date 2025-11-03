@@ -265,6 +265,9 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
 
         Route::post('/pembayaran-cash-transaksi-obat', [TransaksiObatController::class, 'transaksiCash'])->name('transaksi.obat.cash');
         Route::post('/pembayaran-transfer-transaksi-obat', [TransaksiObatController::class, 'transaksiTransfer'])->name('transaksi.obat.transfer');
+
+        // Route Untuk Riwayat Transaksi Obat
+        Route::get('/get-data-riwayat-transaksi-obat', [PenjualanObatController::class, 'getDataRiwayatTransaksiObat'])->name('get.data.riwayat.transaksi.obat');
     });
 });
 

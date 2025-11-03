@@ -19,83 +19,6 @@ class PengambilanObatController extends Controller
         return view('admin.pengambilan_obat');
     }
 
-    // public function getDataResepObat()
-    // {
-    //     $query = Resep::with([
-    //         'obat' => fn($q) => $q->withPivot('jumlah', 'keterangan', 'status'),
-    //         'kunjungan.pasien',
-    //         'kunjungan.poli.dokter'
-    //     ])
-    //         ->whereHas('obat', function ($q) {
-    //             // tampilkan yang belum diambil (boleh sertakan yang status-nya null)
-    //             $q->wherePivot('status', 'Belum Diambil')
-    //                 ->orWherePivot('status', null);
-    //         })
-    //         ->latest('created_at') // pastikan kolom ini ada
-    //         ->get();
-
-    //     return DataTables::of($query)
-    //         ->addIndexColumn()
-    //         ->addColumn('nama_dokter', fn($row) => optional(optional($row->kunjungan)->poli)->dokter->first()->nama_dokter ?? '-')
-    //         ->addColumn('nama_pasien', fn($row) => optional(optional($row->kunjungan)->pasien)->nama_pasien ?? '-')
-    //         ->addColumn('no_antrian', fn($row) => optional($row->kunjungan)->no_antrian ?? '-')
-    //         ->addColumn('tanggal_kunjungan', fn($row) => optional($row->kunjungan)->tanggal_kunjungan ?? '-')
-
-    //         // Nama obat
-    //         ->addColumn('nama_obat', function ($row) {
-    //             if ($row->obat->isEmpty()) return '<span class="text-gray-400 italic">Tidak ada</span>';
-    //             $out = '<ul class="list-disc pl-4">';
-    //             foreach ($row->obat as $ob) {
-    //                 $out .= '<li>' . e($ob->nama_obat) . '</li>';
-    //             }
-    //             return $out . '</ul>';
-    //         })
-
-    //         // Jumlah
-    //         ->addColumn('jumlah', function ($row) {
-    //             if ($row->obat->isEmpty()) return '-';
-    //             $out = '<ul class="list-disc pl-4">';
-    //             foreach ($row->obat as $ob) {
-    //                 $out .= '<li>' . e($ob->pivot->jumlah) . '</li>';
-    //             }
-    //             return $out . '</ul>';
-    //         })
-
-    //         // Keterangan
-    //         ->addColumn('keterangan', function ($row) {
-    //             if ($row->obat->isEmpty()) return '-';
-    //             $out = '<ul class="list-disc pl-4">';
-    //             foreach ($row->obat as $ob) {
-    //                 $out .= '<li>' . e($ob->pivot->keterangan) . '</li>';
-    //             }
-    //             return $out . '</ul>';
-    //         })
-
-    //         // Status (FIX: jangan timpa $output)
-    //         ->addColumn('status', function ($row) {
-    //             if ($row->obat->isEmpty()) return '-';
-    //             $out = '<ul class="list-disc pl-4">';
-    //             foreach ($row->obat as $ob) {
-    //                 $out .= '<li>' . e($ob->pivot->status ?? 'Belum Diambil') . '</li>';
-    //             }
-    //             return $out . '</ul>';
-    //         })
-
-    //         ->addColumn('action', function ($row) {
-    //             if ($row->obat->isEmpty()) return '<span class="text-gray-400 italic">Tidak ada tindakan</span>';
-    //             $dataObat = $row->obat->map(fn($ob) => ['id' => $ob->id, 'jumlah' => $ob->pivot->jumlah]);
-    //             $jsonObat = e(json_encode($dataObat));
-    //             return '<button class="btnUpdateStatus text-blue-600 hover:text-blue-800"
-    //                     data-resep-id="' . $row->id . '"
-    //                     data-obat=\'' . $jsonObat . '\'
-    //                     title="Update Status">
-    //                     <i class="fa-regular fa-pen-to-square"></i> Update Status
-    //                 </button>';
-    //         })
-    //         ->rawColumns(['nama_obat', 'jumlah', 'keterangan', 'status', 'action'])
-    //         ->make(true);
-    // }
-
     public function getDataResepObat()
     {
         $query = Resep::with([
@@ -249,5 +172,72 @@ class PengambilanObatController extends Controller
                 'action'
             ])
             ->make(true);
+    }
+
+    public function updateStatusResepObat(Request $request)
+    {
+        $request->validate([
+            'resep_id' => ['required', 'exists:resep,id'],
+            'obat_list' => ['required', 'array', 'min:1'],
+            'obat_list.*.id' => ['required', 'exists:obat,id'],
+            'obat_list.*.jumlah' => ['required', 'integer', 'min:1'],
+        ]);
+
+        try {
+            DB::transaction(function () use ($request) {
+                $resep = \App\Models\Resep::findOrFail($request->resep_id);
+
+                // 🔹 Ambil pembayaran berdasarkan emr yang punya resep_id ini
+                $pembayaran = \App\Models\Pembayaran::whereHas('emr', function ($q) use ($resep) {
+                    $q->where('resep_id', $resep->id);
+                })->first();
+
+                // 🔹 Validasi pembayaran
+                if (!$pembayaran) {
+                    throw new \Exception('Obat belum dibayar. Silahkan bayar terlebih dahulu');
+                }
+
+                if ($pembayaran->status !== 'Sudah Bayar') {
+                    throw new \Exception('Status pembayaran masih "Belum Bayar". Silakan lakukan pembayaran terlebih dahulu.');
+                }
+
+                // 🔹 Pastikan obat benar-benar ada dalam resep
+                $obatPivot = $resep->obat()->where('obat_id', $request->obat_id)->firstOrFail();
+
+                // 🔹 Ambil jumlah obat dari pivot
+                $jumlahObat = $obatPivot->pivot->jumlah ?? 0;
+
+                // 🔹 Ambil data stok obat
+                $obat = \App\Models\Obat::findOrFail($request->obat_id);
+
+                // 🔹 Validasi stok cukup
+                if ($obat->jumlah < $jumlahObat) {
+                    throw new Exception("Stok obat '{$obat->nama_obat}' tidak mencukupi. Stok saat ini: {$obat->stok}");
+                }
+
+                // 🔹 Kurangi stok obat
+                $obat->jumlah = $obat->jumlah - $jumlahObat;
+                $obat->save();
+
+                // 🔹 Update status pivot jadi "Sudah Diambil"
+                $resep->obat()->updateExistingPivot($request->obat_id, [
+                    'status' => 'Sudah Diambil',
+                ]);
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Status resep obat berhasil diperbarui menjadi "Sudah Diambil".',
+            ]);
+        } catch (Exception $e) {
+            Log::error('updateStatusResepObat error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 }

@@ -125,6 +125,151 @@ class KasirController extends Controller
             ->make(true);
     }
 
+    public function getDataRiwayatPembayaran()
+    {
+        $dataPembayaran = Pembayaran::with([
+            'emr.kunjungan.pasien',
+            'emr.resep.obat',
+            'emr.kunjungan.layanan',
+            'metodePembayaran',
+        ])->where('status', 'Sudah Bayar')
+            ->latest()
+            ->get();
+
+        return DataTables::of($dataPembayaran)
+            ->addIndexColumn()
+
+            // Identitas dasar
+            ->addColumn('nama_pasien', fn($p) => $p->emr->kunjungan->pasien->nama_pasien ?? '-')
+            ->addColumn('tanggal_kunjungan', function ($p) {
+                $tgl = $p->emr->kunjungan->tanggal_kunjungan ?? null;
+                return $tgl ? \Carbon\Carbon::parse($tgl)->toIso8601String() : '-'; // ISO aman untuk JS
+            })
+            ->addColumn('no_antrian', fn($p) => $p->emr->kunjungan->no_antrian ?? '-')
+
+            // Daftar nama obat
+            ->addColumn('nama_obat', function ($p) {
+                $resep = $p->emr->resep ?? null;
+                if (!$resep || $resep->obat->isEmpty()) {
+                    return '<span class="text-gray-400 italic">Tidak ada</span>';
+                }
+                $out = '<ul class="list-disc pl-4">';
+                foreach ($resep->obat as $obat) {
+                    $out .= '<li>' . e($obat->nama_obat) . '</li>';
+                }
+                $out .= '</ul>';
+                return $out;
+            })
+
+            // Dosis: "100.00 mg"
+            ->addColumn('dosis', function ($p) {
+                $resep = $p->emr->resep ?? null;
+                if (!$resep || $resep->obat->isEmpty()) {
+                    return '<span class="text-gray-400 italic">Tidak ada</span>';
+                }
+                $out = '<ul class="list-disc pl-4">';
+                foreach ($resep->obat as $obat) {
+                    $val = $obat->pivot->dosis ?? null;
+                    $val = is_numeric($val) ? number_format((float)$val, 2) . ' mg' : e($val ?? '-');
+                    $out .= '<li>' . $val . '</li>';
+                }
+                $out .= '</ul>';
+                return $out;
+            })
+
+            // Jumlah: "2 capsul"
+            ->addColumn('jumlah', function ($p) {
+                $resep = $p->emr->resep ?? null;
+                if (!$resep || $resep->obat->isEmpty()) {
+                    return '<span class="text-gray-400 italic">Tidak ada</span>';
+                }
+                $out = '<ul class="list-disc pl-4">';
+                foreach ($resep->obat as $obat) {
+                    $qty = $obat->pivot->jumlah ?? null;
+                    $qtyTxt = ($qty !== null && $qty !== '') ? e($qty) . ' capsul' : '-';
+                    $out .= '<li>' . $qtyTxt . '</li>';
+                }
+                $out .= '</ul>';
+                return $out;
+            })
+
+            // Layanan & jumlah layanan
+            ->addColumn('nama_layanan', function ($p) {
+                $layanan = $p->emr->kunjungan->layanan ?? collect();
+                if ($layanan->isEmpty()) {
+                    return '<span class="text-gray-400 italic">Tidak ada</span>';
+                }
+                $out = '<ul class="list-disc pl-4">';
+                foreach ($layanan as $l) {
+                    $out .= '<li>' . e($l->nama_layanan ?? '-') . '</li>';
+                }
+                $out .= '</ul>';
+                return $out;
+            })
+            ->addColumn('jumlah_layanan', function ($p) {
+                $layanan = $p->emr->kunjungan->layanan ?? collect();
+                if ($layanan->isEmpty()) {
+                    return '<span class="text-gray-400 italic">Tidak ada</span>';
+                }
+                $out = '<ul class="list-disc pl-4">';
+                foreach ($layanan as $l) {
+                    $qty = $l->pivot->jumlah ?? null;
+                    $out .= '<li>' . e($qty ?? '-') . '</li>';
+                }
+                $out .= '</ul>';
+                return $out;
+            })
+
+            // Total & metode
+            ->addColumn('total_tagihan', fn($p) => 'Rp ' . number_format((int)$p->total_tagihan, 0, ',', '.'))
+            ->addColumn('metode_pembayaran', fn($p) => $p->metodePembayaran->nama_metode ?? '-')
+
+            // Bukti pembayaran: thumbnail + link "Lihat Bukti Pembayaran"
+            ->addColumn('bukti_pembayaran', function ($p) {
+                if (!$p->bukti_pembayaran) {
+                    return '<span class="text-gray-400 italic">Tidak ada</span>';
+                }
+                $url = asset('storage/' . $p->bukti_pembayaran);
+                return '
+                <div class="flex flex-col items-center text-center space-y-2">
+                    <img src="' . e($url) . '" alt="Bukti Pembayaran"
+                         class="w-24 h-24 object-cover rounded-lg border border-gray-300 shadow-sm
+                                hover:scale-105 transition-transform duration-200 cursor-pointer"
+                         onclick="window.open(\'' . e($url) . '\', \'_blank\')" />
+                    <a href="' . e($url) . '" target="_blank"
+                       class="text-sky-600 underline text-sm font-medium">
+                       Lihat Bukti Pembayaran
+                    </a>
+                </div>
+            ';
+            })
+
+            ->addColumn('status', fn($p) => $p->status ?? '-')
+
+            // Action
+            ->addColumn('action', function ($p) {
+                $url = route('kasir.show.kwitansi', ['kodeTransaksi' => $p->kode_transaksi]);
+                return '
+                <button class="cetakKuitansi text-blue-600 hover:text-blue-800"
+                        data-url="' . e($url) . '"
+                        title="Cetak Kwitansi">
+                    <i class="fa-solid fa-print"></i> Cetak Kwitansi
+                </button>
+            ';
+            })
+
+            ->rawColumns([
+                'nama_obat',
+                'dosis',
+                'jumlah',
+                'nama_layanan',
+                'jumlah_layanan',
+                'bukti_pembayaran',
+                'action'
+            ])
+            ->make(true);
+    }
+
     public function transaksi($kodeTransaksi)
     {
         $dataPembayaran = Pembayaran::with([
@@ -292,123 +437,6 @@ class KasirController extends Controller
             'data' => $pembayaran,
             'message' => 'Bukti transfer diterima. Nominal terbayar: Rp' . number_format($pembayaran->uang_yang_diterima, 0, ',', '.') . '. Terimakasih 😊😊😊'
         ]);
-    }
-
-    public function getDataRiwayatPembayaran()
-    {
-        $dataPembayaran = Pembayaran::with([
-            'emr.kunjungan.pasien',
-            'emr.resep.obat',
-            'emr.kunjungan.layanan',
-            'metodePembayaran',
-        ])->where('status', 'Sudah Bayar')->latest()->get();
-
-        return DataTables::of($dataPembayaran)
-            ->addIndexColumn()
-            ->addColumn('nama_pasien', fn($p) => $p->emr->kunjungan->pasien->nama_pasien ?? '-')
-            ->addColumn('tanggal_kunjungan', fn($p) => $p->emr->kunjungan->tanggal_kunjungan ?? '-')
-            ->addColumn('no_antrian', fn($p) => $p->emr->kunjungan->no_antrian ?? '-')
-
-            // daftar nama obat
-            ->addColumn('nama_obat', function ($p) {
-                $resep = $p->emr->resep ?? null;
-                if (!$resep || $resep->obat->isEmpty()) {
-                    return '<span class="text-gray-400 italic">Tidak ada</span>';
-                }
-
-                $output = '<ul class="list-disc pl-4">';
-                foreach ($resep->obat as $obat) {
-                    $output .= '<li>' . e($obat->nama_obat) . '</li>';
-                }
-                $output .= '</ul>';
-                return $output;
-            })
-
-            // dosis
-            ->addColumn('dosis', function ($p) {
-                $resep = $p->emr->resep ?? null;
-                if (!$resep || $resep->obat->isEmpty()) return '-';
-                $output = '<ul class="list-disc pl-4">';
-                foreach ($resep->obat as $obat) {
-                    $output .= '<li>' . e($obat->pivot->dosis ?? '-') . '</li>';
-                }
-                $output .= '</ul>';
-                return $output;
-            })
-
-            // jumlah
-            ->addColumn('jumlah', function ($p) {
-                $resep = $p->emr->resep ?? null;
-                if (!$resep || $resep->obat->isEmpty()) return '-';
-                $output = '<ul class="list-disc pl-4">';
-                foreach ($resep->obat as $obat) {
-                    $output .= '<li>' . e($obat->pivot->jumlah ?? '-') . '</li>';
-                }
-                $output .= '</ul>';
-                return $output;
-            })
-
-            ->addColumn('nama_layanan', function ($p) {
-                $layanan = $p->emr->kunjungan->layanan ?? collect();
-                if ($layanan->isEmpty()) {
-                    return '<span class="text-gray-400 italic">Tidak ada</span>';
-                }
-
-                $output = '<ul class="list-disc pl-4">';
-                foreach ($layanan as $l) {
-                    $output .= '<li>' . e($l->nama_layanan ?? '-') . '</li>';
-                }
-                $output .= '</ul>';
-                return $output;
-            })
-
-            ->addColumn('jumlah_layanan', function ($p) {
-                $layanan = $p->emr->kunjungan->layanan ?? collect();
-                if ($layanan->isEmpty()) {
-                    return '<span class="text-gray-400 italic">Tidak ada</span>';
-                }
-
-                $output = '<ul class="list-disc pl-4">';
-                foreach ($layanan as $l) {
-                    $output .= '<li>' . e($l->pivot->jumlah ?? '-') . '</li>';
-                }
-                $output .= '</ul>';
-                return $output;
-            })
-
-            ->addColumn('total_tagihan', fn($p) => 'Rp ' .  number_format($p->total_tagihan, 0, ',', '.')  ?? '-')
-            ->addColumn('metode_pembayaran', fn($p) => $p->metodePembayaran->nama_metode ?? '-')
-            ->addColumn('bukti_pembayaran', function ($p) {
-                if ($p->bukti_pembayaran) {
-                    $url = asset('storage/' . $p->bukti_pembayaran);
-                    return '<img src="' . $url . '" alt="Foto Bukti Pembayaran" class="w-12 h-12 rounded-lg object-cover mx-auto shadow">';
-                } else {
-                    return '<span class="text-gray-400 italic">Tidak ada</span>';
-                }
-            })
-            ->addColumn('status', fn($p) => $p->status ?? '-')
-
-            // kolom action
-            ->addColumn('action', function ($p) {
-                $resep = $p->emr->resep ?? null;
-
-                // kalau tidak ada resep / obat
-                if (!$resep || $resep->obat->isEmpty()) {
-                    return '<span class="text-gray-400 italic">Tidak ada tindakan</span>';
-                }
-
-                // tampilkan hanya 1 tombol saja
-                $url = route('kasir.show.kwitansi', ['kodeTransaksi' => $p->kode_transaksi]);
-                return '
-            <button class="cetakKuitansi text-blue-600 hover:text-blue-800"
-                data-url="' . $url . '"
-                title="Cetak Kwitansi">
-                <i class="fa-solid fa-print"></i> Cetak Kwitansi
-                </button>
-    ';
-            })
-            ->rawColumns(['nama_obat', 'dosis', 'jumlah', 'nama_layanan', 'jumlah_layanan', 'bukti_pembayaran', 'action'])
-            ->make(true);
     }
 
     public function showKwitansi($kodeTransaksi)
