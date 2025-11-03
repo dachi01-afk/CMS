@@ -17,8 +17,8 @@ $(function () {
         ajax: "manajemen_pengguna/data_dokter",
         columns: [
             {
-                data: "DT_RowIndex",
-                name: "DT_RowIndex",
+                data: "id",
+                name: "id",
                 orderable: false,
                 searchable: false,
             },

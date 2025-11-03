@@ -4,50 +4,109 @@ document.addEventListener("DOMContentLoaded", () => {
     const menuProses = document.getElementById("menuProsesKunjungan");
     if (menuProses) {
         menuProses.addEventListener("click", (e) => {
-            e.preventDefault(); // cegah reload halaman
-            loadWaitingList(); // refresh tabel
+            e.preventDefault();
+            loadWaitingList();
         });
     }
 
     async function loadWaitingList() {
         const tbody = document.getElementById("waitingBody");
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-500 italic">Memuat data...</td></tr>`;
+        if (!tbody) return;
 
-        const res = await fetch("/jadwal_kunjungan/waiting");
-        const data = await res.json();
+        // tampilkan loading row
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center py-6 text-gray-500 italic">
+                    Memuat data...
+                </td>
+            </tr>`;
 
-        if (data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-500 italic">Tidak ada kunjungan pending hari ini.</td></tr>`;
+        let payload = [];
+        try {
+            const res = await fetch("/jadwal_kunjungan/waiting", {
+                headers: { Accept: "application/json" },
+            });
+
+            if (!res.ok) {
+                throw new Error(`HTTP ${res.status}`);
+            }
+
+            const json = await res.json();
+
+            // Bentuk response baru: { success, date, data: [...] }
+            if (json && json.success === true && Array.isArray(json.data)) {
+                payload = json.data;
+            } else if (Array.isArray(json)) {
+                // fallback kalau masih pakai array lama
+                payload = json;
+            } else {
+                payload = [];
+            }
+        } catch (err) {
+            console.error("Gagal memuat waiting list:", err);
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center py-6 text-red-600">
+                        Gagal memuat data. Coba lagi.
+                    </td>
+                </tr>`;
             return;
         }
 
+        if (payload.length === 0) {
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center py-6 text-gray-500 italic">
+                        Tidak ada kunjungan pending hari ini.
+                    </td>
+                </tr>`;
+            return;
+        }
+
+        // Render rows
         tbody.innerHTML = "";
-        data.forEach((item) => {
+        payload.forEach((item) => {
+            const noAntrian   = item.no_antrian ?? "-";
+            const namaPasien  = item.pasien?.nama_pasien ?? "-";
+            // Prioritas dokter_terpilih → fallback ke relasi poli.dokter (kalau ada) → "-"
+            const namaDokter  =
+                item.dokter_terpilih?.nama_dokter ??
+                item.poli?.dokter?.nama_dokter ??
+                "-";
+            const namaPoli    = item.poli?.nama_poli ?? "-";
+            const keluhan     = item.keluhan_awal ?? "-";
+
             const row = document.createElement("tr");
             row.className = "border-b hover:bg-indigo-50 transition";
 
             row.innerHTML = `
-                <td class="px-6 py-3 font-semibold">${item.no_antrian}</td>
-                <td class="px-6 py-3">${item.pasien.nama_pasien}</td>
-                <td class="px-6 py-3">${item.dokter.nama_dokter}</td>
-                <td class="px-6 py-3">${item.poli.nama_poli}</td>
-                <td class="px-6 py-3">${item.keluhan_awal}</td>
+                <td class="px-6 py-3 font-semibold">${noAntrian}</td>
+                <td class="px-6 py-3">${namaPasien}</td>
+                <td class="px-6 py-3">${namaDokter}</td>
+                <td class="px-6 py-3">${namaPoli}</td>
+                <td class="px-6 py-3">${keluhan}</td>
                 <td class="px-6 py-3 text-center">
-                <div class="grid gap-4 place-items-center">
-                    <button data-id="${item.id}" class="ubahStatusBtn bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-md">Mulai Konsultasi</button>
-                    <button data-id="${item.id}" id="btn-batalkan-kunjungan" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg text-md">Batalkan Kunjungan</button>
+                    <div class="grid gap-3 place-items-center">
+                        <button data-id="${item.id}"
+                                class="ubahStatusBtn bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-lg text-md">
+                            Mulai Konsultasi
+                        </button>
+                        <button data-id="${item.id}"
+                                class="batalkanKunjunganBtn bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-lg text-md">
+                            Batalkan Kunjungan
+                        </button>
                     </div>
                 </td>
             `;
             tbody.appendChild(row);
         });
 
-        // event listener untuk tombol ubah status
+        // Event: Ubah status → Engaged
         document.querySelectorAll(".ubahStatusBtn").forEach((btn) => {
             btn.addEventListener("click", async () => {
                 const id = btn.dataset.id;
 
-                const confirm = await Swal.fire({
+                const konfirmasi = await Swal.fire({
                     icon: "question",
                     title: "Mulai konsultasi?",
                     text: 'Status akan diubah menjadi "Engaged".',
@@ -56,29 +115,23 @@ document.addEventListener("DOMContentLoaded", () => {
                     cancelButtonText: "Batal",
                 });
 
-                if (confirm.isConfirmed) {
-                    const res = await fetch(
-                        `/jadwal_kunjungan/update-status/${id}`,
-                        {
-                            method: "POST",
-                            headers: {
-                                "X-CSRF-TOKEN": document.querySelector(
-                                    'meta[name="csrf-token"]'
-                                ).content,
-                                Accept: "application/json",
-                            },
-                        }
-                    );
+                if (!konfirmasi.isConfirmed) return;
 
+                try {
+                    const res = await fetch(`/jadwal_kunjungan/update-status/${id}`, {
+                        method: "POST",
+                        headers: {
+                            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+                            Accept: "application/json",
+                        },
+                    });
                     const result = await res.json();
 
-                    console.log(result);
-
-                    if (result.success) {
-                        Swal.fire({
+                    if (result?.success) {
+                        await Swal.fire({
                             icon: "success",
                             title: "Berhasil!",
-                            text: result.message,
+                            text: result.message ?? "Status diubah.",
                             timer: 1500,
                             showConfirmButton: false,
                         });
@@ -87,49 +140,51 @@ document.addEventListener("DOMContentLoaded", () => {
                         Swal.fire({
                             icon: "error",
                             title: "Gagal!",
-                            text: result.message,
+                            text: result?.message ?? "Gagal mengubah status.",
                         });
                     }
+                } catch (e) {
+                    console.error(e);
+                    Swal.fire({
+                        icon: "error",
+                        title: "Error!",
+                        text: "Tidak dapat terhubung ke server.",
+                    });
                 }
             });
         });
 
-        document.querySelectorAll("#btn-batalkan-kunjungan").forEach((btn) => {
+        // Event: Batalkan kunjungan
+        document.querySelectorAll(".batalkanKunjunganBtn").forEach((btn) => {
             btn.addEventListener("click", async () => {
                 const id = btn.dataset.id;
 
                 const konfirmasi = await Swal.fire({
                     icon: "question",
                     title: "Batalkan Kunjungan?",
-                    text: "Apakah anda yakin untuk membatalkan kunjungan?",
+                    text: "Apakah Anda yakin ingin membatalkan kunjungan?",
                     showCancelButton: true,
                     confirmButtonText: "Ya, batalkan",
                     cancelButtonText: "Tidak",
                 });
 
-                if (konfirmasi.isConfirmed) {
-                    const data = await fetch(
-                        `/jadwal_kunjungan/batalkan-kunjungan/${id}`,
-                        {
-                            method: "POST",
-                            headers: {
-                                "X-CSRF-TOKEN": document.querySelector(
-                                    'meta[name="csrf-token"]'
-                                ).content,
-                                Accept: "application/json",
-                            },
-                        }
-                    );
+                if (!konfirmasi.isConfirmed) return;
 
-                    const dataKunjungan = await data.json();
+                try {
+                    const res = await fetch(`/jadwal_kunjungan/batalkan-kunjungan/${id}`, {
+                        method: "POST",
+                        headers: {
+                            "X-CSRF-TOKEN": document.querySelector('meta[name="csrf-token"]').content,
+                            Accept: "application/json",
+                        },
+                    });
+                    const result = await res.json();
 
-                    console.log(dataKunjungan);
-
-                    if (dataKunjungan.success) {
-                        Swal.fire({
+                    if (result?.success) {
+                        await Swal.fire({
                             icon: "success",
                             title: "Berhasil!",
-                            text: dataKunjungan.message,
+                            text: result.message ?? "Kunjungan dibatalkan.",
                             timer: 1500,
                             showConfirmButton: false,
                         });
@@ -138,9 +193,16 @@ document.addEventListener("DOMContentLoaded", () => {
                         Swal.fire({
                             icon: "error",
                             title: "Gagal!",
-                            text: dataKunjungan.message,
+                            text: result?.message ?? "Gagal membatalkan kunjungan.",
                         });
                     }
+                } catch (e) {
+                    console.error(e);
+                    Swal.fire({
+                        icon: "error",
+                        title: "Error!",
+                        text: "Tidak dapat terhubung ke server.",
+                    });
                 }
             });
         });
