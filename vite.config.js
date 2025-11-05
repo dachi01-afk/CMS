@@ -47,7 +47,7 @@ export default defineConfig({
 
                 // transaksi
                 "resources/js/kasir/pembayaran/transaksi-menunggu.js",
-                "resources/js/kasir/pembayaran/riwayat-transaksi.js",
+                "resources/js/kasir/riwayat-transaksi/riwayat-transaksi.js",
 
                 // Metode Pembayaran
                 "resources/js/kasir/metode-pembayaran/metode-pembayaran.js",
