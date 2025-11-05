@@ -20,8 +20,8 @@ class RedirectIfAuthenticatedWithRole
             switch ($user->role) {
                 case 'Admin':
                     return redirect()->route('admin.index');
-                case 'Apoteker':
-                    return redirect()->route('apoteker.dashboard');
+                case 'Farmasi':
+                    return redirect()->route('farmasi.dashboard');
                 default:
                     // Kalau role tidak dikenali, logout dan arahkan ke login
                     Auth::logout();

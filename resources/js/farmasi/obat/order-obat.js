@@ -13,7 +13,7 @@ $(function () {
         pageLength: 10,
         lengthChange: false,
         info: false,
-        ajax: "/obat/get-data-penjualan-obat",
+        ajax: "/farmasi/obat/get-data-penjualan-obat",
         columns: [
             {
                 data: "DT_RowIndex",
@@ -195,7 +195,7 @@ $(function () {
     async function fetchResepAktif(pasienId) {
         try {
             if (!pasienId) return null;
-            const url = `/apoteker/resep-aktif?pasien_id=${encodeURIComponent(
+            const url = `obat/resep-aktif?pasien_id=${encodeURIComponent(
                 pasienId
             )}`; // route yang kita buat di backend
             const res = await fetch(url, {
@@ -229,7 +229,9 @@ $(function () {
             resultsDiv.classList.add("hidden");
             return;
         }
-        const response = await fetch(`/obat/search-data-pasien?query=${query}`);
+        const response = await fetch(
+            `obat/search-data-pasien?query=${query}`
+        );
         const data = await response.json();
 
         resultsDiv.innerHTML = "";
@@ -269,7 +271,7 @@ $(function () {
             obatResultsDiv.classList.add("hidden");
             return;
         }
-        const response = await fetch(`/obat/search-data-obat?query=${query}`);
+        const response = await fetch(`obat/search-data-obat?query=${query}`);
         const data = await response.json();
 
         obatResultsDiv.innerHTML = "";
@@ -365,7 +367,7 @@ $(function () {
         };
 
         try {
-            await axios.post("/obat/pesan-obat", formData);
+            await axios.post("/farmasi/obat/pesan-obat", formData);
             Swal.fire({
                 icon: "success",
                 title: "Berhasil!",

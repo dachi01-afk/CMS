@@ -1,10 +1,55 @@
 import axios from "axios";
-import { initFlowbite } from "flowbite";
+import { initFlowbite, Modal } from "flowbite";
 import $ from "jquery";
 
-// data poli
+/* =========================
+   KONFIGURASI ENDPOINT
+========================= */
+const ENDPOINT_LIST = "/data_medis_pasien/data_emr";
+const DETAIL_BASE = "/data_medis_pasien/detail-emr";
+
+/* =========================
+   UTIL: Format Tanggal Aman
+   - Mendukung input "YYYY-MM-DD" atau ISO datetime.
+   - Jika parsable: tampilkan dd MMMM yyyy HH.mm (WIB)
+   - Jika hanya tanggal: tampilkan dd MMMM yyyy
+========================= */
+function formatTanggalID(tanggal) {
+    if (!tanggal) return "-";
+    // Cek pola tanggal saja (YYYY-MM-DD)
+    const onlyDate = /^\d{4}-\d{2}-\d{2}$/.test(tanggal);
+    const d = new Date(tanggal);
+    if (isNaN(d.getTime())) {
+        // fallback: tampilkan raw jika Date gagal parse
+        return tanggal;
+    }
+    if (onlyDate) {
+        return d.toLocaleDateString("id-ID", {
+            timeZone: "Asia/Jakarta",
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+        });
+    }
+    return d
+        .toLocaleString("id-ID", {
+            timeZone: "Asia/Jakarta",
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        })
+        .replace(".", ":"); // opsional: 10.05 -> 10:05
+}
+
+/* =========================
+   DATA TABLE EMR
+========================= */
 $(function () {
-    var table = $("#emrTable").DataTable({
+    initFlowbite?.();
+
+    const table = $("#emrTable").DataTable({
         processing: true,
         responsive: true,
         serverSide: true,
@@ -14,42 +59,38 @@ $(function () {
         pageLength: 10,
         lengthChange: false,
         info: false,
-        ajax: "/data_medis_pasien/data_emr",
+        ajax: ENDPOINT_LIST,
         columns: [
             {
                 data: "DT_RowIndex",
                 name: "DT_RowIndex",
                 orderable: false,
                 searchable: false,
+                className: "whitespace-nowrap",
             },
-            { data: "nama_pasien", name: "nama_pasien" },
-            { data: "nama_dokter", name: "nama_dokter" },
+            { data: "nama_pasien", name: "nama_pasien", defaultContent: "-" },
+            { data: "nama_dokter", name: "nama_dokter", defaultContent: "-" },
             {
                 data: "tanggal_kunjungan",
                 name: "tanggal_kunjungan",
-                render: function (data) {
-                    if (!data) return "-";
-                    const date = new Date(data);
-                    const waktuIndonesia = date.toLocaleDateString("id-ID", {
-                        timeZone: "Asia/Jakarta",
-                        day: "2-digit",
-                        month: "long",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                    });
-                    return waktuIndonesia;
-                },
+                render: (data) => formatTanggalID(data),
+                className: "whitespace-nowrap",
             },
-            { data: "keluhan_awal", name: "keluhan_awal" },
-            { data: "keluhan_utama", name: "keluhan_utama" },
+            { data: "keluhan_awal", name: "keluhan_awal", defaultContent: "-" },
+            {
+                data: "keluhan_utama",
+                name: "keluhan_utama",
+                defaultContent: "-",
+            },
             {
                 data: "riwayat_penyakit_dahulu",
                 name: "riwayat_penyakit_dahulu",
+                defaultContent: "-",
             },
             {
                 data: "riwayat_penyakit_keluarga",
                 name: "riwayat_penyakit_keluarga",
+                defaultContent: "-",
             },
             {
                 data: "action",
@@ -57,10 +98,11 @@ $(function () {
                 orderable: false,
                 searchable: false,
                 className: "text-center whitespace-nowrap",
+                defaultContent: "",
             },
         ],
         dom: "t",
-        rowCallback: function (row, data) {
+        rowCallback: function (row) {
             $(row).addClass(
                 "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
             );
@@ -68,11 +110,16 @@ $(function () {
         },
     });
 
-    // 🔎 Search
+    /* =========================
+     SEARCH
+  ========================= */
     $("#emr-searchInput").on("keyup", function () {
         table.search(this.value).draw();
     });
 
+    /* =========================
+     PAGINATION CUSTOM
+  ========================= */
     const $info = $("#emr-customInfo");
     const $pagination = $("#emr-customPagination");
     const $perPage = $("#emr-pageLength");
@@ -90,7 +137,7 @@ $(function () {
         $pagination.empty();
 
         const prevDisabled =
-            currentPage === 1 ? "opacity-50 cursor-not-allowed" : "";
+            currentPage === 1 ? "opacity-50 pointer-events-none" : "";
         $pagination.append(
             `<li><a href="#" id="btnPrev" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 ${prevDisabled}">Previous</a></li>`
         );
@@ -112,7 +159,7 @@ $(function () {
         }
 
         const nextDisabled =
-            currentPage === totalPages ? "opacity-50 cursor-not-allowed" : "";
+            currentPage === totalPages ? "opacity-50 pointer-events-none" : "";
         $pagination.append(
             `<li><a href="#" id="btnNext" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 ${nextDisabled}">Next</a></li>`
         );
@@ -121,99 +168,53 @@ $(function () {
     $pagination.on("click", "a", function (e) {
         e.preventDefault();
         const $link = $(this);
-        if ($link.hasClass("opacity-50")) return;
-        if ($link.attr("id") === "btnPrev") table.page("previous").draw("page");
-        else if ($link.attr("id") === "btnNext")
+        if (
+            $link.hasClass("opacity-50") ||
+            $link.hasClass("pointer-events-none")
+        )
+            return;
+
+        if ($link.attr("id") === "btnPrev") {
+            table.page("previous").draw("page");
+        } else if ($link.attr("id") === "btnNext") {
             table.page("next").draw("page");
-        else if ($link.hasClass("page-number"))
+        } else if ($link.hasClass("page-number")) {
             table.page(parseInt($link.data("page")) - 1).draw("page");
+        }
     });
 
     $perPage.on("change", function () {
-        table.page.len(parseInt($(this).val())).draw();
+        table.page.len(parseInt($(this).val(), 10)).draw();
     });
 
     table.on("draw", updatePagination);
     updatePagination();
-});
 
-// lihat detail emr
-$(function () {
-    const modalEl = document.getElementById("modalDetailEMR");
-    const modalDetailEMR = modalEl ? new Modal(modalEl) : null;
-
+    /* =========================
+     LIHAT DETAIL EMR
+     - Tombol dari server: .btn-detail-emr data-id
+     - Redirect ke /data_medis_pasien/detail/{id}
+     - (Opsional) ganti ke modal AJAX kalau dibutuhkan
+  ========================= */
     $("body").on("click", ".btn-detail-emr", function () {
         const id = $(this).data("id");
-        const dokter = $(this).data("dokter");
-
-        axios
-            .get(`/data_medis_pasien/get-data-emr-by-id/${id}`)
-            .then((response) => {
-                const data = response.data.data;
-                const tanggal = data.kunjungan.tanggal_kunjungan
-                    ? new Date(
-                          data.kunjungan.tanggal_kunjungan
-                      ).toLocaleDateString("id-ID", {
-                          day: "2-digit",
-                          month: "long",
-                          year: "numeric",
-                      })
-                    : "-";
-
-                $("#detail_nama_pasien").text(
-                    data.kunjungan.pasien.nama_pasien || "-"
-                );
-                $("#detail_nama_dokter").text(dokter || "-");
-                $("#detail_tanggal_kunjungan").text(tanggal);
-                $("#detail_keluhan_awal").text(
-                    data.kunjungan.keluhan_awal || "-"
-                );
-                $("#detail_keluhan_utama").text(data.keluhan_utama || "-");
-                $("#detail_riwayat_penyakit_dahulu").text(
-                    data.riwayat_penyakit_dahulu || "-"
-                );
-                $("#detail_riwayat_penyakit_keluarga").text(
-                    data.riwayat_penyakit_keluarga || "-"
-                );
-                $("#tekanan_darah").text(data.tekanan_darah || "-");
-                $("#suhu_tubuh").text(data.suhu_tubuh || "-");
-                $("#nadi").text(data.nadi || "-");
-                $("#pernapasan").text(data.pernapasan || "-");
-                $("#saturasi_oksigen").text(data.saturasi_oksigen || "-");
-                $("#diagnosis").text(data.diagnosis || "-");
-
-                modalDetailEMR?.show();
-            })
-            .catch(() => {
-                Swal.fire({
-                    icon: "error",
-                    title: "Gagal!",
-                    text: "Tidak dapat memuat data EMR.",
-                });
-            });
-
-        $("#closeDetailEMR").on("click", function () {
-            modalDetailEMR?.hide();
-        });
-
-        $("#buttonCloseModalDetailEMR").on("click", function () {
-            modalDetailEMR?.hide();
-        });
+        if (!id) return;
+        window.location.href = `${DETAIL_BASE}/${id}`;
     });
 });
 
-// update data layanan
-
-// delete data
+/* =========================
+   DELETE DATA LAYANAN (tetap)
+========================= */
 $(function () {
     $("body").on("click", ".btn-delete-layanan", function () {
         const id = $(this).data("id");
         if (!id) return;
 
-        const formData = {
-            id: id,
-        };
+        const formData = { id };
 
+        // Pastikan Swal tersedia secara global
+        // Jika pakai ES module, impor: import Swal from 'sweetalert2'
         Swal.fire({
             title: "Apakah Anda yakin?",
             text: "Data yang dihapus tidak bisa dikembalikan!",

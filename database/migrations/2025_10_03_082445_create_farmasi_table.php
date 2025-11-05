@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('apoteker', function (Blueprint $table) {
+        Schema::create('farmasi', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained('user', 'id', 'apoteker_user_id')
+            $table->foreignId('user_id')->constrained('user', 'id', 'farmasi_user_id')
                 ->cascadeOnDelete()->cascadeOnUpdate();
-            $table->string('nama_apoteker');
-            $table->string('foto_apoteker')->nullable();;
-            $table->string('no_hp_apoteker');
+            $table->string('nama_farmasi');
+            $table->string('foto_farmasi')->nullable();;
+            $table->string('no_hp_farmasi');
             $table->timestamps();
         });
     }
@@ -27,6 +27,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('apoteker');
+        Schema::dropIfExists('farmasi');
     }
 };

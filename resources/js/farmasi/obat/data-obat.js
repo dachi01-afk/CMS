@@ -12,7 +12,7 @@ $(function () {
         pageLength: 10,
         lengthChange: false,
         info: false,
-        ajax: "/obat/get-data-obat",
+        ajax: "/farmasi/obat/get-data-obat",
         columns: [
             {
                 data: "DT_RowIndex",
@@ -30,7 +30,6 @@ $(function () {
                 data: "jumlah",
                 name: "jumlah",
                 render: function (data, type, row) {
-                    if (!data) return "-";
                     return data + " capsul";
                 },
             },

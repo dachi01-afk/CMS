@@ -70,7 +70,7 @@
             </div>
 
             <!-- Form -->
-            <form action="{{ route('obat.pesan.obat') }}" method="POST" class="px-6 py-2 space-y-4"
+            <form method="POST" class="px-6 py-2 space-y-4"
                 id="form-penjualan-obat">
                 @csrf
                 <input type="hidden" name="resep_id" id="resep_id">
@@ -224,4 +224,4 @@
 
 
 
-@vite(['resources/js/apoteker/obat/order-obat.js'])
+@vite(['resources/js/farmasi/obat/order-obat.js'])

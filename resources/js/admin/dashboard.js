@@ -12,26 +12,28 @@ document.addEventListener("DOMContentLoaded", async () => {
             type: "bar",
             data: {
                 labels: data.labels,
-                datasets: [{
-                    label: "Jumlah Kunjungan",
-                    data: data.values,
-                    backgroundColor: "rgba(37, 99, 235, 0.7)",
-                    borderColor: "rgba(37, 99, 235, 1)",
-                    borderWidth: 1,
-                    borderRadius: 6
-                }]
+                datasets: [
+                    {
+                        label: "Jumlah Kunjungan",
+                        data: data.values,
+                        backgroundColor: "rgba(37, 99, 235, 0.7)",
+                        borderColor: "rgba(37, 99, 235, 1)",
+                        borderWidth: 1,
+                        borderRadius: 6,
+                    },
+                ],
             },
             options: {
                 responsive: true,
                 plugins: {
                     legend: { display: false },
-                    tooltip: { enabled: true }
+                    tooltip: { enabled: true },
                 },
                 scales: {
                     x: { grid: { display: false } },
-                    y: { beginAtZero: true }
-                }
-            }
+                    y: { beginAtZero: true },
+                },
+            },
         });
     } catch (err) {
         console.error("Gagal memuat data grafik:", err);
@@ -51,10 +53,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     await Promise.all([
-        getData('/admin/total_dokter', "totalDokter"),
-        getData('/admin/total_pasien', "totalPasien"),
-        getData('/admin/total_apoteker', "totalApoteker"),
-        getData('/admin/stok_obat' , "totalObat"),
+        getData("/admin/total_dokter", "totalDokter"),
+        getData("/admin/total_pasien", "totalPasien"),
+        getData("/admin/total_farmasi", "totalFarmasi"),
+        getData("/admin/stok_obat", "totalObat"),
     ]);
 });
-

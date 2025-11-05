@@ -205,4 +205,4 @@
 
 
 
-@vite(['resources/js/apoteker/obat/data-obat.js'])
+@vite(['resources/js/farmasi/obat/data-obat.js'])

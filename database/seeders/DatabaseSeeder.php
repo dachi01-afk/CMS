@@ -24,7 +24,7 @@ class DatabaseSeeder extends Seeder
             JenisSpesialisSeeder::class,
             AdminSeeder::class,
             DokterSeeder::class,
-            ApotekerSeeder::class,
+            FarmasiSeeder::class,
             PasienSeeder::class,
             ObatSeeder::class,
             JadwalDokterSeeder::class,

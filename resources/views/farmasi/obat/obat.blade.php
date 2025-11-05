@@ -1,4 +1,4 @@
-<x-layout-apoteker>
+<x-layout-farmasi>
 
     {{-- main --}}
     <div>
@@ -52,12 +52,12 @@
             <div id="tab-content">
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-data-obat" role="tabpanel"
                     aria-labelledby="data-obat-tab">
-                    @include('apoteker.obat.data-obat')
+                    @include('farmasi.obat.data-obat')
                 </div>
 
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-order-obat" role="tabpanel"
                     aria-labelledby="daftar-obat-tab">
-                    @include('apoteker.obat.order-obat')
+                    @include('farmasi.obat.order-obat')
                 </div>
             </div>
 
@@ -65,4 +65,4 @@
 
     </div>
 
-</x-layout-apoteker>
+</x-layout-farmasi>

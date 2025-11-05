@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Dokter;
 use App\Models\Pasien;
 use App\Models\Apoteker;
+use App\Models\Farmasi;
 use App\Models\Obat;
 use App\Models\Kunjungan;
 use Illuminate\Support\Facades\DB;
@@ -78,10 +79,10 @@ class DashboardController extends Controller
     // ===============================
     // 👩‍🔬 Total Apoteker
     // ===============================
-    public function getTotalApoteker()
+    public function getTotalFarmasi()
     {
         return response()->json([
-            'total' => Apoteker::count()
+            'total' => Farmasi::count()
         ]);
     }
 }

@@ -16,7 +16,6 @@ class ResepSeeder extends Seeder
     public function run(): void
     {
         $dataKunjungan = Kunjungan::get();
-        $dataApoteker = Apoteker::get();
 
         // foreach ($dataKunjungan as $kunjungan) {
         //     for ($i = 0; $i < 10; $i++) {

@@ -18,7 +18,7 @@ class DokterSeeder extends Seeder
     public function run(): void
     {
         $roleDokter = User::where('role', 'Dokter')->get();
-        $faker = Faker::create();
+        $faker = Faker::create('id_ID');
         $spesialis = JenisSpesialis::pluck('id')->toArray();
         $foto = 'foto_dokter.jpg';
         $dataPoli = Poli::all();

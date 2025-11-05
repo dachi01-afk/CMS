@@ -34,10 +34,10 @@ class UserSeeder extends Seeder
 
         // Seeder 1 Data User Dengan Role Apoteker. 
         User::create([
-            'username' => 'Apoteker',
-            'email' => 'apoteker@gmail.com',
-            'password' => Hash::make('passwordApoteker'),
-            'role' => 'Apoteker',
+            'username' => 'Farmasi',
+            'email' => 'farmasi@gmail.com',
+            'password' => Hash::make('passwordFarmasi'),
+            'role' => 'Farmasi',
         ]);
 
         // Seeder 1 Data User Dengan Role Pasien. 
@@ -50,7 +50,7 @@ class UserSeeder extends Seeder
 
         $faker = Faker::create();
 
-        $role = ['Admin', 'Dokter', 'Apoteker'];
+        $role = ['Admin', 'Dokter', 'Farmasi'];
 
         foreach ($role as $r) {
             for ($i = 0; $i < 4; $i++) {

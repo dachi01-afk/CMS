@@ -14,10 +14,10 @@ class Resep extends Model
     {
         return $this->belongsTo(Kunjungan::class);
     }
-    public function apoteker()
-    {
-        return $this->belongsTo(Apoteker::class);
-    }
+    // public function apoteker()
+    // {
+    //     return $this->belongsTo(Apoteker::class);
+    // }
 
     public function emr()
     {

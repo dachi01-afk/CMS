@@ -1,5 +1,4 @@
-<x-mycomponents.layout>
-
+<x-layout-farmasi>
     {{-- main --}}
     <div>
 
@@ -10,14 +9,14 @@
                 <div class="flex flex-col space-y-1">
 
                     <p class="text-lg font-medium text-gray-500">
-                        Selamat Datang Kembali, Admin!
+                        Selamat Datang Kembali, Farmasi!
                     </p>
 
                     <div class="flex items-center space-x-3">
                         <i class="fa-solid fa-gauge-high fa-2xl text-indigo-600"></i>
 
                         <h1 class="text-3xl font-extrabold text-gray-900 leading-tight">
-                            Dashboard Utama
+                            Dashboard Farmasi
                         </h1>
                     </div>
                 </div>
@@ -42,50 +41,68 @@
 
             {{-- ========== Grafik Utama ========== --}}
             <div class="bg-white rounded-lg shadow p-4 mb-3">
-                <h2 class="text-lg font-semibold text-gray-700 mb-2">Grafik Jumlah Kunjungan Pasien</h2>
-                <canvas id="kunjunganChart" class="w-full h-64"></canvas>
-            </div>
+                <div class="flex items-center justify-between mb-2">
+                    <div>
+                        <h2 class="text-lg font-semibold text-gray-700">Grafik Penjualan Obat</h2>
+                        {{-- judul dinamis (tanggal/range) --}}
+                        <h3 id="chartTitle" class="text-sm text-gray-500 mt-1"></h3>
+                    </div>
 
+                    <select id="rangeFilter" class="text-sm border rounded-md px-2 py-1">
+                        <option value="harian" selected>Harian</option>
+                        <option value="mingguan">Mingguan</option>
+                        <option value="bulanan">Bulanan</option>
+                        <option value="tahunan">Tahunan</option>
+                    </select>
+                </div>
+
+                {{-- wrapper fixed height agar chart tidak “memanjang” --}}
+                <div class="relative w-full" style="height: 720px;">
+                    <canvas id="chartPenjualanObat"></canvas>
+                </div>
+            </div>
             {{-- ========== 4 Card Statistik Mini ========== --}}
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2">
-                {{-- Jumlah Dokter --}}
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-2 px-4 pb-4">
+                <!-- Jumlah Transaksi Obat Hari Ini -->
                 <div
                     class="flex items-center justify-between p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow">
                     <div>
-                        <p class="text-sm">Jumlah Dokter</p>
-                        <h3 id="totalDokter" class="text-2xl font-bold">0</h3>
+                        <p class="text-sm">Jumlah Transaksi Hari Ini</p>
+                        <h3 id="totalPenjualanObatHariIni" class="text-2xl font-bold">0</h3>
                     </div>
-                    <i class="fa-solid fa-user-md text-3xl opacity-70"></i>
+                    <i class="fa-solid fa-calendar-day text-3xl opacity-70" aria-hidden="true"></i>
                 </div>
 
-                {{-- Jumlah Pasien --}}
+                <!-- Jumlah Keseluruhan Transaksi Obat -->
                 <div
                     class="flex items-center justify-between p-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg shadow">
                     <div>
-                        <p class="text-sm">Jumlah Pasien</p>
-                        <h3 id="totalPasien" class="text-2xl font-bold">0</h3>
+                        <p class="text-sm">Jumlah Keseluruhan Transaksi Obat</p>
+                        <h3 id="totalKeseluruhanTransaksiObat" class="text-2xl font-bold">0</h3>
                     </div>
-                    <i class="fa-solid fa-users text-3xl opacity-70"></i>
+                    <i class="fa-solid fa-chart-line text-3xl opacity-70" aria-hidden="true"></i>
                 </div>
 
-                {{-- Jumlah Apoteker --}}
+
+                {{-- <!-- Jumlah Apoteker -->
                 <div
                     class="flex items-center justify-between p-4 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white rounded-lg shadow">
                     <div>
                         <p class="text-sm">Jumlah Apoteker</p>
-                        <h3 id="totalFarmasi" class="text-2xl font-bold">0</h3>
+                        <h3 id="totalApoteker" class="text-2xl font-bold">0</h3>
                     </div>
                     <i class="fa-solid fa-prescription-bottle-medical text-3xl opacity-70"></i>
-                </div>
+                </div> --}}
 
-                {{-- Stok Obat --}}
+
+                <!-- Total Stok Obat -->
                 <div
                     class="flex items-center justify-between p-4 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg shadow">
                     <div>
                         <p class="text-sm">Total Stok Obat</p>
                         <h3 id="totalObat" class="text-2xl font-bold">0</h3>
                     </div>
-                    <i class="fa-solid fa-pills text-3xl opacity-70"></i>
+                    <i class="fa-solid fa-capsules text-3xl opacity-70" aria-hidden="true"></i>
                 </div>
             </div>
 
@@ -96,5 +113,5 @@
 
     </div>
 
-    @vite(['resources/js/admin/dashboard.js'])
-</x-mycomponents.layout>
+    @vite(['resources/js/farmasi/dashboard.js'])
+</x-layout-farmasi>

@@ -88,6 +88,17 @@ class DataMedisPasienController extends Controller
             ->make(true);
     }
 
+    public function showDetailEMR($id)
+    {
+        $emr = EMR::with([
+            'kunjungan.pasien',
+            'kunjungan.poli.dokter',
+            'resep.obat',
+        ])->findOrFail($id);
+
+        return view('admin.dataMedisPasien.detail-emr', compact('emr'));
+    }
+
     public function getDataEMRById($id)
     {
         $dataEMR = EMR::with('kunjungan.pasien', 'kunjungan.poli.dokter', 'resep.obat')->findOrFail($id);
