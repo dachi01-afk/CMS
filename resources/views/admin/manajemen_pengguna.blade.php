@@ -26,35 +26,27 @@
             <ul class="flex flex-wrap -mb-px text-sm font-medium text-center whitespace-nowrap" id="default-tab"
                 data-tabs-toggle="#tab-content" role="tablist">
 
-                {{-- <li class="me-2" role="presentation">
-                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="pengguna-tab"
-                        data-tabs-target="#data-pengguna" type="button" role="tab" aria-controls="data-pengguna"
-                        aria-selected="true">
-                        Data Pengguna
-                    </button>
-                </li> --}}
-
                 <li class="me-2" role="presentation">
                     <button class="inline-block p-4 border-b-2 rounded-t-lg" id="dokter-tab"
                         data-tabs-target="#data-dokter" type="button" role="tab" aria-controls="data-dokter"
-                        aria-selected="false">
+                        aria-selected="true">
                         Data Dokter
                     </button>
                 </li>
-
-                {{-- <li class="me-2" role="presentation">
-                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="staf-tab"
-                        data-tabs-target="#data-staf" type="button" role="tab" aria-controls="data-staf"
-                        aria-selected="false">
-                        Data Staf Administrasi
-                    </button>
-                </li> --}}
 
                 <li class="me-2" role="presentation">
                     <button class="inline-block p-4 border-b-2 rounded-t-lg" id="farmasi-tab"
                         data-tabs-target="#data-farmasi" type="button" role="tab" aria-controls="data-farmasi"
                         aria-selected="false">
                         Data Farmasi
+                    </button>
+                </li>
+
+                <li class="me-2" role="presentation">
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="kasir-tab"
+                        data-tabs-target="#data-kasir" type="button" role="tab" aria-controls="data-kasir"
+                        aria-selected="false">
+                        Data Kasir
                     </button>
                 </li>
 
@@ -73,24 +65,19 @@
 
             {{-- Tabs Content --}}
             <div id="tab-content">
-                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-pengguna" role="tabpanel"
-                    aria-labelledby="pengguna-tab">
-                    @include('admin.manajemenPengguna.data_pengguna')
-                </div>
-
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-dokter" role="tabpanel"
                     aria-labelledby="dokter-tab">
                     @include('admin.manajemenPengguna.data_dokter')
                 </div>
 
-                {{-- <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-staf" role="tabpanel"
-                    aria-labelledby="staf-tab">
-                    @include('admin.manajemenPengguna.data_staf_administrasi')
-                </div> --}}
-
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-farmasi" role="tabpanel"
                     aria-labelledby="farmasi-tab">
                     @include('admin.manajemenPengguna.data_apoteker')
+                </div>
+
+                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-kasir" role="tabpanel"
+                    aria-labelledby="kasir-tab">
+                    @include('admin.manajemenPengguna.data_kasir')
                 </div>
 
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-pasien" role="tabpanel"

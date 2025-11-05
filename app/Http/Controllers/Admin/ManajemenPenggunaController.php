@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\Farmasi;
 use App\Models\JenisSpesialis;
+use App\Models\Kasir;
 use App\Models\Poli;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -130,6 +131,37 @@ class ManajemenPenggunaController extends Controller
                 <i class="fa-regular fa-pen-to-square text-lg"></i>
             </button>
             <button class="btn-delete-apoteker text-red-600 hover:text-red-800" data-id="' . $apoteker->id . '" title="Hapus">
+                <i class="fa-regular fa-trash-can text-lg"></i>
+            </button>
+            ';
+            })
+            ->rawColumns(['foto', 'action'])
+            ->make(true);
+    }
+
+    public function dataKasir()
+    {
+        $query = Kasir::with('user')->select('kasir.*')->latest()->get();
+
+        return DataTables::of($query)
+            ->addIndexColumn()
+            ->addColumn('foto', function ($row) {
+                if ($row->foto_kasir) {
+                    $url = asset('storage/' . $row->foto_kasir);
+                    return '<img src="' . $url . '" alt="Foto Farmasi" class="w-12 h-12 rounded-lg object-cover mx-auto shadow">';
+                } else {
+                    return '<span class="text-gray-400 italic">Tidak ada</span>';
+                }
+            })
+            ->addColumn('username', fn($row) => $row->user->username ?? '-')
+            ->addColumn('email_user', fn($row) => $row->user->email ?? '-')
+            ->addColumn('role', fn($row) => $row->user->role ?? '-')
+            ->addColumn('action', function ($kasir) {
+                return '
+            <button class="btn-edit-kasir text-blue-600 hover:text-blue-800 mr-2" data-id="' . $kasir->id . '" title="Edit">
+                <i class="fa-regular fa-pen-to-square text-lg"></i>
+            </button>
+            <button class="btn-delete-kasir text-red-600 hover:text-red-800" data-id="' . $kasir->id . '" title="Hapus">
                 <i class="fa-regular fa-trash-can text-lg"></i>
             </button>
             ';

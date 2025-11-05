@@ -160,6 +160,20 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::post('/update_dokter/', [DokterController::class, 'updateDokter'])->name('update_dokter');
         Route::delete('/delete_dokter/{id}', [DokterController::class, 'deleteDokter'])->name('delete_dokter');
 
+        // crud apoteker
+        Route::get('/data_apoteker', [ManajemenPenggunaController::class, 'dataApoteker'])->name('data_apoteker');
+        Route::get('/get_apoteker_by_id/{id}', [ApotekerController::class, 'getApotekerById'])->name('get_apoteker_by_id');
+        Route::post('/add_apoteker', [ApotekerController::class, 'createApoteker'])->name('add_apoteker');
+        Route::put('/update_apoteker/{id}', [ApotekerController::class, 'updateApoteker'])->name('update_apoteker');
+        Route::delete('/delete_apoteker/{id}', [ApotekerController::class, 'deleteApoteker'])->name('delete_apoteker');
+
+        // crud apoteker
+        Route::get('/data_kasir', [ManajemenPenggunaController::class, 'dataKasir'])->name('data_kasir');
+        Route::post('/add_kasir', [KasirController::class, 'createKasir'])->name('add_kasir');
+        Route::get('/get_kasir_by_id/{id}', [KasirController::class, 'getKasirById'])->name('get_kasir_by_id');
+        Route::put('/update_kasir/{id}', [KasirController::class, 'updateKasir'])->name('update_kasir');
+        Route::delete('/delete_kasir/{id}', [KasirController::class, 'deleteKasir'])->name('delete_kasir');
+
         // crud pasien
         Route::get('/data_pasien', [ManajemenPenggunaController::class, 'dataPasien'])->name('data_pasien');
         Route::get('/get_pasien_by_id/{id}', [PasienController::class, 'getPasienById'])->name('get_pasien_by_id');
@@ -167,13 +181,6 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::put('/update_pasien/{id}', [PasienController::class, 'updatePasien'])->name('update_pasien');
         Route::delete('/delete_pasien/{id}', [PasienController::class, 'deletePasien'])->name('delete_pasien');
         Route::delete('/search', [PasienController::class, 'search'])->name('pasien');
-
-        // crud apoteker
-        Route::get('/data_apoteker', [ManajemenPenggunaController::class, 'dataApoteker'])->name('data_apoteker');
-        Route::get('/get_apoteker_by_id/{id}', [ApotekerController::class, 'getApotekerById'])->name('get_apoteker_by_id');
-        Route::post('/add_apoteker', [ApotekerController::class, 'createApoteker'])->name('add_apoteker');
-        Route::put('/update_apoteker/{id}', [ApotekerController::class, 'updateApoteker'])->name('update_apoteker');
-        Route::delete('/delete_apoteker/{id}', [ApotekerController::class, 'deleteApoteker'])->name('delete_apoteker');
     });
 
     Route::prefix('pengaturan_klinik')->name('pengaturan_klinik.')->group(function () {
