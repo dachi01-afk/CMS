@@ -3,11 +3,17 @@
 namespace App\Http\Controllers\Farmasi;
 
 use App\Http\Controllers\Controller;
+use App\Models\Farmasi;
+use App\Models\Kasir;
 use App\Models\Obat;
 use App\Models\PenjualanObat;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
+use Intervention\Image\Laravel\Facades\Image;
 
 class FarmasiController extends Controller
 {
@@ -227,5 +233,190 @@ class FarmasiController extends Controller
         return response()->json([
             'total' => $jumlahObat,
         ]);
+    }
+
+    public function createFarmasi(Request $request)
+    {
+        try {
+            // 🧩 Validasi input
+            $request->validate([
+                'foto_apoteker'     => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
+                'username_apoteker' => 'required|string|max:255|unique:user,username',
+                'nama_apoteker'     => 'required|string|max:255',
+                'email_apoteker'    => 'required|email|unique:user,email',
+                'no_hp_apoteker'    => 'nullable|string|max:20',
+                'password_apoteker' => 'required|string|min:8|confirmed',
+            ]);
+
+            // 🧑‍💻 Buat user baru
+            $user = User::create([
+                'username' => $request->username_apoteker,
+                'email'    => $request->email_apoteker,
+                'password' => Hash::make($request->password_apoteker),
+                'role'     => 'Farmasi',
+            ]);
+
+            // 📸 Upload + Kompres Foto
+            $fotoPath = null;
+            if ($request->hasFile('foto_apoteker')) {
+                $file = $request->file('foto_apoteker');
+
+                $extension = strtolower($file->getClientOriginalExtension());
+                if ($extension === 'jfif') {
+                    $extension = 'jpg';
+                }
+
+                $fileName = 'farmasi_' . time() . '.' . $extension;
+                $path = 'farmasi/' . $fileName;
+
+                if ($extension === 'svg') {
+                    Storage::disk('public')->put($path, file_get_contents($file));
+                } else {
+                    $image = Image::read($file);
+                    $image->scale(width: 800);
+                    Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+                }
+
+                $fotoPath = $path;
+            }
+
+            // 🏥 Buat data apoteker
+            Farmasi::create([
+                'user_id'        => $user->id,
+                'nama_farmasi'  => $request->nama_apoteker,
+                'foto_farmasi'  => $fotoPath,
+                'no_hp_farmasi' => $request->no_hp_apoteker,
+            ]);
+
+            return response()->json(['message' => 'Data farmasi berhasil ditambahkan.']);
+        } catch (\Illuminate\Http\Exceptions\PostTooLargeException $e) {
+            // 🚫 File terlalu besar
+            return response()->json([
+                'message' => 'Ukuran file terlalu besar! Maksimal 5 MB.'
+            ], 413);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // ⚠️ Validasi gagal
+            return response()->json([
+                'message' => 'Validasi gagal.',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            // 💥 Error umum
+            return response()->json([
+                'message' => 'Tidak ada respon dari server.', // 🔥 ini pesan yang kamu mau
+                'error_detail' => $e->getMessage(), // opsional, untuk debugging (bisa kamu hapus kalau gak mau tampil)
+            ], 500);
+        }
+    }
+
+
+    public function getFarmasiById($id)
+    {
+        $data = Farmasi::with('user')->findOrFail($id);
+        return response()->json(['data' => $data]);
+    }
+
+    public function updateFarmasi(Request $request, $id)
+    {
+        try {
+            $apoteker = Farmasi::findOrFail($id);
+            $user = $apoteker->user;
+
+            $request->validate([
+                'edit_username_apoteker'    => 'required|string|max:255|unique:user,username,' . $user->id,
+                'edit_nama_apoteker'        => 'required|string|max:255',
+                'edit_email_apoteker'       => 'required|email|unique:user,email,' . $user->id,
+                'edit_foto_apoteker'        => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
+                'edit_no_hp_apoteker'       => 'nullable|string|max:20',
+                'edit_password_apoteker'    => 'nullable|string|min:8|confirmed',
+            ]);
+
+            // Update user
+            $user->username = $request->input('edit_username_apoteker');
+            $user->email    = $request->input('edit_email_apoteker');
+
+            if ($request->filled('edit_password_apoteker')) {
+                $user->password = Hash::make($request->input('edit_password_apoteker'));
+            }
+
+            // Handle foto upload
+            $fotoPath = null;
+            if ($request->hasFile('edit_foto_apoteker')) {
+                $file = $request->file('edit_foto_apoteker');
+
+                $extension = strtolower($file->getClientOriginalExtension());
+                if ($extension === 'jfif') {
+                    $extension = 'jpg';
+                }
+
+                $fileName = 'apoteker_' . time() . '.' . $extension;
+                $path = 'apoteker/' . $fileName;
+
+                if ($extension === 'svg') {
+                    Storage::disk('public')->put($path, file_get_contents($file));
+                } else {
+                    $image = Image::read($file);
+                    $image->scale(width: 800);
+                    Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+                }
+
+                $fotoPath = $path;
+
+                if ($apoteker->foto_apoteker && Storage::disk('public')->exists($apoteker->foto_apoteker)) {
+                    Storage::disk('public')->delete($apoteker->foto_apoteker);
+                }
+            }
+
+            // Update apoteker
+            $updateData = [
+                'nama_farmasi'  => $request->edit_nama_apoteker,
+                'no_hp_farmasi' => $request->edit_no_hp_apoteker,
+            ];
+
+            $updateDataUser = ([
+                'username' => $request->edit_username_apoteker,
+            ]);
+
+            if ($fotoPath) {
+                $updateData['foto_farmasi'] = $fotoPath;
+            }
+
+            $apoteker->update($updateData);
+            $user->update($updateDataUser);
+
+            return response()->json(['message' => 'Data farmasi berhasil diperbarui.']);
+        } catch (\Illuminate\Http\Exceptions\PostTooLargeException $e) {
+            // 📛 Jika file melebihi batas upload
+            return response()->json([
+                'message' => 'Ukuran file terlalu besar! Maksimal 5 MB.'
+            ], 413);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // 📛 Jika validasi gagal
+            return response()->json([
+                'message' => 'Validasi gagal.',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            // 💥 Error umum
+            return response()->json([
+                'message' => 'Tidak ada respon dari server.', // 🔥 ini pesan yang kamu mau
+                'error_detail' => $e->getMessage(), // opsional, untuk debugging (bisa kamu hapus kalau gak mau tampil)
+            ], 500);
+        }
+    }
+
+
+    public function deleteFarmasi($id)
+    {
+        $farmasi = Farmasi::findOrFail($id);
+
+        $farmasi->user->delete();
+        $farmasi->delete();
+        // Hapus foto jika ada
+        if ($farmasi->foto_farmasi && Storage::disk('public')->exists($farmasi->foto_farmasi)) {
+            Storage::disk('public')->delete($farmasi->foto_farmasi);
+        }
+
+        return response()->json(['success' => 'Data farmasi berhasil dihapus.']);
     }
 }

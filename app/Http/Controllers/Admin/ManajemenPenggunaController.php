@@ -108,7 +108,7 @@ class ManajemenPenggunaController extends Controller
             ->make(true);
     }
 
-    public function dataApoteker()
+    public function dataFarmasi()
     {
         $query = Farmasi::with('user')->select('farmasi.*')->latest()->get();
 
@@ -125,12 +125,12 @@ class ManajemenPenggunaController extends Controller
             ->addColumn('username', fn($row) => $row->user->username ?? '-')
             ->addColumn('email_user', fn($row) => $row->user->email ?? '-')
             ->addColumn('role', fn($row) => $row->user->role ?? '-')
-            ->addColumn('action', function ($apoteker) {
+            ->addColumn('action', function ($farmasi) {
                 return '
-            <button class="btn-edit-apoteker text-blue-600 hover:text-blue-800 mr-2" data-id="' . $apoteker->id . '" title="Edit">
+            <button class="btn-edit-farmasi text-blue-600 hover:text-blue-800 mr-2" data-id="' . $farmasi->id . '" title="Edit">
                 <i class="fa-regular fa-pen-to-square text-lg"></i>
             </button>
-            <button class="btn-delete-apoteker text-red-600 hover:text-red-800" data-id="' . $apoteker->id . '" title="Hapus">
+            <button class="btn-delete-farmasi text-red-600 hover:text-red-800" data-id="' . $farmasi->id . '" title="Hapus">
                 <i class="fa-regular fa-trash-can text-lg"></i>
             </button>
             ';

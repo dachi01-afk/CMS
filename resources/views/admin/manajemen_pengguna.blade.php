@@ -72,7 +72,7 @@
 
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-farmasi" role="tabpanel"
                     aria-labelledby="farmasi-tab">
-                    @include('admin.manajemenPengguna.data_apoteker')
+                    @include('admin.manajemenPengguna.data_farmasi')
                 </div>
 
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-kasir" role="tabpanel"

@@ -160,14 +160,14 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::post('/update_dokter/', [DokterController::class, 'updateDokter'])->name('update_dokter');
         Route::delete('/delete_dokter/{id}', [DokterController::class, 'deleteDokter'])->name('delete_dokter');
 
-        // crud apoteker
-        Route::get('/data_apoteker', [ManajemenPenggunaController::class, 'dataApoteker'])->name('data_apoteker');
-        Route::get('/get_apoteker_by_id/{id}', [ApotekerController::class, 'getApotekerById'])->name('get_apoteker_by_id');
-        Route::post('/add_apoteker', [ApotekerController::class, 'createApoteker'])->name('add_apoteker');
-        Route::put('/update_apoteker/{id}', [ApotekerController::class, 'updateApoteker'])->name('update_apoteker');
-        Route::delete('/delete_apoteker/{id}', [ApotekerController::class, 'deleteApoteker'])->name('delete_apoteker');
+        // crud farmasi
+        Route::get('/data_farmasi', [ManajemenPenggunaController::class, 'dataFarmasi'])->name('data_farmasi');
+        Route::post('/add_farmasi', [FarmasiController::class, 'createFarmasi'])->name('add_farmasi');
+        Route::get('/get_farmasi_by_id/{id}', [FarmasiController::class, 'getFarmasiById'])->name('get_farmasi_by_id');
+        Route::put('/update_farmasi/{id}', [FarmasiController::class, 'updateFarmasi'])->name('update_farmasi');
+        Route::delete('/delete_farmasi/{id}', [FarmasiController::class, 'deleteFarmasi'])->name('delete_farmasi');
 
-        // crud apoteker
+        // crud kasir
         Route::get('/data_kasir', [ManajemenPenggunaController::class, 'dataKasir'])->name('data_kasir');
         Route::post('/add_kasir', [KasirController::class, 'createKasir'])->name('add_kasir');
         Route::get('/get_kasir_by_id/{id}', [KasirController::class, 'getKasirById'])->name('get_kasir_by_id');

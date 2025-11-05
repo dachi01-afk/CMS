@@ -1,6 +1,6 @@
 <!-- Header -->
 <div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-    <h2 class="text-2xl font-bold text-gray-700">Data Apoteker</h2>
+    <h2 class="text-2xl font-bold text-gray-700">Data Farmasi</h2>
 
     <!-- Modal toggle -->
     <button id="btnAddApoteker"
@@ -34,7 +34,7 @@
                 <tr>
                     <th class="px-6 py-3">No</th>
                     <th class="px-6 py-3">Profile</th>
-                    <th class="px-6 py-3">Nama Apoteker</th>
+                    <th class="px-6 py-3">Nama Farmasi</th>
                     <th class="px-6 py-3">Username</th>
                     <th class="px-6 py-3">Email Akun</th>
                     <th class="px-6 py-3">Role</th>
@@ -60,12 +60,12 @@
 
             {{-- Header --}}
             <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-600">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Tambah Data Apoteker</h3>
+                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Tambah Data Farmasi</h3>
             </div>
 
             {{-- Form --}}
             <form id="formAddApoteker" class="p-5 flex flex-col gap-4"
-                data-url="{{ route('manajemen_pengguna.add_apoteker') }}" method="POST" enctype="multipart/form-data">
+                data-url="{{ route('manajemen_pengguna.add_farmasi') }}" method="POST" enctype="multipart/form-data">
                 @csrf
 
                 {{-- Foto --}}
@@ -108,11 +108,11 @@
                     {{-- Nama Apoteker --}}
                     <div>
                         <label for="nama_apoteker"
-                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama Apoteker</label>
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama Farmasi</label>
                         <input type="text" name="nama_apoteker" id="nama_apoteker"
                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500
                             w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                            placeholder="Nama Apoteker" required>
+                            placeholder="Nama Kasir" required>
                         <div id="nama_apoteker-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
 
@@ -123,7 +123,7 @@
                         <input type="email" name="email_apoteker" id="email_apoteker"
                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500
                             w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                            placeholder="apoteker@example.com" required>
+                            placeholder="farmasi@example.com" required>
                         <div id="email_apoteker-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
 
@@ -145,12 +145,12 @@
                     <div>
                         <label for="password_apoteker"
                             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password
-                            </_apotekerlabel>
-                            <input type="password" name="password_apoteker" id="password_apoteker"
-                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
+                        </label>
+                        <input type="password" name="password_apoteker" id="password_apoteker"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
                             focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                                placeholder="••••••••" required>
-                            <div id="password_apoteker-error" class="text-red-600 text-sm mt-1"></div>
+                            placeholder="••••••••" required>
+                        <div id="password_apoteker-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
 
                     {{-- Konfirmasi Password --}}
@@ -201,7 +201,7 @@
 
             {{-- Form --}}
             <form id="formEditApoteker" class="p-5 flex flex-col gap-4"
-                data-url="{{ route('manajemen_pengguna.update_apoteker', ['id' => 0]) }}" method="POST"
+                data-url="{{ route('manajemen_pengguna.update_farmasi', ['id' => 0]) }}" method="POST"
                 enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
@@ -325,4 +325,4 @@
     </div>
 </div>
 
-@vite(['resources/js/admin/manajemenPengguna/data_apoteker.js'])
+@vite(['resources/js/admin/manajemenPengguna/data_farmasi.js'])

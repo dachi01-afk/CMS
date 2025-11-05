@@ -13,7 +13,7 @@ $(function () {
         pageLength: 10,
         lengthChange: false,
         info: false,
-        ajax: "/manajemen_pengguna/data_apoteker",
+        ajax: "/manajemen_pengguna/data_farmasi",
         columns: [
             {
                 data: "DT_RowIndex",
@@ -230,12 +230,12 @@ $(function () {
             .addClass("border-dashed border-gray-400");
     }
 
-    $("body").on("click", ".btn-edit-apoteker", function () {
+    $("body").on("click", ".btn-edit-farmasi", function () {
         resetEditForm();
         const id = $(this).data("id");
 
         axios
-            .get(`/manajemen_pengguna/get_apoteker_by_id/${id}`)
+            .get(`/manajemen_pengguna/get_farmasi_by_id/${id}`)
             .then((response) => {
                 const data = response.data.data;
 
@@ -247,12 +247,12 @@ $(function () {
                 $("#edit_apoteker_id").val(data.id);
                 $("#edit_username_apoteker").val(data.user.username);
                 $("#edit_email_apoteker").val(data.user.email);
-                $("#edit_nama_apoteker").val(data.nama_apoteker);
-                $("#edit_no_hp_apoteker").val(data.no_hp_apoteker);
+                $("#edit_nama_apoteker").val(data.nama_farmasi);
+                $("#edit_no_hp_apoteker").val(data.no_hp_farmasi);
 
                 // Tampilkan foto existing jika ada
-                if (data.foto_apoteker) {
-                    const fotoUrl = `/storage/${data.foto_apoteker}`;
+                if (data.foto_farmasi) {
+                    const fotoUrl = `/storage/${data.foto_farmasi}`;
                     $("#edit_preview_foto_apoteker")
                         .attr("src", fotoUrl)
                         .removeClass("hidden");
@@ -330,7 +330,7 @@ $(function () {
 
 // delete data dokter
 $(function () {
-    $("body").on("click", ".btn-delete-apoteker", function () {
+    $("body").on("click", ".btn-delete-farmasi", function () {
         const dokterId = $(this).data("id");
         if (!dokterId) return;
 
@@ -346,7 +346,7 @@ $(function () {
         }).then((result) => {
             if (result.isConfirmed) {
                 axios
-                    .delete(`/manajemen_pengguna/delete_apoteker/${dokterId}`)
+                    .delete(`/manajemen_pengguna/delete_farmasi/${dokterId}`)
                     .then((response) => {
                         Swal.fire({
                             icon: "success",
