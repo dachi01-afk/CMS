@@ -112,7 +112,7 @@
                         <input type="text" name="nama_apoteker" id="nama_apoteker"
                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500
                             w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                            placeholder="Nama Kasir" required>
+                            placeholder="Nama Farmasi" required>
                         <div id="nama_apoteker-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
 
@@ -247,11 +247,11 @@
                     {{-- Nama --}}
                     <div>
                         <label for="edit_nama_apoteker"
-                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama Apoteker</label>
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama Farmasi</label>
                         <input type="text" name="edit_nama_apoteker" id="edit_nama_apoteker"
                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500
                             w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                            placeholder="Nama Apoteker" required>
+                            placeholder="Nama Farmasi" required>
                         <div id="edit_nama_apoteker-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
 
@@ -262,7 +262,7 @@
                         <input type="email" name="edit_email_apoteker" id="edit_email_apoteker"
                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500
                             w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                            placeholder="apoteker@example.com" required>
+                            placeholder="farmasi@example.com" required>
                         <div id="edit_email_apoteker-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
 
