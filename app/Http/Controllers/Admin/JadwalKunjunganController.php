@@ -9,6 +9,9 @@ use App\Models\JadwalDokter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class JadwalKunjunganController extends Controller
 {
@@ -104,70 +107,210 @@ class JadwalKunjunganController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'poli_id' => 'required|exists:poli,id',
-            'pasien_id' => 'required|exists:pasien,id',
-            'keluhan_awal' => 'required|string',
-        ]);
+{
+    // Logging cepat untuk diagnosis
+    Log::info('REQ store kunjungan', $request->only([
+        'dokter_id','jadwal_id','poli_id','pasien_id','tanggal_kunjungan'
+    ]));
 
-        // dd($request->all());
+    $validated = $request->validate([
+        'poli_id'           => 'required|exists:poli,id',
+        'pasien_id'         => 'required|exists:pasien,id',
+        'tanggal_kunjungan' => 'required|date',
+        'keluhan_awal'      => 'required|string',
+        'jadwal_id'         => 'nullable|exists:jadwal_dokter,id',
+    ]);
 
-        // Gunakan transaksi agar aman dari race condition
-        $kunjungan = DB::transaction(function () use ($request) {
+    $dokterId = $request->filled('dokter_id') ? (int) $request->input('dokter_id') : null;
 
-            $tanggal = $request->tanggal_kunjungan;
+    // Jika FE mengirim dokter_id → pastikan dokter berada di poli yang sama
+    if ($dokterId !== null) {
+        $valid = DB::table('dokter')
+            ->where('id', $dokterId)
+            ->where('poli_id', $validated['poli_id'])
+            ->exists();
 
-            // Ambil kunjungan terakhir di tanggal yang sama
-            $lastKunjungan = Kunjungan::where('tanggal_kunjungan', $tanggal)
-                ->orderByDesc('no_antrian')
-                ->lockForUpdate() // kunci baris agar tidak bentrok antar request
-                ->first();
+        if (!$valid) {
+            throw ValidationException::withMessages([
+                'dokter_id' => 'Dokter tidak termasuk ke poli yang dipilih.',
+            ]);
+        }
+    }
 
-            // Tentukan nomor antrian berikutnya
-            if ($lastKunjungan) {
-                $nextNumber = (int) $lastKunjungan->no_antrian + 1;
-            } else {
-                $nextNumber = 1;
+    $kunjungan = DB::transaction(function () use ($validated, $dokterId) {
+
+        // =========================
+        // Anti-duplikat 60 detik (izinkan multi-kunjungan/hari,
+        // tapi kalau entry identik ≤60s, kembalikan record terakhir)
+        // =========================
+        $dupe = Kunjungan::whereDate('tanggal_kunjungan', $validated['tanggal_kunjungan'])
+            ->where('poli_id',   $validated['poli_id'])
+            ->where('pasien_id', $validated['pasien_id'])
+            ->where('keluhan_awal', $validated['keluhan_awal'])
+            ->where('created_at', '>=', now()->subSeconds(60))
+            ->lockForUpdate()
+            ->latest('id')
+            ->first();
+
+        if ($dupe) {
+            // Ambil dokter terpilih dari cache kalau ada
+            $cached = Cache::get("kunjungan_dokter:{$dupe->id}");
+            $dokter = null;
+            if (!empty($cached['dokter_id'])) {
+                $dokter = DB::table('dokter')
+                    ->select('id','nama_dokter','poli_id')
+                    ->where('id', (int)$cached['dokter_id'])
+                    ->first();
             }
 
-            // Format 3 digit (001, 002, 010, dst)
-            $formattedNo = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
+            return [
+                'reuse'     => true,
+                'kunjungan' => $dupe,
+                'dokter'    => $dokter,
+            ];
+        }
 
-            // Simpan data kunjungan
-            $kunjungan = Kunjungan::create([
-                'poli_id' => $request->poli_id,
-                'pasien_id' => $request->pasien_id,
-                'tanggal_kunjungan' => $tanggal,
-                'no_antrian' => $formattedNo,
-                'keluhan_awal' => $request->keluhan_awal,
-                'status' => 'Pending',
-            ]);
+        // =========================
+        // HITUNG NOMOR ANTRIAN (per TANGGAL + POLI) aman dari race:
+        // kunci BARIS TERAKHIR lalu +1. Reset otomatis ke 001 saat tanggal beda.
+        // (Jika ingin global per-hari, hapus baris ->where('poli_id', ...))
+        // =========================
+        $lastRow = DB::table('kunjungan')
+            ->whereDate('tanggal_kunjungan', $validated['tanggal_kunjungan'])
+            ->where('poli_id', $validated['poli_id'])
+            ->orderByRaw('CAST(no_antrian AS UNSIGNED) DESC')
+            ->orderByDesc('id')
+            ->lockForUpdate()
+            ->first();
 
-            return $kunjungan;
-        });
+        $lastNumber  = $lastRow ? (int)$lastRow->no_antrian : 0;
+        $nextNumber  = $lastNumber + 1;
+        $formattedNo = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Data kunjungan berhasil ditambahkan.',
-            'data' => $kunjungan,
+        // Simpan kunjungan baru
+        $baru = Kunjungan::create([
+            'poli_id'           => $validated['poli_id'],
+            'pasien_id'         => $validated['pasien_id'],
+            'tanggal_kunjungan' => $validated['tanggal_kunjungan'],
+            'no_antrian'        => $formattedNo,
+            'keluhan_awal'      => $validated['keluhan_awal'],
+            'status'            => 'Pending',
         ]);
-    }
+
+        // Tentukan dokter terpilih: FE → jadwal → kalau dua-duanya kosong → error
+        $chosenDokterId = $dokterId;
+
+        if ($chosenDokterId === null) {
+            if (!empty($validated['jadwal_id'])) {
+                $row = DB::table('jadwal_dokter')
+                    ->select('dokter_id','poli_id')
+                    ->where('id', $validated['jadwal_id'])
+                    ->first();
+
+                if (!$row || (int)$row->poli_id !== (int)$validated['poli_id']) {
+                    throw ValidationException::withMessages([
+                        'jadwal_id' => 'Jadwal tidak sesuai dengan poli yang dipilih.',
+                    ]);
+                }
+                $chosenDokterId = (int)$row->dokter_id;
+            } else {
+                throw ValidationException::withMessages([
+                    'dokter_id' => 'Harus memilih dokter atau jadwal dokter.',
+                ]);
+            }
+        }
+
+        // Simpan mapping dokter ke cache (disarankan Redis kalau multi server)
+        Cache::forever("kunjungan_dokter:{$baru->id}", [
+            'dokter_id'         => $chosenDokterId,
+            'poli_id'           => (int)$validated['poli_id'],
+            'tanggal_kunjungan' => $validated['tanggal_kunjungan'],
+            'by'                => $dokterId !== null ? 'fe' : 'jadwal',
+        ]);
+
+        $baru->setAttribute('dokter_id_terpilih', $chosenDokterId);
+
+        $dokter = DB::table('dokter')
+            ->select('id','nama_dokter','poli_id')
+            ->where('id', $chosenDokterId)
+            ->first();
+
+        return [
+            'reuse'     => false,
+            'kunjungan' => $baru,
+            'dokter'    => $dokter,
+        ];
+    });
+
+    // Bentuk response
+    $msg   = $kunjungan['reuse']
+           ? 'Entry identik baru saja dibuat; mengembalikan kunjungan terakhir (anti duplikat).'
+           : 'Data kunjungan berhasil ditambahkan.';
+
+    return response()->json([
+        'success' => true,
+        'message' => $msg,
+        'data'    => [
+            'kunjungan'       => $kunjungan['kunjungan']->load('poli','pasien'),
+            'dokter_terpilih' => $kunjungan['dokter'],
+        ],
+    ], $kunjungan['reuse'] ? 200 : 201);
+}
+
+
 
     public function waiting()
-    {
-        $today = now()->toDateString();
+{
+    $today = now()->toDateString();
 
-        // $kunjungan = Kunjungan::with(['poli.dokter', 'pasien'])->where('status', 'pending')->whereDate('tanggal_kunjunfan', $today)->oderBy('no_antrian')->get();   
+    // Ambil kunjungan hari ini status Pending
+    $kunjungan = Kunjungan::with(['poli','pasien'])
+        ->whereDate('tanggal_kunjungan', $today)
+        ->where('status', 'Pending')
+        // no_antrian disimpan string "001","002",..., kita cast supaya urutan numerik
+        ->orderByRaw('CAST(no_antrian AS UNSIGNED)')
+        ->get();
 
-        $kunjungan = Kunjungan::with(['poli', 'dokter', 'pasien'])
-            ->whereDate('tanggal_kunjungan', $today)
-            ->where('status', 'Pending')
-            ->orderBy('no_antrian')
-            ->get();
+    // Ambil semua dokter_id dari cache dalam sekali jalan
+    $dokterIdMap = [];   // [kunjungan_id => dokter_id]
+    $dokterIdList = [];
 
-        return response()->json($kunjungan);
+    foreach ($kunjungan as $k) {
+        $c = Cache::get("kunjungan_dokter:{$k->id}");
+        if ($c && !empty($c['dokter_id'])) {
+            $dokterIdMap[$k->id] = (int) $c['dokter_id'];
+            $dokterIdList[] = (int) $c['dokter_id'];
+        }
     }
+
+    // Query detail dokter sekali (hemat N+1)
+    $dokters = collect();
+    if (!empty($dokterIdList)) {
+        $dokters = DB::table('dokter')
+            ->select('id','nama_dokter','poli_id')
+            ->whereIn('id', array_values(array_unique($dokterIdList)))
+            ->get()
+            ->keyBy('id');
+    }
+
+    // Satukan ke payload response
+    $payload = $kunjungan->map(function ($k) use ($dokterIdMap, $dokters) {
+        $dokter = null;
+        if (isset($dokterIdMap[$k->id])) {
+            $dokter = $dokters->get($dokterIdMap[$k->id]);
+        }
+
+        // set attribute agar tetap bentuknya mirip model + ekstra field
+        $k->setAttribute('dokter_terpilih', $dokter);
+        return $k;
+    });
+
+    return response()->json([
+        'success' => true,
+        'date'    => $today,
+        'data'    => $payload,
+    ]);
+}
 
     public function updateStatus($id)
     {

@@ -175,69 +175,85 @@ class PengambilanObatController extends Controller
     }
 
     public function updateStatusResepObat(Request $request)
-    {
-        $request->validate([
-            'resep_id' => ['required', 'exists:resep,id'],
-            'obat_list' => ['required', 'array', 'min:1'],
-            'obat_list.*.id' => ['required', 'exists:obat,id'],
-            'obat_list.*.jumlah' => ['required', 'integer', 'min:1'],
-        ]);
+{
+    $request->validate([
+        'resep_id' => ['required', 'exists:resep,id'],
+        'obat_list' => ['required', 'array', 'min:1'],
+        'obat_list.*.id' => ['required', 'exists:obat,id'],
+        'obat_list.*.jumlah' => ['required', 'integer', 'min:1'],
+    ]);
 
-        try {
-            DB::transaction(function () use ($request) {
-                $resep = \App\Models\Resep::findOrFail($request->resep_id);
+    try {
+        DB::transaction(function () use ($request) {
+            $resep = \App\Models\Resep::findOrFail($request->resep_id);
 
-                // 🔹 Ambil pembayaran berdasarkan emr yang punya resep_id ini
-                $pembayaran = \App\Models\Pembayaran::whereHas('emr', function ($q) use ($resep) {
-                    $q->where('resep_id', $resep->id);
-                })->first();
+            // ==============================
+            // 🔍 1️⃣ CEK SUMBER PEMBAYARAN
+            // ==============================
 
-                // 🔹 Validasi pembayaran
-                if (!$pembayaran) {
-                    throw new \Exception('Obat belum dibayar. Silahkan bayar terlebih dahulu');
-                }
+            // 🔹 Cek apakah resep ini berasal dari transaksi pemeriksaan dokter
+            $pembayaran = \App\Models\Pembayaran::whereHas('emr', function ($q) use ($resep) {
+                $q->where('resep_id', $resep->id);
+            })->first();
 
+            if ($pembayaran) {
+                // Jika ditemukan di tabel pembayaran, gunakan logika lama
                 if ($pembayaran->status !== 'Sudah Bayar') {
                     throw new \Exception('Status pembayaran masih "Belum Bayar". Silakan lakukan pembayaran terlebih dahulu.');
                 }
+            } else {
+                // 🔹 Jika tidak ada di pembayaran, berarti ini resep “obat langsung”
+                $penjualan = \App\Models\PenjualanObat::whereIn('obat_id', collect($request->obat_list)->pluck('id'))
+                    ->where('status', 'Sudah Bayar')
+                    ->first();
 
-                // 🔹 Pastikan obat benar-benar ada dalam resep
-                $obatPivot = $resep->obat()->where('obat_id', $request->obat_id)->firstOrFail();
+                if (!$penjualan) {
+                    throw new \Exception('Transaksi obat belum dibayar. Silakan selesaikan pembayaran di menu Kasir.');
+                }
+            }
 
-                // 🔹 Ambil jumlah obat dari pivot
-                $jumlahObat = $obatPivot->pivot->jumlah ?? 0;
+            // ==============================
+            // 🔹 2️⃣ UPDATE STATUS & STOK
+            // ==============================
+            foreach ($request->obat_list as $obatData) {
+                $obatId = $obatData['id'];
+                $jumlahObat = $obatData['jumlah'];
 
-                // 🔹 Ambil data stok obat
-                $obat = \App\Models\Obat::findOrFail($request->obat_id);
+                // Cek pivot di tabel resep_obat
+                $obatPivot = $resep->obat()->where('obat_id', $obatId)->firstOrFail();
 
-                // 🔹 Validasi stok cukup
+                // Ambil data stok obat
+                $obat = \App\Models\Obat::findOrFail($obatId);
+
+                // Validasi stok
                 if ($obat->jumlah < $jumlahObat) {
-                    throw new Exception("Stok obat '{$obat->nama_obat}' tidak mencukupi. Stok saat ini: {$obat->stok}");
+                    throw new \Exception("Stok obat '{$obat->nama_obat}' tidak mencukupi. Stok saat ini: {$obat->jumlah}");
                 }
 
-                // 🔹 Kurangi stok obat
-                $obat->jumlah = $obat->jumlah - $jumlahObat;
-                $obat->save();
+                // Kurangi stok
+                $obat->decrement('jumlah', $jumlahObat);
 
-                // 🔹 Update status pivot jadi "Sudah Diambil"
-                $resep->obat()->updateExistingPivot($request->obat_id, [
+                // Update status di pivot
+                $resep->obat()->updateExistingPivot($obatId, [
                     'status' => 'Sudah Diambil',
                 ]);
-            });
+            }
+        });
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Status resep obat berhasil diperbarui menjadi "Sudah Diambil".',
-            ]);
-        } catch (Exception $e) {
-            Log::error('updateStatusResepObat error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
-            ]);
+        return response()->json([
+            'success' => true,
+            'message' => 'Status resep obat berhasil diperbarui menjadi "Sudah Diambil".',
+        ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => $e->getMessage(),
-            ], 500);
-        }
+    } catch (\Exception $e) {
+        Log::error('updateStatusResepObat error: ' . $e->getMessage(), [
+            'trace' => $e->getTraceAsString()
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage(),
+        ], 500);
     }
+}
 }

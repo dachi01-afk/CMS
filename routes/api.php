@@ -128,8 +128,7 @@ Route::middleware(['auth:sanctum', 'role:Dokter'])
         Route::post('/save-emr', [APIMobileController::class, 'saveEMR'])->name('save_emr');
         Route::get('/riwayat-pasien-diperiksa', [APIMobileController::class, 'getRiwayatPasienDiperiksa'])->name('riwayat_pasien_diperiksa');
         Route::get('/detail-riwayat-pasien/{kunjunganId}', [APIMobileController::class, 'getDetailRiwayatPasien'])->name('detail_riwayat_pasien');
-        
-        // TAMBAHKAN routes yang hilang untuk pemeriksaan
+        Route::get('/pasien/riwayat-emr/{pasien_id}', [APIMobileController::class, 'getRiwayatEMRPasien'])->name('riwayat_emr_pasien');        
         Route::get('/get-data-kunjungan/{kunjungan_id}', [APIMobileController::class, 'getDataKunjunganById'])->name('get_data_kunjungan_by_id');
         Route::get('/riwayat-diagnosis/{pasien_id}', [APIMobileController::class, 'getRiwayatDiagnosisDokter'])->name('riwayat_diagnosis_dokter');
         Route::get('/detail-kunjungan/{kunjungan_id}', [APIMobileController::class, 'getDataKunjungan'])->name('get_data_kunjungan');
