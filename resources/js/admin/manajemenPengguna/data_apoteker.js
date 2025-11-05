@@ -28,11 +28,11 @@ $(function () {
                 searchable: false,
                 className: "text-center",
             },
-            { data: "nama_apoteker", name: "nama_apoteker" },
+            { data: "nama_farmasi", name: "nama_farmasi" },
             { data: "username", name: "username" },
             { data: "email_user", name: "email_user" },
             { data: "role", name: "role" },
-            { data: "no_hp_apoteker", name: "no_hp_apoteker" },
+            { data: "no_hp_farmasi", name: "no_hp_farmasi" },
             {
                 data: "action",
                 name: "action",

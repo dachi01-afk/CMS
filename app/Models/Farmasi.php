@@ -9,4 +9,9 @@ class Farmasi extends Model
     protected $table = "farmasi";
 
     protected $guarded = [];
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
 }

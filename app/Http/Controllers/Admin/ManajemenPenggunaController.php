@@ -8,6 +8,7 @@ use App\Models\Pasien;
 use App\Models\Apoteker;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\Farmasi;
 use App\Models\JenisSpesialis;
 use App\Models\Poli;
 use Yajra\DataTables\Facades\DataTables;
@@ -108,14 +109,14 @@ class ManajemenPenggunaController extends Controller
 
     public function dataApoteker()
     {
-        $query = Apoteker::with('user')->select('apoteker.*')->latest()->get();
+        $query = Farmasi::with('user')->select('Farmasi.*')->latest()->get();
 
         return DataTables::of($query)
             ->addIndexColumn()
             ->addColumn('foto', function ($row) {
-                if ($row->foto_apoteker) {
-                    $url = asset('storage/' . $row->foto_apoteker);
-                    return '<img src="' . $url . '" alt="Foto Apoteker" class="w-12 h-12 rounded-lg object-cover mx-auto shadow">';
+                if ($row->foto_farmasi) {
+                    $url = asset('storage/' . $row->foto_farmasi);
+                    return '<img src="' . $url . '" alt="Foto Farmasi" class="w-12 h-12 rounded-lg object-cover mx-auto shadow">';
                 } else {
                     return '<span class="text-gray-400 italic">Tidak ada</span>';
                 }

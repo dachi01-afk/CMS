@@ -51,10 +51,10 @@
                 </li> --}}
 
                 <li class="me-2" role="presentation">
-                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="apoteker-tab"
-                        data-tabs-target="#data-apoteker" type="button" role="tab" aria-controls="data-apoteker"
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="farmasi-tab"
+                        data-tabs-target="#data-farmasi" type="button" role="tab" aria-controls="data-farmasi"
                         aria-selected="false">
-                        Data Apoteker
+                        Data Farmasi
                     </button>
                 </li>
 
@@ -88,8 +88,8 @@
                     @include('admin.manajemenPengguna.data_staf_administrasi')
                 </div> --}}
 
-                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-apoteker" role="tabpanel"
-                    aria-labelledby="apoteker-tab">
+                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-farmasi" role="tabpanel"
+                    aria-labelledby="farmasi-tab">
                     @include('admin.manajemenPengguna.data_apoteker')
                 </div>
 
