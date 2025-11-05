@@ -109,7 +109,7 @@ class ManajemenPenggunaController extends Controller
 
     public function dataApoteker()
     {
-        $query = Farmasi::with('user')->select('Farmasi.*')->latest()->get();
+        $query = Farmasi::with('user')->select('farmasi.*')->latest()->get();
 
         return DataTables::of($query)
             ->addIndexColumn()
