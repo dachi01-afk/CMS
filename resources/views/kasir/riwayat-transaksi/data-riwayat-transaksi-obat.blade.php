@@ -139,4 +139,4 @@
     </div>
 </div>
 
-@vite(['resources/js/admin/pembayaran/riwayat-transaksi-obat.js'])
+@vite(['resources/js/kasir/pembayaran/riwayat-transaksi-obat.js'])

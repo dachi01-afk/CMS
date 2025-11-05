@@ -131,4 +131,4 @@
 </div>
 
 
-@vite(['resources/js/admin/pembayaran/metode-pembayaran.js'])
+@vite(['resources/js/kasir/metode-pembayaran/metode-pembayaran.js'])

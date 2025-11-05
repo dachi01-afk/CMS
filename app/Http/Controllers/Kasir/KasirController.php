@@ -1,11 +1,12 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Kasir;
 
 use App\Http\Controllers\Controller;
 use App\Models\Pembayaran;
 use App\Models\MetodePembayaran;
 use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -16,10 +17,221 @@ use Yajra\DataTables\DataTables;
 
 class KasirController extends Controller
 {
+    public function dashboard()
+    {
+        return view('kasir.dashboard');
+    }
+
     public function index()
     {
-        return view('admin.pembayaran.kasir');
+        return view('kasir.pembayaran.kasir');
     }
+
+    public function chartKeuangan(Request $request)
+    {
+        $range = $request->get('range', 'harian'); // harian|mingguan|bulanan|tahunan
+        $today = Carbon::today();
+
+        switch ($range) {
+            case 'harian':
+                $start = $today->copy();
+                $end   = $today->copy();
+
+                $labels = collect(range(0, 23))->map(fn($h) => str_pad($h, 2, '0', STR_PAD_LEFT) . ":00");
+
+                // Ambil 1x per transaksi: MAX(sub_total) (bukan SUM)
+                $subPenjualan = DB::table('penjualan_obat')
+                    ->selectRaw('kode_transaksi, HOUR(tanggal_transaksi) as h, MAX(COALESCE(sub_total,0)) as total_per_transaksi')
+                    ->whereDate('tanggal_transaksi', $today)
+                    ->groupBy('kode_transaksi', 'h');
+
+                $penjualan = DB::query()
+                    ->fromSub($subPenjualan, 't')
+                    ->selectRaw('h, SUM(total_per_transaksi) as total')
+                    ->groupBy('h')
+                    ->pluck('total', 'h');
+
+                // Count transaksi unik per jam
+                $penjualanTrx = DB::table('penjualan_obat')
+                    ->selectRaw('HOUR(tanggal_transaksi) as h, COUNT(DISTINCT kode_transaksi) as trx')
+                    ->whereDate('tanggal_transaksi', $today)
+                    ->groupBy('h')
+                    ->pluck('trx', 'h');
+
+                $pembayaran = DB::table('pembayaran')
+                    ->selectRaw('HOUR(tanggal_pembayaran) as h, SUM(COALESCE(total_tagihan,0)) as total')
+                    ->whereDate('tanggal_pembayaran', $today)
+                    ->groupBy('h')
+                    ->pluck('total', 'h');
+
+                $totalPenjualan  = $labels->map(fn($lbl) => $penjualan[(int)substr($lbl, 0, 2)] ?? 0);
+                $totalPembayaran = $labels->map(fn($lbl) => $pembayaran[(int)substr($lbl, 0, 2)] ?? 0);
+                $jumlahTransaksi = $labels->map(fn($lbl) => $penjualanTrx[(int)substr($lbl, 0, 2)] ?? 0);
+
+                $meta = [
+                    'x_title' => 'Jam',
+                    'tanggal' => $today->toDateString(),
+                    'start'   => $start->toDateString(),
+                    'end'     => $end->toDateString(),
+                ];
+                break;
+
+            case 'mingguan':
+                $start = $today->copy()->startOfWeek(Carbon::MONDAY);
+                $end   = $today->copy()->endOfWeek(Carbon::SUNDAY);
+
+                $period   = CarbonPeriod::create($start, $end);
+                $labelsRaw = collect($period)->map(fn($d) => $d->format('Y-m-d'));
+
+                $subPenjualan = DB::table('penjualan_obat')
+                    ->selectRaw('kode_transaksi, DATE(tanggal_transaksi) as d, MAX(COALESCE(sub_total,0)) as total_per_transaksi')
+                    ->whereBetween('tanggal_transaksi', [$start->copy()->startOfDay(), $end->copy()->endOfDay()])
+                    ->groupBy('kode_transaksi', 'd');
+
+                $penjualan = DB::query()
+                    ->fromSub($subPenjualan, 't')
+                    ->selectRaw('d, SUM(total_per_transaksi) as total')
+                    ->groupBy('d')
+                    ->pluck('total', 'd');
+
+                $penjualanTrx = DB::table('penjualan_obat')
+                    ->selectRaw('DATE(tanggal_transaksi) as d, COUNT(DISTINCT kode_transaksi) as trx')
+                    ->whereBetween('tanggal_transaksi', [$start->copy()->startOfDay(), $end->copy()->endOfDay()])
+                    ->groupBy('d')
+                    ->pluck('trx', 'd');
+
+                $pembayaran = DB::table('pembayaran')
+                    ->selectRaw('DATE(tanggal_pembayaran) as d, SUM(COALESCE(total_tagihan,0)) as total')
+                    ->whereBetween('tanggal_pembayaran', [$start->copy()->startOfDay(), $end->copy()->endOfDay()])
+                    ->groupBy('d')
+                    ->pluck('total', 'd');
+
+                $totalPenjualan  = $labelsRaw->map(fn($d) => $penjualan[$d] ?? 0);
+                $totalPembayaran = $labelsRaw->map(fn($d) => $pembayaran[$d] ?? 0);
+                $jumlahTransaksi = $labelsRaw->map(fn($d) => $penjualanTrx[$d] ?? 0);
+
+                $labels = $labelsRaw->map(fn($d) => Carbon::parse($d)->locale('id')->translatedFormat('d M'));
+
+                $meta = [
+                    'x_title' => 'Tanggal (Mingguan)',
+                    'start'   => $start->toDateString(),
+                    'end'     => $end->toDateString(),
+                ];
+                break;
+
+            case 'bulanan':
+                $start = $today->copy()->startOfMonth();
+                $end   = $today->copy()->endOfMonth();
+
+                $period   = CarbonPeriod::create($start, $end);
+                $labelsRaw = collect($period)->map(fn($d) => $d->format('Y-m-d'));
+
+                $subPenjualan = DB::table('penjualan_obat')
+                    ->selectRaw('kode_transaksi, DATE(tanggal_transaksi) as d, MAX(COALESCE(sub_total,0)) as total_per_transaksi')
+                    ->whereBetween('tanggal_transaksi', [$start->copy()->startOfDay(), $end->copy()->endOfDay()])
+                    ->groupBy('kode_transaksi', 'd');
+
+                $penjualan = DB::query()
+                    ->fromSub($subPenjualan, 't')
+                    ->selectRaw('d, SUM(total_per_transaksi) as total')
+                    ->groupBy('d')
+                    ->pluck('total', 'd');
+
+                $penjualanTrx = DB::table('penjualan_obat')
+                    ->selectRaw('DATE(tanggal_transaksi) as d, COUNT(DISTINCT kode_transaksi) as trx')
+                    ->whereBetween('tanggal_transaksi', [$start->copy()->startOfDay(), $end->copy()->endOfDay()])
+                    ->groupBy('d')
+                    ->pluck('trx', 'd');
+
+                $pembayaran = DB::table('pembayaran')
+                    ->selectRaw('DATE(tanggal_pembayaran) as d, SUM(COALESCE(total_tagihan,0)) as total')
+                    ->whereBetween('tanggal_pembayaran', [$start->copy()->startOfDay(), $end->copy()->endOfDay()])
+                    ->groupBy('d')
+                    ->pluck('total', 'd');
+
+                $totalPenjualan  = $labelsRaw->map(fn($d) => $penjualan[$d] ?? 0);
+                $totalPembayaran = $labelsRaw->map(fn($d) => $pembayaran[$d] ?? 0);
+                $jumlahTransaksi = $labelsRaw->map(fn($d) => $penjualanTrx[$d] ?? 0);
+
+                $labels = $labelsRaw->map(fn($d) => Carbon::parse($d)->format('d'));
+
+                $meta = [
+                    'x_title' => 'Tanggal (Bulanan)',
+                    'bulan'   => $start->format('Y-m'),
+                ];
+                break;
+
+            case 'tahunan':
+            default:
+                $start = $today->copy()->startOfYear();
+                $end   = $today->copy()->endOfYear();
+
+                $labelsYm = collect(range(1, 12))->map(fn($m) => $start->copy()->month($m)->format('Y-m'));
+
+                $subPenjualan = DB::table('penjualan_obat')
+                    ->selectRaw("kode_transaksi, DATE_FORMAT(tanggal_transaksi, '%Y-%m') as ym, MAX(COALESCE(sub_total,0)) as total_per_transaksi")
+                    ->whereBetween('tanggal_transaksi', [$start, $end])
+                    ->groupBy('kode_transaksi', 'ym');
+
+                $penjualan = DB::query()
+                    ->fromSub($subPenjualan, 't')
+                    ->selectRaw('ym, SUM(total_per_transaksi) as total')
+                    ->groupBy('ym')
+                    ->pluck('total', 'ym');
+
+                $penjualanTrx = DB::table('penjualan_obat')
+                    ->selectRaw("DATE_FORMAT(tanggal_transaksi, '%Y-%m') as ym, COUNT(DISTINCT kode_transaksi) as trx")
+                    ->whereBetween('tanggal_transaksi', [$start, $end])
+                    ->groupBy('ym')
+                    ->pluck('trx', 'ym');
+
+                $pembayaran = DB::table('pembayaran')
+                    ->selectRaw("DATE_FORMAT(tanggal_pembayaran, '%Y-%m') as ym, SUM(COALESCE(total_tagihan,0)) as total")
+                    ->whereBetween('tanggal_pembayaran', [$start, $end])
+                    ->groupBy('ym')
+                    ->pluck('total', 'ym');
+
+                $totalPenjualan  = $labelsYm->map(fn($ym) => $penjualan[$ym] ?? 0);
+                $totalPembayaran = $labelsYm->map(fn($ym) => $pembayaran[$ym] ?? 0);
+                $jumlahTransaksi = $labelsYm->map(fn($ym) => $penjualanTrx[$ym] ?? 0);
+
+                $labels = $labelsYm->map(fn($ym) => Carbon::createFromFormat('Y-m', $ym)->locale('id')->translatedFormat('M'));
+
+                $meta = [
+                    'x_title' => 'Bulan',
+                    'tahun'   => $start->format('Y'),
+                ];
+                break;
+        }
+
+        return response()->json([
+            'label' => $labels,
+            'dataset' => [
+                [
+                    'type' => 'bar',
+                    'label' => 'Jumlah Transaksi',
+                    'data' => $jumlahTransaksi,
+                    'yAxisID' => 'y',
+                ],
+                [
+                    'type' => 'line',
+                    'label' => 'Total Penjualan Obat (Rp)',
+                    'data' => $totalPenjualan,
+                    'yAxisID' => 'y1',
+                    'tension' => 0.3,
+                ],
+                [
+                    'type' => 'line',
+                    'label' => 'Total Tagihan Pembayaran (Rp)',
+                    'data' => $totalPembayaran,
+                    'yAxisID' => 'y1',
+                    'tension' => 0.3,
+                ],
+            ],
+            'meta' => $meta,
+        ]);
+    }
+
 
     public function getDataPembayaran()
     {
@@ -140,122 +352,121 @@ class KasirController extends Controller
             ->addIndexColumn()
 
             // Identitas dasar
-            ->addColumn('nama_pasien', fn($p) => $p->emr->kunjungan->pasien->nama_pasien ?? '-')
-            ->addColumn('tanggal_kunjungan', function ($p) {
-                $tgl = $p->emr->kunjungan->tanggal_kunjungan ?? null;
-                return $tgl ? \Carbon\Carbon::parse($tgl)->toIso8601String() : '-'; // ISO aman untuk JS
+            ->addColumn('nama_pasien', function ($p) {
+                return $p->emr?->kunjungan?->pasien?->nama_pasien ?? '-';
             })
-            ->addColumn('no_antrian', fn($p) => $p->emr->kunjungan->no_antrian ?? '-')
+            ->addColumn('tanggal_kunjungan', function ($p) {
+                $tgl = $p->emr?->kunjungan?->tanggal_kunjungan ?? null;
+                return $tgl ? \Carbon\Carbon::parse($tgl)->toIso8601String() : '-';
+            })
+            ->addColumn('no_antrian', function ($p) {
+                return $p->emr?->kunjungan?->no_antrian ?? '-';
+            })
 
             // Daftar nama obat
             ->addColumn('nama_obat', function ($p) {
-                $resep = $p->emr->resep ?? null;
+                $resep = $p->emr?->resep;
                 if (!$resep || $resep->obat->isEmpty()) {
                     return '<span class="text-gray-400 italic">Tidak ada</span>';
                 }
-                $out = '<ul class="list-disc pl-4">';
+                $items = [];
                 foreach ($resep->obat as $obat) {
-                    $out .= '<li>' . e($obat->nama_obat) . '</li>';
+                    $items[] = '<li>' . e($obat->nama_obat) . '</li>';
                 }
-                $out .= '</ul>';
-                return $out;
+                return '<ul class="list-disc pl-4">' . implode('', $items) . '</ul>';
             })
 
-            // Dosis: "100.00 mg"
+            // Dosis
             ->addColumn('dosis', function ($p) {
-                $resep = $p->emr->resep ?? null;
+                $resep = $p->emr?->resep;
                 if (!$resep || $resep->obat->isEmpty()) {
                     return '<span class="text-gray-400 italic">Tidak ada</span>';
                 }
-                $out = '<ul class="list-disc pl-4">';
+                $items = [];
                 foreach ($resep->obat as $obat) {
                     $val = $obat->pivot->dosis ?? null;
                     $val = is_numeric($val) ? number_format((float)$val, 2) . ' mg' : e($val ?? '-');
-                    $out .= '<li>' . $val . '</li>';
+                    $items[] = '<li>' . $val . '</li>';
                 }
-                $out .= '</ul>';
-                return $out;
+                return '<ul class="list-disc pl-4">' . implode('', $items) . '</ul>';
             })
 
-            // Jumlah: "2 capsul"
+            // Jumlah
             ->addColumn('jumlah', function ($p) {
-                $resep = $p->emr->resep ?? null;
+                $resep = $p->emr?->resep;
                 if (!$resep || $resep->obat->isEmpty()) {
                     return '<span class="text-gray-400 italic">Tidak ada</span>';
                 }
-                $out = '<ul class="list-disc pl-4">';
+                $items = [];
                 foreach ($resep->obat as $obat) {
                     $qty = $obat->pivot->jumlah ?? null;
-                    $qtyTxt = ($qty !== null && $qty !== '') ? e($qty) . ' capsul' : '-';
-                    $out .= '<li>' . $qtyTxt . '</li>';
+                    $items[] = '<li>' . (($qty !== null && $qty !== '') ? e($qty) . ' capsul' : '-') . '</li>';
                 }
-                $out .= '</ul>';
-                return $out;
+                return '<ul class="list-disc pl-4">' . implode('', $items) . '</ul>';
             })
 
             // Layanan & jumlah layanan
             ->addColumn('nama_layanan', function ($p) {
-                $layanan = $p->emr->kunjungan->layanan ?? collect();
+                $layanan = $p->emr?->kunjungan?->layanan ?? collect();
                 if ($layanan->isEmpty()) {
                     return '<span class="text-gray-400 italic">Tidak ada</span>';
                 }
-                $out = '<ul class="list-disc pl-4">';
+                $items = [];
                 foreach ($layanan as $l) {
-                    $out .= '<li>' . e($l->nama_layanan ?? '-') . '</li>';
+                    $items[] = '<li>' . e($l->nama_layanan ?? '-') . '</li>';
                 }
-                $out .= '</ul>';
-                return $out;
+                return '<ul class="list-disc pl-4">' . implode('', $items) . '</ul>';
             })
             ->addColumn('jumlah_layanan', function ($p) {
-                $layanan = $p->emr->kunjungan->layanan ?? collect();
+                $layanan = $p->emr?->kunjungan?->layanan ?? collect();
                 if ($layanan->isEmpty()) {
                     return '<span class="text-gray-400 italic">Tidak ada</span>';
                 }
-                $out = '<ul class="list-disc pl-4">';
+                $items = [];
                 foreach ($layanan as $l) {
-                    $qty = $l->pivot->jumlah ?? null;
-                    $out .= '<li>' . e($qty ?? '-') . '</li>';
+                    $items[] = '<li>' . e($l->pivot->jumlah ?? '-') . '</li>';
                 }
-                $out .= '</ul>';
-                return $out;
+                return '<ul class="list-disc pl-4">' . implode('', $items) . '</ul>';
             })
 
             // Total & metode
-            ->addColumn('total_tagihan', fn($p) => 'Rp ' . number_format((int)$p->total_tagihan, 0, ',', '.'))
-            ->addColumn('metode_pembayaran', fn($p) => $p->metodePembayaran->nama_metode ?? '-')
+            ->addColumn('total_tagihan', function ($p) {
+                return 'Rp ' . number_format((int) ($p->total_tagihan ?? 0), 0, ',', '.');
+            })
+            ->addColumn('metode_pembayaran', function ($p) {
+                return $p->metodePembayaran->nama_metode ?? '-';
+            })
 
-            // Bukti pembayaran: thumbnail + link "Lihat Bukti Pembayaran"
+            // Bukti pembayaran (hindari kutip nyasar dengan HEREDOC)
             ->addColumn('bukti_pembayaran', function ($p) {
                 if (!$p->bukti_pembayaran) {
                     return '<span class="text-gray-400 italic">Tidak ada</span>';
                 }
                 $url = asset('storage/' . $p->bukti_pembayaran);
-                return '
-                <div class="flex flex-col items-center text-center space-y-2">
-                    <img src="' . e($url) . '" alt="Bukti Pembayaran"
-                         class="w-24 h-24 object-cover rounded-lg border border-gray-300 shadow-sm
-                                hover:scale-105 transition-transform duration-200 cursor-pointer"
-                         onclick="window.open(\'' . e($url) . '\', \'_blank\')" />
-                    <a href="' . e($url) . '" target="_blank"
-                       class="text-sky-600 underline text-sm font-medium">
-                       Lihat Bukti Pembayaran
-                    </a>
-                </div>
-            ';
+                $urlEsc = e($url);
+
+                $html = <<<HTML
+<div class="flex flex-col items-center text-center space-y-2">
+    <img src="{$urlEsc}" alt="Bukti Pembayaran"
+         class="w-24 h-24 object-cover rounded-lg border border-gray-300 shadow-sm hover:scale-105 transition-transform duration-200 cursor-pointer"
+         onclick="window.open('{$urlEsc}', '_blank')" />
+    <a href="{$urlEsc}" target="_blank" class="text-sky-600 underline text-sm font-medium">
+        Lihat Bukti Pembayaran
+    </a>
+</div>
+HTML;
+                return $html;
             })
 
-            ->addColumn('status', fn($p) => $p->status ?? '-')
+            ->addColumn('status', function ($p) {
+                return $p->status ?? '-';
+            })
 
             // Action
             ->addColumn('action', function ($p) {
                 $url = route('kasir.show.kwitansi', ['kodeTransaksi' => $p->kode_transaksi]);
-                return '
-                <button class="cetakKuitansi text-blue-600 hover:text-blue-800"
-                        data-url="' . e($url) . '"
-                        title="Cetak Kwitansi">
-                    <i class="fa-solid fa-print"></i> Cetak Kwitansi
-                </button>
-            ';
+                $urlEsc = e($url);
+                return '<button class="cetakKuitansi text-blue-600 hover:text-blue-800" data-url="' . $urlEsc . '" title="Cetak Kwitansi"><i class="fa-solid fa-print"></i> Cetak Kwitansi</button>';
             })
 
             ->rawColumns([
@@ -265,7 +476,7 @@ class KasirController extends Controller
                 'nama_layanan',
                 'jumlah_layanan',
                 'bukti_pembayaran',
-                'action'
+                'action',
             ])
             ->make(true);
     }
@@ -464,24 +675,40 @@ class KasirController extends Controller
         return view('admin.pembayaran.kwitansi', compact('dataPembayaran', 'totalObat', 'totalLayanan', 'grandTotal', 'namaPT'));
     }
 
-    public function getDataMetodePembayaran()
+    public function totalTransaksiHariIni()
     {
-        $dataMetodePembayaran = MetodePembayaran::latest()->get();
+        $total = (float) DB::table('pembayaran')
+            ->whereDate('tanggal_pembayaran', Carbon::today())
+            ->sum('total_tagihan');
 
-        return DataTables::of($dataMetodePembayaran)
-            ->addIndexColumn()
-            ->addColumn('nama_metode', fn($mP) => $mP->nama_metode)
-            ->addColumn('action', function ($mP) {
-                return '
-                <button class="btn-update-metode-pembayaran text-blue-600 hover:text-blue-800 mr-2" data-id="' . $mP->id . '" title="Edit">
-                    <i class="fa-regular fa-pen-to-square text-lg"></i>
-                </button>
-                <button class="btn-delete-metode-pembayaran text-red-600 hover:text-red-800" data-id="' . $mP->id . '" title="Hapus">
-                    <i class="fa-regular fa-trash-can text-lg"></i>
-                </button>
-            ';
-            })
-            ->rawColumns(['action'])
-            ->make(true);
+        return response()->json(['total' => $total]);
+    }
+
+    public function totalKeseluruhanTransaksi()
+    {
+        $total = (float) DB::table('pembayaran')->sum('total_tagihan');
+
+        return response()->json(['total' => $total]);
+    }
+
+    public function totalTransaksiObatHariIni()
+    {
+        $total = DB::table('penjualan_obat')
+            ->whereDate('tanggal_transaksi', Carbon::today())
+            ->whereNotNull('kode_transaksi')
+            ->distinct('kode_transaksi')
+            ->count('kode_transaksi');
+
+        return response()->json(['total' => $total]);
+    }
+
+    public function totalKeseluruhanTransaksiObat()
+    {
+        $total = DB::table('penjualan_obat')
+            ->whereNotNull('kode_transaksi')
+            ->distinct('kode_transaksi')
+            ->count('kode_transaksi');
+
+        return response()->json(['total' => $total]);
     }
 }

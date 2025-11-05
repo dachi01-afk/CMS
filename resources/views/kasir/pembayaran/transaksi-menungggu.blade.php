@@ -103,4 +103,4 @@
 </div>
 
 
-@vite(['resources/js/admin/pembayaran/transaksi-menunggu.js'])
+@vite(['resources/js/kasir/pembayaran/transaksi-menunggu.js'])

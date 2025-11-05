@@ -3,7 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Api\APIWebController;
-use App\Http\Controllers\Admin\KasirController;
+use App\Http\Controllers\Kasir\KasirController;
 use App\Http\Controllers\Dokter\AuthController;
 use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\Admin\SettingsController;
@@ -13,7 +13,7 @@ use App\Http\Controllers\Admin\LayananController;
 use App\Http\Controllers\JenisSpesialisController;
 use App\Http\Controllers\Farmasi\ObatController;
 use App\Http\Controllers\Management\UserController;
-use App\Http\Controllers\Management\MetodePembayaranController;
+use App\Http\Controllers\Kasir\MetodePembayaranController;
 use App\Http\Controllers\Testing\TestingController;
 use App\Http\Controllers\Testing\TestingChartController;
 use App\Http\Controllers\Testing\TestingQRCodeController;
@@ -32,11 +32,12 @@ use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use App\Http\Controllers\Dokter\DokterController as DokterDokterController;
 use App\Http\Controllers\QrCodeController;
 use App\Http\Controllers\Apoteker\Obat\PenjualanObatController;
-use App\Http\Controllers\Admin\TransaksiObatController;
+use App\Http\Controllers\Kasir\TransaksiObatController;
 use App\Http\Controllers\Farmasi\FarmasiController;
 use App\Http\Controllers\Farmasi\OrderObatController;
 use App\Http\Controllers\Farmasi\PengambilanObatController as FarmasiPengambilanObatController;
 use App\Http\Controllers\Management\EMRController;
+use App\Http\Controllers\Kasir\RiwayatTransaksiController;
 
 // Rest of your web routes remain the same...
 Route::get('/')->middleware('checkAuth');
@@ -238,32 +239,6 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
 
         Route::post('/batalkan-kunjungan/{id}', [JadwalKunjunganController::class, 'batalkanKunjungan']);
     });
-
-    Route::prefix('kasir')->name('kasir.')->group(function () {
-        Route::get('/', [KasirController::class, 'index'])->name('index');
-        Route::get('/get-data-pembayaran', [KasirController::class, 'getDataPembayaran'])->name('get.data.pembayaran');
-        Route::get('/transaksi/{kode_transaksi}', [KasirController::class, 'transaksi'])->name('transaksi');
-        Route::get('/get-data-riwayat-pembayaran', [KasirController::class, 'getDataRiwayatPembayaran'])->name('get.data.riwayat.pembayaran');
-        Route::get('/kwitansi/{kodeTransaksi}', [KasirController::class, 'showKwitansi'])->name('show.kwitansi');
-
-        Route::post('/pembayaran-cash', [KasirController::class, 'transaksiCash'])->name('pembayaran.cash');
-        Route::post('/pembayaran-transfer', [KasirController::class, 'transaksiTransfer'])->name('pembayaran.transfer');
-
-        Route::get('/metode-pembayaran', [KasirController::class, 'getDataMetodePembayaran'])->name('get.data.metode.pembayaran');
-        Route::post('/create-metode-pembayaran', [MetodePembayaranController::class, 'createData'])->name('crate.data.metode.pembayaran');
-        Route::post('/update-metode-pembayaran', [MetodePembayaranController::class, 'updateData'])->name('update.data.metode.pembayaran');
-        Route::post('/delete-metode-pembayaran/{id}', [MetodePembayaranController::class, 'deleteData'])->name('delete.data.metode.pembayaran');
-        Route::get('/get-data-metode-pembayaran/{id}', [MetodePembayaranController::class, 'getDataMetodePembayaran'])->name('get.data.metode.pembayaran.by.id');
-
-        Route::get('/get-data-transaksi-obat', [TransaksiObatController::class, 'getDataTransaksiObat'])->name('get.data.transaksi.obat');
-        Route::get('/transaksi-obat/{kodeTransaksi}', [TransaksiObatController::class, 'transaksiObat'])->name('transaksi.obat');
-
-        Route::post('/pembayaran-cash-transaksi-obat', [TransaksiObatController::class, 'transaksiCash'])->name('transaksi.obat.cash');
-        Route::post('/pembayaran-transfer-transaksi-obat', [TransaksiObatController::class, 'transaksiTransfer'])->name('transaksi.obat.transfer');
-
-        // Route Untuk Riwayat Transaksi Obat
-        Route::get('/get-data-riwayat-transaksi-obat', [PenjualanObatController::class, 'getDataRiwayatTransaksiObat'])->name('get.data.riwayat.transaksi.obat');
-    });
 });
 
 Route::middleware(['auth', 'role:Farmasi'])->group(function () {
@@ -297,6 +272,48 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('/get-data', [FarmasiPengambilanObatController::class, 'getDataResepObat'])->name('get.data.resep.obat');
             Route::post('/update-status-resep-obat', [FarmasiPengambilanObatController::class, 'updateStatusResepObat'])->name('update.status.resep.obat');
         });
+    });
+});
+
+Route::middleware(['auth', 'role:Kasir'])->group(function () {
+    Route::prefix('kasir')->group(function () {
+        Route::get('/dasboard', [KasirController::class, 'dashboard'])->name('kasir.dashboard');
+        Route::get('/get-data-pemasukan', [KasirController::class, 'chartKeuangan'])->name('kasir.chart.keuangan');
+        Route::get('/get-data-transaksi-hari-ini', [KasirController::class, 'totalTransaksiHariIni'])->name('kasir.get.data.pemasukan.hari.ini');
+        Route::get('/get-data-total-keseluruhan-transaksi', [KasirController::class, 'totalKeseluruhanTransaksi'])->name('kasir.get.data.total.keseluruhan.transaksi');
+        Route::get('/get-data-transaksi-obat-hari-ini', [KasirController::class, 'totalTransaksiObatHariIni'])->name('kasir.get.data.transaksi.obat.hari.ini');
+        Route::get('/get-data-total-keseluruhan-transaksi-obat', [KasirController::class, 'totalKeseluruhanTransaksiObat'])->name('kasir.get.data.total.keseluruhan.transaksi.obat');
+
+        Route::get('/pembayaran', [KasirController::class, 'index'])->name('kasir.pembayaran');
+
+        Route::get('/get-data-pembayaran', [KasirController::class, 'getDataPembayaran'])->name('get.data.pembayaran');
+        Route::get('/transaksi/{kode_transaksi}', [KasirController::class, 'transaksi'])->name('transaksi');
+        Route::get('/kwitansi/{kodeTransaksi}', [KasirController::class, 'showKwitansi'])->name('show.kwitansi');
+
+        Route::post('/pembayaran-cash', [KasirController::class, 'transaksiCash'])->name('kasir.pembayaran.cash');
+        Route::post('/pembayaran-transfer', [KasirController::class, 'transaksiTransfer'])->name('kasir.pembayaran.transfer');
+
+        // CRUD Metode Pembayaran 
+        Route::get('/metode-pembayaran', [MetodePembayaranController::class, 'index'])->name('kasir.metode.pembayaran');
+        Route::get('/get-data-metode-pembayaran', [MetodePembayaranController::class, 'getDataMetodePembayaran'])->name('get.data.metode.pembayaran');
+        Route::post('/create-metode-pembayaran', [MetodePembayaranController::class, 'createData'])->name('kasir.crate.data.metode.pembayaran');
+        Route::post('/update-metode-pembayaran', [MetodePembayaranController::class, 'updateData'])->name('kasir.update.data.metode.pembayaran');
+        Route::post('/delete-metode-pembayaran/{id}', [MetodePembayaranController::class, 'deleteData'])->name('kasir.delete.data.metode.pembayaran');
+        Route::get('/get-data-metode-pembayaran/{id}', [MetodePembayaranController::class, 'getDataMetodePembayaranById'])->name('get.data.metode.pembayaran.by.id');
+
+
+        Route::get('/get-data-transaksi-obat', [TransaksiObatController::class, 'getDataTransaksiObat'])->name('get.data.transaksi.obat');
+        Route::get('/transaksi-obat/{kodeTransaksi}', [TransaksiObatController::class, 'transaksiObat'])->name('kasir.transaksi.obat');
+
+        Route::post('/pembayaran-cash-transaksi-obat', [TransaksiObatController::class, 'transaksiCash'])->name('kasir.transaksi.obat.cash');
+        Route::post('/pembayaran-transfer-transaksi-obat', [TransaksiObatController::class, 'transaksiTransfer'])->name('kasir.transaksi.obat.transfer');
+
+        // Route Untuk Riwayat Transaksi Obat
+        Route::get('/get-data-riwayat-transaksi-obat', [PenjualanObatController::class, 'getDataRiwayatTransaksiObat'])->name('get.data.riwayat.transaksi.obat');
+
+        // Riwayat Transaksi 
+        Route::get('/riwayat-transaksi', [RiwayatTransaksiController::class, 'index'])->name('kasir.riwayat.transaksi');
+        Route::get('/get-data-riwayat-pembayaran', [KasirController::class, 'getDataRiwayatPembayaran'])->name('get.data.riwayat.pembayaran');
     });
 });
 

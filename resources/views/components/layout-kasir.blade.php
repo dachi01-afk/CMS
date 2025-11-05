@@ -102,52 +102,23 @@
             aria-label="Sidebar">
             <div class="h-full px-3 pb-4 overflow-y-auto bg-white">
                 <ul class="space-y-2 font-medium">
-                    <x-mycomponents.sidebar_link href="admin.index" class="fa-solid fa-house" :active="Request::routeIs('admin.index')">
+                    <x-mycomponents.sidebar_link href="kasir.dashboard" class="fa-solid fa-house" :active="Request::routeIs('kasir.dashboard')">
                         Dashboard
                     </x-mycomponents.sidebar_link>
 
-                    <x-mycomponents.sidebar_link href="jenis.spesialis.index" class="fa-solid fa-user-doctor">
-                        Jenis Spesialis Dokter
-                    </x-mycomponents.sidebar_link>
-
-                    <x-mycomponents.sidebar_link href="poli.index" class="fa-solid fa-stethoscope">
-                        Poli
-                    </x-mycomponents.sidebar_link>
-
-                    <x-mycomponents.sidebar_link href="layanan.index" class="fa-solid fa-clipboard-list">
-                        Layanan
-                    </x-mycomponents.sidebar_link>
-
-                    <x-mycomponents.sidebar_link href="manajemen_pengguna.index"
-                        class="fa-solid fa-users text-blue-600">
-                        Manajemen Pengguna
-                    </x-mycomponents.sidebar_link>
-
-                    <x-mycomponents.sidebar_link href="pengaturan_klinik.index"
-                        class="fa-solid fa-hospital-user text-blue-600">
-                        Pengaturan Klinik
-                    </x-mycomponents.sidebar_link>
-
-                    <x-mycomponents.sidebar_link href="jadwal_kunjungan.index"
-                        class="fa-solid fa-calendar-plus text-blue-600">
-                        Jadwal Kunjungan
-                    </x-mycomponents.sidebar_link>
-
-                    <x-mycomponents.sidebar_link href="data_medis_pasien.index"
-                        class="fa-solid fa-notes-medical text-blue-600">
-                        Data Medis Pasien
-                    </x-mycomponents.sidebar_link>
-
-                    {{-- <x-mycomponents.sidebar_link href="pengambilan.obat" class="fa-solid fa-pills text-blue-600">
-                        Pengambilan Obat
-                    </x-mycomponents.sidebar_link> --}}
-{{-- 
-                    <x-mycomponents.sidebar_link href="kasir.index" class="fa-solid fa-cash-register text-blue-600">
+                    <x-mycomponents.sidebar_link href="kasir.pembayaran" class="fa-solid fa-hand-holding-dollar"
+                        :active="Request::routeIs('kasir.pembayaran')">
                         Kasir
-                    </x-mycomponents.sidebar_link> --}}
+                    </x-mycomponents.sidebar_link>
 
-                    <x-mycomponents.sidebar_link href="laporan.index" class="fa-solid fa-chart-line text-blue-600">
-                        Laporan
+                    <x-mycomponents.sidebar_link href="kasir.metode.pembayaran" class="fa-solid fa-wallet"
+                        :active="Request::routeIs('kasir.metode.pembayaran')">
+                        Metode Pembayaran
+                    </x-mycomponents.sidebar_link>
+
+                    <x-mycomponents.sidebar_link href="kasir.riwayat.transaksi"
+                        class="fa-solid fa-file-invoice text-blue-600" :active="Request::routeIs('kasir.riwayat.transaksi')">
+                        Riwayat Transaksi
                     </x-mycomponents.sidebar_link>
 
                     <hr class="my-4 border-gray-300">

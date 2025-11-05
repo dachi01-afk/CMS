@@ -34,6 +34,8 @@ class AuthenticatedSessionController extends Controller
                 return redirect()->route('admin.index');
             case 'Farmasi':
                 return redirect()->route('farmasi.dashboard');
+            case 'Kasir':
+                return redirect()->route('kasir.dashboard');
             default:
                 Auth::logout();
                 return redirect()->route('login')->withErrors([

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Kasir;
 
 use App\Http\Controllers\Controller;
 use App\Models\MetodePembayaran;
@@ -139,7 +139,7 @@ class TransaksiObatController extends Controller
 
         // dd($dataTransaksiObat);
 
-        return view('admin.pembayaran.detail-transaksi-obat', compact(
+        return view('kasir.pembayaran.detail-transaksi-obat', compact(
             'dataTransaksiObat',
             'dataMetodePembayaran',
             'dataPasien',

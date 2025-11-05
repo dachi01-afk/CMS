@@ -46,17 +46,20 @@ export default defineConfig({
                 "resources/js/admin/dataMedisPasien/data_hasil_lab.js",
 
                 // transaksi
-                "resources/js/admin/pembayaran/transaksi-menunggu.js",
-                "resources/js/admin/pembayaran/riwayat-transaksi.js",
-                "resources/js/admin/pembayaran/metode-pembayaran.js",
+                "resources/js/kasir/pembayaran/transaksi-menunggu.js",
+                "resources/js/kasir/pembayaran/riwayat-transaksi.js",
+
+                // Metode Pembayaran
+                "resources/js/kasir/metode-pembayaran/metode-pembayaran.js",
 
                 // transaksi obat
-                "resources/js/admin/pembayaran/transaksi-obat.js",
+                "resources/js/kasir/dashboard.js",
+                "resources/js/kasir/pembayaran/transaksi-obat.js",
                 "resources/js/farmasi/obat/data-obat.js",
                 "resources/js/farmasi/obat/order-obat.js",
 
                 // Riwyat Transaksi Obat
-                "resources/js/admin/pembayaran/riwayat-transaksi-obat.js",
+                "resources/js/kasir/pembayaran/riwayat-transaksi-obat.js",
             ],
             refresh: true,
         }),

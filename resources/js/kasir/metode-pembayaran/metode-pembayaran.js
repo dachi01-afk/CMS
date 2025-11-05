@@ -12,7 +12,7 @@ $(function () {
         pageLength: true,
         lengthChange: true,
         info: false,
-        ajax: "kasir/metode-pembayaran",
+        ajax: "/kasir/get-data-metode-pembayaran",
         columns: [
             {
                 data: "DT_RowIndex",
