@@ -8,22 +8,24 @@ use Illuminate\Http\Exceptions\PostTooLargeException;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 use Intervention\Image\Laravel\Facades\Image;
+use Illuminate\Validation\Rule;
 
 
 class DokterController extends Controller
 {
-
     public function createDokter(Request $request)
     {
         try {
-            $request->validate([
+            $validated = $request->validate([
                 'username_dokter'    => 'required|string|max:255|unique:user,username',
-                'poli_id'            => ['required', 'exists:poli,id'],
+                'poli_id'           => ['required', 'array', 'min:1'],
+                'poli_id.*'         => ['integer', 'distinct', 'exists:poli,id'],
                 'nama_dokter'        => 'required|string|max:255',
                 'email_akun_dokter'  => 'required|email|max:255|unique:user,email',
                 'spesialis_dokter'   => 'required|integer|exists:jenis_spesialis,id',
@@ -34,59 +36,70 @@ class DokterController extends Controller
                 'no_hp_dokter'       => 'nullable|string|max:20',
             ]);
 
-            // 1️⃣ Simpan ke tabel user
+            DB::beginTransaction();
+
+            // 1) user
             $user = User::create([
-                'username' => $request->username_dokter,
-                'email'    => $request->email_akun_dokter,
-                'password' => Hash::make($request->password_dokter),
+                'username' => $validated['username_dokter'],
+                'email'    => $validated['email_akun_dokter'],
+                'password' => Hash::make($validated['password_dokter']),
                 'role'     => 'Dokter',
             ]);
 
-            // 2️⃣ Upload + Kompres Foto
+            // 2) upload & kompres foto
             $fotoPath = null;
             if ($request->hasFile('foto_dokter')) {
                 $file = $request->file('foto_dokter');
+                $ext = strtolower($file->getClientOriginalExtension());
 
-                // ubah jfif ke jpg agar bisa di-encode
-                $extension = strtolower($file->getClientOriginalExtension());
-                if ($extension === 'jfif') {
-                    $extension = 'jpg';
-                }
+                // normalisasi jfif -> jpg
+                if ($ext === 'jfif') $ext = 'jpg';
 
-                $fileName = 'dokter_' . time() . '.' . $extension;
+                $fileName = 'dokter_' . time() . '.' . $ext;
                 $path = 'dokter/' . $fileName;
 
-                if ($extension === 'svg') {
+                if ($ext === 'svg') {
                     Storage::disk('public')->put($path, file_get_contents($file));
                 } else {
-                    // ✅ Gambar raster → resize & kompres
                     $image = Image::read($file);
-                    $image->scale(width: 800);
-                    Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+                    $image->scale(width: 800); // jaga ukuran
+                    Storage::disk('public')->put($path, (string) $image->encodeByExtension($ext, quality: 80));
                 }
-
                 $fotoPath = $path;
             }
 
-            // 3️⃣ Simpan ke tabel dokter
-            Dokter::create([
+            // 3) dokter
+            $poliId = $validated['poli_id'];
+
+            // ⚠️ Masa transisi (opsional, tapi direkomendasikan):
+            // simpan poli pertama ke kolom lama `dokter.poli_id` agar fitur lama tidak rusak
+            $legacyPoliId = $poliId[0] ?? null;
+
+            $dokter = Dokter::create([
                 'user_id'            => $user->id,
-                'poli_id'            => $request->poli_id,
-                'nama_dokter'        => $request->nama_dokter,
-                'jenis_spesialis_id' => $request->spesialis_dokter,
+                'poli_id'            => $legacyPoliId, // <-- hapus/nullable setelah benar2 pindah ke pivot
+                'nama_dokter'        => $validated['nama_dokter'],
+                'jenis_spesialis_id' => $validated['spesialis_dokter'],
                 'foto_dokter'        => $fotoPath,
-                'deskripsi_dokter'   => $request->deskripsi_dokter,
-                'pengalaman'         => $request->pengalaman_dokter,
-                'no_hp'              => $request->no_hp_dokter,
+                'deskripsi_dokter'   => $validated['deskripsi_dokter'] ?? null,
+                'pengalaman'         => $validated['pengalaman_dokter'] ?? null,
+                'no_hp'              => $validated['no_hp_dokter'] ?? null,
             ]);
+
+            // 4) attach ke pivot (many-to-many)
+            $dokter->poli()->sync($poliId);
+
+            DB::commit();
 
             return response()->json(['message' => 'Data dokter berhasil ditambahkan.']);
         } catch (ValidationException $e) {
+            DB::rollBack();
             return response()->json([
                 'message' => 'Validasi Gagal!',
-                'errors' => $e->errors()
+                'errors'  => $e->errors()
             ], 422);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'message' => 'Terjadi Kesalahan Di Server ' . $e->getMessage()
             ], 500);
@@ -104,89 +117,98 @@ class DokterController extends Controller
     public function updateDokter(Request $request)
     {
         try {
-            $dokter = Dokter::findOrFail($request->edit_dokter_id);
+            $dokter = Dokter::with('user')->findOrFail($request->edit_dokter_id);
             $user   = $dokter->user;
 
-            $request->validate([
-                'edit_username_dokter'    => 'required|string|max:255|unique:user,username,' . $user->id,
-                'poli_id'              => ['required'],
+            // ✅ VALIDASI
+            $validated = $request->validate([
+                'edit_username_dokter'    => [
+                    'required',
+                    'string',
+                    'max:255',
+                    Rule::unique('user', 'username')->ignore($user->id)
+                ],
+                'edit_email_akun_dokter'  => [
+                    'required',
+                    'email',
+                    'max:255',
+                    Rule::unique('user', 'email')->ignore($user->id)
+                ],
                 'edit_nama_dokter'        => 'required|string|max:255',
-                'edit_email_akun_dokter'  => 'required|email|max:255|unique:user,email,' . $user->id,
                 'edit_spesialis_dokter'   => 'required|integer|exists:jenis_spesialis,id',
-                'edit_foto_dokter'        => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
                 'edit_no_hp_dokter'       => 'nullable|string|max:20',
-                'edit_deskripsi_dokter'   => 'nullable|string',
                 'edit_pengalaman_dokter'  => 'nullable|string|max:255',
+                'edit_deskripsi_dokter'   => 'nullable|string',
                 'edit_password_dokter'    => 'nullable|string|min:8|confirmed',
-            ]);;
+                'edit_foto_dokter'        => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
 
-
-            // Update user account
-            $user->username = $request->input('edit_username_dokter');
-            $user->email    = $request->input('edit_email_akun_dokter');
-
-            if ($request->filled('edit_password_dokter')) {
-                $user->password = Hash::make($request->input('edit_password_dokter'));
-            }
-
-            // Handle foto upload (jika ada)
-            $fotoPath = null;
-            if ($request->hasFile('edit_foto_dokter')) {
-                $file = $request->file('edit_foto_dokter');
-
-                $extension = strtolower($file->getClientOriginalExtension());
-                if ($extension === 'jfif') {
-                    $extension = 'jpg';
-                }
-
-                $fileName = 'dokter_' . time() . '.' . $extension;
-                $path = 'dokter/' . $fileName;
-
-                if ($extension === 'svg') {
-                    Storage::disk('public')->put($path, file_get_contents($file));
-                } else {
-                    // ✅ Gambar raster → resize & kompres
-                    $image = Image::read($file);
-                    $image->scale(width: 800);
-                    Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
-                }
-
-                $fotoPath = $path;
-
-                // opsional: hapus foto lama jika ada
-                if ($dokter->foto_dokter && Storage::disk('public')->exists($dokter->foto_dokter)) {
-                    Storage::disk('public')->delete($dokter->foto_dokter);
-                }
-            }
-
-
-            // 3️⃣ Update dokter
-            $updateData = [
-                'nama_dokter'        => $request->edit_nama_dokter,
-                'jenis_spesialis_id' => $request->edit_spesialis_dokter,
-                'deskripsi_dokter'   => $request->edit_deskripsi_dokter,
-                'pengalaman'         => $request->edit_pengalaman_dokter,
-                'no_hp'              => $request->edit_no_hp_dokter,
-                'poli_id'              => $request->poli_id,
-            ];
-
-            $updateDataUser = ([
-                'username' => $request->edit_username_dokter,
+                // 🔁 many-to-many Poli
+                'poli_id'                => ['required', 'array', 'min:1'],
+                'poli_id.*'              => ['integer', 'distinct', 'exists:poli,id'],
             ]);
 
-            if ($fotoPath) {
-                $updateData['foto_dokter'] = $fotoPath;
+            DB::beginTransaction();
+
+            // 1) UPDATE USER
+            $user->username = $validated['edit_username_dokter'];
+            $user->email    = $validated['edit_email_akun_dokter'];
+            if (!empty($validated['edit_password_dokter'])) {
+                $user->password = Hash::make($validated['edit_password_dokter']);
             }
-            $dokter->update($updateData);
-            $user->update($updateDataUser);
+            $user->save();
+
+            // 2) FOTO (opsional, aman hapus lama)
+            $fotoPath = $dokter->foto_dokter;
+            if ($request->hasFile('edit_foto_dokter')) {
+                // hapus lama jika ada
+                if ($fotoPath && Storage::disk('public')->exists($fotoPath)) {
+                    Storage::disk('public')->delete($fotoPath);
+                }
+
+                $file = $request->file('edit_foto_dokter');
+                $ext  = strtolower($file->getClientOriginalExtension());
+                if ($ext === 'jfif') $ext = 'jpg';
+
+                $fileName = 'dokter_' . time() . '.' . $ext;
+                $path     = 'dokter/' . $fileName;
+
+                if ($ext === 'svg') {
+                    Storage::disk('public')->put($path, file_get_contents($file));
+                } else {
+                    $image = Image::read($file);
+                    $image->scale(width: 800);
+                    Storage::disk('public')->put($path, (string) $image->encodeByExtension($ext, quality: 80));
+                }
+                $fotoPath = $path;
+            }
+
+            // 3) UPDATE DOKTER
+            $dokter->update([
+                'nama_dokter'        => $validated['edit_nama_dokter'],
+                'jenis_spesialis_id' => $validated['edit_spesialis_dokter'],
+                'no_hp'              => $validated['edit_no_hp_dokter'] ?? null,
+                'pengalaman'         => $validated['edit_pengalaman_dokter'] ?? null,
+                'deskripsi_dokter'   => $validated['edit_deskripsi_dokter'] ?? null,
+                'foto_dokter'        => $fotoPath,
+                // ⚠️ OPSIONAL (masa transisi): isi kolom lama poli_id dengan poli pertama
+                // hapus baris ini setelah kolom legacy di-drop
+                // 'poli_id'         => $validated['poli_id'][0] ?? null,
+            ]);
+
+            // 4) SYNC PIVOT POLI
+            $dokter->poli()->sync($validated['poli_id']);
+
+            DB::commit();
 
             return response()->json(['success' => 'Data dokter berhasil diperbarui.']);
         } catch (ValidationException $e) {
+            DB::rollBack();
             return response()->json([
                 'message' => "Validasi Gagal!",
-                'errors' => $e->errors(),
+                'errors'  => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'message' => 'Terjadi kesalahan di server ' . $e->getMessage()
             ], 500);
@@ -196,17 +218,27 @@ class DokterController extends Controller
 
     public function deleteDokter($id)
     {
-        $dokter = Dokter::findOrFail($id);
-        $user = $dokter->user;
+        return DB::transaction(function () use ($id) {
+            // Ambil dokter + user
+            $dokter = Dokter::with('user')->findOrFail($id);
+            $user   = $dokter->user;
 
-        // Hapus foto jika ada
-        if ($dokter->foto_dokter && Storage::disk('public')->exists($dokter->foto_dokter)) {
-            Storage::disk('public')->delete($dokter->foto_dokter);
-        }
+            // 1) Hapus foto jika ada
+            if ($dokter->foto_dokter && Storage::disk('public')->exists($dokter->foto_dokter)) {
+                Storage::disk('public')->delete($dokter->foto_dokter);
+            }
 
-        $dokter->delete();
-        $user->delete();
+            // 2) Bersihkan relasi pivot dokter_poli (tanpa menyentuh jadwal_dokter)
+            //    - Jika FK dokter_poli.dokter_id sudah cascadeOnDelete, bagian ini boleh di-skip.
+            $dokter->poli()->detach();
 
-        return response()->json(['success' => 'Data dokter berhasil dihapus.']);
+            // 3) Hapus Dokter, lalu User
+            $dokter->delete();
+            if ($user) {
+                $user->delete();
+            }
+
+            return response()->json(['success' => 'Data dokter berhasil dihapus.']);
+        });
     }
 }

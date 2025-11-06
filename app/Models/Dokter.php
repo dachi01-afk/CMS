@@ -19,7 +19,7 @@ class Dokter extends Model
 
     public function poli()
     {
-        return $this->belongsTo(Poli::class);
+        return $this->belongsToMany(Poli::class, 'dokter_poli', 'dokter_id', 'poli_id')->withTimestamps();
     }
 
     public function jenisSpesialis()

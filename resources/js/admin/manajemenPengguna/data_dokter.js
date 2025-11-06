@@ -17,8 +17,8 @@ $(function () {
         ajax: "manajemen_pengguna/data_dokter",
         columns: [
             {
-                data: "id",
-                name: "id",
+                data: "DT_RowIndex",
+                name: "DT_RowIndex",
                 orderable: false,
                 searchable: false,
             },
@@ -156,17 +156,32 @@ $(function () {
         $formAdd.find(".is-invalid").removeClass("is-invalid");
         $formAdd.find(".text-red-600").empty();
 
-        // Reset preview foto
+        // reset preview foto
         $("#preview_foto_dokter").addClass("hidden").attr("src", "");
         $("#placeholder_foto_dokter").removeClass("hidden");
         $("#foto_drop_area")
             .removeClass("border-solid border-gray-300")
             .addClass("border-dashed border-gray-400");
+
+        // reset pilihan tom-select
+        if (tsPoli) {
+            tsPoli.clear(); // kosongkan value
+            tsPoli.clearOptions(); // kosongkan cache (opsional)
+            // muat ulang opsi dari DOM <option> (opsional, biasanya tidak perlu)
+            $("#poli_id option").each(function () {
+                tsPoli.addOption({ value: this.value, text: this.text });
+            });
+        } else {
+            $("#poli_id").val([]).trigger("change");
+        }
     }
 
     $("#btnAddDokter").on("click", function () {
+        initTomSelectPoli(); // pastikan TS siap saat modal dibuka
         resetAddForm();
         addModal?.show();
+        // perbaiki lebar dropdown setelah animasi modal (kadang perlu)
+        setTimeout(() => tsPoli && tsPoli.refreshOptions(false), 100);
     });
 
     $("#closeAddDokterModal").on("click", function () {
@@ -176,11 +191,11 @@ $(function () {
 
     $("#formAddDokter").on("submit", function (e) {
         e.preventDefault();
-        let form = $(this);
-        let url = form.data("url");
-        let formData = new FormData(this);
+        const form = $(this);
+        const url = form.data("url");
+        const formData = new FormData(this);
 
-        // Reset error sebelumnya
+        // bersihkan error lama
         form.find(".is-invalid").removeClass("is-invalid");
         form.find('[id$="-error"]').html("");
 
@@ -203,20 +218,24 @@ $(function () {
                 if (error.response && error.response.status === 422) {
                     const errors = error.response.data.errors;
 
-                    $formAdd.find(".is-invalid").removeClass("is-invalid");
-                    $formAdd.find(".text-red-600").empty();
-
                     Swal.fire({
                         icon: "error",
                         title: "Validasi Gagal!",
                         text: "Silakan periksa kembali isian formulir Anda.",
                     });
 
-                    for (const field in errors) {
-                        const inputField = $(`#${field}`);
-                        inputField.addClass("is-invalid");
-                        $(`#${field}-error`).html(errors[field][0]);
-                    }
+                    Object.keys(errors).forEach((fieldKey) => {
+                        const baseKey = fieldKey.split(".")[0]; // handle poli_id.0
+                        const $input = $("#" + baseKey);
+                        if ($input.length) $input.addClass("is-invalid");
+                        const $error = $("#" + baseKey + "-error");
+                        if ($error.length) $error.html(errors[fieldKey][0]);
+
+                        // khusus Tom Select, tambahkan class ke wrapper juga biar terlihat
+                        if (baseKey === "poli_id" && tsPoli) {
+                            tsPoli.control_input.classList.add("is-invalid");
+                        }
+                    });
                 } else {
                     Swal.fire({
                         icon: "error",
@@ -228,7 +247,70 @@ $(function () {
     });
 });
 
-// EDIT DOKTER
+// === INIT Tom Select untuk pilih Poli ===
+let tsPoli = null;
+function initTomSelectPoli() {
+    if (tsPoli) return; // inisialisasi sekali
+    tsPoli = new TomSelect("#poli_id", {
+        plugins: ["remove_button"], // ada tombol × di chip
+        persist: false,
+        create: false, // TIDAK boleh buat poli baru
+        maxOptions: 500, // batasi opsi per page
+        placeholder: "Cari & pilih poli…",
+        valueField: "value",
+        labelField: "text",
+        searchField: ["text"],
+        render: {
+            item: function (data, escape) {
+                return `<div class="ts-chip inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-50 border border-blue-200 text-blue-700 text-xs">
+                  ${escape(data.text)}
+                </div>`;
+            },
+            option: function (data, escape) {
+                return `<div class="px-2 py-1 text-sm">${escape(
+                    data.text
+                )}</div>`;
+            },
+        },
+        onChange: function () {
+            // hapus error styling ketika ada perubahan
+            $("#poli_id").removeClass("is-invalid");
+            $("#poli_id-error").html("");
+        },
+    });
+}
+
+// === Tom Select untuk Edit ===
+let tsEditPoli = null;
+function initTomSelectEditPoli() {
+    if (tsEditPoli) return;
+    tsEditPoli = new TomSelect("#edit_poli_id", {
+        plugins: ["remove_button"],
+        persist: false,
+        create: false,
+        maxOptions: 500,
+        placeholder: "Cari & pilih poli…",
+        valueField: "value",
+        labelField: "text",
+        searchField: ["text"],
+        render: {
+            item: (
+                d,
+                e
+            ) => `<div class="inline-flex items-center gap-1 px-2 py-1 rounded-full
+                             bg-blue-50 border border-blue-200 text-blue-700 text-xs">${e(
+                                 d.text
+                             )}</div>`,
+            option: (d, e) =>
+                `<div class="px-2 py-1 text-sm">${e(d.text)}</div>`,
+        },
+        onChange() {
+            $("#edit_poli_id").removeClass("is-invalid");
+            $("#edit_poli_id-error").html("");
+        },
+    });
+}
+
 $(function () {
     const editModalElement = document.getElementById("editDokterModal");
     const editModal = editModalElement ? new Modal(editModalElement) : null;
@@ -240,44 +322,61 @@ $(function () {
         $formEdit.find(".is-invalid").removeClass("is-invalid");
         $formEdit.find(".text-red-600").empty();
 
-        // reset URL ke awal
+        // reset action URL
         $formEdit.data("url", initialEditUrl);
         $formEdit.attr("action", initialEditUrl);
 
-        // Reset preview foto
+        // reset preview foto
         $("#preview_edit_foto_dokter").addClass("hidden").attr("src", "");
         $("#placeholder_edit_foto_dokter").removeClass("hidden");
         $("#foto_drop_area_edit")
             .removeClass("border-solid border-gray-300")
             .addClass("border-dashed border-gray-400");
+
+        // reset tom select
+        if (tsEditPoli) tsEditPoli.clear();
     }
 
     // buka modal edit
     $("body").on("click", ".btn-edit-dokter", function () {
         resetEditForm();
+        initTomSelectEditPoli();
+
         const dokterId = $(this).data("id");
 
         axios
             .get(`/manajemen_pengguna/get_dokter_by_id/${dokterId}`)
             .then((res) => {
                 const dokter = res.data.data;
-                console.log(dokter);
+
+                // set action URL (ganti /0 → /{id})
                 const baseUrl = $formEdit.data("url");
                 const finalUrl = baseUrl.replace("/0", "/" + dokter.id);
                 $formEdit.data("url", finalUrl);
                 $formEdit.attr("action", finalUrl);
 
+                // isi field
                 $("#edit_dokter_id").val(dokter.id);
-                $("#edit_poli_id").val(dokter.poli.id);
-                $("#edit_username_dokter").val(dokter.user.username);
-                $("#edit_nama_dokter").val(dokter.nama_dokter);
-                $("#edit_email_akun_dokter").val(dokter.user.email);
-                $("#edit_spesialis_dokter").val(dokter.jenis_spesialis_id);
-                $("#edit_no_hp_dokter").val(dokter.no_hp);
-                $("#edit_deskripsi_dokter").val(dokter.deskripsi_dokter);
-                $("#edit_pengalaman_dokter").val(dokter.pengalaman);
+                $("#edit_username_dokter").val(dokter.user?.username ?? "");
+                $("#edit_nama_dokter").val(dokter.nama_dokter ?? "");
+                $("#edit_email_akun_dokter").val(dokter.user?.email ?? "");
+                $("#edit_spesialis_dokter").val(
+                    dokter.jenis_spesialis_id ?? ""
+                );
+                $("#edit_no_hp_dokter").val(dokter.no_hp ?? "");
+                $("#edit_deskripsi_dokter").val(dokter.deskripsi_dokter ?? "");
+                $("#edit_pengalaman_dokter").val(dokter.pengalaman ?? "");
 
-                // Tampilkan foto existing jika ada
+                // preselect poli (array id)
+                const poliId = (dokter.poli || []).map((p) => p.id);
+                if (tsEditPoli) {
+                    tsEditPoli.clear(); // clear value dulu
+                    tsEditPoli.setValue(poliId); // set nilai terpilih
+                } else {
+                    $("#edit_poli_id").val(poliId).trigger("change");
+                }
+
+                // tampilkan foto existing kalau ada
                 if (dokter.foto_dokter) {
                     const fotoUrl = `/storage/${dokter.foto_dokter}`;
                     $("#preview_edit_foto_dokter")
@@ -289,10 +388,14 @@ $(function () {
                         .addClass("border-solid border-gray-300");
                 }
 
-                if (editModal) editModal.show();
+                editModal?.show();
+                // refresh options width setelah modal tampil
+                setTimeout(
+                    () => tsEditPoli && tsEditPoli.refreshOptions(false),
+                    100
+                );
             })
-            .catch((err) => {
-                console.error(err);
+            .catch(() => {
                 Swal.fire({
                     icon: "error",
                     title: "Gagal!",
@@ -301,11 +404,15 @@ $(function () {
             });
     });
 
-    // simpan update
+    // submit update
     $formEdit.on("submit", function (e) {
         e.preventDefault();
         const url = $formEdit.data("url");
         const formData = new FormData($formEdit[0]);
+
+        // bersihkan error lama
+        $formEdit.find(".is-invalid").removeClass("is-invalid");
+        $formEdit.find('[id$="-error"]').html("");
 
         axios
             .post(url, formData)
@@ -313,11 +420,11 @@ $(function () {
                 Swal.fire({
                     icon: "success",
                     title: "Berhasil!",
-                    text: res.data.success,
+                    text: res.data.success ?? res.data.message ?? "Tersimpan.",
                     showConfirmButton: false,
-                    timer: 2000,
+                    timer: 1600,
                 }).then(() => {
-                    editModal.hide();
+                    editModal?.hide();
                     $("#dokterTable").DataTable().ajax.reload(null, false);
                     resetEditForm();
                 });
@@ -326,26 +433,38 @@ $(function () {
                 if (error.response && error.response.status === 422) {
                     const errors = error.response.data.errors;
 
-                    $formEdit.find(".is-invalid").removeClass("is-invalid");
-                    $formEdit.find(".text-red-600").empty();
-
                     Swal.fire({
                         icon: "error",
                         title: "Validasi Gagal!",
-                        text: "Silakan periksa kembali isian formulir Anda.",
+                        text: "Silakan cek kembali form Anda.",
                     });
 
-                    for (const field in errors) {
-                        const inputField = $(`#${field}`);
-                        inputField.addClass("is-invalid");
-                        $(`#${field}-error`).html(errors[field][0]);
-                    }
+                    // map error termasuk array: poli_id.0 → edit_poli_id
+                    Object.keys(errors).forEach((fieldKey) => {
+                        const baseKey = fieldKey.split(".")[0];
 
+                        const $input = $("#" + baseKey);
+                        if ($input.length) $input.addClass("is-invalid");
+
+                        const $error = $("#" + baseKey + "-error");
+                        if ($error.length) $error.html(errors[fieldKey][0]);
+
+                        if (
+                            baseKey === "edit_poli_id" ||
+                            baseKey === "poli_id"
+                        ) {
+                            // kalau validator mengembalikan 'poli_id', arahkan ke edit_poli_id
+                            $("#edit_poli_id").addClass("is-invalid");
+                            $("#edit_poli_id-error").html(errors[fieldKey][0]);
+                            if (tsEditPoli)
+                                tsEditPoli.wrapper.classList.add("is-invalid");
+                        }
+                    });
                 } else {
                     Swal.fire({
                         icon: "error",
                         title: "Error Server!",
-                        text: "Terjadi kesalahan server. Silakan coba lagi.",
+                        text: "Terjadi kesalahan. Coba lagi.",
                     });
                 }
             });

@@ -141,7 +141,7 @@
                     {{-- <x-mycomponents.sidebar_link href="pengambilan.obat" class="fa-solid fa-pills text-blue-600">
                         Pengambilan Obat
                     </x-mycomponents.sidebar_link> --}}
-{{-- 
+                    {{-- 
                     <x-mycomponents.sidebar_link href="kasir.index" class="fa-solid fa-cash-register text-blue-600">
                         Kasir
                     </x-mycomponents.sidebar_link> --}}
@@ -179,6 +179,11 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <!-- Tom Select -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/css/tom-select.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/js/tom-select.complete.min.js"></script>
+
 </body>
 
 </html>

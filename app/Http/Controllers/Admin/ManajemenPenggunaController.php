@@ -62,7 +62,32 @@ class ManajemenPenggunaController extends Controller
             ->addColumn('email_user', fn($row) => $row->user->email ?? '-')
             ->addColumn('role', fn($row) => $row->user->role ?? '-')
             ->addColumn('nama_spesialis', fn($row) => $row->jenisSpesialis->nama_spesialis ?? '-')
-            ->addColumn('nama_poli', fn($row) => $row->poli->nama_poli ?? '-')
+
+            // 🔁 REVISI: tampilkan banyak poli sebagai badge
+            ->addColumn('nama_poli', function ($row) {
+                if (!$row->relationLoaded('poli')) {
+                    $row->load('poli:id,nama_poli');
+                }
+
+                if ($row->poli->isEmpty()) {
+                    return '<div class="flex flex-wrap gap-1">
+                    <span class="px-2 py-1 rounded-full bg-gray-100 text-gray-500 text-xs border border-gray-300">
+                        Tidak ada
+                    </span>
+                </div>';
+                }
+
+                $badges = $row->poli->map(function ($poli) {
+                    return '<span class="px-2 py-1 rounded-full bg-blue-50 text-blue-700 text-xs border border-blue-200 
+                        hover:bg-blue-100 transition-colors">
+                    ' . e($poli->nama_poli) . '
+                </span>';
+                })->implode('');
+
+                return '<div class="flex flex-wrap gap-2">' . $badges . '</div>';
+            })
+
+
             ->addColumn('action', function ($dokter) {
                 return '
                 <button class="btn-edit-dokter text-blue-600 hover:text-blue-800 mr-2" data-id="' . $dokter->id . '"  title="Edit">
@@ -73,7 +98,7 @@ class ManajemenPenggunaController extends Controller
                 </button>
             ';
             })
-            ->rawColumns(['foto', 'action'])
+            ->rawColumns(['foto', 'nama_poli', 'action'])
             ->make(true);
     }
 

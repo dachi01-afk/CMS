@@ -154,7 +154,7 @@
                         <div id="spesialis_dokter-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
 
-                    {{-- Poli --}}
+                    {{-- Poli
                     <div>
                         <label for="spesialis_dokter"
                             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Poli</label>
@@ -167,7 +167,26 @@
                             @endforeach
                         </select>
                         <div id="spesialis_dokter-error" class="text-red-600 text-sm mt-1"></div>
+                    </div> --}}
+
+                    <!-- Poli (Tom Select, multi) -->
+                    <div>
+                        <label for="poli_id" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                            Poli <span class="text-gray-400">(bisa pilih lebih dari satu)</span>
+                        </label>
+
+                        <select id="poli_id" name="poli_id[]" multiple required placeholder="Cari & pilih poli…"
+                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                 focus:ring-blue-500 focus:border-blue-500 p-2.5
+                 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                            @foreach ($dataPoli as $poli)
+                                <option value="{{ $poli->id }}">{{ $poli->nama_poli }}</option>
+                            @endforeach
+                        </select>
+
+                        <div id="poli_id-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
+
 
                     <!-- Pengalaman -->
                     <div>
@@ -328,20 +347,26 @@
                         <div id="edit_spesialis_dokter-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
 
-                    {{-- Poli --}}
+                    {{-- Poli (multi, Tom Select) --}}
                     <div>
                         <label for="edit_poli_id"
-                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Poli</label>
-                        <select id="edit_poli_id" name="poli_id" required
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                            Poli <span class="text-gray-400">(bisa pilih lebih dari satu)</span>
+                        </label>
+
+                        <select id="edit_poli_id" name="poli_id[]" multiple required
+                            placeholder="Cari & pilih poli…"
                             class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
-                            focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
-                            <option value="" disabled selected>Pilih Poli</option>
+                 focus:ring-blue-500 focus:border-blue-500 p-2.5
+                 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
                             @foreach ($dataPoli as $poli)
                                 <option value="{{ $poli->id }}">{{ $poli->nama_poli }}</option>
                             @endforeach
                         </select>
+
                         <div id="edit_poli_id-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
+
 
                     <!-- No HP -->
                     <div>
