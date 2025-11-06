@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // ⛑️ Guard: jika tabel sudah ada, lewati
+        if (Schema::hasTable('kasir')) {
+            return;
+        }
+
         Schema::create('kasir', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained('user', 'id', 'kasir_user_id')
