@@ -1,29 +1,37 @@
 import { Modal } from "flowbite";
 
-// === Ambil elemen modal dan inisialisasi Flowbite Modal ===
 const modalEl = document.getElementById("modalCreateKYAD");
 const modal = new Modal(modalEl);
 
-// === Ambil elemen penting ===
 const form = modalEl.querySelector("form");
 const pasienDataDiv = document.getElementById("pasien_data-kyad");
 const searchInput = document.getElementById("search_pasien-kyad");
 const resultsDiv = document.getElementById("search_results-kyad");
 
-// === Fungsi reset form modal ===
+// Reset modal
 function resetModalForm() {
     form.reset();
     pasienDataDiv.classList.add("hidden");
     resultsDiv.classList.add("hidden");
     searchInput.value = "";
-    document.getElementById("nama_pasien").textContent = "";
-    document.getElementById("alamat_pasien").textContent = "";
-    document.getElementById("jk_pasien").textContent = "";
+
+    document.getElementById("nama_pasien-kyad").textContent = "";
+    document.getElementById("alamat_pasien-kyad").textContent = "";
+    document.getElementById("jk_pasien-kyad").textContent = "";
+
+    document.getElementById("dokter_id-kyad").value = "";
+    document.getElementById("dokter_nama-kyad").value = "";
+    document.getElementById("poli_id-kyad").value = "";
+    document.getElementById("nama_poli-kyad").value = "";
+    document.getElementById("tanggal-kunjungan-kyad").value = "";
+    const pasienId = document.getElementById("pasien_id-kyad");
+    if (pasienId) pasienId.value = "";
+    const jadwalId = document.getElementById("jadwal_id-kyad");
+    if (jadwalId) jadwalId.value = "";
 }
 
-// === Saat halaman siap ===
 document.addEventListener("DOMContentLoaded", () => {
-    // === Tombol "Pilih Jadwal" ===
+    // Buka modal dari tombol Pilih
     document.querySelectorAll(".pilih-kyad-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
             document.getElementById("dokter_id-kyad").value =
@@ -34,26 +42,27 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById("nama_poli-kyad").value =
                 btn.dataset.namaPoli;
             document.getElementById("poli_id-kyad").value = btn.dataset.poliId;
-            document.getElementById("tanggal-kunjungan-kyad").value = btn.dataset.tanggal;
+            document.getElementById("tanggal-kunjungan-kyad").value =
+                btn.dataset.tanggal;
+            document.getElementById("jadwal_id-kyad").value =
+                btn.dataset.jadwalId || "";
             modal.show();
         });
     });
 
-    // === Tutup modal tombol X / batal / klik luar modal ===
+    // Tutup modal
     document.getElementById("closeModalBtn").addEventListener("click", () => {
         modal.hide();
         resetModalForm();
     });
-
     const cancelBtn = form.querySelector('button[type="button"]');
     cancelBtn.addEventListener("click", () => {
         modal.hide();
         resetModalForm();
     });
-
     modalEl.addEventListener("hidden.tw.modal", resetModalForm);
 
-    // === Live search pasien ===
+    // Live search pasien
     searchInput.addEventListener("keyup", async () => {
         const query = searchInput.value.trim();
         if (query.length < 2) {
@@ -92,7 +101,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // === Submit form via AJAX ===
+    // Submit form via AJAX
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
@@ -122,13 +131,17 @@ document.addEventListener("DOMContentLoaded", () => {
                 }).then(() => {
                     modal.hide();
                     resetModalForm();
-                    loadWaitingList();
+                    if (typeof loadWaitingList === "function") {
+                        loadWaitingList();
+                    } else {
+                        window.location.reload();
+                    }
                 });
             } else {
                 Swal.fire({
                     icon: "error",
                     title: "Gagal!",
-                    text: result.message || "Gagal menyimpan data kunjungan.",
+                    text: result.message || "Gagal menyimpan data kunjungan."   ,
                     confirmButtonText: "OK",
                 });
             }

@@ -1,6 +1,5 @@
-<!-- Tabel Jadwal Dokter -->
+<!-- Jadwal Dokter Yang Akan Datang -->
 <div class="bg-white p-6 rounded-xl shadow-lg mb-8">
-    <!-- Header -->
     <div class="flex items-center space-x-3 mb-4">
         <i class="fa-solid fa-calendar-check text-indigo-600 text-2xl"></i>
         <h2 class="text-2xl font-bold text-gray-800">
@@ -8,55 +7,43 @@
         </h2>
     </div>
 
-    <!-- Table -->
     <div class="relative overflow-x-auto rounded-lg border border-gray-100 shadow-sm">
         <table class="min-w-full text-sm text-gray-700">
             <thead class="bg-indigo-50 text-indigo-700 text-xs uppercase tracking-wide">
                 <tr>
-                    <th class="px-6 py-3 font-semibold text-left">Dokter</th>
-                    <th class="px-6 py-3 font-semibold text-left">Poli</th>
-                    <th class="px-6 py-3 font-semibold text-left">Spesialis</th>
-                    <th class="px-6 py-3 font-semibold text-center">Hari</th>
-                    <th class="px-6 py-3 font-semibold text-center">Waktu</th>
-                    <th class="px-6 py-3 font-semibold text-center">Aksi</th>
+                    <th class="px-6 py-3 text-left font-semibold">Dokter</th>
+                    <th class="px-6 py-3 text-left font-semibold">Poli</th>
+                    <th class="px-6 py-3 text-left font-semibold">Spesialis</th>
+                    <th class="px-6 py-3 text-center font-semibold">Hari</th>
+                    <th class="px-6 py-3 text-center font-semibold">Waktu</th>
+                    <th class="px-6 py-3 text-center font-semibold">Aksi</th>
                 </tr>
             </thead>
-
             <tbody>
                 @forelse ($jadwalYangAkanDatang as $jadwal)
                     <tr class="border-b border-gray-100 hover:bg-indigo-50/40 transition duration-150">
-                        <!-- Kolom Dokter -->
                         <td class="px-6 py-4 font-medium text-gray-900 text-base">
                             {{ $jadwal->dokter->nama_dokter }}
                         </td>
-
                         <td class="px-6 py-4 font-medium text-gray-900 text-base">
                             {{ $jadwal->poli->nama_poli }}
                         </td>
-
-                        <!-- Kolom Spesialis -->
                         <td class="px-6 py-4 font-medium text-gray-900 text-base">
                             {{ $jadwal->dokter->jenisSpesialis->nama_spesialis ?? '-' }}
                         </td>
-
-                        <td class="px-6 py-4 font-medium text-gray-900 text-center">
+                        <td class="px-6 py-4 text-center">
                             {{ $jadwal->hari }}
                             {{ \Carbon\Carbon::parse($jadwal->tanggal_berikutnya)->translatedFormat('d F Y') }}
                         </td>
-
-                        <!-- Kolom Waktu -->
                         <td class="px-6 py-4 text-center">
-                            <span
-                                class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-medium text-sm whitespace-nowrap">
+                            <span class="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-medium text-sm">
                                 {{ \Carbon\Carbon::parse($jadwal->jam_awal)->format('H:i') }} -
                                 {{ \Carbon\Carbon::parse($jadwal->jam_selesai)->format('H:i') }}
                             </span>
                         </td>
-
-                        <!-- Kolom Aksi -->
                         <td class="px-6 py-4 text-center">
                             <button type="button"
-                                class="pilih-kyad-btn text-white bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg text-sm font-medium transition duration-150 shadow-sm"
+                                class="pilih-kyad-btn bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition"
                                 data-dokter-id="{{ $jadwal->dokter->id }}"
                                 data-dokter-nama="{{ $jadwal->dokter->nama_dokter }}"
                                 data-poli-id="{{ $jadwal->poli->id }}" data-nama-poli="{{ $jadwal->poli->nama_poli }}"
@@ -69,8 +56,8 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4" class="text-center text-gray-500 py-6 italic">
-                            Tidak ada jadwal dokter untuk hari ini.
+                        <td colspan="6" class="text-center text-gray-500 py-6 italic">
+                            Tidak ada jadwal dokter yang akan datang.
                         </td>
                     </tr>
                 @endforelse
@@ -78,8 +65,6 @@
         </table>
     </div>
 </div>
-
-
 
 <!-- Modal Tambah Kunjungan -->
 <div id="modalCreateKYAD"
@@ -89,9 +74,7 @@
 
             <!-- Header -->
             <div class="flex items-center justify-between p-4 border-b dark:border-gray-600">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                    Tambah Kunjungan Pasien
-                </h3>
+                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Tambah Kunjungan Pasien</h3>
                 <button type="button" id="closeModalBtn"
                     class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center">
                     ✕
@@ -103,6 +86,7 @@
                 @csrf
 
                 <input type="hidden" id="tanggal-kunjungan-kyad" name="tanggal_kunjungan">
+                <input type="hidden" id="jadwal_id-kyad" name="jadwal_id"><!-- NEW: kirim jadwal_id -->
 
                 <!-- Dokter -->
                 <div>
@@ -128,7 +112,6 @@
                         class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
                     <div id="search_results-kyad"
                         class="mt-2 bg-white border border-gray-200 rounded-lg shadow max-h-40 overflow-y-auto hidden">
-                        <!-- hasil pencarian -->
                     </div>
                 </div>
 

@@ -25,31 +25,39 @@ document.addEventListener("DOMContentLoaded", () => {
 
         tbody.innerHTML = "";
         data.forEach((item) => {
+            const namaDokter =
+                (item.dokter_terpilih && item.dokter_terpilih.nama_dokter) ||
+                (item.poli &&
+                    item.poli.dokter &&
+                    item.poli.dokter.nama_dokter) ||
+                "-";
+
             const row = document.createElement("tr");
             row.className = "border-b hover:bg-indigo-50 transition";
 
             row.innerHTML = `
-                <td class="px-6 py-3 font-semibold">${item.no_antrian}</td>
-                <td class="px-6 py-3">${item.pasien.nama_pasien}</td>
-                <td class="px-6 py-3">${item.poli.dokter.nama_dokter}</td>
-                <td class="px-6 py-3">${item.poli.nama_poli}</td>
-                <td class="px-6 py-3">${item.keluhan_awal}</td>
-                <td class="px-6 py-3">${new Date(
-                    item.tanggal_kunjungan
-                ).toLocaleDateString("id-ID", {
-                    day: "2-digit",
-                    month: "long",
-                    year: "numeric",
-                })}</td>
-                <td class="px-6 py-3 text-center">
-                    <button data-id="${item.id}" 
-                        data-dokter="${item.poli.dokter.nama_dokter}"
-                            class="ubahStatusBtn text-blue-600 hover:text-blue-800 mr-2 text-center items-center">
-                        <i class="fa-solid fa-circle-info text-lg"></i>
-                        Lihat Detail
-                    </button>
-                </td>
-            `;
+    <td class="px-6 py-3 font-semibold">${item.no_antrian}</td>
+    <td class="px-6 py-3">${item.pasien.nama_pasien}</td>
+    <td class="px-6 py-3">${namaDokter}</td>
+    <td class="px-6 py-3">${item.poli?.nama_poli ?? "-"}</td>
+    <td class="px-6 py-3">${item.keluhan_awal}</td>
+    <td class="px-6 py-3">${new Date(item.tanggal_kunjungan).toLocaleDateString(
+        "id-ID",
+        {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+        }
+    )}</td>
+    <td class="px-6 py-3 text-center">
+      <button data-id="${item.id}"
+              data-dokter="${namaDokter}"
+              class="ubahStatusBtn text-blue-600 hover:text-blue-800 mr-2 text-center items-center">
+        <i class="fa-solid fa-circle-info text-lg"></i>
+        Lihat Detail
+      </button>
+    </td>
+  `;
             tbody.appendChild(row);
         });
 
