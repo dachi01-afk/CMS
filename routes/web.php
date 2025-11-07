@@ -200,6 +200,7 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::put('/update_jadwal_dokter/{id}', [JadwalDokterController::class, 'updateJadwalDokter'])->name('update_jadwal_dokter');
         Route::delete('/delete_jadwal_dokter/{id}', [JadwalDokterController::class, 'deleteJadwalDokter'])->name('delete_jadwal_dokter');
         Route::get('/search', [JadwalDokterController::class, 'search'])->name('dokter');
+        Route::get('/search-poli-by-dokter/{id}', [PengaturanKlinikController::class, 'searchDataPoliByIdDokter'])->name('search.poli.by.id.dokter');
     });
 
     Route::prefix('laporan')->name('laporan.')->group(function () {

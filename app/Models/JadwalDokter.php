@@ -10,11 +10,19 @@ class JadwalDokter extends Model
 
     protected $guarded = [];
 
-    public function dokter () {
+    public function dokter()
+    {
         return $this->belongsTo(Dokter::class);
     }
 
-    public function poli() {
+    public function poli()
+    {
         return $this->belongsTo(Poli::class);
+    }
+
+    public function dokterPoli()
+    {
+        // fk: jadwal_dokter.dokter_poli_id → dokter_poli.id
+        return $this->belongsTo(DokterPoli::class);
     }
 }
