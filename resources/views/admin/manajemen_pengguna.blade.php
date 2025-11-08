@@ -43,6 +43,14 @@
                 </li>
 
                 <li class="me-2" role="presentation">
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="perawat-tab"
+                        data-tabs-target="#data-perawat" type="button" role="tab" aria-controls="data-perawat"
+                        aria-selected="false">
+                        Data Perawat
+                    </button>
+                </li>
+
+                <li class="me-2" role="presentation">
                     <button class="inline-block p-4 border-b-2 rounded-t-lg" id="kasir-tab"
                         data-tabs-target="#data-kasir" type="button" role="tab" aria-controls="data-kasir"
                         aria-selected="false">
@@ -73,6 +81,11 @@
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-farmasi" role="tabpanel"
                     aria-labelledby="farmasi-tab">
                     @include('admin.manajemenPengguna.data_farmasi')
+                </div>
+
+                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-perawat" role="tabpanel"
+                    aria-labelledby="perawat-tab">
+                    @include('admin.manajemenPengguna.data_perawat')
                 </div>
 
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-kasir" role="tabpanel"

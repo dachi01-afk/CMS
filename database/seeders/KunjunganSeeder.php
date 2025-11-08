@@ -2,101 +2,68 @@
 
 namespace Database\Seeders;
 
-use App\Models\Dokter;
 use App\Models\Kunjungan;
 use App\Models\Pasien;
 use App\Models\Poli;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Faker\Factory as Faker;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 
 class KunjunganSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        $faker = Faker::create();
-        $daftarKeluhan = [
-            'Sakit Gigi',
-            'Demam tinggi',
-            'Batuk pilek',
-            'Nyeri perut',
-            'Susah tidur'
-        ];
+        $faker = Faker::create('id_ID');
 
-        // $pasien = Pasien::all();
-        // $dataPoli = Poli::all();
+        // Pastikan minimal ada 1 POLI & 3 PASIEN (buat dummy bila kosong)
+        if (Poli::count() === 0) {
+            Poli::create(['nama_poli' => 'Poli Umum', 'keterangan' => 'Dummy']);
+        }
+        while (Pasien::count() < 3) {
+            Pasien::create([
+                'nama_pasien'   => $faker->name,
+                'alamat'        => $faker->address,
+                'jenis_kelamin' => $faker->randomElement(['Laki-laki', 'Perempuan']),
+                'tanggal_lahir' => $faker->date(),
+                'no_hp'         => $faker->phoneNumber,
+                'no_rm'         => strtoupper(Str::random(8)),
+            ]);
+        }
 
-        // foreach ($pasien as $p) {
-        //     $poli = $dataPoli->random();
+        $poliId   = Poli::value('id');
+        $pasienId = Pasien::pluck('id');
 
-        //     // Tentukan tanggal kunjungan pertama pasien ini
-        //     $hariPertamaBerkunjung = $faker->dateTimeBetween('-1 years', '1 years');
+        $keluhan  = ['Sakit gigi', 'Demam tinggi', 'Batuk pilek', 'Nyeri perut', 'Susah tidur'];
 
-        //     $jumlahKunjungan = rand(10, 15);
-        //     $tanggalKunjungan = clone $hariPertamaBerkunjung; // copy supaya bisa dimodifikasi
+        // Buat 8 kunjungan: 3 hari ke belakang, hari ini, dan 4 hari ke depan
+        $tanggalList = [];
+        for ($i = -3; $i <= 4; $i++) {
+            $tanggalList[] = Carbon::today()->addDays($i)->toDateString();
+        }
 
-        //     for ($i = 0; $i < $jumlahKunjungan; $i++) {
-        //         // Cek jumlah kunjungan yang sudah ada di tanggal itu
-        //         $countExisting = Kunjungan::whereDate('tanggal_kunjungan', $tanggalKunjungan->format('Y-m-d'))->count();
+        foreach ($tanggalList as $tgl) {
+            // antrian dimulai dari jumlah yang sudah ada (per tanggal+ poli)
+            $existing = Kunjungan::whereDate('tanggal_kunjungan', $tgl)
+                ->where('poli_id', $poliId)
+                ->count();
 
-        //         // Generate nomor antrian baru
-        //         $noAntrian = str_pad($countExisting + 1, 3, '0', STR_PAD_LEFT); // contoh: 001, 002, 003
+            // bikin 1–2 kunjungan per tanggal
+            $n = $faker->numberBetween(1, 2);
+            for ($i = 0; $i < $n; $i++) {
+                $no = str_pad($existing + $i + 1, 3, '0', STR_PAD_LEFT);
 
-        //         Kunjungan::create([
-        //             'poli_id' => $poli->id,
-        //             'pasien_id' => $p->id,
-        //             'tanggal_kunjungan' => $tanggalKunjungan,
-        //             'no_antrian' => $noAntrian,
-        //             'keluhan_awal' => $faker->randomElement($daftarKeluhan),
-        //             'status' => 'Pending',
-        //         ]);
+                Kunjungan::create([
+                    'poli_id'           => $poliId,
+                    'pasien_id'         => $pasienId->random(),
+                    'tanggal_kunjungan' => $tgl,
+                    'no_antrian'        => $no,
+                    'keluhan_awal'      => $faker->randomElement($keluhan),
+                    'status'            => 'Pending',
+                ]);
+            }
+        }
 
-        //         // Setiap kunjungan berikutnya maju 1–7 hari
-        //         $tanggalKunjungan->modify('+' . rand(1, 7) . ' days');
-
-        //         // Biar gak lewat hari ini
-        //         if ($tanggalKunjungan > new \DateTime('now')) {
-        //             $tanggalKunjungan = new \DateTime('now');
-        //         }
-        //     }
-        // }
-
-        $dataPoli = Poli::firstOrFail();
-
-        Kunjungan::create([
-            'poli_id' => $dataPoli->id,
-            'pasien_id' => 1,
-            'tanggal_kunjungan' => '2025-10-13',
-            'no_antrian' => '001',
-            'keluhan_awal' => $daftarKeluhan[0],
-            'status' => 'Pending',
-        ]);
-        Kunjungan::create([
-            'poli_id' => $dataPoli->id,
-            'pasien_id' => 1,
-            'tanggal_kunjungan' => '2025-10-14',
-            'no_antrian' => '001',
-            'keluhan_awal' => $daftarKeluhan[0],
-            'status' => 'Pending',
-        ]);
-        Kunjungan::create([
-            'poli_id' => $dataPoli->id,
-            'pasien_id' => 1,
-            'tanggal_kunjungan' => '2025-10-15',
-            'no_antrian' => '001',
-            'keluhan_awal' => $daftarKeluhan[0],
-            'status' => 'Pending',
-        ]);
-        Kunjungan::create([
-            'poli_id' => $dataPoli->id,
-            'pasien_id' => 1,
-            'tanggal_kunjungan' => '2025-10-16',
-            'no_antrian' => '001',
-            'keluhan_awal' => $daftarKeluhan[0],
-            'status' => 'Pending',
-        ]);
+        $this->command?->info('KunjunganSeeder: data kunjungan dibuat.');
     }
 }

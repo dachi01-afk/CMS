@@ -5,48 +5,40 @@ namespace Database\Seeders;
 use App\Models\Obat;
 use App\Models\Resep;
 use App\Models\ResepObat;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Faker\Factory as Faker;
 
 class ResepObatSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        $dataResep = Resep::all();
-        $dataObat = Obat::all();
-        $faker = Faker::create();
+        // Minimal 2 obat dummy bila kosong
+        if (Obat::count() === 0) {
+            Obat::create(['nama_obat' => 'Paracetamol 500 mg', 'stok' => 100, 'harga' => 2000]);
+            Obat::create(['nama_obat' => 'Amoxicillin 500 mg', 'stok' => 100, 'harga' => 3000]);
+        }
 
-        // for ($i = 0; $i < 30; $i++) {
-        //     ResepObat::create([
-        //         'resep_id' => $dataResep->random()->id,
-        //         'obat_id' => $dataObat->random()->id,
-        //         'jumlah' => $faker->numberBetween(30, 100),
-        //         'dosis' => $faker->randomFloat(2, 1, 100),
-        //         'keterangan' => '3 kali sehari',
-        //         'status' => 'Belum Diambil',
-        //     ]);
-        // }
+        $resepIds = Resep::pluck('id');
+        $obatIds  = Obat::pluck('id');
 
-        ResepObat::create([
-            'resep_id' => 1,
-            'obat_id' => 1,
-            'jumlah' => 2,
-            'dosis' => 250.00,
-            'keterangan' => '3 kali sehari',
-            'status' => 'Belum Diambil',
-        ]);
+        if ($resepIds->isEmpty()) {
+            $this->command?->warn('ResepObatSeeder dilewati: resep kosong.');
+            return;
+        }
 
-        ResepObat::create([
-            'resep_id' => 1,
-            'obat_id' => 2,
-            'jumlah' => 1,
-            'dosis' => 250.00,
-            'keterangan' => '3 kali sehari',
-            'status' => 'Belum Diambil',
-        ]);
+        foreach ($resepIds as $rId) {
+            foreach (collect($obatIds)->random(min(2, $obatIds->count())) as $oId) {
+                ResepObat::firstOrCreate([
+                    'resep_id' => $rId,
+                    'obat_id'  => $oId,
+                ], [
+                    'jumlah'     => rand(1, 2),
+                    'dosis'      => 250.00,
+                    'keterangan' => '3 kali sehari',
+                    'status'     => 'Belum Diambil',
+                ]);
+            }
+        }
+
+        $this->command?->info('ResepObatSeeder: item obat per resep dibuat.');
     }
 }

@@ -49,7 +49,7 @@
 
 
 <!-- Modal Lihat Detail EMR -->
-<div id="modalDetailEMR" aria-hidden="true"
+{{-- <div id="modalDetailEMR" aria-hidden="true"
     class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 bg-black bg-opacity-50">
     <div class="relative w-full max-w-2xl max-h-full">
         <div class="relative bg-white rounded-2xl shadow-xl dark:bg-gray-800 dark:text-white">
@@ -117,7 +117,7 @@
             </div>
         </div>
     </div>
-</div>
+</div> --}}
 
 
 

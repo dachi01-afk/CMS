@@ -5,50 +5,31 @@ namespace Database\Seeders;
 use App\Models\Kunjungan;
 use App\Models\KunjunganLayanan;
 use App\Models\Layanan;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
 class KunjunganLayananSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        KunjunganLayanan::create([
-            'kunjungan_id' => 1,
-            'layanan_id' => 1,
-            'jumlah' => 1,
-        ]);
-        KunjunganLayanan::create([
-            'kunjungan_id' => 1,
-            'layanan_id' => 2,
-            'jumlah' => 2,
-        ]);
+        $kunjunganIds = Kunjungan::pluck('id');
+        $layananIds   = Layanan::pluck('id');
 
-        // // Pastikan ada data di tabel kunjungan dan layanan
-        // $kunjunganIds = Kunjungan::pluck('id')->toArray();
-        // $layananIds = Layanan::pluck('id')->toArray();
+        if ($kunjunganIds->isEmpty() || $layananIds->isEmpty()) {
+            $this->command?->warn('KunjunganLayananSeeder dilewati: kunjungan/layanan kosong.');
+            return;
+        }
 
-        // if (empty($kunjunganIds) || empty($layananIds)) {
-        //     $this->command->warn('⚠️ Seeder gagal: Data kunjungan atau layanan belum ada.');
-        //     return;
-        // }
+        foreach ($kunjunganIds as $kId) {
+            foreach (collect($layananIds)->random(min(2, $layananIds->count())) as $lId) {
+                KunjunganLayanan::firstOrCreate([
+                    'kunjungan_id' => $kId,
+                    'layanan_id'   => $lId,
+                ], [
+                    'jumlah'       => rand(1, 3),
+                ]);
+            }
+        }
 
-        // // Generate data dummy untuk kunjungan_layanan
-        // foreach ($kunjunganIds as $kunjunganId) {
-        //     // ambil 1–3 layanan acak untuk setiap kunjungan
-        //     $randomLayanan = collect($layananIds)->random(rand(1, 3));
-
-        //     foreach ($randomLayanan as $layananId) {
-        //         KunjunganLayanan::create([
-        //             'kunjungan_id' => $kunjunganId,
-        //             'layanan_id' => $layananId,
-        //             'jumlah' => rand(1, 5),
-        //         ]);
-        //     }
-        // }
-
-        // $this->command->info('✅ Data dummy KunjunganLayanan berhasil ditambahkan!');
+        $this->command?->info('KunjunganLayananSeeder: relasi kunjungan-layanan dibuat.');
     }
 }

@@ -38,6 +38,7 @@ use App\Http\Controllers\Farmasi\OrderObatController;
 use App\Http\Controllers\Farmasi\PengambilanObatController as FarmasiPengambilanObatController;
 use App\Http\Controllers\Management\EMRController;
 use App\Http\Controllers\Kasir\RiwayatTransaksiController;
+use App\Http\Controllers\Perawat\PerawatController;
 
 // Rest of your web routes remain the same...
 Route::get('/')->middleware('checkAuth');
@@ -167,6 +168,13 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::put('/update_farmasi/{id}', [FarmasiController::class, 'updateFarmasi'])->name('update_farmasi');
         Route::delete('/delete_farmasi/{id}', [FarmasiController::class, 'deleteFarmasi'])->name('delete_farmasi');
 
+        // crud perawat
+        Route::get('/data_perawat', [ManajemenPenggunaController::class, 'dataPerawat'])->name('data_perawat');
+        Route::post('/add_perawat', [PerawatController::class, 'createPerawat'])->name('add_perawat');
+        Route::get('/get_perawat_by_id/{id}', [PerawatController::class, 'getPerawatById'])->name('get_perawat_by_id');
+        Route::put('/update_perawat/{id}', [PerawatController::class, 'updatePerawat'])->name('update_perawat');
+        Route::delete('/delete_perawat/{id}', [PerawatController::class, 'deletePerawat'])->name('delete_perawat');
+
         // crud kasir
         Route::get('/data_kasir', [ManajemenPenggunaController::class, 'dataKasir'])->name('data_kasir');
         Route::post('/add_kasir', [KasirController::class, 'createKasir'])->name('add_kasir');
@@ -220,7 +228,7 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::get('/hasil_lab', [DataMedisPasienController::class, 'dataLab'])->name('hasil_lab');
         Route::get('/data_emr', [DataMedisPasienController::class, 'getDataEMR'])->name('data_emr');
         Route::get('/get-data-emr-by-id/{id}', [DataMedisPasienController::class, 'getDataEMRById'])->name('get.data.emr.by.id');
-        Route::get('/detail-emr/{id}', [DataMedisPasienController::class, 'showDetailEMR'])->name('detail.emr');
+        Route::get('/detail-emr/{id}', [DataMedisPasienController::class, 'detailEMR'])->name('detail_emr');
     });
 
     // Route::prefix('pengambilan_obat')->group(function () {

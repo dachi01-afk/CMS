@@ -5,96 +5,49 @@ namespace Database\Seeders;
 use App\Models\Dokter;
 use App\Models\JadwalDokter;
 use App\Models\Poli;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Faker\Factory as Faker;
-use Illuminate\Support\Facades\Date;
 
 class JadwalDokterSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        $dokter = Dokter::get();
-        $dataPoli = Poli::all();
+        // Pastikan minimal ada POLI & DOKTER (buat dummy bila kosong)
+        if (Poli::count() === 0) {
+            Poli::create(['nama_poli' => 'Poli Umum', 'keterangan' => 'Dummy']);
+        }
+        if (Dokter::count() === 0) {
+            Dokter::create([
+                'nama_dokter' => 'drg. Suniaty',
+                // kalau ada kolom spesialis / poli_id, sesuaikan:
+                // 'poli_id'     => Poli::value('id'),
+            ]);
+            Dokter::create(['nama_dokter' => 'dr. Andi Pratama']);
+        }
+
+        $poliId  = Poli::value('id');
+        $dokters = Dokter::get();
+
         $jadwal = [
-            [
-                'hari' => 'Senin',
-                'jam_awal' => '08:00:00',
-                'jam_selesai' => '23:00:00',
-            ],
-            [
-                'hari' => 'Selasa',
-                'jam_awal' => '08:00:00',
-                'jam_selesai' => '23:00:00',
-            ],
-            [
-                'hari' => 'Rabu',
-                'jam_awal' => '08:00:00',
-                'jam_selesai' => '23:00:00',
-            ],
-            [
-                'hari' => 'Kamis',
-                'jam_awal' => '08:00:00',
-                'jam_selesai' => '23:00:00',
-            ],
-            [
-                'hari' => 'Jumat',
-                'jam_awal' => '08:00:00',
-                'jam_selesai' => '23:00:00',
-            ],
-             [
-                'hari' => 'Sabtu',
-                'jam_awal' => '08:00:00',
-                'jam_selesai' => '23:00:00',
-            ],
-             [
-                'hari' => 'Minggu',
-                'jam_awal' => '00:00:00',
-                'jam_selesai' => '23:00:00',
-            ],
+            ['hari' => 'Senin',  'jam_awal' => '08:00:00', 'jam_selesai' => '12:00:00'],
+            ['hari' => 'Selasa', 'jam_awal' => '08:00:00', 'jam_selesai' => '12:00:00'],
+            ['hari' => 'Rabu',   'jam_awal' => '13:00:00', 'jam_selesai' => '16:00:00'],
+            ['hari' => 'Kamis',  'jam_awal' => '08:00:00', 'jam_selesai' => '12:00:00'],
+            ['hari' => 'Jumat',  'jam_awal' => '10:00:00', 'jam_selesai' => '12:00:00'],
+            ['hari' => 'Sabtu',  'jam_awal' => '09:00:00', 'jam_selesai' => '11:30:00'],
         ];
 
-        for ($i = 0; $i < $dokter->count(); $i++) {
-            $poli = $dataPoli->random();
+        foreach ($dokters as $d) {
             foreach ($jadwal as $j) {
-                JadwalDokter::create([
-                    'dokter_id' => $dokter[$i]->id,
-                    'poli_id' => $poli->id,
-                    'hari' => $j['hari'],
-                    'jam_awal' => $j['jam_awal'],
+                JadwalDokter::firstOrCreate([
+                    'dokter_id'   => $d->id,
+                    'poli_id'     => $poliId,
+                    'hari'        => $j['hari'],
+                    'jam_awal'    => $j['jam_awal'],
                     'jam_selesai' => $j['jam_selesai'],
                 ]);
             }
         }
 
-        // foreach ($dataPoli as $poli) {
-        //     JadwalDokter::create([
-        //         'dokter_id' => 1,
-        //         'poli_id' => 1,
-        //         'hari' => 'Senin',
-        //         'jam_awal' => '08:00:00',
-        //         'jam_selesai' => '18:00:00',
-        //     ]);
-        // }
-
-
-        // JadwalDokter::create([
-        //     'dokter_id' => 1,
-        //     'poli_id' => 1,
-        //     'hari' => 'Sabtu',
-        //     'jam_awal' => '09:00:00',
-        //     'jam_selesai' => '12:00:00',
-        // ]);
-
-        // JadwalDokter::create([
-        //     'dokter_id' => 1,
-        //     'poli_id' => 1,
-        //     'hari' => 'Minggu',
-        //     'jam_awal' => '00:00:00',
-        //     'jam_selesai' => '23:00:00',
-        // ]);
+        $this->command?->info('JadwalDokterSeeder: jadwal per dokter dibuat.');
     }
 }

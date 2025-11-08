@@ -8,6 +8,7 @@ use App\Models\Konsul;
 use App\Models\TesLab;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Cache;
 use Yajra\DataTables\DataTables;
 
 class DataMedisPasienController extends Controller
@@ -18,86 +19,122 @@ class DataMedisPasienController extends Controller
         return view('admin.data_medis_pasien', compact('dataEMR'));
     }
 
+
     public function getDataEMR()
     {
         $dataEMR = EMR::with([
             'kunjungan.pasien',
-            'kunjungan.poli.dokter', // cukup sekali
+            'kunjungan.poli.dokter', // fallback kalau tidak ada di cache
             'resep.obat',
         ])->latest()->get();
 
+        // helper kecil: resolve nama dokter terpilih per EMR (pakai static cache in-process biar hemat query)
+        $resolveNamaDokter = function ($emr) {
+            $kunj = $emr->kunjungan;
+            if (!$kunj) return '-';
+
+            $cached = Cache::get("kunjungan_dokter:{$kunj->id}");
+            if (!empty($cached['dokter_id'])) {
+                static $dokterNameCache = [];
+                $dokterId = (int) $cached['dokter_id'];
+
+                if (!array_key_exists($dokterId, $dokterNameCache)) {
+                    $dokterNameCache[$dokterId] = DB::table('dokter')
+                        ->where('id', $dokterId)
+                        ->value('nama_dokter');
+                }
+                return $dokterNameCache[$dokterId] ?: '-';
+            }
+
+            // fallback: ambil dokter pertama yang terhubung ke poli
+            return $kunj->poli?->dokter?->first()?->nama_dokter ?? '-';
+        };
+
         return DataTables::of($dataEMR)
             ->addIndexColumn()
-            ->addColumn(
-                'nama_pasien',
-                fn($emr) =>
-                $emr->kunjungan?->pasien?->nama_pasien ?? '-'
-            )
-            // ->addColumn('nama_dokter', function ($emr) {
-            //     $namaDokter = $emr->kunjungan?->poli?->dokter?->first()?->nama_dokter ?? '-';
-            //     return $namaDokter;
-            // })
-            ->addColumn('nama_dokter', function ($emr) {
-                $dokter = $emr->kunjungan?->poli?->dokter?->first();
-                return $dokter?->nama_dokter ?? '-';
-            })
-            ->addColumn(
-                'tanggal_kunjungan',
-                fn($emr) =>
-                $emr->kunjungan?->tanggal_kunjungan ?? '-'
-            )
-            ->addColumn(
-                'keluhan_awal',
-                fn($emr) =>
-                $emr->kunjungan?->keluhan_awal ?? '-'
-            )
-            ->addColumn(
-                'keluhan_utama',
-                fn($emr) =>
-                $emr->keluhan_utama ?? '-'
-            )
-            ->addColumn(
-                'riwayat_penyakit_dahulu',
-                fn($emr) =>
-                $emr->riwayat_penyakit_dahulu ?? '-'
-            )
-            ->addColumn(
-                'riwayat_penyakit_keluarga',
-                fn($emr) =>
-                $emr->riwayat_penyakit_keluarga ?? '-'
-            )
+            ->addColumn('nama_pasien', fn($emr) => $emr->kunjungan?->pasien?->nama_pasien ?? '-')
+            ->addColumn('nama_dokter', fn($emr) => $resolveNamaDokter($emr))
+            ->addColumn('tanggal_kunjungan', fn($emr) => $emr->kunjungan?->tanggal_kunjungan ?? '-')
+            ->addColumn('keluhan_awal', fn($emr) => $emr->kunjungan?->keluhan_awal ?? '-')
+            ->addColumn('keluhan_utama', fn($emr) => $emr->keluhan_utama ?? '-')
+            ->addColumn('riwayat_penyakit_dahulu', fn($emr) => $emr->riwayat_penyakit_dahulu ?? '-')
+            ->addColumn('riwayat_penyakit_keluarga', fn($emr) => $emr->riwayat_penyakit_keluarga ?? '-')
             ->addColumn('tekanan_darah', fn($emr) => $emr->tekanan_darah ?? '-')
             ->addColumn('suhu_tubuh', fn($emr) => $emr->suhu_tubuh ?? '-')
             ->addColumn('nadi', fn($emr) => $emr->nadi ?? '-')
             ->addColumn('pernapasan', fn($emr) => $emr->pernapasan ?? '-')
             ->addColumn('saturasi_oksigen', fn($emr) => $emr->saturasi_oksigen ?? '-')
             ->addColumn('diagnosis', fn($emr) => $emr->diagnosis ?? '-')
-            ->addColumn('action', function ($emr) {
-                $dokter = $emr->kunjungan?->poli?->dokter?->first();
-                $namaDokter = $dokter?->nama_dokter ?? '-';
+            ->addColumn('action', function ($emr) use ($resolveNamaDokter) {
+                $namaDokter = $resolveNamaDokter($emr);
                 return '
-        <button class="btn-detail-emr text-blue-600 hover:text-blue-800 mr-2 text-center items-center"
-                data-id="' . $emr->id . '"
-                data-dokter="' . $namaDokter . '"
-                title="Detail">
-            <i class="fa-solid fa-circle-info text-lg"></i> Lihat Detail
-        </button>
-    ';
+                <button class="btn-detail-emr text-blue-600 hover:text-blue-800 mr-2 text-center items-center"
+                        data-id="' . $emr->id . '"
+                        data-dokter="' . e($namaDokter) . '"
+                        title="Detail">
+                    <i class="fa-solid fa-circle-info text-lg"></i> Lihat Detail
+                </button>
+            ';
             })
             ->rawColumns(['action'])
             ->make(true);
     }
 
-    public function showDetailEMR($id)
+    public function detailEMR($id)
     {
+        // Ambil EMR + relasi yang dibutuhkan
         $emr = EMR::with([
             'kunjungan.pasien',
-            'kunjungan.poli.dokter',
-            'resep.obat',
+            'kunjungan.poli.dokter',   // fallback bila cache dokter kosong
+            'resep.obat'               // asumsi: relasi many-to-many/hasMany ke obat
         ])->findOrFail($id);
 
-        return view('admin.dataMedisPasien.detail-emr', compact('emr'));
+        $kunjungan = $emr->kunjungan;
+        $pasien    = $kunjungan?->pasien;
+        $poli      = $kunjungan?->poli;
+
+        // Ambil dokter terpilih dari cache KYAD; fallback ke dokter pertama poli
+        $dokterTerpilih = null;
+        if ($kunjungan) {
+            $cached = Cache::get("kunjungan_dokter:{$kunjungan->id}");
+            if (!empty($cached['dokter_id'])) {
+                $dokterTerpilih = DB::table('dokter')
+                    ->select('id', 'nama_dokter')
+                    ->where('id', (int)$cached['dokter_id'])
+                    ->first();
+            }
+        }
+        if (!$dokterTerpilih) {
+            $dokterTerpilih = optional($poli?->dokter?->first())->only(['id', 'nama_dokter']);
+            if (is_array($dokterTerpilih)) {
+                $dokterTerpilih = (object)$dokterTerpilih;
+            }
+        }
+
+        // Siapkan resep + obat (nama, dosis, aturan pakai bila ada di pivot)
+        $resep = $emr->resep;
+        $obatItems = [];
+        if ($resep && $resep->relationLoaded('obat')) {
+            foreach ($resep->obat as $o) {
+                $obatItems[] = [
+                    'nama'         => $o->nama_obat ?? $o->nama ?? '(Tanpa nama)',
+                    'dosis'        => $o->pivot->dosis        ?? $o->dosis        ?? '-',
+                    'aturan_pakai' => $o->pivot->aturan_pakai ?? $o->aturan_pakai ?? '-',
+                ];
+            }
+        }
+
+        // Data ringkas untuk Blade
+        return view('admin.dataMedisPasien.detail-emr', [
+            'emr'            => $emr,
+            'kunjungan'      => $kunjungan,
+            'pasien'         => $pasien,
+            'poli'           => $poli,
+            'dokter'         => $dokterTerpilih, // object {id, nama_dokter} atau null
+            'obatItems'      => $obatItems,
+        ]);
     }
+
 
     public function getDataEMRById($id)
     {
