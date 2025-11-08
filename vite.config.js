@@ -25,6 +25,7 @@ export default defineConfig({
                 "resources/js/admin/manajemenPengguna/data_pengguna.js",
                 "resources/js/admin/manajemenPengguna/data_dokter.js",
                 "resources/js/admin/manajemenPengguna/data_farmasi.js",
+                "resources/js/admin/manajemenPengguna/data_perawat.js",
                 "resources/js/admin/manajemenPengguna/data_kasir.js",
                 "resources/js/admin/manajemenPengguna/data_pasien.js",
                 "resources/js/admin/pengambilanObat/pengambilan_obat.js",
