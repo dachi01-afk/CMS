@@ -134,7 +134,7 @@ $(function () {
     updatePagination();
 });
 
-$(document).on("click", ".cetakKuitansi", function () {
-    const url = $(this).data("url");
-    window.open(url, "_blank"); // buka di tab baru dan langsung print
-});
+// $(document).on("click", ".cetakKuitansi", function () {
+//     const url = $(this).data("url");
+//     window.open(url, "_blank"); // buka di tab baru dan langsung print
+// });
