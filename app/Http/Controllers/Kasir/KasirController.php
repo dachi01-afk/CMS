@@ -500,7 +500,7 @@ HTML;
 
         // dd($dataPembayaran);
 
-        return view('admin.pembayaran.transaksi', compact('dataPembayaran', 'dataMetodePembayaran'));
+        return view('kasir.pembayaran.transaksi', compact('dataPembayaran', 'dataMetodePembayaran'));
     }
 
     public function transaksiCash(Request $request)
