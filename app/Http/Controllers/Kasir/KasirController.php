@@ -674,7 +674,7 @@ HTML;
 
         $namaPT = 'Royal Klinik';
 
-        return view('admin.pembayaran.kwitansi', compact('dataPembayaran', 'totalObat', 'totalLayanan', 'grandTotal', 'namaPT'));
+        return view('kasir.pembayaran.kwitansi', compact('dataPembayaran', 'totalObat', 'totalLayanan', 'grandTotal', 'namaPT'));
     }
 
     public function totalTransaksiHariIni()
