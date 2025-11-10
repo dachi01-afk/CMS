@@ -68,6 +68,7 @@ export default defineConfig({
 
                 // Role Farmasi
                 "resources/js/farmasi/dashboard.js",
+                "resources/js/farmasi/pengambilan-obat/data-pengambilan-obat.js",
             ],
             refresh: true,
         }),
