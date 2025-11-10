@@ -173,6 +173,8 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::get('/data_perawat', [ManajemenPenggunaController::class, 'dataPerawat'])->name('data_perawat');
         Route::post('/add_perawat', [PerawatController::class, 'createPerawat'])->name('add_perawat');
         Route::get('/get_perawat_by_id/{id}', [PerawatController::class, 'getPerawatById'])->name('get_perawat_by_id');
+        Route::get('/list_dokter', [PerawatController::class, 'listDokter']);
+        Route::get('/dokter/{dokterId}/polis', [PerawatController::class, 'listPoliByDokter']);
         Route::put('/update_perawat/{id}', [PerawatController::class, 'updatePerawat'])->name('update_perawat');
         Route::delete('/delete_perawat/{id}', [PerawatController::class, 'deletePerawat'])->name('delete_perawat');
 

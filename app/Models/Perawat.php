@@ -14,4 +14,14 @@ class Perawat extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function poli()
+    {
+        return $this->belongsTo(Poli::class);
+    }
+
+    public function dokter()
+    {
+        return $this->belongsTo(Dokter::class);
+    }
 }

@@ -34,6 +34,8 @@
                 <tr>
                     <th class="px-6 py-3">No</th>
                     <th class="px-6 py-3">Profile</th>
+                    <th class="px-6 py-3">Poli</th>
+                    <th class="px-6 py-3">Nama Dokter</th>
                     <th class="px-6 py-3">Nama Perawat</th>
                     <th class="px-6 py-3">Username</th>
                     <th class="px-6 py-3">Email Akun</th>
@@ -70,21 +72,15 @@
 
                 {{-- Foto --}}
                 <div class="col-span-full flex justify-center">
-                    <div id="foto_drop_area_kasir"
+                    <div id="foto_drop_area_perawat"
                         class="relative w-36 aspect-[3/4] rounded-lg border-2 border-dashed border-gray-400 
-                        flex items-center justify-center cursor-pointer overflow-hidden bg-gray-50 transition">
-
-                        <!-- Preview -->
+                      flex items-center justify-center cursor-pointer overflow-hidden bg-gray-50 transition">
                         <img id="preview_foto_perawat" src="" alt="Preview Foto"
                             class="hidden w-full h-full object-cover">
-
-                        <!-- Placeholder -->
                         <div id="placeholder_foto_perawat"
                             class="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
                             upload profile
                         </div>
-
-                        <!-- Input File -->
                         <input type="file" name="foto_perawat" id="foto_perawat" accept="image/*"
                             class="absolute inset-0 opacity-0 cursor-pointer" required>
                     </div>
@@ -100,18 +96,18 @@
                             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Username</label>
                         <input type="text" name="username_perawat" id="username_perawat"
                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
-                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                          focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                             placeholder="Username" required>
                         <div id="username_perawat-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
 
-                    {{-- Nama Apoteker --}}
+                    {{-- Nama Perawat --}}
                     <div>
                         <label for="nama_perawat"
                             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama Perawat</label>
                         <input type="text" name="nama_perawat" id="nama_perawat"
                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500
-                            w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                          w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                             placeholder="Nama Perawat" required>
                         <div id="nama_perawat-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
@@ -122,7 +118,7 @@
                             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
                         <input type="email" name="email_perawat" id="email_perawat"
                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500
-                            w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                          w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                             placeholder="perawat@example.com" required>
                         <div id="email_perawat-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
@@ -130,31 +126,53 @@
                     {{-- No HP --}}
                     <div>
                         <label for="no_hp_perawat"
-                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">No
-                            HP</label>
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">No HP</label>
                         <input type="text" name="no_hp_perawat" id="no_hp_perawat"
                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500
-                            w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                          w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                             placeholder="0812xxxxxxxx" required>
                         <div id="no_hp_perawat-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- Dokter (TomSelect single) --}}
+                    <div>
+                        <label for="add_dokter_select"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Dokter</label>
+                        <select id="add_dokter_select" name="dokter_id"
+                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                           focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="Cari & pilih dokter…">
+                            <!-- TomSelect inject -->
+                        </select>
+                        <div id="dokter_id-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- Poli (TomSelect single, muncul setelah pilih dokter) --}}
+                    <div id="group_poli_add" class="hidden">
+                        <label for="add_poli_select"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Poli</label>
+                        <select id="add_poli_select" name="poli_id"
+                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                           focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="Cari & pilih poli…">
+                            <!-- TomSelect inject -->
+                        </select>
+                        <div id="poli_id-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
                 </div>
 
                 {{-- Password --}}
                 <div class="pt-2 border-t border-gray-200 dark:border-gray-600">
-                    {{-- Password Baru --}}
                     <div>
                         <label for="password_perawat"
-                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password
-                            </_apotekerlabel>
-                            <input type="password" name="password_perawat" id="password_perawat"
-                                class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
-                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                                placeholder="••••••••" required>
-                            <div id="password_perawat-error" class="text-red-600 text-sm mt-1"></div>
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password</label>
+                        <input type="password" name="password_perawat" id="password_perawat"
+                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
+                          focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="••••••••" required>
+                        <div id="password_perawat-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
 
-                    {{-- Konfirmasi Password --}}
                     <div>
                         <label for="password_perawat_confirmation"
                             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Konfirmasi
@@ -162,7 +180,7 @@
                         <input type="password" name="password_perawat_confirmation"
                             id="password_perawat_confirmation"
                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
-                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                          focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                             placeholder="••••••••" required
                             oninput="this.setCustomValidity(this.value !== password_perawat.value ? 'Password tidak sama!' : '')">
                         <div id="password_perawat_confirmation-error" class="text-red-600 text-sm mt-1"></div>
@@ -173,13 +191,13 @@
                 <div class="flex justify-end gap-3 mt-5 border-t border-gray-200 pt-4 dark:border-gray-600">
                     <button type="button" id="closeAddPerawatModal"
                         class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg
-                        hover:bg-gray-300 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500">
+                         hover:bg-gray-300 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500">
                         Close
                     </button>
                     <button type="submit"
                         class="px-5 py-2.5 text-sm font-medium text-white bg-blue-700 rounded-lg hover:bg-blue-800
-                        focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700
-                        dark:focus:ring-blue-800">
+                         focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700
+                         dark:focus:ring-blue-800">
                         Save
                     </button>
                 </div>
@@ -187,6 +205,7 @@
         </div>
     </div>
 </div>
+
 
 
 {{-- Modal Edit Perawat --}}
@@ -212,19 +231,13 @@
                 <div class="col-span-full flex justify-center">
                     <div id="edit_foto_drop_area_perawat"
                         class="relative w-36 aspect-[3/4] rounded-lg border-2 border-dashed border-gray-400 
-                        flex items-center justify-center cursor-pointer overflow-hidden bg-gray-50 transition">
-
-                        <!-- Preview -->
+                      flex items-center justify-center cursor-pointer overflow-hidden bg-gray-50 transition">
                         <img id="edit_preview_foto_perawat" src="" alt="Preview Foto"
                             class="hidden w-full h-full object-cover">
-
-                        <!-- Placeholder -->
                         <div id="edit_placeholder_foto_perawat"
                             class="absolute inset-0 flex items-center justify-center text-gray-400 text-sm">
                             upload profile
                         </div>
-
-                        <!-- Input File -->
                         <input type="file" name="edit_foto_perawat" id="edit_foto_perawat" accept="image/*"
                             class="absolute inset-0 opacity-0 cursor-pointer">
                     </div>
@@ -233,25 +246,24 @@
 
                 <!-- Grid Form -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
                     {{-- Username --}}
                     <div>
                         <label for="edit_username_perawat"
                             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Username</label>
                         <input type="text" name="edit_username_perawat" id="edit_username_perawat"
                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
-                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                          focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                             placeholder="Username" required>
-                        <div id="edit_username-error" class="text-red-600 text-sm mt-1"></div>
+                        <div id="edit_username_perawat-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
 
-                    {{-- Nama --}}
+                    {{-- Nama Perawat --}}
                     <div>
                         <label for="edit_nama_perawat"
                             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama Perawat</label>
                         <input type="text" name="edit_nama_perawat" id="edit_nama_perawat"
                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500
-                            w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                          w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                             placeholder="Nama Perawat" required>
                         <div id="edit_nama_perawat-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
@@ -262,7 +274,7 @@
                             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Email</label>
                         <input type="email" name="edit_email_perawat" id="edit_email_perawat"
                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500
-                            w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                          w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                             placeholder="perawat@example.com" required>
                         <div id="edit_email_perawat-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
@@ -273,27 +285,56 @@
                             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">No HP</label>
                         <input type="text" name="edit_no_hp_perawat" id="edit_no_hp_perawat"
                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500
-                            w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                          w-full p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                             placeholder="081234567890" required>
                         <div id="edit_no_hp_perawat-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- DOKTER (search) --}}
+                    <div>
+                        <label for="edit_dokter_select"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                            Dokter
+                        </label>
+
+                        <select id="edit_dokter_select" name="edit_dokter_id"
+                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                 focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="Cari & pilih dokter…">
+                            <!-- TomSelect akan mengisi async -->
+                        </select>
+                        <div id="edit_dokter_id-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- POLI (hidden dulu; muncul setelah dokter dipilih) --}}
+                    <div id="group_poli_edit" class="hidden">
+                        <label for="edit_poli_select"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
+                            Poli
+                        </label>
+
+                        <select id="edit_poli_select" name="edit_poli_id"
+                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                 focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="Cari & pilih poli…">
+                            <!-- TomSelect akan mengisi async sesuai dokter -->
+                        </select>
+                        <div id="edit_poli_id-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
                 </div>
 
                 {{-- Password (Opsional) --}}
                 <div class="pt-2 border-t border-gray-200 dark:border-gray-600">
-
-                    {{-- Password baru --}}
                     <div>
                         <label for="edit_password_perawat"
                             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Password Baru</label>
                         <input type="password" name="edit_password_perawat" id="edit_password_perawat"
                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
-                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                          focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                             placeholder="••••••••">
                         <div id="edit_password_perawat-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
 
-                    {{-- Konfirmasi Password --}}
                     <div>
                         <label for="edit_password_perawat_confirmation"
                             class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Konfirmasi
@@ -301,7 +342,7 @@
                         <input type="password" name="edit_password_perawat_confirmation"
                             id="edit_password_perawat_confirmation"
                             class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
-                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                          focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                             placeholder="••••••••">
                         <div id="edit_password_perawat_confirmation-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
@@ -311,13 +352,13 @@
                 <div class="flex justify-end gap-3 mt-5 border-t border-gray-200 pt-4 dark:border-gray-600">
                     <button type="button" id="closeEditPerawatModal"
                         class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg
-                        hover:bg-gray-300 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500">
+                         hover:bg-gray-300 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500">
                         Close
                     </button>
                     <button type="submit"
                         class="px-5 py-2.5 text-sm font-medium text-white bg-blue-700 rounded-lg hover:bg-blue-800
-                        focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700
-                        dark:focus:ring-blue-800">
+                         focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700
+                         dark:focus:ring-blue-800">
                         Save
                     </button>
                 </div>
@@ -325,5 +366,6 @@
         </div>
     </div>
 </div>
+
 
 @vite(['resources/js/admin/manajemenPengguna/data_perawat.js'])
