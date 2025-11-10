@@ -590,7 +590,7 @@
                                 title: 'Berhasil!',
                                 text: data.message || 'Bukti transfer terkirim.'
                             });
-                            window.location.href = "{{ route('kasir.index') }}";
+                            window.location.href = "{{ route('kasir.pembayaran') }}";
                         } else {
                             Swal.fire({
                                 icon: 'error',
