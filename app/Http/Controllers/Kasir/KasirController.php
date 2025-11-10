@@ -235,7 +235,6 @@ class KasirController extends Controller
         ]);
     }
 
-
     public function getDataPembayaran()
     {
         $dataPembayaran = Pembayaran::with([

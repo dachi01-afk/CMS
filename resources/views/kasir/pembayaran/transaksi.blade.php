@@ -46,13 +46,14 @@
                     <div class="relative overflow-x-auto border-b border-gray-200 dark:border-gray-800">
                         <table class="w-full text-left font-medium text-gray-900 dark:text-white md:table-fixed">
                             <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
-                                @foreach ($dataPembayaran->emr->resep->obat as $o)
+                                {{-- Resep Obat (optional) --}}
+                                @foreach (data_get($dataPembayaran, 'emr.resep.obat', []) as $o)
                                     <tr>
                                         <td class="whitespace-nowrap py-4 md:w-[384px]">
                                             <label>{{ $o->nama_obat }}</label>
                                         </td>
                                         <td class="p-4 text-base font-normal text-gray-900 dark:text-white">
-                                            x{{ $o->pivot->jumlah }}
+                                            x{{ $o->pivot->jumlah ?? 1 }}
                                         </td>
                                         <td class="p-4 text-right text-base font-bold text-gray-900 dark:text-white">
                                             Rp{{ number_format(($o->total_harga ?? 0) * ($o->pivot->jumlah ?? 1), 0, ',', '.') }}
@@ -60,13 +61,23 @@
                                     </tr>
                                 @endforeach
 
+                                {{-- Jika tidak ada resep, bisa tampilkan baris info (opsional) --}}
+                                @if (empty(data_get($dataPembayaran, 'emr.resep.obat')))
+                                    <tr>
+                                        <td class="py-4 text-sm text-gray-500 dark:text-gray-400" colspan="3">
+                                            Tidak ada resep untuk kunjungan ini.
+                                        </td>
+                                    </tr>
+                                @endif
+
+                                {{-- Layanan (punya data) --}}
                                 @foreach ($dataPembayaran->emr->kunjungan->layanan as $l)
                                     <tr>
                                         <td class="whitespace-nowrap py-4 md:w-[384px]">
                                             <label>{{ $l->nama_layanan }}</label>
                                         </td>
                                         <td class="p-4 text-base font-normal text-gray-900 dark:text-white">
-                                            x{{ $l->pivot->jumlah }}
+                                            x{{ $l->pivot->jumlah ?? 1 }}
                                         </td>
                                         <td class="p-4 text-right text-base font-bold text-gray-900 dark:text-white">
                                             Rp{{ number_format(($l->harga_layanan ?? 0) * ($l->pivot->jumlah ?? 1), 0, ',', '.') }}
