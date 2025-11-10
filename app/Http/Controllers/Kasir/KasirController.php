@@ -466,7 +466,7 @@ HTML;
 
             // Action
             ->addColumn('action', function ($p) {
-                $url = route('kasir.show.kwitansi', ['kodeTransaksi' => $p->kode_transaksi]);
+                $url = route('show.kwitansi', ['kodeTransaksi' => $p->kode_transaksi]);
                 $urlEsc = e($url);
                 return '<button class="cetakKuitansi text-blue-600 hover:text-blue-800" data-url="' . $urlEsc . '" title="Cetak Kwitansi"><i class="fa-solid fa-print"></i> Cetak Kwitansi</button>';
             })
