@@ -65,6 +65,9 @@ export default defineConfig({
 
                 // Role Perawat
                 "resources/js/perawat/dashboard.js",
+
+                // Role Farmasi
+                "resources/js/farmasi/dashboard.js",
             ],
             refresh: true,
         }),
