@@ -38,6 +38,7 @@ use App\Http\Controllers\Farmasi\OrderObatController;
 use App\Http\Controllers\Farmasi\PengambilanObatController as FarmasiPengambilanObatController;
 use App\Http\Controllers\Management\EMRController;
 use App\Http\Controllers\Kasir\RiwayatTransaksiController;
+use App\Http\Controllers\Perawat\KunjunganController;
 use App\Http\Controllers\Perawat\PerawatController;
 
 // Rest of your web routes remain the same...
@@ -303,7 +304,7 @@ Route::middleware(['auth', 'role:Kasir'])->group(function () {
         Route::get('/pembayaran', [KasirController::class, 'index'])->name('kasir.pembayaran');
 
         Route::get('/get-data-pembayaran', [KasirController::class, 'getDataPembayaran'])->name('get.data.pembayaran');
-        Route::get('/transaksi/{kode_transaksi}', [KasirController::class, 'transaksi'])->name('transaksi');
+        Route::get('/transaksi/{kode_transaksi}', [KasirController::class, 'transaksi'])->name('kasir.transaksi');
         Route::get('/kwitansi/{kodeTransaksi}', [KasirController::class, 'showKwitansi'])->name('show.kwitansi');
 
         Route::post('/pembayaran-cash', [KasirController::class, 'transaksiCash'])->name('kasir.pembayaran.cash');
@@ -330,6 +331,14 @@ Route::middleware(['auth', 'role:Kasir'])->group(function () {
         // Riwayat Transaksi 
         Route::get('/riwayat-transaksi', [RiwayatTransaksiController::class, 'index'])->name('kasir.riwayat.transaksi');
         Route::get('/get-data-riwayat-pembayaran', [KasirController::class, 'getDataRiwayatPembayaran'])->name('get.data.riwayat.pembayaran');
+    });
+});
+
+Route::middleware(['auth', 'role:Perawat'])->group(function () {
+    Route::prefix('perawat')->group(function () {
+        Route::get('/dashboard', [PerawatController::class, 'dashboard'])->name('perawat.dashboard');
+
+        Route::get('/kunjungan', [KunjunganController::class, 'index'])->name('perawat.kunjungan');
     });
 });
 

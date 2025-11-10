@@ -39,6 +39,7 @@
                     <th class="px-6 py-3">Email Akun</th>
                     <th class="px-6 py-3">Role</th>
                     <th class="px-6 py-3">Alamat</th>
+                    <th class="px-6 py-3">No Hp Pasien</th>
                     <th class="px-6 py-3">Tanggal Lahir</th>
                     <th class="px-6 py-3">Jenis Kelamin</th>
                     <th class="px-6 py-3">Nomor EMR</th>

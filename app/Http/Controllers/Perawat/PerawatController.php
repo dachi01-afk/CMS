@@ -12,6 +12,11 @@ use Intervention\Image\Laravel\Facades\Image;
 
 class PerawatController extends Controller
 {
+    public function dashboard()
+    {
+        return view('perawat.dashboard');
+    }
+
     public function createPerawat(Request $request)
     {
         try {

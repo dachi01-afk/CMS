@@ -33,6 +33,7 @@ $(function () {
             { data: "email_user", name: "email_user" },
             { data: "role", name: "role" },
             { data: "alamat", name: "alamat" },
+            { data: "no_hp_pasien", name: "no_hp_pasien" },
             { data: "tanggal_lahir", name: "tanggal_lahir" },
             { data: "jenis_kelamin", name: "jenis_kelamin" },
             { data: "no_emr", name: "no_emr" },
