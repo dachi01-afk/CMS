@@ -62,6 +62,9 @@ export default defineConfig({
 
                 // Riwyat Transaksi Obat
                 "resources/js/kasir/pembayaran/riwayat-transaksi-obat.js",
+
+                // Role Perawat
+                "resources/js/perawat/dashboard.js",
             ],
             refresh: true,
         }),
