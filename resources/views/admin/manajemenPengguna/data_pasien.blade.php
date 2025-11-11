@@ -59,7 +59,7 @@
 <!-- Modal Add Pasien -->
 <div id="addPasienModal" aria-hidden="true"
     class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 bg-black bg-opacity-50">
-    <div class="relative w-full max-w-xl max-h-full">
+    <div class="relative w-full max-w-3xl max-h-full">
         <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700 flex flex-col">
 
             <!-- Header -->
@@ -133,6 +133,17 @@
                             focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                             placeholder="Alamat Lengkap" required>
                         <div id="alamat_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- No. HP Pasien --}}
+                    <div>
+                        <label for="no_hp_pasien"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">No HP Pasien</label>
+                        <input type="text" name="no_hp_pasien" id="no_hp_pasien"
+                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                            focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="0812xxxxxxxx" required>
+                        <div id="no_hp_pasien-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
 
                     {{-- Password --}}
@@ -209,7 +220,7 @@
 <!-- Modal Edit Pasien -->
 <div id="editPasienModal" aria-hidden="true"
     class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 bg-black bg-opacity-50">
-    <div class="relative w-full max-w-xl max-h-[90vh]">
+    <div class="relative w-full max-w-3xl max-h-full">
         <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700 flex flex-col h-full">
 
             <!-- Header -->
@@ -288,6 +299,17 @@
                             focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                             required>
                         <div id="edit_alamat_pasien-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
+                    {{-- No. HP Pasien --}}
+                    <div>
+                        <label for="edit_no_hp_pasien"
+                            class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">No HP Pasien</label>
+                        <input type="text" name="edit_no_hp_pasien" id="edit_no_hp_pasien"
+                            class="w-full bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                            focus:ring-blue-500 focus:border-blue-500 p-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
+                            placeholder="0812xxxxxxxx" required>
+                        <div id="edit_no_hp_pasien-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
 
                     {{-- Password --}}

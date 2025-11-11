@@ -30,6 +30,7 @@ class PasienController extends Controller
             'password_pasien'       => 'required|string|min:8|confirmed',
             'tanggal_lahir_pasien'  => 'nullable|date',
             'jenis_kelamin_pasien'  => 'nullable|in:Laki-laki,Perempuan',
+            'no_hp_pasien'          => 'nullable|string|max:20',
         ]);
 
         // ✅ Ambil nomor EMR terakhir dari database
@@ -84,6 +85,7 @@ class PasienController extends Controller
             'alamat'        => $request->alamat_pasien,
             'tanggal_lahir' => $request->tanggal_lahir_pasien,
             'jenis_kelamin' => $request->jenis_kelamin_pasien,
+            'no_hp_pasien'  => $request->no_hp_pasien,
         ]);
 
         return response()->json([
@@ -113,6 +115,7 @@ class PasienController extends Controller
             'edit_tanggal_lahir_pasien' => 'nullable|date',
             'edit_jenis_kelamin_pasien' => 'nullable|in:Laki-laki,Perempuan',
             'edit_password_pasien'      => 'nullable|string|min:8|confirmed',
+            'edit_no_hp_dokter'         => 'nullable|string|max:20',
         ]);
 
         // ✅ Jika pasien belum punya no_emr, buatkan otomatis
@@ -173,6 +176,7 @@ class PasienController extends Controller
             'alamat'        => $request->edit_alamat_pasien,
             'tanggal_lahir' => $request->edit_tanggal_lahir_pasien,
             'jenis_kelamin' => $request->edit_jenis_kelamin_pasien,
+            'no_hp_pasien'  => $request->edit_no_hp_pasien,
         ];
 
         if ($fotoPath) {

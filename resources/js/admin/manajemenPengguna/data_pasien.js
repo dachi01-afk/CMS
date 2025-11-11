@@ -247,6 +247,7 @@ $(function () {
                 $("#edit_alamat_pasien").val(pasien.alamat);
                 $("#edit_tanggal_lahir_pasien").val(pasien.tanggal_lahir);
                 $("#edit_jenis_kelamin_pasien").val(pasien.jenis_kelamin);
+                $("#edit_no_hp_pasien").val(pasien.no_hp_pasien);
 
                 // Tampilkan foto existing jika ada
                 if (pasien.foto_pasien) {
