@@ -119,12 +119,12 @@
                     <x-mycomponents.sidebar_link href="kasir.riwayat.transaksi"
                         class="fa-solid fa-file-invoice text-blue-600" :active="Request::routeIs('kasir.riwayat.transaksi')">
                         Riwayat Transaksi
-                    </x-mycomponents.sidebar_link>
+                    </x-mycomponents.sidebar_link> --}}
 
                     <hr class="my-4 border-gray-300">
                     <x-mycomponents.sidebar_link href="settings.index" class="fa-solid fa-gear">
                         Settings
-                    </x-mycomponents.sidebar_link> --}}
+                    </x-mycomponents.sidebar_link>
                 </ul>
             </div>
         </aside>

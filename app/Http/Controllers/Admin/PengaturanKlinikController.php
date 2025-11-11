@@ -40,52 +40,61 @@ class PengaturanKlinikController extends Controller
             ->make(true);
     }
 
-    public function dataJadwalDokter()
+    public function dataJadwalDokter(Request $request)
     {
-        // Ambil hanya yang diperlukan: dokter (nama), poli langsung dari kolom poli_id,
-        // serta fallback via dokter_poli.poli kalau suatu saat poli_id null.
         $query = JadwalDokter::with([
             'dokter:id,nama_dokter',
-            'poli:id,nama_poli',                 // from jadwal_dokter.poli_id
-            'dokterPoli.poli:id,nama_poli',      // fallback via pivot
-        ])->latest();
+            'poli:id,nama_poli',
+            'dokterPoli.poli:id,nama_poli',
+        ])->latest(); 
 
         return DataTables::eloquent($query)
             ->addIndexColumn()
-
-            // Nama Dokter
             ->addColumn('nama_dokter', fn($jd) => $jd->dokter->nama_dokter ?? '-')
-
-            // Nama Poli — hanya SATU (spesifik baris jadwal)
             ->addColumn('nama_poli', function ($jd) {
-                $namaPoli =
-                    ($jd->poli->nama_poli ?? null)                                       // direct FK
-                    ?? optional(optional($jd->dokterPoli)->poli)->nama_poli               // via pivot
+                $namaPoli = ($jd->poli->nama_poli ?? null)
+                    ?? optional(optional($jd->dokterPoli)->poli)->nama_poli
                     ?? '-';
-
-                if ($namaPoli === '-') return $namaPoli;
-
-                return '<span class="inline-block px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md">'
-                    . e($namaPoli) .
-                    '</span>';
+                return $namaPoli === '-' ? $namaPoli
+                    : '<span class="inline-block px-2 py-1 text-xs font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-md">'
+                    . e($namaPoli) . '</span>';
             })
-
-            // Hari
             ->addColumn('hari_formatted', fn($jd) => is_array($jd->hari) ? implode(', ', $jd->hari) : ($jd->hari ?? '-'))
-
-            // Jam
             ->editColumn('jam_awal',    fn($jd) => $jd->jam_awal    ? substr($jd->jam_awal, 0, 5)    : '-')
             ->editColumn('jam_selesai', fn($jd) => $jd->jam_selesai ? substr($jd->jam_selesai, 0, 5) : '-')
 
-            // Aksi
+            // ====== custom global search utk kolom relasi/format ======
+            ->filter(function ($q) use ($request) {
+                $search = strtolower($request->input('search.value', ''));
+                if ($search === '') return;
+
+                $q->where(function ($qq) use ($search) {
+                    $qq->orWhereRaw('LOWER(jadwal_dokter.jam_awal) LIKE ?', ["%{$search}%"])
+                        ->orWhereRaw('LOWER(jadwal_dokter.jam_selesai) LIKE ?', ["%{$search}%"])
+                        // jika kolom hari disimpan sebagai string:
+                        ->orWhereRaw('LOWER(jadwal_dokter.hari) LIKE ?', ["%{$search}%"])
+                        // relasi dokter
+                        ->orWhereHas('dokter', function ($d) use ($search) {
+                            $d->whereRaw('LOWER(nama_dokter) LIKE ?', ["%{$search}%"]);
+                        })
+                        // relasi poli langsung
+                        ->orWhereHas('poli', function ($p) use ($search) {
+                            $p->whereRaw('LOWER(nama_poli) LIKE ?', ["%{$search}%"]);
+                        })
+                        // fallback via pivot
+                        ->orWhereHas('dokterPoli.poli', function ($p) use ($search) {
+                            $p->whereRaw('LOWER(nama_poli) LIKE ?', ["%{$search}%"]);
+                        });
+                });
+            })
             ->addColumn('action', function ($jd) {
                 return '
-            <button class="btn-edit-jadwal text-blue-600 hover:text-blue-800 mr-2" data-id="' . $jd->id . '" title="Edit">
-                <i class="fa-regular fa-pen-to-square text-lg"></i>
-            </button>
-            <button class="btn-delete-jadwal text-red-600 hover:text-red-800" data-id="' . $jd->id . '" title="Hapus">
-                <i class="fa-regular fa-trash-can text-lg"></i>
-            </button>';
+                <button class="btn-edit-jadwal text-blue-600 hover:text-blue-800 mr-2" data-id="' . $jd->id . '" title="Edit">
+                    <i class="fa-regular fa-pen-to-square text-lg"></i>
+                </button>
+                <button class="btn-delete-jadwal text-red-600 hover:text-red-800" data-id="' . $jd->id . '" title="Hapus">
+                    <i class="fa-regular fa-trash-can text-lg"></i>
+                </button>';
             })
             ->rawColumns(['nama_poli', 'action'])
             ->make(true);
@@ -96,7 +105,7 @@ class PengaturanKlinikController extends Controller
         $q = trim((string) $request->query('q', ''));
 
         // Ambil poli yang dimiliki dokter dari tabel pivot dokter_poli
-        $polis = DB::table('dokter_poli')
+        $poli = DB::table('dokter_poli')
             ->join('poli', 'poli.id', '=', 'dokter_poli.poli_id')
             ->where('dokter_poli.dokter_id', $dokterId)
             ->when($q !== '', function ($query) use ($q) {
@@ -108,6 +117,6 @@ class PengaturanKlinikController extends Controller
             ->get();
 
         // Selalu 200 + array (biar frontendmu gampang handle)
-        return response()->json($polis, 200);
+        return response()->json($poli, 200);
     }
 }

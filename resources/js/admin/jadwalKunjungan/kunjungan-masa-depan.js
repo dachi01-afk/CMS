@@ -73,7 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 );
                 const detail = await res.json();
 
-                console.log(detail); // cek dulu di console datanya muncul
+                // console.log(detail); // cek dulu di console datanya muncul
 
                 // lalu tampilkan di modal atau alert dulu
                 Swal.fire({

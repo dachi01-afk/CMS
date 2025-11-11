@@ -21,9 +21,9 @@ $(function () {
                 orderable: false,
                 searchable: false,
             },
-            { data: "nama_dokter", name: "dokter" },
-            { data: "nama_poli", name: "nama_poli" },
-            { data: "hari_formatted", name: "hari" },
+            { data: "nama_dokter", name: "nama_dokter", searchable: false }, // relasi -> non-searchable
+            { data: "nama_poli", name: "nama_poli", searchable: false }, // relasi -> non-searchable
+            { data: "hari_formatted", name: "hari", searchable: false }, // value format -> non-searchable
             { data: "jam_awal", name: "jam_awal" },
             { data: "jam_selesai", name: "jam_selesai" },
             {

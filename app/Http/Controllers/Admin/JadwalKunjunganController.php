@@ -9,6 +9,7 @@ use App\Models\JadwalDokter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -17,13 +18,15 @@ use Illuminate\Validation\ValidationException;
 
 class JadwalKunjunganController extends Controller
 {
-
     public function index()
     {
         $tz  = config('app.timezone', 'Asia/Jakarta');
-        $now = Carbon::now($tz);
+        $now = CarbonImmutable::now($tz); // pakai immutable agar tidak termutasi
 
-        $hariIni = ucfirst(Str::of($now->locale('id')->dayName)->lower());
+        // Nama hari versi Indonesia & English (lowercase), untuk jaga-jaga DB pakai salah satunya
+        $hariId = Str::of($now->locale('id')->isoFormat('dddd'))->lower()->toString(); // contoh: "senin"
+        $hariEn = Str::of($now->locale('en')->isoFormat('dddd'))->lower()->toString(); // contoh: "monday"
+
         $tanggalHariIni = $now->toDateString();
         $jamSekarang    = $now->format('H:i:s');
 
@@ -38,14 +41,18 @@ class JadwalKunjunganController extends Controller
         ];
 
         // --- JADWAL HARI INI (yang masih berlangsung / belum lewat) ---
+        // Robust: TRIM + LOWER dan whereIn untuk cover ID/EN
         $jadwalHariIni = JadwalDokter::query()
             ->with([
                 'dokter:id,nama_dokter,jenis_spesialis_id',
                 'dokter.jenisSpesialis:id,nama_spesialis',
                 'poli:id,nama_poli',
             ])
-            ->whereRaw('LOWER(hari) = ?', [Str::of($hariIni)->lower()])
-            ->where('jam_selesai', '>', $jamSekarang)
+            // Cocokkan "hari" secara robust: trim + lower, cover ID & EN
+            ->where(function ($q) use ($hariId, $hariEn) {
+                $q->whereRaw('LOWER(TRIM(hari)) = ?', [$hariId])
+                    ->orWhereRaw('LOWER(TRIM(hari)) = ?', [$hariEn]);
+            })
             ->orderBy('jam_awal')
             ->get();
 
@@ -60,29 +67,35 @@ class JadwalKunjunganController extends Controller
 
         $jadwalYangAkanDatang = $jadwalSemua
             ->map(function ($jd) use ($now, $mapHari) {
-                $hariIndo = Str::of($jd->hari)->lower()->toString();
-                $hariEng  = $mapHari[$hariIndo] ?? null;
+                $hariIndo = Str::of($jd->hari ?? '')->trim()->lower()->toString();
+
+                // Normalisasi: kalau DB pakai English, konversi dulu ke Indo
+                // (kita tetap pakai $mapHari yang ID->EN; untuk EN->EN langsung pakai nilai EN)
+                $hariEng = $mapHari[$hariIndo] ?? $hariIndo; // jika sudah english, biarkan
 
                 if (!$hariEng) {
                     $jd->setAttribute('tanggal_berikutnya', null);
                     return $jd;
                 }
 
-                // tentukan tanggal target minggu ini
-                $target = Carbon::parse("this {$hariEng}", $now->timezone);
+                // target hari di minggu ini berdasarkan timezone
+                $target = CarbonImmutable::parse("this {$hariEng}", $now->timezone);
 
-                // kalau hari target sudah lewat → next week
+                // Jika target < awal hari ini => geser ke minggu depan
                 if ($target->lt($now->startOfDay())) {
-                    $target->addWeek();
+                    $target = $target->addWeek();
                 }
 
-                // kalau hari ini tapi jam_selesai sudah lewat → next week juga
+                // Jika target sama dengan hari ini, tapi jam selesai sudah lewat => minggu depan
                 if ($target->isSameDay($now)) {
-                    $jamSelesai = Carbon::createFromFormat('H:i:s', $jd->jam_selesai, $now->timezone);
-                    $jamNow     = Carbon::createFromFormat('H:i:s', $now->format('H:i:s'), $now->timezone);
-
-                    if ($jamSelesai->lte($jamNow)) {
-                        $target->addWeek();
+                    try {
+                        $jamSelesai = CarbonImmutable::createFromFormat('H:i:s', (string) $jd->jam_selesai, $now->timezone);
+                        $jamNow     = CarbonImmutable::createFromFormat('H:i:s', $now->format('H:i:s'), $now->timezone);
+                        if ($jamSelesai->lte($jamNow)) {
+                            $target = $target->addWeek();
+                        }
+                    } catch (\Exception $e) {
+                        // jika format jam tidak valid, fallback: tetap pakai target minggu ini
                     }
                 }
 
@@ -96,6 +109,9 @@ class JadwalKunjunganController extends Controller
             ])
             ->values();
 
+        // Simpan nama hari (rapi) untuk tampilan
+        $hariIni = ucfirst($hariId); // "Senin", "Selasa", dst (dari versi Indonesia)
+
         return view('admin.jadwal_kunjungan', compact(
             'jadwalHariIni',
             'hariIni',
@@ -103,6 +119,7 @@ class JadwalKunjunganController extends Controller
             'tanggalHariIni'
         ));
     }
+
 
 
 

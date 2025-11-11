@@ -341,7 +341,13 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
         Route::get('/dashboard', [PerawatController::class, 'dashboard'])->name('perawat.dashboard');
 
         Route::get('/kunjungan', [KunjunganController::class, 'index'])->name('perawat.kunjungan');
+        Route::get('/getDataKunjunganHariIni', [KunjunganController::class, 'getDataKunjunganHariIni'])->name('perawat.get.data.kunjungan.hari.ini');
     });
+});
+
+Route::get('/halo', function () {
+    $nama = 'David Sebastian';
+    return view('testing', compact('nama'));
 });
 
 Route::get('/login-dokter', [AuthController::class, 'login'])->name('login.dokter');

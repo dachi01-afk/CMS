@@ -270,7 +270,7 @@ class PerawatController extends Controller
         }
     }
 
-    
+
     public function deletePerawat($id)
     {
         try {

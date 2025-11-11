@@ -2,32 +2,22 @@
 
 namespace Database\Seeders;
 
-use App\Models\Dokter;
+use App\Models\DokterPoli;
 use App\Models\JadwalDokter;
-use App\Models\Poli;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class JadwalDokterSeeder extends Seeder
 {
     public function run(): void
     {
-        // Pastikan minimal ada POLI & DOKTER (buat dummy bila kosong)
-        if (Poli::count() === 0) {
-            Poli::create(['nama_poli' => 'Poli Umum', 'keterangan' => 'Dummy']);
-        }
-        if (Dokter::count() === 0) {
-            Dokter::create([
-                'nama_dokter' => 'drg. Suniaty',
-                // kalau ada kolom spesialis / poli_id, sesuaikan:
-                // 'poli_id'     => Poli::value('id'),
-            ]);
-            Dokter::create(['nama_dokter' => 'dr. Andi Pratama']);
+        $rows = DokterPoli::select('id', 'dokter_id', 'poli_id')->get();
+        if ($rows->isEmpty()) {
+            $this->command?->warn('JadwalDokterSeeder: dokter_poli kosong. Jalankan DokterPoliSeeder dulu.');
+            return;
         }
 
-        $poliId  = Poli::value('id');
-        $dokters = Dokter::get();
-
-        $jadwal = [
+        $slots = [
             ['hari' => 'Senin',  'jam_awal' => '08:00:00', 'jam_selesai' => '12:00:00'],
             ['hari' => 'Selasa', 'jam_awal' => '08:00:00', 'jam_selesai' => '12:00:00'],
             ['hari' => 'Rabu',   'jam_awal' => '13:00:00', 'jam_selesai' => '16:00:00'],
@@ -36,18 +26,27 @@ class JadwalDokterSeeder extends Seeder
             ['hari' => 'Sabtu',  'jam_awal' => '09:00:00', 'jam_selesai' => '11:30:00'],
         ];
 
-        foreach ($dokters as $d) {
-            foreach ($jadwal as $j) {
-                JadwalDokter::firstOrCreate([
-                    'dokter_id'   => $d->id,
-                    'poli_id'     => $poliId,
-                    'hari'        => $j['hari'],
-                    'jam_awal'    => $j['jam_awal'],
-                    'jam_selesai' => $j['jam_selesai'],
-                ]);
+        DB::transaction(function () use ($rows, $slots) {
+            $count = 0;
+            foreach ($rows as $dp) {
+                foreach ($slots as $s) {
+                    JadwalDokter::updateOrCreate(
+                        [
+                            'dokter_poli_id' => $dp->id,
+                            'hari'           => $s['hari'],
+                            'jam_awal'       => $s['jam_awal'],
+                            'jam_selesai'    => $s['jam_selesai'],
+                        ],
+                        [
+                            // backup fields untuk kompatibilitas query lama
+                            'dokter_id' => $dp->dokter_id,
+                            'poli_id'   => $dp->poli_id,
+                        ]
+                    );
+                    $count++;
+                }
             }
-        }
-
-        $this->command?->info('JadwalDokterSeeder: jadwal per dokter dibuat.');
+            $this->command?->info("JadwalDokterSeeder: {$count} slot dibuat; semua FK diambil dari tabel relasi (dokter_poli).");
+        });
     }
 }

@@ -39,7 +39,7 @@ return new class extends Migration
                 ->cascadeOnDelete()
                 ->cascadeOnUpdate();
         });
-
+            
         // 4️⃣ (opsional) Unique slot
         try {
             Schema::table('jadwal_dokter', function (Blueprint $table) {

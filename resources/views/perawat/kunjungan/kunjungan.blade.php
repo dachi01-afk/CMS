@@ -8,7 +8,7 @@
                 <div class="flex items-center space-x-3">
                     <i class="fa-solid fa-user-check fa-2xl text-blue-600"></i>
                     <h1 class="text-3xl font-extrabold text-gray-900 leading-tight">
-                        kunjungan
+                        Kunjungan
                     </h1>
                 </div>
             </div>
@@ -24,10 +24,10 @@
             <ul class="flex flex-wrap -mb-px text-sm font-medium text-center whitespace-nowrap" id="default-tab"
                 data-tabs-toggle="#tab-content" role="tablist">
                 <li class="me-2" role="presentation">
-                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="kunjungan-tab"
-                        data-tabs-target="#data-kunjungan" type="button" role="tab" aria-controls="data-kunjungan"
-                        aria-selected="false">
-                        kunjungan
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="kunjungan-hari-ini-tab"
+                        data-tabs-target="#data-kunjungan-hari-ini" type="button" role="tab"
+                        aria-controls="data-kunjungan-hari-ini" aria-selected="false">
+                        Kunjungan Hari Ini
                     </button>
                 </li>
             </ul>
@@ -38,9 +38,9 @@
 
             {{-- Tabs Content --}}
             <div id="tab-content">
-                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-kunjungan" role="tabpanel"
-                    aria-labelledby="kunjungan-tab">
-                    @include('kasir.metode-pembayaran.data-metode-pembayaran')
+                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-kunjungan-hari-ini"
+                    role="tabpanel" aria-labelledby="kunjungan-hari-ini-tab">
+                    @include('perawat.kunjungan.data-kunjungan-hari-ini')
                 </div>
             </div>
         </div>
