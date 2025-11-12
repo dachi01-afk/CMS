@@ -48,6 +48,11 @@ class Kunjungan extends Model
         return $this->belongsTo(Pasien::class);
     }
 
+    public function jadwalDokter()
+    {
+        return $this->belongsTo(JadwalDokter::class);
+    }
+
     // Tambahkan relasi untuk EMR
     public function emr()
     {

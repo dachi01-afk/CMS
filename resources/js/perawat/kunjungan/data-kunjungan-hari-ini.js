@@ -80,13 +80,80 @@ document.addEventListener("DOMContentLoaded", () => {
             .catch((err) => setError(err.message));
     }
 
-    // Handler tombol "Proses"
-    document.addEventListener("click", (e) => {
+    // Handler tombol "Proses" → konfirmasi → update Waiting → Engaged
+    document.addEventListener("click", async (e) => {
         const btn = e.target.closest(".btn-proses");
         if (!btn) return;
+
         const id = btn.dataset.id;
-        // TODO: buka modal / redirect / panggil endpoint lain
-        console.log("Proses kunjungan:", id);
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content;
+
+        // Modal konfirmasi
+        const konfirmasi = await Swal.fire({
+            icon: "question",
+            title: "Mulai Konsultasi?",
+            html: `Status kunjungan akan diubah dari <b>Waiting</b> menjadi <b>Engaged</b>.`,
+            showCancelButton: true,
+            confirmButtonText: "Ya, lanjut",
+            cancelButtonText: "Batal",
+        });
+
+        if (!konfirmasi.isConfirmed) return;
+
+        // Disable tombol biar gak dobel klik
+        btn.disabled = true;
+
+        try {
+            const res = await fetch(
+                `/perawat/updateStatusKunjunganKeEngaged/${encodeURIComponent(
+                    id
+                )}`,
+                {
+                    method: "POST",
+                    headers: {
+                        "X-CSRF-TOKEN": csrf,
+                        Accept: "application/json",
+                    },
+                    credentials: "same-origin",
+                }
+            );
+
+            if (!res.ok) {
+                let msg = `HTTP ${res.status}`;
+                try {
+                    const j = await res.json();
+                    msg = j?.message || msg;
+                } catch {}
+                throw new Error(msg);
+            }
+
+            const result = await res.json();
+            if (result?.success) {
+                await Swal.fire({
+                    icon: "success",
+                    title: "Berhasil!",
+                    text: result?.message ?? "Status diubah menjadi Engaged.",
+                    timer: 1500,
+                    showConfirmButton: false,
+                });
+                // Refresh tabel
+                loadData();
+            } else {
+                Swal.fire({
+                    icon: "error",
+                    title: "Gagal!",
+                    text: result?.message ?? "Gagal mengubah status.",
+                });
+            }
+        } catch (err) {
+            Swal.fire({
+                icon: "error",
+                title: "Error",
+                text: err.message || "Tidak dapat terhubung ke server.",
+            });
+        } finally {
+            btn.disabled = false;
+        }
     });
 
     loadData();

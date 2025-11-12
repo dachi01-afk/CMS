@@ -25,4 +25,4 @@
     </div>
 </div>
 
-@vite(['resources/js/perawat/kunjungan/kunjungan-hari-ini.js'])
+@vite(['resources/js/perawat/kunjungan/data-kunjungan-hari-ini.js'])

@@ -288,14 +288,14 @@ class JadwalKunjunganController extends Controller
     {
         // Tanggal "hari ini" aman untuk kolom DATE dan DATETIME (UTC)
         $tz          = config('app.timezone', 'Asia/Jakarta');
-        $todayLocal  = \Carbon\Carbon::today($tz);
+        $todayLocal  = Carbon::today($tz);
         $endLocal    = $todayLocal->copy()->endOfDay();
         $startUtc    = $todayLocal->copy()->timezone('UTC');
         $endUtc      = $endLocal->copy()->timezone('UTC');
         $todayString = $todayLocal->toDateString();
 
         // Ambil kunjungan Pending hari ini + relasi
-        $kunjungan = \App\Models\Kunjungan::query()
+        $kunjungan = Kunjungan::query()
             ->with([
                 'pasien:id,nama_pasien',
                 'poli:id,nama_poli',
@@ -349,7 +349,7 @@ class JadwalKunjunganController extends Controller
                 }
             }
             if (!empty($ids)) {
-                $dokters2 = \DB::table('dokter')
+                $dokters2 = DB::table('dokter')
                     ->select('id', 'nama_dokter')
                     ->whereIn('id', array_values(array_unique($ids)))
                     ->get()
