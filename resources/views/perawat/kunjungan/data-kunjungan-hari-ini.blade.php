@@ -18,7 +18,7 @@
             </thead>
             <tbody id="waitingBody">
                 <tr>
-                    <td colspan="5" class="text-center text-gray-500 py-6 italic">Memuat data...</td>
+                    <td colspan="6" class="text-center text-gray-500 py-6 italic">Memuat data...</td>
                 </tr>
             </tbody>
         </table>

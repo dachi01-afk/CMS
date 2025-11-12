@@ -16,7 +16,6 @@ class KunjunganController extends Controller
         return view('perawat.kunjungan.kunjungan');
     }
 
-
     public function getDataKunjunganHariIni(Request $request)
     {
         $userId = Auth::id();
@@ -26,34 +25,44 @@ class KunjunganController extends Controller
             ->where('user_id', $userId)
             ->firstOrFail();
 
-        $today = Carbon::today()->toDateString();
+        if (empty($perawat->dokter_id) || empty($perawat->poli_id)) {
+            return response()->json(['data' => []]);
+        }
 
-        $q = Kunjungan::query()
+        $tz          = config('app.timezone', 'Asia/Jakarta');
+        $todayLocal  = Carbon::today($tz);
+        $endLocal    = $todayLocal->copy()->endOfDay();
+        $startUtc    = $todayLocal->copy()->timezone('UTC');
+        $endUtc      = $endLocal->copy()->timezone('UTC');
+        $todayString = $todayLocal->toDateString();
+
+        // Ambil nama dokter & poli via JOIN supaya pasti muncul
+        $rows = Kunjungan::query()
+            ->leftJoin('dokter', 'dokter.id', '=', 'kunjungan.dokter_id')
+            ->leftJoin('poli',   'poli.id',   '=', 'kunjungan.poli_id')
             ->with([
-                'pasien:id,nama_pasien',
-                'dokter:id,nama_dokter',
-                'poli:id,nama_poli',
+                'pasien:id,nama_pasien', // tetap eager load pasien
             ])
-            ->whereDate('tanggal_kunjungan', $today)
-            ->where('status', 'Engaged');   // <- HANYA Engaged
-
-        // filter sesuai relasi perawat yang login
-        if (!empty($perawat->dokter_id)) {
-            $q->where('dokter_id', $perawat->dokter_id);
-        }
-        if (!empty($perawat->poli_id)) {
-            $q->where('poli_id', $perawat->poli_id);
-        }
-
-        $rows = $q->orderBy('no_antrian')
-            ->get()
+            ->where(function ($q) use ($todayString, $startUtc, $endUtc) {
+                $q->whereDate('kunjungan.tanggal_kunjungan', $todayString)
+                    ->orWhereBetween('kunjungan.tanggal_kunjungan', [$startUtc, $endUtc]);
+            })
+            ->where('kunjungan.status', 'Waiting')
+            ->where('kunjungan.dokter_id', $perawat->dokter_id)
+            ->where('kunjungan.poli_id',   $perawat->poli_id)
+            ->orderBy('kunjungan.no_antrian')
+            ->get([
+                'kunjungan.*',
+                'dokter.nama_dokter as _nama_dokter',
+                'poli.nama_poli as _nama_poli',
+            ])
             ->map(function ($k) {
                 return [
                     'kunjungan_id' => $k->id,
                     'no_antrian'   => $k->no_antrian ?? '-',
                     'nama_pasien'  => $k->pasien->nama_pasien ?? '-',
-                    'dokter'       => $k->dokter->nama_dokter ?? '-',
-                    'poli'         => $k->poli->nama_poli ?? '-',
+                    'dokter'       => $k->_nama_dokter ?? '-', // ← pasti ada dari JOIN
+                    'poli'         => $k->_nama_poli ?? '-',
                     'keluhan'      => $k->keluhan_awal ?? '-',
                 ];
             });
