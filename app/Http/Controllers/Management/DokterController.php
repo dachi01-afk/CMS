@@ -109,7 +109,7 @@ class DokterController extends Controller
 
     public function getDokterById($id)
     {
-        $data = Dokter::with('user', 'poli')->findOrFail($id);
+        $data = Dokter::with('user')->findOrFail($id);
         return response()->json(['data' => $data]);
     }
 

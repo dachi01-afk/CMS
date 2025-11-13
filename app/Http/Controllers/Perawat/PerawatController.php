@@ -137,16 +137,16 @@ class PerawatController extends Controller
         return response()->json(['data' => $data]);
     }
 
-    public function listPoliByDokter(Request $request, $dokterId)
-    {
-        $q = $request->input('q', '');
-        $dokter = Dokter::with(['poli' => function ($w) use ($q) {
-            $w->select('poli.id', 'nama_poli')
-                ->when($q, fn($qq) => $qq->where('nama_poli', 'like', "%{$q}%"));
-        }])->findOrFail($dokterId);
+    // public function listPoliByDokter(Request $request, $dokterId)
+    // {
+    //     $q = $request->input('q', '');
+    //     $dokter = Dokter::with(['poli' => function ($w) use ($q) {
+    //         $w->select('poli.id', 'nama_poli')
+    //             ->when($q, fn($qq) => $qq->where('nama_poli', 'like', "%{$q}%"));
+    //     }])->findOrFail($dokterId);
 
-        return response()->json(['data' => $dokter->poli ?? []]);
-    }
+    //     return response()->json(['data' => $dokter->poli ?? []]);
+    // }
 
     public function updatePerawat(Request $request, $id)
     {

@@ -47,7 +47,13 @@ class ManajemenPenggunaController extends Controller
 
     public function dataDokter()
     {
-        $query = Dokter::with(['user', 'jenisSpesialis', 'poli'])->latest()->get();
+        $query = Dokter::with([
+            'user:id,username,email,role',
+            'jenisSpesialis:id,nama_spesialis',
+            'poli:id,nama_poli',
+        ])
+            ->latest()
+            ->get();
 
         return DataTables::of($query)
             ->addIndexColumn()
@@ -55,21 +61,17 @@ class ManajemenPenggunaController extends Controller
                 if ($row->foto_dokter) {
                     $url = asset('storage/' . $row->foto_dokter);
                     return '<img src="' . $url . '" alt="Foto Dokter" class="w-12 h-12 rounded-lg object-cover mx-auto shadow">';
-                } else {
-                    return '<span class="text-gray-400 italic">Tidak ada</span>';
                 }
+
+                return '<span class="text-gray-400 italic">Tidak ada</span>';
             })
             ->addColumn('username', fn($row) => $row->user->username ?? '-')
             ->addColumn('email_user', fn($row) => $row->user->email ?? '-')
             ->addColumn('role', fn($row) => $row->user->role ?? '-')
             ->addColumn('nama_spesialis', fn($row) => $row->jenisSpesialis->nama_spesialis ?? '-')
 
-            // 🔁 REVISI: tampilkan banyak poli sebagai badge
+            // 🔁 Tampilkan banyak poli sebagai badge (pakai relasi many-to-many)
             ->addColumn('nama_poli', function ($row) {
-                if (!$row->relationLoaded('poli')) {
-                    $row->load('poli:id,nama_poli');
-                }
-
                 if ($row->poli->isEmpty()) {
                     return '<div class="flex flex-wrap gap-1">
                     <span class="px-2 py-1 rounded-full bg-gray-100 text-gray-500 text-xs border border-gray-300">
@@ -80,14 +82,13 @@ class ManajemenPenggunaController extends Controller
 
                 $badges = $row->poli->map(function ($poli) {
                     return '<span class="px-2 py-1 rounded-full bg-blue-50 text-blue-700 text-xs border border-blue-200 
-                        hover:bg-blue-100 transition-colors">
-                    ' . e($poli->nama_poli) . '
-                </span>';
+                        hover:bg-blue-100 transition-colors">'
+                        . e($poli->nama_poli) .
+                        '</span>';
                 })->implode('');
 
                 return '<div class="flex flex-wrap gap-2">' . $badges . '</div>';
             })
-
 
             ->addColumn('action', function ($dokter) {
                 return '
@@ -102,6 +103,7 @@ class ManajemenPenggunaController extends Controller
             ->rawColumns(['foto', 'nama_poli', 'action'])
             ->make(true);
     }
+
 
     public function dataPasien()
     {

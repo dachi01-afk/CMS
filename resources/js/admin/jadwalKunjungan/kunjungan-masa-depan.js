@@ -16,8 +16,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const res = await fetch("/jadwal_kunjungan/masa-depan");
         const data = await res.json();
 
-        console.log(data);
-
         if (data.length === 0) {
             tbody.innerHTML = `<tr><td colspan="5" class="text-center py-6 text-gray-500 italic">Tidak ada kunjungan pending hari ini.</td></tr>`;
             return;
@@ -25,12 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         tbody.innerHTML = "";
         data.forEach((item) => {
-            const namaDokter =
-                (item.dokter_terpilih && item.dokter_terpilih.nama_dokter) ||
-                (item.poli &&
-                    item.poli.dokter &&
-                    item.poli.dokter.nama_dokter) ||
-                "-";
+            const namaDokter = item.dokter.nama_dokter || "-";
 
             const row = document.createElement("tr");
             row.className = "border-b hover:bg-indigo-50 transition";

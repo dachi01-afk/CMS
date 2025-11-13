@@ -14,7 +14,7 @@ class EMRSeeder extends Seeder
     {
         $faker = Faker::create('id_ID');
 
-        // Ambil 5 kunjungan acak (atau kurang jika data terbatas)
+        // Ambil beberapa kunjungan acak (bisa 5, bisa semua, terserah kamu)
         $kunjungans = Kunjungan::inRandomOrder()->take(5)->get();
 
         if ($kunjungans->isEmpty()) {
@@ -23,12 +23,24 @@ class EMRSeeder extends Seeder
         }
 
         foreach ($kunjungans as $k) {
+            // Kalau kamu mau pastikan 1 kunjungan cuma punya 1 EMR:
+            // $emrExisting = EMR::where('kunjungan_id', $k->id)->first();
+            // if ($emrExisting) continue;
+
             // Pastikan ada resep untuk kunjungan ini
             $resep = Resep::firstOrCreate(['kunjungan_id' => $k->id]);
 
             EMR::create([
-                'kunjungan_id'              => $k->id,
-                'resep_id'                  => $resep->id,
+                // relasi utama
+                'kunjungan_id' => $k->id,
+                'resep_id'     => $resep->id,
+
+                // 🔥 SNAPSHOT dari tabel kunjungan (sesuai konsep yang kau mau)
+                'pasien_id'    => $k->pasien_id,
+                'dokter_id'    => $k->dokter_id,
+                'poli_id'      => $k->poli_id,
+
+                // data klinis dummy
                 'keluhan_utama'             => $faker->sentence(10),
                 'riwayat_penyakit_dahulu'   => $faker->sentence(8),
                 'riwayat_penyakit_keluarga' => $faker->sentence(8),
@@ -41,6 +53,6 @@ class EMRSeeder extends Seeder
             ]);
         }
 
-        $this->command?->info('EMRSeeder: 5 record dibuat.');
+        $this->command?->info('EMRSeeder: EMR dummy dibuat dengan snapshot pasien/dokter/poli dari kunjungan.');
     }
 }

@@ -9,6 +9,7 @@ use App\Models\JadwalDokter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Models\Dokter;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
@@ -286,106 +287,27 @@ class JadwalKunjunganController extends Controller
 
     public function waiting()
     {
-        // Tanggal "hari ini" aman untuk kolom DATE dan DATETIME (UTC)
-        $tz          = config('app.timezone', 'Asia/Jakarta');
-        $todayLocal  = Carbon::today($tz);
-        $endLocal    = $todayLocal->copy()->endOfDay();
-        $startUtc    = $todayLocal->copy()->timezone('UTC');
-        $endUtc      = $endLocal->copy()->timezone('UTC');
-        $todayString = $todayLocal->toDateString();
+        $tz         = config('app.timezone', 'Asia/Jakarta');
+        $todayLocal = Carbon::today($tz);
+        $today      = $todayLocal->toDateString();
 
-        // Ambil kunjungan Pending hari ini + relasi
+        // Ambil KUNJUNGAN "Pending" untuk HARI INI
         $kunjungan = Kunjungan::query()
             ->with([
-                'pasien:id,nama_pasien',
-                'poli:id,nama_poli',
-                'dokter:id,nama_dokter', // eager load normal
+                'pasien',
+                'dokter',
+                'poli',
             ])
-            ->where(function ($q) use ($todayString, $startUtc, $endUtc) {
-                $q->whereDate('tanggal_kunjungan', $todayString)
-                    ->orWhereBetween('tanggal_kunjungan', [$startUtc, $endUtc]);
-            })
+            ->whereDate('tanggal_kunjungan', $today)
             ->where('status', 'Pending')
             ->orderByRaw('CAST(no_antrian AS UNSIGNED)')
             ->get();
 
-        // ========= Step A: dokter_id ADA tapi relasi 'dokter' NULL =========
-        $needFixById = $kunjungan->filter(function ($k) {
-            return !empty($k->dokter_id) && (!$k->relationLoaded('dokter') || is_null($k->dokter));
-        });
-
-        if ($needFixById->isNotEmpty()) {
-            $dokterIds = $needFixById->pluck('dokter_id')->unique()->values()->all();
-
-            // Kalau model Dokter pakai SoftDeletes, tambahkan ->withTrashed() di query ini
-            $dokters = \DB::table('dokter')
-                ->select('id', 'nama_dokter')
-                ->whereIn('id', $dokterIds)
-                ->get()
-                ->keyBy('id');
-
-            foreach ($kunjungan as $k) {
-                if (!empty($k->dokter_id) && (is_null($k->dokter) || !$k->relationLoaded('dokter'))) {
-                    if ($doc = $dokters->get($k->dokter_id)) {
-                        $k->setRelation('dokter', new \App\Models\Dokter([
-                            'id' => $doc->id,
-                            'nama_dokter' => $doc->nama_dokter,
-                        ]));
-                    }
-                }
-            }
-        }
-
-        // ========= Step B: dokter_id NULL → fallback dari cache =========
-        $needFallbackCache = $kunjungan->filter(fn($k) => empty($k->dokter_id));
-        if ($needFallbackCache->isNotEmpty()) {
-            $map = [];
-            $ids = [];
-            foreach ($needFallbackCache as $k) {
-                $c = \Cache::get("kunjungan_dokter:{$k->id}");
-                if ($c && !empty($c['dokter_id'])) {
-                    $map[$k->id] = (int) $c['dokter_id'];
-                    $ids[] = (int) $c['dokter_id'];
-                }
-            }
-            if (!empty($ids)) {
-                $dokters2 = DB::table('dokter')
-                    ->select('id', 'nama_dokter')
-                    ->whereIn('id', array_values(array_unique($ids)))
-                    ->get()
-                    ->keyBy('id');
-
-                foreach ($kunjungan as $k) {
-                    if (isset($map[$k->id])) {
-                        if ($doc = $dokters2->get($map[$k->id])) {
-                            // set relasi agar FE bisa baca item.dokter.nama_dokter
-                            $k->setRelation('dokter', new \App\Models\Dokter([
-                                'id' => $doc->id,
-                                'nama_dokter' => $doc->nama_dokter,
-                            ]));
-                            // opsional: isi dokter_id yang kosong (hanya in-memory; simpan ke DB kalau mau)
-                            // $k->dokter_id = $doc->id;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Tambahkan field datar untuk FE
-        $payload = $kunjungan->map(function ($k) {
-            $k->setAttribute('dokter_nama', optional($k->dokter)->nama_dokter);
-            $k->setAttribute('poli_nama',   optional($k->poli)->nama_poli);
-            $k->setAttribute('pasien_nama', optional($k->pasien)->nama_pasien);
-            return $k;
-        });
-
+        // Langsung kirim dalam key "data" supaya cocok sama JS-mu
         return response()->json([
-            'success' => true,
-            'date'    => $todayString,
-            'data'    => $payload,
+            'data' => $kunjungan,
         ]);
     }
-
 
     public function updateStatus($id)
     {
@@ -437,8 +359,9 @@ class JadwalKunjunganController extends Controller
 
         // Ambil kunjungan pending mulai besok
         $kunjunganMasaDepan = Kunjungan::with([
-            'poli',   // cukup poli; dokter akan diisi dari cache
+            'poli',
             'pasien',
+            'dokter'
         ])
             ->whereRaw("LOWER(TRIM(status)) = ?", ['pending'])
             ->whereDate('tanggal_kunjungan', '>=', $besok)
@@ -446,25 +369,7 @@ class JadwalKunjunganController extends Controller
             ->orderBy('no_antrian', 'asc')
             ->get();
 
-        // Sisipkan dokter_terpilih dari cache (fallback: null)
-        $enriched = $kunjunganMasaDepan->map(function ($k) {
-            $cached = Cache::get("kunjungan_dokter:{$k->id}");
-            $dokter = null;
-
-            if (!empty($cached['dokter_id'])) {
-                $dokter = DB::table('dokter')
-                    ->select('id', 'nama_dokter')
-                    ->where('id', (int) $cached['dokter_id'])
-                    ->first();
-            }
-
-            // tambahkan field virtual ke payload
-            $k->setAttribute('dokter_terpilih', $dokter);
-
-            return $k;
-        });
-
-        return response()->json($enriched);
+        return response()->json($kunjunganMasaDepan);
     }
 
 

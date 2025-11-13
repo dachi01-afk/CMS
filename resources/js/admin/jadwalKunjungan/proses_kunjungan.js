@@ -42,6 +42,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 ? json
                 : [];
 
+            console.log(payload);
+
             if (!payload.length) {
                 tbody.innerHTML = `
                     <tr>

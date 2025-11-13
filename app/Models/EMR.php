@@ -16,6 +16,16 @@ class EMR extends Model
         return $this->belongsTo(Kunjungan::class);
     }
 
+    public function dokter()
+    {
+        return $this->belongsTo(Dokter::class);
+    }
+
+    public function poli()
+    {
+        return $this->belongsTo(Poli::class);
+    }
+
     public function resep()
     {
         return $this->belongsTo(Resep::class);
@@ -23,15 +33,7 @@ class EMR extends Model
 
     public function pasien()
     {
-        // Relasi ini “menelusuri” dari EMR → Kunjungan → Pasien
-        return $this->hasOneThrough(
-            Pasien::class,
-            Kunjungan::class,
-            'id',          // Foreign key di tabel kunjungan
-            'id',          // Foreign key di tabel pasien
-            'kunjungan_id', // Foreign key di tabel EMR
-            'pasien_id'    // Kolom pasien_id di tabel kunjungan
-        );
+        return $this->belongsTo(Pasien::class);
     }
     public function pembayaran()
     {

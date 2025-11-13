@@ -27,49 +27,40 @@ class KunjunganController extends Controller
     {
         $userId = Auth::id();
 
-        $perawat = Perawat::query()
-            ->select(['id', 'user_id', 'dokter_id', 'poli_id'])
-            ->where('user_id', $userId)
-            ->firstOrFail();
+        $perawat = Perawat::with('dokter', 'poli')->where('user_id', $userId)->first();
 
-        if (empty($perawat->dokter_id) || empty($perawat->poli_id)) {
+        // Kalau belum di-set dokter_id / poli_id → balikin data kosong
+        if (!$perawat || empty($perawat->dokter_id) || empty($perawat->poli_id)) {
             return response()->json(['data' => []]);
         }
 
-        $tz          = config('app.timezone', 'Asia/Jakarta');
-        $todayLocal  = Carbon::today($tz);
-        $endLocal    = $todayLocal->copy()->endOfDay();
-        $startUtc    = $todayLocal->copy()->timezone('UTC');
-        $endUtc      = $endLocal->copy()->timezone('UTC');
-        $todayString = $todayLocal->toDateString();
+        $tz         = config('app.timezone', 'Asia/Jakarta');
+        $todayLocal = Carbon::today($tz);
+        $today      = $todayLocal->toDateString();
 
         // Ambil nama dokter & poli via JOIN supaya pasti muncul
         $rows = Kunjungan::query()
-            ->leftJoin('dokter', 'dokter.id', '=', 'kunjungan.dokter_id')
-            ->leftJoin('poli',   'poli.id',   '=', 'kunjungan.poli_id')
             ->with([
-                'pasien:id,nama_pasien', // tetap eager load pasien
+                'pasien',
+                'dokter',
+                'poli',
             ])
-            ->where(function ($q) use ($todayString, $startUtc, $endUtc) {
-                $q->whereDate('kunjungan.tanggal_kunjungan', $todayString)
-                    ->orWhereBetween('kunjungan.tanggal_kunjungan', [$startUtc, $endUtc]);
-            })
-            ->where('kunjungan.status', 'Waiting')
-            ->where('kunjungan.dokter_id', $perawat->dokter_id)
-            ->where('kunjungan.poli_id',   $perawat->poli_id)
-            ->orderBy('kunjungan.no_antrian')
-            ->get([
-                'kunjungan.*',
-                'dokter.nama_dokter as _nama_dokter',
-                'poli.nama_poli as _nama_poli',
-            ])
+            ->whereDate('tanggal_kunjungan', $today)
+            ->where('status', 'Waiting')
+            ->where('dokter_id', $perawat->dokter_id)
+            ->where('poli_id',   $perawat->poli_id)
+            ->orderByRaw('CAST(no_antrian AS UNSIGNED)')
+            ->get()
             ->map(function ($k) {
                 return [
                     'kunjungan_id' => $k->id,
+                    'pasien_id'    => $k->pasien_id,
+                    'dokter_id'    => $k->dokter_id,
+                    'poli_id'      => $k->poli_id,
                     'no_antrian'   => $k->no_antrian ?? '-',
                     'nama_pasien'  => $k->pasien->nama_pasien ?? '-',
-                    'dokter'       => $k->_nama_dokter ?? '-', // ← pasti ada dari JOIN
-                    'poli'         => $k->_nama_poli ?? '-',
+                    'dokter'       => $k->dokter->nama_dokter ?? '-', // ← pasti ada dari JOIN
+                    'poli'         => $k->poli->nama_poli ?? '-',
                     'keluhan'      => $k->keluhan_awal ?? '-',
                 ];
             });
@@ -82,13 +73,10 @@ class KunjunganController extends Controller
         $userId = Auth::id();
 
         // Ambil perawat yang login (untuk pembatasan scope)
-        $perawat = Perawat::query()
-            ->select(['id', 'user_id', 'dokter_id', 'poli_id'])
-            ->where('user_id', $userId)
-            ->firstOrFail();
+        $perawat = Perawat::with('dokter', 'poli')->where('user_id', $userId)->firstOrFail();
 
         try {
-            DB::transaction(function () use ($id, $perawat) {
+            DB::transaction(function () use ($id, $perawat,) {
                 // Lock row agar aman dari balapan klik
                 $k = Kunjungan::query()
                     ->lockForUpdate()
@@ -118,6 +106,7 @@ class KunjunganController extends Controller
                 // (Opsional) buat EMR header jika ingin dibuat di sini
                 EMR::firstOrCreate(
                     ['kunjungan_id' => $k->id],
+                    ['pasien_id' => $k->pasien_id],
                 );
             });
 
