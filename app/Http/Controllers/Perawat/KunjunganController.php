@@ -110,6 +110,7 @@ class KunjunganController extends Controller
                     'dokter_id'     => $k->dokter_id,
                     'poli_id'       => $k->poli_id,
                     'perawat_id'    => $perawat->id,
+                    'keluhan_utama' => $k->keluhan_awal,
                 ]);
             });
 
@@ -140,90 +141,15 @@ class KunjunganController extends Controller
     public function getDataKunjunganDenganStatusEngaged(Request $request)
     {
         $userId  = Auth::id();
-        $perawat = Perawat::select(['id', 'user_id', 'dokter_id', 'poli_id'])
-            ->where('user_id', $userId)->firstOrFail();
+        $perawat = Perawat::with(['dokter', 'poli'])->where('user_id', $userId)->firstOrFail();
 
         if (empty($perawat->dokter_id) || empty($perawat->poli_id)) {
             return DataTables::of(collect())->make(true);
         }
 
-        $tz    = config('app.timezone', 'Asia/Jakarta');
-        $today = Carbon::now($tz)->toDateString();
+        $dataKunjunganEngaged = Kunjungan::with(['pasien', 'dokter', 'poli', 'perawat'])->where('status', 'Engaged')->where()->get();
 
-        // ✅ tambahkan join ke EMR (ambil id emr)
-        $raw = DB::table('kunjungan as k')
-            ->leftJoin('emr as e', 'e.kunjungan_id', '=', 'k.id') // <— ini baru
-            ->leftJoin('jadwal_dokter as jd', 'jd.id', '=', 'k.jadwal_dokter_id')
-            ->leftJoin('dokter as d', 'd.id', '=', 'jd.dokter_id')
-            ->leftJoin('poli as p', 'p.id', '=', 'k.poli_id')
-            ->leftJoin('pasien as s', 's.id', '=', 'k.pasien_id')
-            ->whereDate('k.tanggal_kunjungan', $today)
-            ->where('k.status', 'Engaged')
-            ->where('k.poli_id', $perawat->poli_id)
-            ->orderByRaw('CAST(k.no_antrian AS UNSIGNED)')
-            ->get([
-                'k.id as kunjungan_id',
-                'k.no_antrian',
-                'k.keluhan_awal',
-                'k.poli_id',
-                'k.jadwal_dokter_id',
-                's.nama_pasien',
-                'p.nama_poli',
-                'd.id as dokter_id_by_jd',
-                'd.nama_dokter as dokter_nama_by_jd',
-                'e.id as emr_id', // <— ini baru
-            ]);
-
-        $needCacheLookup = [];
-        foreach ($raw as $r) {
-            if (empty($r->dokter_id_by_jd)) {
-                $needCacheLookup[] = (int)$r->kunjungan_id;
-            }
-        }
-
-        $cacheMapDokterId = [];
-        if (!empty($needCacheLookup)) {
-            foreach ($needCacheLookup as $kid) {
-                $c = Cache::get("kunjungan_dokter:{$kid}");
-                if ($c && !empty($c['dokter_id'])) {
-                    $cacheMapDokterId[$kid] = (int)$c['dokter_id'];
-                }
-            }
-        }
-
-        $uniqueCacheDokterIds = array_values(array_unique(array_filter(array_values($cacheMapDokterId))));
-        $dokterNamaFromCache = [];
-        if (!empty($uniqueCacheDokterIds)) {
-            $dokList = DB::table('dokter')->whereIn('id', $uniqueCacheDokterIds)
-                ->pluck('nama_dokter', 'id');
-            $dokterNamaFromCache = $dokList ? $dokList->toArray() : [];
-        }
-
-        $rows = collect($raw)->filter(function ($r) use ($perawat, $cacheMapDokterId) {
-            $dokByJd    = $r->dokter_id_by_jd ?? null;
-            $dokByCache = $cacheMapDokterId[$r->kunjungan_id] ?? null;
-
-            return (
-                (!empty($dokByJd)    && (int)$dokByJd    === (int)$perawat->dokter_id) ||
-                (!empty($dokByCache) && (int)$dokByCache === (int)$perawat->dokter_id)
-            );
-        })->map(function ($r) use ($cacheMapDokterId, $dokterNamaFromCache) {
-            $namaDokter = $r->dokter_nama_by_jd
-                ?? ($dokterNamaFromCache[$cacheMapDokterId[$r->kunjungan_id] ?? 0] ?? null)
-                ?? '-';
-
-            return [
-                'kunjungan_id' => $r->kunjungan_id,
-                'emr_id'       => $r->emr_id,            // <— simpan emr_id ke row
-                'no_antrian'   => $r->no_antrian ?? '-',
-                'nama_pasien'  => $r->nama_pasien ?? '-',
-                'dokter'       => $namaDokter,
-                'poli'         => $r->nama_poli ?? '-',
-                'keluhan'      => $r->keluhan_awal ?? '-',
-            ];
-        })->values();
-
-        return DataTables::of($rows)
+        return DataTables::of($dataKunjunganEngaged)
             ->addIndexColumn()
             // ✅ pakai emr_id buat route action
             ->addColumn('action', function ($row) {

@@ -25,6 +25,11 @@ class Perawat extends Model
         return $this->belongsTo(Dokter::class);
     }
 
+    public function perawat()
+    {
+        return $this->belongsTo(Perawat::class);
+    }
+
     public function emr()
     {
         return $this->hasMany(Emr::class);
