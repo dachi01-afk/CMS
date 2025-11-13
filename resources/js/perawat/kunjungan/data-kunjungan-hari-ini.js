@@ -21,10 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <td class="px-6 py-3">${esc(r.keluhan)}</td>
         <td class="px-6 py-3 text-center">
           <button class="btn-proses px-3 py-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700" 
-          data-id="${esc(r.kunjungan_id)}"
-          data-pasien-id="${esc(r.pasien_id)} 
-          data-dokter-id="${esc(r.dokter_id)}
-          data-poli-id="${esc(r.poli_id)} ">
+          data-id="${esc(r.kunjungan_id)}">
             Proses
           </button>
         </td>

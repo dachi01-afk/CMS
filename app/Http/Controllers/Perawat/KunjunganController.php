@@ -76,7 +76,7 @@ class KunjunganController extends Controller
         $perawat = Perawat::with('dokter', 'poli')->where('user_id', $userId)->firstOrFail();
 
         try {
-            DB::transaction(function () use ($id, $perawat,) {
+            DB::transaction(function () use ($id, $perawat) {
                 // Lock row agar aman dari balapan klik
                 $k = Kunjungan::query()
                     ->lockForUpdate()
@@ -104,10 +104,13 @@ class KunjunganController extends Controller
                 ]);
 
                 // (Opsional) buat EMR header jika ingin dibuat di sini
-                EMR::firstOrCreate(
-                    ['kunjungan_id' => $k->id],
-                    ['pasien_id' => $k->pasien_id],
-                );
+                EMR::firstOrCreate([
+                    'kunjungan_id'  => $k->id,
+                    'pasien_id'     => $k->pasien_id,
+                    'dokter_id'     => $k->dokter_id,
+                    'poli_id'       => $k->poli_id,
+                    'perawat_id'    => $perawat->id,
+                ]);
             });
 
             return response()->json([
