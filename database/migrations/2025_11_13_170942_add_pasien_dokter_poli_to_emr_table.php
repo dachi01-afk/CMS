@@ -15,6 +15,7 @@ return new class extends Migration
             $table->foreignId('pasien_id')->nullable()->after('kunjungan_id');
             $table->foreignId('dokter_id')->nullable()->after('pasien_id');
             $table->foreignId('poli_id')->nullable()->after('dokter_id');
+            $table->foreignId('perawat_id')->nullable()->after('poli_id');
         });
 
         // 2) Timpakan data dari tabel kunjungan (snapshot)
@@ -30,18 +31,23 @@ return new class extends Migration
 
         // 3) Baru pasang foreign key
         Schema::table('emr', function (Blueprint $table) {
-            $table->foreign('pasien_id', 'emr_pasien_id_fk')
+            $table->foreign('pasien_id', 'emr_pasien_id')
                 ->references('id')->on('pasien')
                 ->cascadeOnUpdate()
                 ->nullOnDelete(); // kalau pasien dihapus, set null
 
-            $table->foreign('dokter_id', 'emr_dokter_id_fk')
+            $table->foreign('dokter_id', 'emr_dokter_id')
                 ->references('id')->on('dokter')
                 ->cascadeOnUpdate()
                 ->nullOnDelete();
 
-            $table->foreign('poli_id', 'emr_poli_id_fk')
+            $table->foreign('poli_id', 'emr_poli_id')
                 ->references('id')->on('poli')
+                ->cascadeOnUpdate()
+                ->nullOnDelete();
+
+            $table->foreign('perawat_id', 'emr_perawat_id')
+                ->references('id')->on('perawat')
                 ->cascadeOnUpdate()
                 ->nullOnDelete();
         });
