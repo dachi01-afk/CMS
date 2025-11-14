@@ -250,6 +250,7 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::get('/search', [JadwalKunjunganController::class, 'search'])->name('pasien');
 
         Route::get('/waiting', [JadwalKunjunganController::class, 'waiting'])->name('waiting');
+        Route::post('/updateKunjungan/{id}', [JadwalKunjunganController::class, 'updateDataKunjungan'])->name('update.kunjungan');
         Route::post('/update-status/{id}', [JadwalKunjunganController::class, 'updateStatus'])->name('update_status');
 
         Route::get('/masa-depan', [JadwalKunjunganController::class, 'masaDepan'])->name('masa.depan');

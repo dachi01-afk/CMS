@@ -14,6 +14,7 @@ use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 
@@ -309,6 +310,49 @@ class JadwalKunjunganController extends Controller
         ]);
     }
 
+    public function updateDataKunjungan(Request $request, $id)
+    {
+        // === VALIDASI ===
+        $validated = $request->validate(
+            [
+                'dokter_id' => ['required', 'integer', 'exists:dokter,id'],
+                'poli_id'   => [
+                    'required',
+                    'integer',
+                    // pastikan poli itu memang ter-relasi dengan dokter (tabel pivot dokter_poli)
+                    Rule::exists('dokter_poli', 'poli_id')->where(
+                        fn($q) => $q->where('dokter_id', $request->dokter_id)
+                    ),
+                ],
+                'keluhan_awal' => ['required', 'string', 'max:2000'],
+            ],
+            [
+                'dokter_id.required'   => 'Dokter wajib dipilih.',
+                'dokter_id.exists'     => 'Dokter tidak ditemukan.',
+                'poli_id.required'     => 'Poli wajib dipilih.',
+                'poli_id.exists'       => 'Poli tidak sesuai dengan dokter yang dipilih.',
+                'keluhan_awal.required' => 'Keluhan awal wajib diisi.',
+                'keluhan_awal.max'     => 'Keluhan awal maksimal 2000 karakter.',
+            ]
+        );
+
+        // === UPDATE DATA KUNJUNGAN (tanpa mengubah no_antrian, tanggal, pasien) ===
+        $kunjungan = Kunjungan::findOrFail($id);
+
+        $kunjungan->dokter_id    = $validated['dokter_id'];
+        $kunjungan->poli_id      = $validated['poli_id'];
+        $kunjungan->keluhan_awal = $validated['keluhan_awal'];
+
+        $kunjungan->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data kunjungan berhasil diperbarui.',
+            'data'    => $kunjungan->fresh(['pasien', 'dokter', 'poli']),
+        ]);
+    }
+
+
     public function updateStatus($id)
     {
         // Cari data kunjungan
@@ -340,18 +384,6 @@ class JadwalKunjunganController extends Controller
         ]);
     }
 
-
-    // public function masaDepan()
-    // {
-    //     $kunjunganMasaDepan = Kunjungan::with(['poli', 'dokter', 'pasien'])
-    //         ->where('status', 'Pending')
-    //         ->whereDate('tanggal_kunjungan', '>', Carbon::today())
-    //         ->orderBy('tanggal_kunjungan', 'asc')
-    //         ->orderBy('no_antrian', 'asc')
-    //         ->get();
-
-    //     return response()->json($kunjunganMasaDepan);
-    // }
 
     public function masaDepan()
     {
