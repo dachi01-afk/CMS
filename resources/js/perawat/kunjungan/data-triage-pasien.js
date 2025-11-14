@@ -18,11 +18,14 @@ $(function () {
                 orderable: false,
                 searchable: false,
             },
-            { data: "no_antrian", name: "no_antrian" },
+            {
+                data: "no_antrian",
+                name: "no_antrian",
+            },
             { data: "nama_pasien", name: "nama_pasien" }, // sekarang string biasa
-            { data: "dokter", name: "dokter" },
-            { data: "poli", name: "poli" },
-            { data: "keluhan", name: "keluhan" },
+            { data: "nama_dokter", name: "nama_dokter" },
+            { data: "nama_poli", name: "nama_poli" },
+            { data: "keluhan_utama", name: "keluhan_utama" },
             {
                 data: "action",
                 name: "action",

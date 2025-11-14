@@ -67,6 +67,7 @@ export default defineConfig({
                 "resources/js/perawat/dashboard.js",
                 "resources/js/perawat/kunjungan/data-kunjungan-hari-ini.js",
                 "resources/js/perawat/kunjungan/data-triage-pasien.js",
+                "resources/js/perawat/kunjungan/form-pengisian-vital-sign-pasien.js",
 
                 // Role Farmasi
                 "resources/js/farmasi/dashboard.js",

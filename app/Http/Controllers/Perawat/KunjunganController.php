@@ -147,14 +147,24 @@ class KunjunganController extends Controller
             return DataTables::of(collect())->make(true);
         }
 
-        $dataKunjunganEngaged = Kunjungan::with(['pasien', 'dokter', 'poli', 'perawat'])->where('status', 'Engaged')->where()->get();
+        $dataKunjunganEngaged = EMR::with(['pasien', 'dokter', 'poli', 'perawat', 'kunjungan'])->whereHas('kunjungan', function ($k) {
+            $k->where('status', 'Engaged');
+        })->whereHas('perawat', function ($p) use ($perawat) {
+            $p->where('id', $perawat->id);
+        })->get();
+
+        // return $dataKunjunganEngaged;
 
         return DataTables::of($dataKunjunganEngaged)
             ->addIndexColumn()
-            // ✅ pakai emr_id buat route action
+            ->addColumn('no_antrian', fn($engaged) => $engaged->kunjungan->no_antrian)
+            ->addColumn('nama_pasien', fn($engaged) => $engaged->pasien->nama_pasien)
+            ->addColumn('nama_dokter', fn($engaged) => $engaged->dokter->nama_dokter)
+            ->addColumn('nama_poli', fn($engaged) => $engaged->poli->nama_poli)
+            ->addColumn('keluhan_utama', fn($engaged) => $engaged->keluhan_utama)
             ->addColumn('action', function ($row) {
-                if (!empty($row['emr_id'])) {
-                    $url = route('perawat.form.pengisian.vital.sign', $row['emr_id']);
+                if (!empty($row->id)) {
+                    $url = route('perawat.form.pengisian.vital.sign', $row->id);
                     return '
                     <a href="' . $url . '"
                        class="inline-flex items-center px-3 py-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
@@ -178,36 +188,129 @@ class KunjunganController extends Controller
     // Stub: halaman khusus vital sign (nanti kamu isi)
     public function formPengisianVitalSign($id)
     {
-        // Ambil EMR + relasi yang diperlukan (pilih kolom seperlunya biar irit)
-        $emr = Emr::query()
-            ->select('id', 'kunjungan_id', 'resep_id', 'tekanan_darah', 'suhu_tubuh', 'nadi', 'pernapasan', 'saturasi_oksigen')
-            ->with([
-                'kunjungan:id,pasien_id,poli_id,jadwal_dokter_id',
-                'kunjungan.pasien' => function ($q) {
-                    $q->select(
-                        'id',
-                        'no_emr',        // kalau ada
-                        'nama_pasien',
-                        'tanggal_lahir', // kalau ada
-                        'jenis_kelamin', // kalau ada
-                        'alamat',       // kalau ada
-                        'no_hp_pasien'       // kalau ada
-                    );
-                },
-                'kunjungan.poli:id,nama_poli',
-                'kunjungan.jadwalDokter.dokter:id,nama_dokter',
-            ])
-            ->findOrFail((int)$id);
+        $dataEMR = EMR::with('pasien', 'dokter', 'poli', 'pasien')->where('id', $id)->firstOrFail();
 
-        // Ambil objek pasien dari relasi kunjungan (bisa null-safe)
-        $pasien = optional($emr->kunjungan)->pasien;
+        $dataPasien = $dataEMR->pasien;
+        $dataPoliPasien = $dataEMR->poli;
+        $dataDokterPasien = $dataEMR->dokter;
+        $dataIdEMR = $dataEMR->id;
+        $urlBack = route('perawat.kunjungan');
 
-        // return $emr;
+        return view('perawat.kunjungan.form-pengisian-vital-sign', compact(
+            'dataEMR',
+            'dataPasien',
+            'dataPoliPasien',
+            'dataDokterPasien',
+            'dataIdEMR',
+            'urlBack'
+        ));
+    }
 
-        // (Opsional) keamanan: perawat hanya boleh akses EMR poli/dokter yang sesuai
-        // $perawat = \App\Models\Perawat::where('user_id', Auth::id())->first();
-        // if ($perawat && ($perawat->poli_id != optional($emr->kunjungan)->poli_id)) abort(403);
+    public function submitDataVitalSignPasien(Request $request, $id)
+    {
+        try {
+            // 1. VALIDASI INPUT
+            $validated = $request->validate([
+                'tekanan_darah'    => ['required', 'regex:/^\d{2,3}\/\d{2,3}$/'],
+                'suhu_tubuh'       => ['required', 'numeric', 'between:30,45'],
+                'nadi'             => ['required', 'integer', 'between:30,220'],
+                'pernapasan'       => ['required', 'integer', 'between:5,60'],
+                'saturasi_oksigen' => ['required', 'integer', 'between:50,100'],
+            ], [
+                'required' => ':attribute wajib diisi.',
+                'numeric'  => ':attribute harus berupa angka.',
+                'integer'  => ':attribute harus berupa bilangan bulat.',
+                'between'  => ':attribute harus di antara :min dan :max.',
+                'regex'    => 'Format tekanan darah harus contoh: 120/80.',
+            ], [
+                'tekanan_darah'    => 'Tekanan darah',
+                'suhu_tubuh'       => 'Suhu tubuh',
+                'nadi'             => 'Nadi',
+                'pernapasan'       => 'Pernapasan',
+                'saturasi_oksigen' => 'Saturasi oksigen',
+            ]);
 
-        return view('perawat.kunjungan.form-pengisian-vital-sign', compact('emr', 'pasien'));
+            // 2. AMBIL PERAWAT YANG LOGIN
+            $perawat = Perawat::where('user_id', Auth::id())->firstOrFail();
+
+            // 3. AMBIL EMR + KUNJUNGAN
+            $emr = EMR::with('kunjungan')->findOrFail($id);
+            $kunjungan = $emr->kunjungan;
+
+            if (!$kunjungan) {
+                throw ValidationException::withMessages([
+                    'emr' => 'Data kunjungan untuk EMR ini tidak ditemukan.',
+                ]);
+            }
+
+            // 4. CEK HAK AKSES PERAWAT
+            if (!empty($perawat->dokter_id) && $perawat->dokter_id != $kunjungan->dokter_id) {
+                throw new AuthorizationException("Anda tidak berwenang mengisi vital sign untuk dokter ini.");
+            }
+            if (!empty($perawat->poli_id) && $perawat->poli_id != $kunjungan->poli_id) {
+                throw new AuthorizationException("Anda tidak berwenang untuk poli ini.");
+            }
+
+            if ($kunjungan->status !== 'Engaged') {
+                throw ValidationException::withMessages([
+                    'status' => 'Kunjungan belum berada dalam status Engaged.',
+                ]);
+            }
+
+            // 5. SIMPAN DATA VITAL SIGN
+            $emr->update($validated);
+
+            // 🔹 Kalau request AJAX → balas JSON (untuk Swal success + redirect manual)
+            if ($request->ajax()) {
+                return response()->json([
+                    'success'      => true,
+                    'message'      => 'Data vital sign berhasil disimpan.',
+                    'redirect_url' => route('perawat.kunjungan'),
+                ]);
+            }
+
+            // 🔹 fallback biasa (kalau bukan AJAX)
+            return redirect()
+                ->route('perawat.kunjungan')
+                ->with('success', 'Data vital sign berhasil disimpan.');
+        } catch (ValidationException $e) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal.',
+                    'errors'  => $e->errors(),
+                ], 422);
+            }
+
+            return back()
+                ->withErrors($e->errors())
+                ->withInput();
+        } catch (AuthorizationException $e) {
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ], 403);
+            }
+
+            return back()
+                ->with('error', $e->getMessage())
+                ->withInput();
+        } catch (\Throwable $e) {
+            Log::error("Error vital sign EMR #$id", [
+                'error' => $e->getMessage(),
+            ]);
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Terjadi kesalahan pada sistem, coba lagi.',
+                ], 500);
+            }
+
+            return back()
+                ->with('error', 'Terjadi kesalahan pada sistem, coba lagi.')
+                ->withInput();
+        }
     }
 }

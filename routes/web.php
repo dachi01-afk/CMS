@@ -345,6 +345,7 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
         Route::post('/updateStatusKunjunganKeEngaged/{id}', [KunjunganController::class, 'updateStatusKunjunganKeEngaged'])->name('perawat.update.status.kunjungan.ke.engaged');
         Route::get('/getDataKunjunganDenganStatusEngaged', [KunjunganController::class, 'getDataKunjunganDenganStatusEngaged'])->name('perawat.get.data.kunjungan.dengan.status.engaged');
         Route::get('/form-pengisian-vital-sign/{id}', [KunjunganController::class, 'formPengisianVitalSign'])->name('perawat.form.pengisian.vital.sign');
+        Route::post('/submitDataVitalSignPasien/{id}', [KunjunganController::class, 'submitDataVitalSignPasien'])->name('perawat.submit.data.vital.sign.pasien');
     });
 });
 
