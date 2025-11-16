@@ -211,23 +211,31 @@ class KunjunganController extends Controller
         try {
             // 1. VALIDASI INPUT
             $validated = $request->validate([
-                'tekanan_darah'    => ['required', 'regex:/^\d{2,3}\/\d{2,3}$/'],
-                'suhu_tubuh'       => ['required', 'numeric', 'between:30,45'],
-                'nadi'             => ['required', 'integer', 'between:30,220'],
-                'pernapasan'       => ['required', 'integer', 'between:5,60'],
-                'saturasi_oksigen' => ['required', 'integer', 'between:50,100'],
+                'tekanan_darah'            => ['required', 'regex:/^\d{2,3}\/\d{2,3}$/'],
+                'suhu_tubuh'               => ['required', 'numeric', 'between:30,45'],
+                'nadi'                     => ['required', 'integer', 'between:30,220'],
+                'pernapasan'               => ['required', 'integer', 'between:5,60'],
+                'saturasi_oksigen'         => ['required', 'integer', 'between:50,100'],
+
+                // 🔹 field baru, opsional
+                'riwayat_penyakit_dahulu'  => ['nullable', 'string', 'max:1000'],
+                'riwayat_penyakit_keluarga' => ['nullable', 'string', 'max:1000'],
             ], [
                 'required' => ':attribute wajib diisi.',
                 'numeric'  => ':attribute harus berupa angka.',
                 'integer'  => ':attribute harus berupa bilangan bulat.',
                 'between'  => ':attribute harus di antara :min dan :max.',
                 'regex'    => 'Format tekanan darah harus contoh: 120/80.',
+                'string'   => ':attribute harus berupa teks.',
+                'max'      => ':attribute maksimal :max karakter.',
             ], [
-                'tekanan_darah'    => 'Tekanan darah',
-                'suhu_tubuh'       => 'Suhu tubuh',
-                'nadi'             => 'Nadi',
-                'pernapasan'       => 'Pernapasan',
-                'saturasi_oksigen' => 'Saturasi oksigen',
+                'tekanan_darah'            => 'Tekanan darah',
+                'suhu_tubuh'               => 'Suhu tubuh',
+                'nadi'                     => 'Nadi',
+                'pernapasan'               => 'Pernapasan',
+                'saturasi_oksigen'         => 'Saturasi oksigen',
+                'riwayat_penyakit_dahulu'  => 'Riwayat penyakit dahulu',
+                'riwayat_penyakit_keluarga' => 'Riwayat penyakit keluarga',
             ]);
 
             // 2. AMBIL PERAWAT YANG LOGIN
@@ -257,7 +265,7 @@ class KunjunganController extends Controller
                 ]);
             }
 
-            // 5. SIMPAN DATA VITAL SIGN
+            // 5. SIMPAN DATA VITAL SIGN + RIWAYAT
             $emr->update($validated);
 
             // 🔹 Kalau request AJAX → balas JSON (untuk Swal success + redirect manual)

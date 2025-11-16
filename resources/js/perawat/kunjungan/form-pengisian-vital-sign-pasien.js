@@ -16,6 +16,12 @@ document.addEventListener("DOMContentLoaded", () => {
         },
     ];
 
+    // Field riwayat (opsional, hanya cek panjang maksimal)
+    const historyFields = [
+        { id: "riwayat_penyakit_dahulu", label: "Riwayat Penyakit Dahulu" },
+        { id: "riwayat_penyakit_keluarga", label: "Riwayat Penyakit Keluarga" },
+    ];
+
     const tekananInput = document.getElementById("tekanan_darah");
 
     function clearError(el) {
@@ -28,6 +34,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     numericFields.forEach((f) => {
+        const el = document.getElementById(f.id);
+        if (!el) return;
+        el.addEventListener("input", () => clearError(el));
+    });
+
+    // auto-clear untuk textarea riwayat
+    historyFields.forEach((f) => {
         const el = document.getElementById(f.id);
         if (!el) return;
         el.addEventListener("input", () => clearError(el));
@@ -94,11 +107,36 @@ document.addEventListener("DOMContentLoaded", () => {
         return firstInvalid;
     }
 
+    // validasi sederhana untuk riwayat (optional, max 1000 karakter)
+    function validateHistoryFields() {
+        let firstInvalid = null;
+
+        historyFields.forEach((f) => {
+            const el = document.getElementById(f.id);
+            if (!el) return;
+
+            const val = el.value.trim();
+            clearError(el);
+
+            if (val.length > 1000) {
+                el.setCustomValidity(`${f.label} maksimal 1000 karakter.`);
+            }
+
+            if (el.validationMessage && !firstInvalid) {
+                el.classList.add("border-red-500", "ring-1", "ring-red-500");
+                firstInvalid = el;
+            }
+        });
+
+        return firstInvalid;
+    }
+
     form.addEventListener("submit", async (e) => {
         e.preventDefault(); // cegah submit default
 
         const tekananOk = validateTekananDarah();
         const firstInvalidNumeric = validateNumericFields();
+        const firstInvalidHistory = validateHistoryFields();
 
         if (!tekananOk) {
             tekananInput.reportValidity();
@@ -112,10 +150,16 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
+        if (firstInvalidHistory) {
+            firstInvalidHistory.reportValidity();
+            firstInvalidHistory.focus();
+            return;
+        }
+
         // Konfirmasi sebelum kirim ke server
         const result = await Swal.fire({
-            title: "Simpan Vital Sign?",
-            text: "Apakah Anda yakin data vital sign sudah benar?",
+            title: "Simpan Data?",
+            text: "Apakah Anda yakin data vital sign & riwayat sudah benar?",
             icon: "question",
             showCancelButton: true,
             confirmButtonText: "Ya, simpan",

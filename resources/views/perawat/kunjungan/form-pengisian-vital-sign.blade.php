@@ -204,6 +204,59 @@
                     </div>
                 </div>
 
+
+                {{-- RIWAYAT KESEHATAN --}}
+                <div class="mt-2 p-4 border border-slate-100 rounded-2xl bg-slate-50/80 space-y-4">
+                    <h3 class="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                        <span
+                            class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold">2</span>
+                        Riwayat Kesehatan
+                    </h3>
+
+                    {{-- Riwayat Penyakit Dahulu --}}
+                    <div>
+                        <label for="riwayat_penyakit_dahulu"
+                            class="block mb-1.5 text-xs font-semibold tracking-wide text-slate-700 uppercase">
+                            Riwayat Penyakit Dahulu
+                            <span class="text-[11px] font-normal text-slate-400">(opsional)</span>
+                        </label>
+                        <textarea id="riwayat_penyakit_dahulu" name="riwayat_penyakit_dahulu" rows="3"
+                            placeholder="Contoh: Hipertensi sejak 2018, DM tipe 2 terkontrol, riwayat asma masa kecil."
+                            class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
+                                   focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full px-3 py-2.5
+                                   placeholder:text-slate-400 resize-y
+                                   @error('riwayat_penyakit_dahulu') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">{{ old('riwayat_penyakit_dahulu', $dataEMR->riwayat_penyakit_dahulu ?? '') }}</textarea>
+                        @error('riwayat_penyakit_dahulu')
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
+                        <p class="mt-1 text-[11px] text-slate-400">
+                            Isi ringkas riwayat penyakit utama yang pernah diderita pasien sebelumnya.
+                        </p>
+                    </div>
+
+                    {{-- Riwayat Penyakit Keluarga --}}
+                    <div>
+                        <label for="riwayat_penyakit_keluarga"
+                            class="block mb-1.5 text-xs font-semibold tracking-wide text-slate-700 uppercase">
+                            Riwayat Penyakit Keluarga
+                            <span class="text-[11px] font-normal text-slate-400">(opsional)</span>
+                        </label>
+                        <textarea id="riwayat_penyakit_keluarga" name="riwayat_penyakit_keluarga" rows="3"
+                            placeholder="Contoh: Ayah DM tipe 2, ibu hipertensi, kakek stroke."
+                            class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
+                                   focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full px-3 py-2.5
+                                   placeholder:text-slate-400 resize-y
+                                   @error('riwayat_penyakit_keluarga') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">{{ old('riwayat_penyakit_keluarga', $dataEMR->riwayat_penyakit_keluarga ?? '') }}</textarea>
+                        @error('riwayat_penyakit_keluarga')
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
+                        <p class="mt-1 text-[11px] text-slate-400">
+                            Cantumkan riwayat penyakit yang sering muncul di keluarga inti (orang tua, saudara kandung).
+                        </p>
+                    </div>
+                </div>
+
+
                 {{-- FOOTER FORM --}}
                 <div
                     class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pt-4 border-t border-slate-100">
