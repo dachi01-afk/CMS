@@ -77,7 +77,6 @@ class DokterController extends Controller
 
             $dokter = Dokter::create([
                 'user_id'            => $user->id,
-                'poli_id'            => $legacyPoliId, // <-- hapus/nullable setelah benar2 pindah ke pivot
                 'nama_dokter'        => $validated['nama_dokter'],
                 'jenis_spesialis_id' => $validated['spesialis_dokter'],
                 'foto_dokter'        => $fotoPath,
@@ -87,7 +86,7 @@ class DokterController extends Controller
             ]);
 
             // 4) attach ke pivot (many-to-many)
-            $dokter->poli()->sync($poliId);
+            $dokter->poli()->sync($validated['poli_id']);
 
             DB::commit();
 
@@ -109,7 +108,7 @@ class DokterController extends Controller
 
     public function getDokterById($id)
     {
-        $data = Dokter::with('user')->findOrFail($id);
+        $data = Dokter::with('user', 'poli')->findOrFail($id);
         return response()->json(['data' => $data]);
     }
 

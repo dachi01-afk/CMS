@@ -26,12 +26,7 @@ $(function () {
             { data: "nama_pasien", name: "nama_pasien" },
             { data: "tanggal_kunjungan", name: "tanggal_kunjungan" },
             { data: "keluhan_awal", name: "keluhan_awal" },
-            {
-                data: "status",
-                name: "status",
-                orderable: false,
-                searchable: false,
-            },
+            { data: "status", name: "status" },
             // {
             //     data: "action",
             //     name: "action",

@@ -22,10 +22,19 @@ $(function () {
                 data: "no_antrian",
                 name: "no_antrian",
             },
-            { data: "nama_pasien", name: "nama_pasien" }, // sekarang string biasa
-            { data: "nama_dokter", name: "nama_dokter" },
+            {
+                data: "nama_pasien",
+                name: "nama_pasien",
+            },
+            {
+                data: "nama_dokter",
+                name: "nama_dokter",
+            },
             { data: "nama_poli", name: "nama_poli" },
-            { data: "keluhan_utama", name: "keluhan_utama" },
+            {
+                data: "keluhan_utama",
+                name: "keluhan_utama",
+            },
             {
                 data: "action",
                 name: "action",

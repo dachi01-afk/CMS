@@ -2,6 +2,35 @@ import axios from "axios";
 import { initFlowbite } from "flowbite";
 import $ from "jquery";
 
+function formatTanggalID(tanggal) {
+    if (!tanggal) return "-";
+    // Cek pola tanggal saja (YYYY-MM-DD)
+    const onlyDate = /^\d{4}-\d{2}-\d{2}$/.test(tanggal);
+    const d = new Date(tanggal);
+    if (isNaN(d.getTime())) {
+        // fallback: tampilkan raw jika Date gagal parse
+        return tanggal;
+    }
+    if (onlyDate) {
+        return d.toLocaleDateString("id-ID", {
+            timeZone: "Asia/Jakarta",
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+        });
+    }
+    return d
+        .toLocaleString("id-ID", {
+            timeZone: "Asia/Jakarta",
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        })
+        .replace(".", ":"); // opsional: 10.05 -> 10:05
+}
+
 // data tabel Pasien
 $(function () {
     var table = $("#pasienTable").DataTable({
@@ -34,7 +63,12 @@ $(function () {
             { data: "role", name: "role" },
             { data: "alamat", name: "alamat" },
             { data: "no_hp_pasien", name: "no_hp_pasien" },
-            { data: "tanggal_lahir", name: "tanggal_lahir" },
+            {
+                data: "tanggal_lahir",
+                name: "tanggal_lahir",
+                render: (data) => formatTanggalID(data),
+                className: "whitespace-nowrap",
+            },
             { data: "jenis_kelamin", name: "jenis_kelamin" },
             { data: "no_emr", name: "no_emr" },
             {

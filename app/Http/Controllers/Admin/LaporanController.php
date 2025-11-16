@@ -22,22 +22,22 @@ class LaporanController extends Controller
 
     public function dataKunjungan()
     {
-        $dataKunjungan = Kunjungan::with('poli.dokter', 'pasien')->latest()->get();
+        $dataKunjungan = Kunjungan::with('dokter', 'poli', 'pasien')->latest()->get();
 
         return DataTables::of($dataKunjungan)
             ->addIndexColumn()
-            ->addColumn('no_antrian', fn($row) => $row->no_antrian ?? '-')
-            ->addColumn('nama_dokter', fn($row) => $row->poli->dokter->nama_dokter ?? '-')
-            ->addColumn('nama_pasien', fn($row) => $row->pasien->nama_pasien ?? '-')
-            ->editColumn('tanggal_kunjungan', function ($row) {
-                return $row->tanggal_kunjungan
-                    ? \Carbon\Carbon::parse($row->tanggal_kunjungan)
+            ->addColumn('no_antrian', fn($kunjungan) => $kunjungan->no_antrian ?? '-')
+            ->addColumn('nama_dokter', fn($kunjungan) => $kunjungan->dokter->nama_dokter ?? '-')
+            ->addColumn('nama_pasien', fn($kunjungan) => $kunjungan->pasien->nama_pasien ?? '-')
+            ->editColumn('tanggal_kunjungan', function ($kunjungan) {
+                return $kunjungan->tanggal_kunjungan
+                    ? \Carbon\Carbon::parse($kunjungan->tanggal_kunjungan)
                     ->locale('id')
                     ->translatedFormat('j F Y')
                     : '-';
             })
-            ->editColumn('status', function ($row) {
-                return match ($row->status) {
+            ->editColumn('status', function ($kunjungan) {
+                return match ($kunjungan->status) {
                     'Pending'  => '<span class="px-2 py-1 text-xs font-semibold text-yellow-700 bg-yellow-100 rounded">Pending</span>',
                     'Waiting'  => '<span class="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded">Waiting</span>',
                     'Engaged'  => '<span class="px-2 py-1 text-xs font-semibold text-sky-700 bg-sky-100 rounded">Engaged</span>',

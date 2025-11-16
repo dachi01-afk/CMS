@@ -9,124 +9,221 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
 </head>
 
-<body class="bg-gray-50">
-    <div class="mx-auto max-w-3xl px-4 py-8">
-        <h1 class="text-2xl font-bold mb-2">Input Vital Sign</h1>
-        <p class="text-sm text-gray-600 mb-6">
-            No EMR Pasien:
-            <span class="font-semibold">{{ $dataPasien->no_emr ?? '-' }}</span>
-        </p>
+<body class="min-h-screen bg-gradient-to-b from-slate-100 to-slate-200">
+    <div class="mx-auto max-w-4xl px-4 py-8">
 
-        {{-- Ringkasan pasien/poli/dokter --}}
-        <div class="bg-white rounded-2xl shadow mb-6">
-            <div class="p-4 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div>
-                    <div class="text-gray-500">Pasien</div>
-                    <div class="font-semibold">
-                        {{ $dataPasien->nama_pasien ?? '-' }}
+        {{-- HEADER HALAMAN --}}
+        <div class="flex items-start justify-between gap-4 mb-6">
+            <div>
+                <div
+                    class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold mb-2">
+                    <i class="fa-solid fa-heart-pulse"></i>
+                    <span>EMR Vital Sign</span>
+                </div>
+                <h1 class="text-2xl md:text-3xl font-bold text-slate-800">Input Vital Sign Pasien</h1>
+                <p class="text-sm text-slate-600 mt-1">
+                    No EMR:
+                    <span class="font-semibold text-slate-800">
+                        {{ $dataPasien->no_emr ?? '-' }}
+                    </span>
+                </p>
+            </div>
+
+            {{-- Badge status kecil (kalau mau dikembangkan nanti) --}}
+            <div class="hidden md:flex flex-col items-end text-right text-xs text-slate-500">
+                <span>Dientri oleh Perawat</span>
+                <span class="mt-1 px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
+                    Form Aktif
+                </span>
+            </div>
+        </div>
+
+        {{-- RINGKASAN PASIEN / POLI / DOKTER --}}
+        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-100 mb-6">
+            <div class="p-4 md:p-5 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                <div class="flex items-start gap-3">
+                    <div>
+                        <div class="text-[11px] uppercase tracking-wide text-slate-400">Pasien</div>
+                        <div class="font-semibold text-slate-800">
+                            {{ $dataPasien->nama_pasien ?? '-' }}
+                        </div>
                     </div>
                 </div>
-                <div>
-                    <div class="text-gray-500">Poli</div>
-                    <div class="font-semibold">
-                        {{ $dataPoliPasien->nama_poli ?? '-' }}
+
+                <div class="flex items-start gap-3">
+                    <div>
+                        <div class="text-[11px] uppercase tracking-wide text-slate-400">Poli</div>
+                        <div class="font-semibold text-slate-800">
+                            {{ $dataPoliPasien->nama_poli ?? '-' }}
+                        </div>
                     </div>
                 </div>
-                <div>
-                    <div class="text-gray-500">Dokter</div>
-                    <div class="font-semibold">
-                        {{ $dataDokterPasien->nama_dokter ?? '-' }}
+
+                <div class="flex items-start gap-3">
+                    <div>
+                        <div class="text-[11px] uppercase tracking-wide text-slate-400">Dokter Penanggung Jawab</div>
+                        <div class="font-semibold text-slate-800">
+                            {{ $dataDokterPasien->nama_dokter ?? '-' }}
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
         {{-- FORM VITAL SIGN --}}
-        <div class="bg-white rounded-2xl shadow p-6">
+        <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-100">
+            <div class="px-5 pt-5 pb-2 border-b border-slate-100">
+                <h2 class="text-base md:text-lg font-semibold text-slate-800 flex items-center gap-2">
+                    <span
+                        class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold">1</span>
+                    Parameter Vital Sign
+                </h2>
+                <p class="text-xs text-slate-500 mt-1">
+                    Isi nilai vital sign pasien sesuai hasil pengukuran aktual.
+                </p>
+            </div>
+
             <form id="vital-emr-form" action="{{ route('perawat.submit.data.vital.sign.pasien', $dataIdEMR) }}"
-                method="POST" class="space-y-5">
+                method="POST" class="p-5 space-y-6">
                 @csrf
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {{-- GRID INPUT --}}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
+
                     {{-- Tekanan darah --}}
                     <div>
-                        <label for="tekanan_darah" class="block text-sm font-medium mb-1">
-                            Tekanan Darah (mmHg)
+                        <label for="tekanan_darah"
+                            class="block mb-1.5 text-xs font-semibold tracking-wide text-slate-700 uppercase">
+                            Tekanan Darah <span class="text-[11px] font-normal text-slate-400">(mmHg)</span>
                         </label>
-                        <input type="text" name="tekanan_darah" id="tekanan_darah" required
-                            value="{{ old('tekanan_darah', $dataEMR->tekanan_darah) }}"
-                            class="w-full border rounded-xl px-3 py-2 @error('tekanan_darah') border-red-500 @enderror"
-                            placeholder="120/80">
+                        <div class="relative">
+                            <input type="text" id="tekanan_darah" name="tekanan_darah"
+                                value="{{ old('tekanan_darah', $dataEMR->tekanan_darah) }}" placeholder="120/80"
+                                required
+                                class="peer bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
+                                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
+                                          placeholder:text-slate-400
+                                          @error('tekanan_darah') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
+                        </div>
                         @error('tekanan_darah')
                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                         @enderror
+                        <p class="mt-1 text-[11px] text-slate-400">
+                            Contoh: <span class="font-mono">120/80</span> untuk tekanan darah normal dewasa.
+                        </p>
                     </div>
 
                     {{-- Suhu tubuh --}}
                     <div>
-                        <label for="suhu_tubuh" class="block text-sm font-medium mb-1">
-                            Suhu Tubuh (°C)
+                        <label for="suhu_tubuh"
+                            class="block mb-1.5 text-xs font-semibold tracking-wide text-slate-700 uppercase">
+                            Suhu Tubuh <span class="text-[11px] font-normal text-slate-400">(°C)</span>
                         </label>
-                        <input type="number" step="0.1" min="30" max="45" name="suhu_tubuh"
-                            id="suhu_tubuh" required value="{{ old('suhu_tubuh', $dataEMR->suhu_tubuh) }}"
-                            class="w-full border rounded-xl px-3 py-2 @error('suhu_tubuh') border-red-500 @enderror"
-                            placeholder="36.7">
+                        <div class="relative">
+                            <input id="suhu_tubuh" name="suhu_tubuh" type="number" step="0.1" min="30"
+                                max="45" value="{{ old('suhu_tubuh', $dataEMR->suhu_tubuh) }}" placeholder="36.7"
+                                required
+                                class="peer bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
+                                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
+                                          placeholder:text-slate-400
+                                          @error('suhu_tubuh') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
+                        </div>
                         @error('suhu_tubuh')
                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                         @enderror
+                        <p class="mt-1 text-[11px] text-slate-400">
+                            Rentang normal sekitar <span class="font-mono">36–37.5°C</span>.
+                        </p>
                     </div>
 
                     {{-- Nadi --}}
                     <div>
-                        <label for="nadi" class="block text-sm font-medium mb-1">
-                            Nadi (bpm)
+                        <label for="nadi"
+                            class="block mb-1.5 text-xs font-semibold tracking-wide text-slate-700 uppercase">
+                            Nadi <span class="text-[11px] font-normal text-slate-400">(bpm)</span>
                         </label>
-                        <input type="number" min="30" max="220" name="nadi" id="nadi" required
-                            value="{{ old('nadi', $dataEMR->nadi) }}"
-                            class="w-full border rounded-xl px-3 py-2 @error('nadi') border-red-500 @enderror"
-                            placeholder="80">
+                        <div class="relative">
+                            <input id="nadi" name="nadi" type="number" min="30" max="220"
+                                value="{{ old('nadi', $dataEMR->nadi) }}" placeholder="80" required
+                                class="peer bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
+                                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
+                                          placeholder:text-slate-400
+                                          @error('nadi') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
+                        </div>
                         @error('nadi')
                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                         @enderror
+                        <p class="mt-1 text-[11px] text-slate-400">
+                            Dewasa normal: sekitar <span class="font-mono">60–100 bpm</span>.
+                        </p>
                     </div>
 
                     {{-- Pernapasan --}}
                     <div>
-                        <label for="pernapasan" class="block text-sm font-medium mb-1">
-                            Pernapasan (x/menit)
+                        <label for="pernapasan"
+                            class="block mb-1.5 text-xs font-semibold tracking-wide text-slate-700 uppercase">
+                            Frekuensi Napas <span class="text-[11px] font-normal text-slate-400">(x/menit)</span>
                         </label>
-                        <input type="number" min="5" max="60" name="pernapasan" id="pernapasan" required
-                            value="{{ old('pernapasan', $dataEMR->pernapasan) }}"
-                            class="w-full border rounded-xl px-3 py-2 @error('pernapasan') border-red-500 @enderror"
-                            placeholder="18">
+                        <div class="relative">
+                            <input id="pernapasan" name="pernapasan" type="number" min="5" max="60"
+                                value="{{ old('pernapasan', $dataEMR->pernapasan) }}" placeholder="18" required
+                                class="peer bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
+                                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
+                                          placeholder:text-slate-400
+                                          @error('pernapasan') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
+                        </div>
                         @error('pernapasan')
                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                         @enderror
+                        <p class="mt-1 text-[11px] text-slate-400">
+                            Normal dewasa: sekitar <span class="font-mono">12–20 x/menit</span>.
+                        </p>
                     </div>
 
                     {{-- SpO2 --}}
                     <div>
-                        <label for="saturasi_oksigen" class="block text-sm font-medium mb-1">
-                            Saturasi Oksigen (SpO₂, %)
+                        <label for="saturasi_oksigen"
+                            class="block mb-1.5 text-xs font-semibold tracking-wide text-slate-700 uppercase">
+                            Saturasi Oksigen <span class="text-[11px] font-normal text-slate-400">(SpO₂, %)</span>
                         </label>
-                        <input type="number" min="50" max="100" name="saturasi_oksigen"
-                            id="saturasi_oksigen" required
-                            value="{{ old('saturasi_oksigen', $dataEMR->saturasi_oksigen) }}"
-                            class="w-full border rounded-xl px-3 py-2 @error('saturasi_oksigen') border-red-500 @enderror"
-                            placeholder="98">
+                        <div class="relative">
+                            <input id="saturasi_oksigen" name="saturasi_oksigen" type="number" min="50"
+                                max="100" value="{{ old('saturasi_oksigen', $dataEMR->saturasi_oksigen) }}"
+                                placeholder="98" required
+                                class="peer bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
+                                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
+                                          placeholder:text-slate-400
+                                          @error('saturasi_oksigen') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
+                        </div>
                         @error('saturasi_oksigen')
                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                         @enderror
+                        <p class="mt-1 text-[11px] text-slate-400">
+                            Nilai normal umumnya <span class="font-mono">&ge; 95%</span>.
+                        </p>
                     </div>
                 </div>
 
-                <div class="flex items-center gap-3 pt-2">
-                    <button type="submit" class="px-4 py-2 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700">
-                        Simpan Vital Sign
-                    </button>
-                    <a href="{{ $urlBack }}" class="px-4 py-2 rounded-xl border">
-                        Kembali
-                    </a>
+                {{-- FOOTER FORM --}}
+                <div
+                    class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pt-4 border-t border-slate-100">
+                    <div class="text-[11px] text-slate-400">
+                        Pastikan data sesuai hasil pengukuran sebelum menekan tombol simpan.
+                    </div>
+                    <div class="flex items-center justify-end gap-3">
+                        <a href="{{ $urlBack }}"
+                            class="px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 
+                                  bg-white hover:bg-slate-50 hover:border-slate-400 transition">
+                            Kembali
+                        </a>
+                        <button type="submit"
+                            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white 
+                                       text-sm font-semibold shadow-sm hover:bg-indigo-700 focus:outline-none 
+                                       focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500 transition">
+                            <i class="fa-solid fa-floppy-disk text-xs"></i>
+                            <span>Simpan Vital Sign</span>
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -135,7 +232,7 @@
     {{-- SweetAlert2 --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
-    {{-- Pastikan path dan nama file JS sama dengan yang ada di resources/js --}}
+    {{-- JS khusus halaman ini --}}
     @vite(['resources/js/perawat/kunjungan/form-pengisian-vital-sign-pasien.js'])
 
 </body>

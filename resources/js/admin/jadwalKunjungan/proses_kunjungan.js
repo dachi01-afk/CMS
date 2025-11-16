@@ -267,6 +267,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     );
                     const namaPoli = esc(item.poli?.nama_poli ?? "-");
                     const keluhan = esc(item.keluhan_awal ?? "-");
+                    const status = esc(item.status ?? "-");
 
                     const dokterId =
                         item.dokter_id ??
@@ -278,10 +279,11 @@ document.addEventListener("DOMContentLoaded", () => {
                     return `
                         <tr class="hover:bg-indigo-50/60 transition-colors">
                             <td class="px-6 py-3 font-semibold text-gray-900">${noAntrian}</td>
-                            <td class="px-6 py-3 text-gray-800">${namaPasien}</td>
-                            <td class="px-6 py-3 text-gray-800">${namaDokter}</td>
-                            <td class="px-6 py-3 text-gray-800">${namaPoli}</td>
-                            <td class="px-6 py-3 text-gray-800">${keluhan}</td>
+                            <td class="px-6 py-3 text-gray-800 text-center">${namaPasien}</td>
+                            <td class="px-6 py-3 text-gray-800 text-center">${namaDokter}</td>
+                            <td class="px-6 py-3 text-gray-800 text-center">${namaPoli}</td>
+                            <td class="px-6 py-3 text-gray-800 text-center">${keluhan}</td>
+                            <td class="px-6 py-3 text-gray-800 text-center">${status}</td>
                             <td class="px-6 py-3 text-right">
                                 <div class="relative flex justify-center">
                                     <button type="button"
@@ -320,6 +322,7 @@ document.addEventListener("DOMContentLoaded", () => {
                                                 data-dokter_id="${dokterId}"
                                                 data-poli_id="${poliId}"
                                                 data-keluhan="${keluhan}"
+                                                data-status-kunjungan="${status}"
                                                 data-update-url="/jadwal_kunjungan/updateKunjungan/${item.id}"
                                                 class="editKunjunganBtn w-full px-4 py-2 flex items-center gap-2 text-xs
                                                        text-gray-700 hover:bg-gray-50">
@@ -520,6 +523,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 d.nama_pasien || "-";
             document.getElementById("edit_keluhan_awal").value =
                 d.keluhan || "";
+            document.getElementById("edit_status").value =
+                d.statusKunjungan || "";
 
             const dokterId = d.dokter_id || "";
             const dokterNama = d.nama_dokter || null;

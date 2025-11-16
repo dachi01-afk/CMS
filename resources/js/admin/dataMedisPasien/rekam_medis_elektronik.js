@@ -9,43 +9,10 @@ const ENDPOINT_LIST = "/data_medis_pasien/data_emr";
 const DETAIL_BASE = "/data_medis_pasien/detail-emr";
 
 /* =========================
-   UTIL: Format Tanggal Aman
-   - Mendukung input "YYYY-MM-DD" atau ISO datetime.
-   - Jika parsable: tampilkan dd MMMM yyyy HH.mm (WIB)
-   - Jika hanya tanggal: tampilkan dd MMMM yyyy
-========================= */
-function formatTanggalID(tanggal) {
-    if (!tanggal) return "-";
-    // Cek pola tanggal saja (YYYY-MM-DD)
-    const onlyDate = /^\d{4}-\d{2}-\d{2}$/.test(tanggal);
-    const d = new Date(tanggal);
-    if (isNaN(d.getTime())) {
-        // fallback: tampilkan raw jika Date gagal parse
-        return tanggal;
-    }
-    if (onlyDate) {
-        return d.toLocaleDateString("id-ID", {
-            timeZone: "Asia/Jakarta",
-            day: "2-digit",
-            month: "long",
-            year: "numeric",
-        });
-    }
-    return d
-        .toLocaleString("id-ID", {
-            timeZone: "Asia/Jakarta",
-            day: "2-digit",
-            month: "long",
-            year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
-        })
-        .replace(".", ":"); // opsional: 10.05 -> 10:05
-}
-
-/* =========================
    DATA TABLE EMR
 ========================= */
+// const ENDPOINT_LIST = "/data_medis_pasien/pasien-emr"; // ganti
+// const DETAIL_BASE = "/data_medis_pasien/pasien"; // untuk redirect halaman 2
 $(function () {
     initFlowbite?.();
 
@@ -68,29 +35,18 @@ $(function () {
                 searchable: false,
                 className: "whitespace-nowrap",
             },
-            { data: "nama_pasien", name: "nama_pasien", defaultContent: "-" },
-            { data: "nama_dokter", name: "nama_dokter", defaultContent: "-" },
             {
-                data: "tanggal_kunjungan",
-                name: "tanggal_kunjungan",
-                render: (data) => formatTanggalID(data),
+                data: "no_emr",
+                name: "no_emr",
+                defaultContent: "-",
                 className: "whitespace-nowrap",
             },
-            { data: "keluhan_awal", name: "keluhan_awal", defaultContent: "-" },
+            { data: "nama_pasien", name: "nama_pasien", defaultContent: "-" },
             {
-                data: "keluhan_utama",
-                name: "keluhan_utama",
-                defaultContent: "-",
-            },
-            {
-                data: "riwayat_penyakit_dahulu",
-                name: "riwayat_penyakit_dahulu",
-                defaultContent: "-",
-            },
-            {
-                data: "riwayat_penyakit_keluarga",
-                name: "riwayat_penyakit_keluarga",
-                defaultContent: "-",
+                data: "total_emr",
+                name: "total_emr",
+                defaultContent: 0,
+                className: "text-center",
             },
             {
                 data: "action",
@@ -110,24 +66,21 @@ $(function () {
         },
     });
 
-    /* =========================
-     SEARCH
-  ========================= */
+    // SEARCH
     $("#emr-searchInput").on("keyup", function () {
         table.search(this.value).draw();
     });
 
-    /* =========================
-     PAGINATION CUSTOM
-  ========================= */
+    // PAGINATION custom (tetap pakai punyamu tadi)
     const $info = $("#emr-customInfo");
     const $pagination = $("#emr-customPagination");
     const $perPage = $("#emr-pageLength");
 
     function updatePagination() {
         const info = table.page.info();
+        if (!info) return;
         const currentPage = info.page + 1;
-        const totalPages = info.pages;
+        const totalPages = info.pages || 1;
 
         $info.text(
             `Menampilkan ${info.start + 1}–${info.end} dari ${
@@ -190,16 +143,12 @@ $(function () {
     table.on("draw", updatePagination);
     updatePagination();
 
-    /* =========================
-     LIHAT DETAIL EMR
-     - Tombol dari server: .btn-detail-emr data-id
-     - Redirect ke /data_medis_pasien/detail/{id}
-     - (Opsional) ganti ke modal AJAX kalau dibutuhkan
-  ========================= */
-    $("body").on("click", ".btn-detail-emr", function () {
-        const id = $(this).data("id");
-        if (!id) return;
-        window.location.href = `${DETAIL_BASE}/${id}`;
+    // ➜ Klik "Lihat Detail EMR Pasien" → ke Halaman 2
+    $("body").on("click", ".btn-lihat-emr", function () {
+        const noEMRPasien = $(this).data("noEmr");
+        if (!noEMRPasien) return;
+        window.location.href = `${DETAIL_BASE}/${noEMRPasien}`;
+        // contoh URL: /data_medis_pasien/pasien/5/emr
     });
 });
 

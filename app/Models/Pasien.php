@@ -10,6 +10,10 @@ class Pasien extends Model
     protected $primaryKey = 'id';
     protected $guarded = [];
 
+    protected $casts = [
+        'tanggal_lahir' => 'date', // atau 'datetime'
+    ];
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -23,6 +27,11 @@ class Pasien extends Model
     public function Testimoni()
     {
         return $this->hasMany(Testimoni::class);
+    }
+
+    public function emr()
+    {
+        return $this->hasMany(EMR::class);
     }
 
     public function obat()

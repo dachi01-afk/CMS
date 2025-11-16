@@ -28,6 +28,7 @@ use App\Http\Controllers\Admin\ManajemenPenggunaController;
 use App\Http\Controllers\Admin\PengambilanObatController;
 use App\Http\Controllers\Management\JadwalDokterController;
 use App\Http\Controllers\Admin\AturJadwalKunjunganController;
+use App\Http\Controllers\Admin\DataMedisPasienController as AdminDataMedisPasienController;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
 use App\Http\Controllers\Dokter\DokterController as DokterDokterController;
 use App\Http\Controllers\QrCodeController;
@@ -106,7 +107,7 @@ Route::middleware('auth')->group(function () {
 
 Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     Route::prefix('admin')->name('admin.')->group(function () {
@@ -231,7 +232,8 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::get('/hasil_lab', [DataMedisPasienController::class, 'dataLab'])->name('hasil_lab');
         Route::get('/data_emr', [DataMedisPasienController::class, 'getDataEMR'])->name('data_emr');
         Route::get('/get-data-emr-by-id/{id}', [DataMedisPasienController::class, 'getDataEMRById'])->name('get.data.emr.by.id');
-        Route::get('/detail-emr/{id}', [DataMedisPasienController::class, 'detailEMR'])->name('detail_emr');
+        Route::get('/detail-emr/{no_emr}', [DataMedisPasienController::class, 'detailEMR'])->name('detail_emr');
+        Route::get('/detail-emr/pasien/{id}', [DataMedisPasienController::class, 'detailEMRPasien'])->name('detail.emr.pasien');
     });
 
     // Route::prefix('pengambilan_obat')->group(function () {

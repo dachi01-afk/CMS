@@ -32,7 +32,7 @@
                     <th class="px-6 py-3">Dokter</th>
                     <th class="px-6 py-3">Poli</th>
                     <th class="px-6 py-3">Keluhan</th>
-                    <th class="px-6 py-3 text-center">Aksi</th>
+                    <th class="px-6 py-3">Aksi</th>
                 </tr>
             </thead>
             <tbody></tbody>

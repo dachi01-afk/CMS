@@ -60,7 +60,7 @@ class LayananController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Berhasil Menambahkan Data Layanan Pada Poli ',
+            'message' => 'Berhasil Menambahkan Data Layanan',
         ]);
     }
 
@@ -94,7 +94,7 @@ class LayananController extends Controller
         ]);
 
         return response()->json([
-            'message' => 'Berhasil Merubah Data Layanan Pada Poli ',
+            'message' => 'Berhasil Merubah Data Layanan',
         ]);
     }
 
@@ -105,7 +105,7 @@ class LayananController extends Controller
         $dataLayanan->delete();
 
         return response()->json([
-            'message' => "Berhasil Menghapus 1 Data Layanan Dari Poli ",
+            'message' => "Berhasil Menghapus 1 Data Layanan",
         ]);
     }
 }

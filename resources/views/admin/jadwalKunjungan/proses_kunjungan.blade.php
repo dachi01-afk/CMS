@@ -35,10 +35,11 @@
                 <thead class="bg-indigo-50 text-indigo-700 uppercase text-[11px]">
                     <tr>
                         <th class="px-5 py-3 text-left font-semibold">No Antrian</th>
-                        <th class="px-5 py-3 text-left font-semibold">Nama Pasien</th>
-                        <th class="px-5 py-3 text-left font-semibold">Dokter</th>
-                        <th class="px-5 py-3 text-left font-semibold">Poli</th>
-                        <th class="px-5 py-3 text-left font-semibold">Keluhan</th>
+                        <th class="px-5 py-3 text-center font-semibold">Nama Pasien</th>
+                        <th class="px-5 py-3 text-center font-semibold">Dokter</th>
+                        <th class="px-5 py-3 text-center font-semibold">Poli</th>
+                        <th class="px-5 py-3 text-center font-semibold">Keluhan</th>
+                        <th class="px-5 py-3 text-center font-semibold">Status Kunjungan</th>
                         <th class="px-5 py-3 text-center font-semibold w-32">Aksi</th>
                     </tr>
                 </thead>
@@ -57,7 +58,7 @@
 {{-- MODAL: Edit Kunjungan (tanpa SweetAlert) --}}
 <div id="editKunjunganModal" aria-hidden="true"
     class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 bg-black bg-opacity-40 backdrop-blur-sm">
-    <div class="relative w-full max-w-lg max-h-full">
+    <div class="relative w-full max-w-3xl max-h-full">
         <div class="relative bg-white rounded-2xl shadow-xl border border-gray-100">
 
             {{-- Header --}}
@@ -67,7 +68,7 @@
                         Edit Kunjungan Pasien
                     </h3>
                     <p class="text-xs text-gray-500 mt-1">
-                        Ubah dokter, poli, keluhan, atau status kunjungan.
+                        Ubah dokter, poli, keluhan.
                     </p>
                 </div>
                 <button type="button"
@@ -91,12 +92,21 @@
                     </div>
                     <div>
                         <label class="block mb-1 text-xs font-semibold text-gray-700">
-                            Nama Pasien
+                            Status Kunjungan
                         </label>
-                        <input type="text" id="edit_nama_pasien" readonly
+                        <input type="text" id="edit_status" readonly
                             class="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-lg px-3 py-2.5 text-sm">
                     </div>
                 </div>
+
+                <div>
+                    <label class="block mb-1 text-xs font-semibold text-gray-700">
+                        Nama Pasien
+                    </label>
+                    <input type="text" id="edit_nama_pasien" readonly
+                        class="w-full bg-gray-50 border border-gray-200 text-gray-900 rounded-lg px-3 py-2.5 text-sm">
+                </div>
+
 
                 {{-- Dokter & Poli (search seperti di perawat) --}}
                 <div class="grid md:grid-cols-2 gap-4 text-sm">
@@ -138,6 +148,7 @@
                         class="w-full bg-gray-50 border border-gray-200 text-gray-900 text-sm rounded-lg px-3 py-2.5
                                      focus:outline-none focus:ring-2 focus:ring-indigo-200 focus:border-indigo-400"></textarea>
                 </div>
+
 
                 {{-- Global error box --}}
                 <div id="edit_error_box"

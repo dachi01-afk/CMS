@@ -38,11 +38,6 @@ class Kunjungan extends Model
         return $this->belongsTo(Dokter::class);
     }
 
-    public function perawat()
-    {
-        return $this->belongsTo(Perawat::class);
-    }
-
     public function poli()
     {
         return $this->belongsTo(Poli::class);

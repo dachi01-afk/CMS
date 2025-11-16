@@ -24,6 +24,7 @@ class JadwalDokterSeeder extends Seeder
             ['hari' => 'Kamis',  'jam_awal' => '08:00:00', 'jam_selesai' => '12:00:00'],
             ['hari' => 'Jumat',  'jam_awal' => '10:00:00', 'jam_selesai' => '12:00:00'],
             ['hari' => 'Sabtu',  'jam_awal' => '09:00:00', 'jam_selesai' => '11:30:00'],
+            ['hari' => 'Minggu', 'jam_awal' => '09:00:00', 'jam_selesai' => '23:30:00'],
         ];
 
         DB::transaction(function () use ($rows, $slots) {
