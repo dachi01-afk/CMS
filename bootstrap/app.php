@@ -15,12 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // ✅ Middleware global (Laravel 12 pakai ->append())
         $middleware->append([
             HandleCors::class, // aktifkan CORS di seluruh request
         ]);
 
-        // ✅ Middleware alias
         $middleware->alias([
             'role' => RoleMiddleware::class,
             'checkAuth' => RedirectIfAuthenticatedWithRole::class,

@@ -122,9 +122,7 @@ Route::middleware(['auth:sanctum', 'role:Dokter'])
         Route::post('/update-profile', [APIMobileController::class, 'updateDataDokter'])->name('update_profile');
         Route::get('/get-data-kunjungan-by-id-dokter', [APIMobileController::class, 'getDataKunjunganBerdasarkanIdDokter'])->name('kunjungan_by_dokter');
         Route::get('/get-data-obat', [APIMobileController::class, 'getDataObat'])->name('obat');
-        
         Route::get('/get-layanan', [APIMobileController::class, 'getLayanan'])->name('layanan');
-        
         Route::post('/save-emr', [APIMobileController::class, 'saveEMR'])->name('save_emr');
         Route::get('/riwayat-pasien-diperiksa', [APIMobileController::class, 'getRiwayatPasienDiperiksa'])->name('riwayat_pasien_diperiksa');
         Route::get('/detail-riwayat-pasien/{kunjunganId}', [APIMobileController::class, 'getDetailRiwayatPasien'])->name('detail_riwayat_pasien');
@@ -132,4 +130,5 @@ Route::middleware(['auth:sanctum', 'role:Dokter'])
         Route::get('/get-data-kunjungan/{kunjungan_id}', [APIMobileController::class, 'getDataKunjunganById'])->name('get_data_kunjungan_by_id');
         Route::get('/riwayat-diagnosis/{pasien_id}', [APIMobileController::class, 'getRiwayatDiagnosisDokter'])->name('riwayat_diagnosis_dokter');
         Route::get('/detail-kunjungan/{kunjungan_id}', [APIMobileController::class, 'getDataKunjungan'])->name('get_data_kunjungan');
+        Route::get('/perawat', [APIMobileController::class, 'getPerawatByDokter'])->name('perawat.index');
     });

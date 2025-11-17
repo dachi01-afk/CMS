@@ -26,7 +26,6 @@ return new class extends Migration
             // Drop FK lalu kolomnya
             $table->dropForeign('perawat_poli_id');
             $table->dropForeign('perawat_dokter_id');
-
             $table->dropColumn(['poli_id', 'dokter_id']);
         });
     }
