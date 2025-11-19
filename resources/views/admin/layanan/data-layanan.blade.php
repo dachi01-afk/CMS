@@ -35,6 +35,7 @@
                     <th class="px-6 py-3">No</th>
                     <th class="px-6 py-3">Nama Layanan</th>
                     <th class="px-6 py-3">Tarif Layanan</th>
+                    <th class="px-6 py-3">Kategori Layanan</th>
                     <th class="px-6 py-3 text-center">Aksi</th>
                 </tr>
             </thead>
@@ -48,54 +49,125 @@
     </div>
 </div>
 
-
 <!-- Modal Create Layanan -->
 <div id="modalCreateLayanan" aria-hidden="true"
-    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 bg-black bg-opacity-50">
-    <div class="relative w-full max-w-xl max-h-full">
-        <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
-            <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-600">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Tambah Data Layanan</h3>
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4
+           bg-black/40 backdrop-blur-sm">
+
+    <div class="w-full max-w-2xl">
+        <div class="bg-white/95 dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+
+            <!-- HEADER -->
+            <div class="px-6 py-4 bg-gradient-to-r from-sky-600 via-cyan-500 to-emerald-500">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 rounded-2xl bg-white/20 flex items-center justify-center">
+                        <i class="fa-solid fa-heart-pulse text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-white">
+                            Tambah Data Layanan Klinik
+                        </h3>
+                        <p class="text-xs text-sky-50/90">
+                            Lengkapi informasi layanan medis dan tarifnya dengan benar.
+                        </p>
+                    </div>
+                </div>
             </div>
 
-            <form id="formCreateLayanan" class="p-5 flex flex-col gap-4" data-url="{{ route('layanan.create.data') }}"
-                method="POST">
+            <!-- FORM -->
+            <form id="formCreateLayanan" class="px-6 py-5 space-y-5 bg-slate-50/60 dark:bg-gray-800"
+                data-url="{{ route('layanan.create.data') }}" method="POST">
                 @csrf
+
+                <!-- Info strip -->
+                <div
+                    class="flex items-center gap-2 text-xs rounded-xl px-3 py-2
+                            bg-emerald-50 text-emerald-700 border border-emerald-100
+                            dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-800">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>Pastikan nama layanan dan tarif sesuai dengan aturan klinik.</span>
+                </div>
+
+                {{-- Kategori Layanan --}}
+                <div>
+                    <label for="kategori_layanan_id_create"
+                        class="block mb-1.5 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                        Kategori Layanan
+                    </label>
+                    <div class="relative">
+                        <i class="fa-solid fa-layer-group absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <select id="kategori_layanan_id_create" name="kategori_layanan_id"
+                            class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300
+                                       bg-white text-gray-800 text-sm
+                                       focus:ring-teal-500 focus:border-teal-500
+                                       dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+                            <option value="">Pilih kategori layanan</option>
+                            @foreach ($dataKategoriLayanan as $kategori)
+                                <option value="{{ $kategori->id }}">
+                                    {{ $kategori->nama_kategori }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div id="kategori_layanan_id-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
 
                 {{-- Nama Layanan --}}
                 <div>
-                    <label for="nama_layanan" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama
-                        Layanan</label>
-                    <input type="text" name="nama_layanan" id="nama_layanan_create"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
-                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="Nama Layanan" required>
+                    <label for="nama_layanan_create"
+                        class="block mb-1.5 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                        Nama Layanan
+                    </label>
+                    <div class="relative">
+                        <i class="fa-solid fa-stethoscope absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" name="nama_layanan" id="nama_layanan_create"
+                            class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300
+                                      bg-white text-gray-800 text-sm
+                                      focus:ring-teal-500 focus:border-teal-500
+                                      dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                            placeholder="Contoh: Konsultasi Dokter Umum">
+                    </div>
                     <div id="nama_layanan-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
-                <!-- Harga -->
+                <!-- Harga Layanan -->
                 <div>
-                    <label for="harga_layanan"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Harga Layanan</label>
-                    <div class="relative mt-1">
+                    <label for="harga_layanan_create"
+                        class="block mb-1.5 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                        Harga Layanan
+                    </label>
+                    <div class="relative">
                         <span
-                            class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-300">Rp</span>
+                            class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-300 text-sm">
+                            Rp
+                        </span>
                         <input type="text" name="harga_layanan" id="harga_layanan_create"
-                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white pl-10"
-                            placeholder="Masukkan Harga" required>
-                        <div id="harga_layanan-error" class="text-red-600 text-sm mt-1"></div>
+                            class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300
+                                      bg-white text-gray-800 text-sm
+                                      focus:ring-teal-500 focus:border-teal-500
+                                      dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                            placeholder="Contoh: 150.000">
                     </div>
+                    <p class="text-[11px] text-gray-500 mt-1">
+                        Tulis angka saja, sistem akan mengonversi sesuai format penyimpanan.
+                    </p>
+                    <div id="harga_layanan-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
-                {{-- Buttons --}}
-                <div class="flex justify-end gap-3 mt-5 border-t border-gray-200 pt-4 dark:border-gray-600">
+                {{-- FOOTER --}}
+                <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
                     <button type="button" id="buttonCloseModalCreateLayanan"
-                        class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-white">
-                        Close
+                        class="px-5 py-2.5 text-sm font-medium rounded-lg
+                                   bg-gray-200 text-gray-800 hover:bg-gray-300
+                                   dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
+                        Batal
                     </button>
                     <button type="submit" id="saveJadwalButton"
-                        class="px-5 py-2.5 text-sm font-medium text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4">
-                        Save
+                        class="px-5 py-2.5 text-sm font-semibold rounded-lg
+                                   bg-teal-600 text-white shadow-md
+                                   hover:bg-teal-700 focus:ring-4 focus:ring-teal-200
+                                   dark:focus:ring-teal-800">
+                        Simpan Layanan
                     </button>
                 </div>
             </form>
@@ -103,59 +175,125 @@
     </div>
 </div>
 
-
-{{-- edit jadwal --}}
+<!-- Modal Update Layanan -->
 <div id="modalUpdateLayanan" aria-hidden="true"
-    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 bg-black bg-opacity-50">
-    <div class="relative w-full max-w-xl max-h-full">
-        <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
-            <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-600">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Edit Data Layanan</h3>
+    class="hidden fixed inset-0 z-50 flex items-center justify-center p-4
+           bg-black/40 backdrop-blur-sm">
+
+    <div class="w-full max-w-2xl">
+        <div class="bg-white/95 dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+
+            <!-- HEADER -->
+            <div class="px-6 py-4 bg-gradient-to-r from-sky-600 via-cyan-500 to-emerald-500">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 rounded-2xl bg-white/20 flex items-center justify-center">
+                        <i class="fa-solid fa-pen-to-square text-white text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-white">
+                            Edit Data Layanan Klinik
+                        </h3>
+                        <p class="text-xs text-sky-50/90">
+                            Perbarui informasi layanan dengan benar.
+                        </p>
+                    </div>
+                </div>
             </div>
 
-            <form id="formUpdateLayanan" class="p-5 flex flex-col gap-4" data-url="{{ route('layanan.update.data') }}"
-                method="POST">
+            <!-- FORM -->
+            <form id="formUpdateLayanan" class="px-6 py-5 space-y-5 bg-slate-50/60 dark:bg-gray-800"
+                data-url="{{ route('layanan.update.data') }}" method="POST">
+
+                <!-- Info strip -->
+                <div
+                    class="flex items-center gap-2 text-xs rounded-xl px-3 py-2
+                            bg-emerald-50 text-emerald-700 border border-emerald-100
+                            dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-800">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>Pastikan nama layanan dan tarif sesuai dengan aturan klinik.</span>
+                </div>
+
                 @csrf
                 <input type="hidden" id="id_update" name="id">
 
+                {{-- Kategori Layanan --}}
+                <div>
+                    <label for="kategori_layanan_id_update"
+                        class="block mb-1.5 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                        Kategori Layanan
+                    </label>
+                    <div class="relative">
+                        <i class="fa-solid fa-layer-group absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+
+                        <select id="kategori_layanan_id_update" name="kategori_layanan_id"
+                            class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300
+                                   bg-white text-gray-800 text-sm
+                                   focus:ring-teal-500 focus:border-teal-500
+                                   dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+                            <option value="">Memuat kategori…</option>
+                        </select>
+                    </div>
+                    <div id="kategori_layanan_id-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
                 {{-- Nama Layanan --}}
                 <div>
-                    <label for="nama_layanan" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama
-                        Layanan</label>
-                    <input type="text" name="nama_layanan" id="nama_layanan_update"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5
-                            focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="Nama Layanan" required>
+                    <label class="block mb-1.5 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                        Nama Layanan
+                    </label>
+                    <div class="relative">
+                        <i
+                            class="fa-solid fa-stethoscope absolute left-3 top-1/2 -translate-y-1/2 
+                                   text-gray-400"></i>
+
+                        <input type="text" id="nama_layanan_update" name="nama_layanan"
+                            class="w-full pl-10 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-800
+                                   focus:ring-teal-500 focus:border-teal-500
+                                   dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                            placeholder="Masukkan nama layanan">
+                    </div>
                     <div id="nama_layanan-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
-                <!-- Harga -->
+                {{-- Harga --}}
                 <div>
-                    <label for="harga_layanan"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Harga Layanan</label>
-                    <div class="relative mt-1">
+                    <label class="block mb-1.5 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                        Harga Layanan
+                    </label>
+                    <div class="relative">
                         <span
-                            class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-300">Rp</span>
-                        <input type="text" name="harga_layanan" id="harga_layanan_update"
-                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white pl-10"
-                            placeholder="Masukkan Harga" required>
-                        <div id="harga_layanan-error" class="text-red-600 text-sm mt-1"></div>
+                            class="absolute inset-y-0 left-0 flex items-center pl-3 
+                                     text-gray-500 dark:text-gray-300">Rp</span>
+
+                        <input type="text" id="harga_layanan_update" name="harga_layanan"
+                            class="w-full pl-10 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-800
+                                      focus:ring-teal-500 focus:border-teal-500
+                                      dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                            placeholder="Contoh: 150.000">
                     </div>
+                    <div id="harga_layanan-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
-                <div class="flex justify-end gap-3 mt-5 border-t border-gray-200 pt-4 dark:border-gray-600">
-                    <button type="button" id="buttonCloseModalUpdatePoli"
-                        class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-white">
-                        Close
+                <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    <button type="button" id="buttonCloseModalUpdateLayanan"
+                        class="px-5 py-2.5 text-sm font-medium rounded-lg
+                               bg-gray-200 text-gray-800 hover:bg-gray-300
+                               dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
+                        Batal
                     </button>
-                    <button type="submit" id="updateJadwalButton"
-                        class="px-5 py-2.5 text-sm font-medium text-white bg-blue-700 rounded-lg hover:bg-blue-800">
-                        Save
+
+                    <button type="submit"
+                        class="px-5 py-2.5 text-sm font-semibold rounded-lg
+                               bg-teal-600 text-white hover:bg-teal-700 shadow-md
+                               focus:ring-4 focus:ring-teal-200 dark:focus:ring-teal-800">
+                        Simpan Perubahan
                     </button>
                 </div>
+
             </form>
         </div>
     </div>
 </div>
+
 
 @vite(['resources/js/admin/layanan/data-layanan.js'])

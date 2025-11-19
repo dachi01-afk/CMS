@@ -50,4 +50,8 @@ class Pasien extends Model
             )
             ->withTimestamps();
     }
+
+    public function penjualanLayanan() {
+        return $this->hasMany(PenjualanLayanan::class);
+    }
 }

@@ -19,5 +19,8 @@ class MetodePembayaran extends Model
         return $this->hasMany(PenjualanObat::class);
     }
 
-    
+    public function penjualanLayanan()
+    {
+        return $this->hasMany(PenjualanLayanan::class);
+    }
 }

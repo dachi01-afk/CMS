@@ -6,6 +6,7 @@
     <title>Detail EMR Pasien {{ $emr->pasien->nama_pasien ?? '-' }}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     @vite('resources/css/app.css')
+    <link href='{{ asset('storage/assets/royal_klinik.svg') }}' rel='shortcut icon'>
 
     {{-- Font Awesome (kalau belum dimasukkan di layout utama) --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"

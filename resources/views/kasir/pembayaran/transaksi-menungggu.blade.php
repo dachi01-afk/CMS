@@ -3,7 +3,7 @@
     <h2 class="text-2xl font-bold text-gray-700">Transaksi Menunggu</h2>
 </div>
 
-<!-- Tabel Laboratorium -->
+<!-- Tabel Transaksi Menunggu -->
 <div class="overflow-hidden rounded-lg shadow-md">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 border-b border-gray-200">
         <div>

@@ -19,4 +19,14 @@ class Layanan extends Model
         )->withPivot('jumlah')
             ->withTimestamps();
     }
+
+    public function kategoriLayanan()
+    {
+        return $this->belongsTo(KategoriLayanan::class);
+    }
+
+    public function penjualanLayanan()
+    {
+        return $this->hasMany(PenjualanLayanan::class);
+    }
 }

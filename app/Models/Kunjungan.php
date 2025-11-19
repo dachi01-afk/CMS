@@ -13,6 +13,8 @@ class Kunjungan extends Model
 
     // Ubah dari guarded ke fillable untuk security yang lebih baik katanya pid
     protected $fillable = [
+        'jadwal_dokter_id',
+        'dokter_id',
         'poli_id',
         'pasien_id',
         'tanggal_kunjungan',
@@ -92,5 +94,10 @@ class Kunjungan extends Model
         return $this->belongsToMany(Layanan::class, 'kunjungan_layanan', 'kunjungan_id', 'layanan_id')
             ->withPivot(['jumlah'])
             ->withTimestamps();
+    }
+
+    public function penjualanLayanan()
+    {
+        return $this->hasMany(PenjualanLayanan::class);
     }
 }

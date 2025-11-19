@@ -40,6 +40,13 @@
                         Transaksi Obat
                     </button>
                 </li>
+                <li class="me-2" role="presentation">
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="transaksi-layanan-tab"
+                        data-tabs-target="#data-transaksi-layanan" type="button" role="tab"
+                        aria-controls="data-transaksi-layanan" aria-selected="false">
+                        Transaksi Layanan
+                    </button>
+                </li>
             </ul>
         </div>
 
@@ -55,6 +62,10 @@
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-transaksi-obat"
                     role="tabpanel" aria-labelledby="transaksi-obat-tab">
                     @include('kasir.pembayaran.transaksi-obat')
+                </div>
+                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-transaksi-layanan"
+                    role="tabpanel" aria-labelledby="transaksi-layanan-tab">
+                    @include('kasir.pembayaran.data-transaksi-layanan')
                 </div>
             </div>
         </div>

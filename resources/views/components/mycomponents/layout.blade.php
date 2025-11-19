@@ -114,6 +114,10 @@
                         Poli
                     </x-mycomponents.sidebar_link>
 
+                    <x-mycomponents.sidebar_link href="kategori.layanan.index" class="fa-solid fa-folder-open">
+                        Kategori Layanan
+                    </x-mycomponents.sidebar_link>
+
                     <x-mycomponents.sidebar_link href="layanan.index" class="fa-solid fa-clipboard-list">
                         Layanan
                     </x-mycomponents.sidebar_link>
@@ -131,6 +135,11 @@
                     <x-mycomponents.sidebar_link href="jadwal_kunjungan.index"
                         class="fa-solid fa-calendar-plus text-blue-600">
                         Jadwal Kunjungan
+                    </x-mycomponents.sidebar_link>
+
+                    <x-mycomponents.sidebar_link href="order.layanan.index" class="fa-solid fa-clipboard-list"
+                        :active="Request::routeIs('order.layanan.index')">
+                        Order Layanan
                     </x-mycomponents.sidebar_link>
 
                     <x-mycomponents.sidebar_link href="data_medis_pasien.index"
@@ -179,7 +188,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
+
     <!-- Tom Select -->
     <link href="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/css/tom-select.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/tom-select@2.4.1/dist/js/tom-select.complete.min.js"></script>

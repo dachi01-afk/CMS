@@ -17,6 +17,9 @@ export default defineConfig({
                 // poli
                 "resources/js/admin/poli/data-poli.js",
 
+                // Kategori Layanan
+                "resources/js/admin/kategoriLayanan/data-kategori-layanan.js",
+
                 // layanan
                 "resources/js/admin/poli/data-poli.js",
                 "resources/js/admin/layanan/data-layanan.js",
@@ -47,12 +50,19 @@ export default defineConfig({
                 "resources/js/admin/dataMedisPasien/data_diagnosa_dan_konsultasi.js",
                 "resources/js/admin/dataMedisPasien/data_hasil_lab.js",
 
+                // Order Layanan
+                "resources/js/admin/order-layanan/data-order-layanan.js",
+
+                // Start Role Kasir
                 // transaksi
                 "resources/js/kasir/pembayaran/transaksi-menunggu.js",
                 "resources/js/kasir/riwayat-transaksi/riwayat-transaksi.js",
 
                 // Metode Pembayaran
                 "resources/js/kasir/metode-pembayaran/metode-pembayaran.js",
+
+                // Transaksi Layanan
+                "resources/js/kasir/pembayaran/data-transaksi-layanan.js",
 
                 // transaksi obat
                 "resources/js/kasir/dashboard.js",
@@ -62,6 +72,8 @@ export default defineConfig({
 
                 // Riwyat Transaksi Obat
                 "resources/js/kasir/pembayaran/riwayat-transaksi-obat.js",
+
+                // End Role Kasir
 
                 // Role Perawat
                 "resources/js/perawat/dashboard.js",

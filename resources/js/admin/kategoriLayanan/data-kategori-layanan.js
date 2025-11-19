@@ -14,7 +14,7 @@ $(function () {
         pageLength: 10,
         lengthChange: false,
         info: false,
-        ajax: "/layanan/get-data-layanan",
+        ajax: "/kategori_layanan/get-data-kategori-layanan",
         columns: [
             {
                 data: "DT_RowIndex",
@@ -22,21 +22,9 @@ $(function () {
                 orderable: false,
                 searchable: false,
             },
-            { data: "nama_layanan", name: "nama_layanan" },
-            {
-                data: "harga_layanan",
-                name: "harga_layanan",
-                render: function (data) {
-                    if (!data) return "-";
-                    const formatted = Number(data).toLocaleString("id-ID", {
-                        style: "currency",
-                        currency: "IDR",
-                        minimumFractionDigits: 0,
-                    });
-                    return formatted; // hasilnya: Rp1.000.000
-                },
-            },
             { data: "nama_kategori", name: "nama_kategori" },
+            { data: "deskripsi_kategori", name: "deskripsi_kategori" },
+            { data: "status_kategori", name: "status_kategori" },
             {
                 data: "action",
                 name: "action",
@@ -123,87 +111,197 @@ $(function () {
     updatePagination();
 });
 
-// Create Data Layanan
+// Create Data Kategori Layanan
 $(function () {
-    const addModalEl = document.getElementById("modalCreateLayanan");
-    const $formAdd = $("#formCreateLayanan");
+    // Inisialisasi modal menggunakan library Modal (misalnya Bootstrap Modal)
+    const addModalEl = document.getElementById("modalCreateKategoriLayanan");
+    const addModal = addModalEl ? new Modal(addModalEl) : null;
+    const $formAdd = $("#formCreateKategoriLayanan");
 
     // Fungsi untuk reset form: bersihkan input, hapus class error, dan kosongkan pesan error
     function resetAddForm() {
-        if ($formAdd[0]) {
-            $formAdd[0].reset();
-        }
-        // Hapus class error untuk semua field yang mungkin divalidasi
-        $(
-            "#kategori_layanan_id_create, #nama_layanan_create, #harga_layanan_create"
-        ).removeClass("is-invalid");
-        // Kosongkan pesan error
-        $(
-            "#kategori_layanan_id-error, #nama_layanan-error, #harga_layanan-error"
-        ).html("");
-    }
-
-    // Fungsi untuk show modal
-    function showModal() {
-        addModalEl.classList.remove("hidden");
-    }
-
-    // Fungsi untuk hide modal
-    function hideModal() {
-        addModalEl.classList.add("hidden");
-        resetAddForm();
+        $formAdd[0].reset(); // Reset semua input
+        $formAdd.find(".is-invalid").removeClass("is-invalid"); // Hapus class invalid
+        $formAdd.find(".text-red-500").empty(); // Kosongkan pesan error (sesuai dengan desain baru)
     }
 
     // Event: Buka modal saat tombol "Tambah" diklik
     $("#buttonModalCreateLayanan").on("click", function () {
-        resetAddForm();
-        showModal();
+        resetAddForm(); // Reset form sebelum buka
+        addModal?.show(); // Tampilkan modal
     });
 
     // Event: Tutup modal saat tombol close diklik
     $("#buttonCloseModalCreateLayanan").on("click", function () {
-        hideModal();
-    });
-
-    // Opsional: Tutup modal saat klik backdrop atau tekan ESC
-    $(document).on("click", function (e) {
-        if (e.target === addModalEl) {
-            hideModal();
-        }
-    });
-    $(document).on("keydown", function (e) {
-        if (e.key === "Escape" && !addModalEl.classList.contains("hidden")) {
-            hideModal();
-        }
-    });
-
-    // 💰 Auto Format Rupiah Input (tampilan saja)
-    $("#harga_layanan_create").on("input", function () {
-        let value = $(this).val().replace(/\D/g, ""); // Hapus semua selain angka
-        if (value) {
-            value = new Intl.NumberFormat("id-ID").format(value);
-        }
-        $(this).val(value);
+        addModal?.hide(); // Sembunyikan modal
+        resetAddForm(); // Reset form setelah tutup
     });
 
     // Event: Submit form untuk create data
     $formAdd.on("submit", function (e) {
-        e.preventDefault();
-        const url = $formAdd.data("url");
+        e.preventDefault(); // Cegah submit default
+        const url = $formAdd.data("url"); // Ambil URL dari data attribute
 
-        // Ambil nilai dan bersihkan harga dari pemisah ribuan
-        const rawHarga = $("#harga_layanan_create").val() || "";
-        const hargaNumeric = rawHarga.replace(/\D/g, ""); // Kirim hanya digit ke backend
-
-        // Kumpulkan data form (sesuai skema: kategori_layanan_id, nama_layanan, harga_layanan)
-        // Note: poli_id tidak dikirim karena tidak ada di modal (tambah jika perlu)
+        // Kumpulkan data form (sesuai skema: nama_kategori, deskripsi_kategori, status_kategori)
         const formData = {
-            kategori_layanan_id: $("#kategori_layanan_id_create").val(),
-            nama_layanan: $("#nama_layanan_create").val(),
-            harga_layanan: hargaNumeric,
+            nama_kategori: $("#nama_kategori_create").val().trim(),
+            deskripsi_kategori: $("#deskripsi_kategori_create").val().trim(),
+            status_kategori: $('input[name="status_kategori"]:checked').val(), // Ambil nilai radio button yang dipilih
         };
 
         // Kirim request POST menggunakan Axios
+        axios
+            .post(url, formData)
+            .then((response) => {
+                // Jika berhasil, tampilkan notifikasi sukses
+                Swal.fire({
+                    icon: "success",
+                    title: "Berhasil!",
+                    text:
+                        response.data.message ||
+                        "Data kategori layanan berhasil ditambahkan.",
+                    timer: 2000,
+                    showConfirmButton: false,
+                });
+                addModal?.hide(); // Tutup modal
+                resetAddForm(); // Reset form
+                $("#layananTable").DataTable().ajax.reload(null, false); // Reload tabel tanpa reset paging
+            })
+            .catch((error) => {
+                // Tangani error validasi (422) atau server error
+                if (error.response?.status === 422) {
+                    const errors = error.response.data.errors;
+                    // Tampilkan error per field
+                    for (const field in errors) {
+                        $(`#${field}_create`).addClass("is-invalid"); // Tambah class invalid
+                        $(`#${field}-error`)
+                            .html(errors[field][0])
+                            .removeClass("hidden"); // Tampilkan pesan error
+                    }
+                    // Notifikasi validasi gagal
+                    Swal.fire({
+                        icon: "error",
+                        title: "Validasi Gagal!",
+                        text: "Periksa kembali input Anda.",
+                    });
+                } else {
+                    // Notifikasi error server
+                    Swal.fire({
+                        icon: "error",
+                        title: "Error Server!",
+                        text:
+                            error.response?.data?.message ||
+                            "Terjadi kesalahan server. Coba lagi.",
+                    });
+                }
+            });
+    });
+});
+
+// Update Data Kategori Layanan
+$(function () {
+    const editModalEl = document.getElementById("modalUpdateKategoriLayanan");
+    const $formEdit = $("#formUpdateKategoriLayanan");
+
+    // Fungsi untuk reset form: bersihkan input, radio, dan pesan error
+    function resetEditForm() {
+        if ($formEdit[0]) {
+            $formEdit[0].reset();
+        }
+
+        // Hilangkan class error di semua input dalam modal update
+        $("#modalUpdateKategoriLayanan")
+            .find(".is-invalid")
+            .removeClass("is-invalid");
+
+        // Sembunyikan semua pesan error
+        $("#modalUpdateKategoriLayanan")
+            .find(
+                "#nama_kategori-error, #deskripsi_kategori-error, #status_kategori-error"
+            )
+            .addClass("hidden")
+            .empty();
+
+        // Pastikan semua radio status_kategori kosong
+        $("#modalUpdateKategoriLayanan input[name='status_kategori']").prop(
+            "checked",
+            false
+        );
+    }
+
+    // Show modal
+    function showModal() {
+        editModalEl.classList.remove("hidden");
+    }
+
+    // Hide modal
+    function hideModal() {
+        editModalEl.classList.add("hidden");
+        resetEditForm();
+    }
+
+    // Klik tombol edit di tabel
+    $("body").on("click", ".btn-edit-kategori-layanan", function () {
+        resetEditForm();
+
+        const id = $(this).data("id");
+
+        axios
+            .get(`kategori_layanan/get-data-kategori-layanan-by-id/${id}`)
+            .then((response) => {
+                const kategori = response.data.data;
+
+                // Isi form
+                $("#id_update").val(kategori.id);
+                $("#nama_kategori_update").val(kategori.nama_kategori);
+                $("#deskripsi_kategori_update").val(
+                    kategori.deskripsi_kategori
+                );
+
+                // 🔴 Set radio button status berdasarkan enum: 'Aktif' / 'Tidak Aktif'
+                const status = (kategori.status_kategori ?? "").trim();
+
+                // Kosongkan dulu semua radio di modal UPDATE
+                const $radioStatus = $(
+                    "#modalUpdateKategoriLayanan input[name='status_kategori']"
+                );
+                $radioStatus.prop("checked", false);
+
+                if (status === "Aktif") {
+                    $(
+                        "#modalUpdateKategoriLayanan input[name='status_kategori'][value='Aktif']"
+                    ).prop("checked", true);
+                } else if (status === "Tidak Aktif") {
+                    $(
+                        "#modalUpdateKategoriLayanan input[name='status_kategori'][value='Tidak Aktif']"
+                    ).prop("checked", true);
+                }
+
+                showModal();
+            })
+            .catch(() => {
+                Swal.fire({
+                    icon: "error",
+                    title: "Gagal!",
+                    text: "Tidak dapat memuat data kategori layanan.",
+                });
+            });
+    });
+
+    // Submit form update
+    $formEdit.on("submit", function (e) {
+        e.preventDefault();
+        const url = $formEdit.data("url");
+
+        const formData = {
+            id: $("#id_update").val(),
+            nama_kategori: $("#nama_kategori_update").val().trim(),
+            deskripsi_kategori: $("#deskripsi_kategori_update").val().trim(),
+            status_kategori: $(
+                "#modalUpdateKategoriLayanan input[name='status_kategori']:checked"
+            ).val(),
+        };
+
         axios
             .post(url, formData)
             .then((response) => {
@@ -212,7 +310,7 @@ $(function () {
                     title: "Berhasil!",
                     text:
                         response.data.message ||
-                        "Data layanan berhasil disimpan.",
+                        "Data kategori layanan berhasil diperbarui.",
                     timer: 2000,
                     showConfirmButton: false,
                 });
@@ -220,30 +318,32 @@ $(function () {
                 $("#layananTable").DataTable().ajax.reload(null, false);
             })
             .catch((error) => {
-                // Bersihkan error lama dulu
-                $(
-                    "#kategori_layanan_id_create, #nama_layanan_create, #harga_layanan_create"
-                ).removeClass("is-invalid");
-                $(
-                    "#kategori_layanan_id-error, #nama_layanan-error, #harga_layanan-error"
-                ).html("");
-
                 if (error.response?.status === 422) {
                     const errors = error.response.data.errors || {};
 
-                    // Mapping field ke selector input
-                    const fieldMapping = {
-                        kategori_layanan_id: "#kategori_layanan_id_create",
-                        nama_layanan: "#nama_layanan_create",
-                        harga_layanan: "#harga_layanan_create",
-                    };
+                    // Bersihkan pesan error lama
+                    $("#modalUpdateKategoriLayanan")
+                        .find(
+                            "#nama_kategori-error, #deskripsi_kategori-error, #status_kategori-error"
+                        )
+                        .addClass("hidden")
+                        .empty();
+                    $("#modalUpdateKategoriLayanan")
+                        .find(".is-invalid")
+                        .removeClass("is-invalid");
 
+                    // Tampilkan error field satu per satu
                     for (const field in errors) {
-                        const inputSelector = fieldMapping[field];
-                        if (inputSelector) {
-                            $(inputSelector).addClass("is-invalid");
+                        if (field === "status_kategori") {
+                            $("#status_kategori-error")
+                                .html(errors[field][0])
+                                .removeClass("hidden");
+                        } else {
+                            $(`#${field}_update`).addClass("is-invalid");
+                            $(`#${field}-error`)
+                                .html(errors[field][0])
+                                .removeClass("hidden");
                         }
-                        $(`#${field}-error`).html(errors[field][0]);
                     }
 
                     Swal.fire({
@@ -257,177 +357,35 @@ $(function () {
                         title: "Error Server!",
                         text:
                             error.response?.data?.message ||
-                            "Terjadi kesalahan server.",
-                    });
-                }
-            });
-    });
-});
-
-// update data layanan
-$(function () {
-    const editModalEl = document.getElementById("modalUpdateLayanan");
-    const editModal = editModalEl ? new Modal(editModalEl) : null;
-    const $formEdit = $("#formUpdateLayanan");
-    const $selectKategori = $("#kategori_layanan_id_update");
-
-    function resetEditForm() {
-        if ($formEdit[0]) $formEdit[0].reset();
-
-        $(
-            "#nama_layanan_update, #harga_layanan_update, #kategori_layanan_id_update"
-        ).removeClass("is-invalid");
-
-        $(
-            "#nama_layanan-error, #harga_layanan-error, #kategori_layanan_id-error"
-        ).html("");
-    }
-
-    /**
-     * Load kategori layanan ke dalam dropdown UPDATE
-     * lalu set selected berdasarkan kategori_layanan_id
-     */
-    function loadKategoriUpdate(selectedId = null) {
-        $selectKategori.html(`<option value="">Memuat kategori...</option>`);
-
-        axios.get("/kategori_layanan/get-data-kategori-layanan").then((res) => {
-            const list = res.data.data || [];
-
-            $selectKategori.html(
-                `<option value="">Pilih kategori layanan</option>`
-            );
-
-            list.forEach((item) => {
-                $selectKategori.append(`
-                        <option value="${item.id}">
-                            ${item.nama_kategori}
-                        </option>
-                    `);
-            });
-
-            // Set selected value berdasarkan ID layanan yg sedang di-edit
-            if (selectedId) {
-                $selectKategori.val(selectedId);
-            }
-        });
-    }
-
-    // Auto format rupiah
-    $("#harga_layanan_update").on("input", function () {
-        let value = $(this).val().replace(/\D/g, "");
-        if (value) value = new Intl.NumberFormat("id-ID").format(value);
-        $(this).val(value);
-    });
-
-    // Klik tombol edit
-    $("body").on("click", ".btn-edit-layanan", function () {
-        resetEditForm();
-
-        const id = $(this).data("id");
-
-        axios
-            .get(`layanan/get-data-layanan-by-id/${id}`)
-            .then((response) => {
-                const layanan = response.data.data;
-
-                // Isi form awal
-                $("#id_update").val(layanan.id);
-                $("#nama_layanan_update").val(layanan.nama_layanan);
-
-                $("#harga_layanan_update").val(
-                    new Intl.NumberFormat("id-ID").format(layanan.harga_layanan)
-                );
-
-                /**
-                 * INI YANG PALING PENTING:
-                 * loadKategoriUpdate() HARUS diberikan
-                 * layanan.kategori_layanan_id
-                 * (bukan layanan.kategoriLayanan.id)
-                 */
-                loadKategoriUpdate(layanan.kategori_layanan_id);
-
-                editModal?.show();
-            })
-            .catch(() => {
-                Swal.fire({
-                    icon: "error",
-                    title: "Gagal!",
-                    text: "Tidak dapat memuat data layanan.",
-                });
-            });
-    });
-
-    // Submit form update
-    $formEdit.on("submit", function (e) {
-        e.preventDefault();
-
-        const formData = {
-            id: $("#id_update").val(),
-            kategori_layanan_id: $("#kategori_layanan_id_update").val(),
-            nama_layanan: $("#nama_layanan_update").val(),
-            harga_layanan: $("#harga_layanan_update").val().replace(/\D/g, ""),
-        };
-
-        axios
-            .post($formEdit.data("url"), formData)
-            .then((response) => {
-                Swal.fire({
-                    icon: "success",
-                    title: "Berhasil!",
-                    text: response.data.message,
-                    timer: 2000,
-                    showConfirmButton: false,
-                });
-
-                editModal?.hide();
-                $("#layananTable").DataTable().ajax.reload(null, false);
-            })
-            .catch((error) => {
-                $(
-                    "#nama_layanan_update, #harga_layanan_update, #kategori_layanan_id_update"
-                ).removeClass("is-invalid");
-                $(
-                    "#nama_layanan-error, #harga_layanan-error, #kategori_layanan_id-error"
-                ).html("");
-
-                if (error.response?.status === 422) {
-                    const errors = error.response.data.errors;
-
-                    if (errors.nama_layanan) {
-                        $("#nama_layanan_update").addClass("is-invalid");
-                        $("#nama_layanan-error").html(errors.nama_layanan[0]);
-                    }
-
-                    if (errors.harga_layanan) {
-                        $("#harga_layanan_update").addClass("is-invalid");
-                        $("#harga_layanan-error").html(errors.harga_layanan[0]);
-                    }
-
-                    if (errors.kategori_layanan_id) {
-                        $("#kategori_layanan_id_update").addClass("is-invalid");
-                        $("#kategori_layanan_id-error").html(
-                            errors.kategori_layanan_id[0]
-                        );
-                    }
-
-                    Swal.fire({
-                        icon: "error",
-                        title: "Validasi Gagal!",
-                        text: "Periksa kembali input Anda.",
+                            "Terjadi kesalahan server. Coba lagi.",
                     });
                 }
             });
     });
 
+    // Tombol Cancel
     $("#buttonCloseModalUpdateLayanan").on("click", function () {
-        editModal?.hide();
-        resetEditForm();
+        hideModal();
+    });
+
+    // Tutup modal saat klik backdrop
+    $(document).on("click", function (e) {
+        if (e.target === editModalEl) {
+            hideModal();
+        }
+    });
+
+    // Tutup modal saat ESC
+    $(document).on("keydown", function (e) {
+        if (e.key === "Escape" && !editModalEl.classList.contains("hidden")) {
+            hideModal();
+        }
     });
 });
 
 // delete data
 $(function () {
-    $("body").on("click", ".btn-delete-layanan", function () {
+    $("body").on("click", ".btn-delete-kategori-layanan", function () {
         const id = $(this).data("id");
         if (!id) return;
 
@@ -447,7 +405,10 @@ $(function () {
         }).then((result) => {
             if (result.isConfirmed) {
                 axios
-                    .post(`/layanan/delete-data-layanan`, formData)
+                    .post(
+                        `/kategori_layanan/delete-data-kategori-layanan`,
+                        formData
+                    )
                     .then((response) => {
                         Swal.fire({
                             icon: "success",
