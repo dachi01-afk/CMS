@@ -206,6 +206,8 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::put('/update_pasien/{id}', [PasienController::class, 'updatePasien'])->name('update_pasien');
         Route::delete('/delete_pasien/{id}', [PasienController::class, 'deletePasien'])->name('delete_pasien');
         Route::delete('/search', [PasienController::class, 'search'])->name('pasien');
+        Route::get('/cetak-stiker-pasien/{noEMR}', [PasienController::class, 'cetakStiker'])->name('cetak.stiker.pasien');
+        Route::get('/show-detail-data-pasien/{noEMR}', [PasienController::class, 'showPasien'])->name('show.detail.pasien');
     });
 
     Route::prefix('pengaturan_klinik')->name('pengaturan_klinik.')->group(function () {
@@ -318,6 +320,7 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('/', [FarmasiPengambilanObatController::class, 'index'])->name('pengambilan.obat');
             Route::get('/get-data', [FarmasiPengambilanObatController::class, 'getDataResepObat'])->name('get.data.resep.obat');
             Route::post('/update-status-resep-obat', [FarmasiPengambilanObatController::class, 'updateStatusResepObat'])->name('update.status.resep.obat');
+            Route::get('/cetak-stiker-obat/{id}', [FarmasiPengambilanObatController::class, 'cetakStikerObat']);
         });
     });
 });
@@ -365,9 +368,15 @@ Route::middleware(['auth', 'role:Kasir'])->group(function () {
 
         // Transaksi Layanan 
         Route::get('/get-data-transaksi-layanan', [TransaksiLayananController::class, 'getDataTransaksiLayanan'])->name('kasir.get.data.transaksi.layanan');
-        Route::get('/show-detail-transaksi-layanan/{id}', [TransaksiLayananController::class, 'showDetailTransaksiLayanan'])->name('kasir.show.detail.transaksi.layanan');
-        Route::get('/proses-pembayaran-layanan/{id}', [TransaksiLayananController::class, 'prosesPembayaranLayanan'])->name('kasir.proses.pembayaran.layanan');
+        Route::get('/show-detail-transaksi-layanan/{kodeTransaksi}', [TransaksiLayananController::class, 'showDetailTransaksiLayanan'])->name('kasir.show.detail.transaksi.layanan');
+        Route::get('/proses-pembayaran-layanan/{kodeTransaksi}', [TransaksiLayananController::class, 'prosesPembayaranLayanan'])->name('kasir.proses.pembayaran.layanan');
         Route::post('/proses-pembayaran-layanan', [TransaksiLayananController::class, 'submitPembayaranLayanan'])->name('kasir.submit.pembayaran.layanan');
+        Route::post('/layanan-pembayaran-cash', [TransaksiLayananController::class, 'pembayaranLayananCash'])->name('kasir.layanan.pembayaran.cash');
+        Route::post('/layanan-pembayaran-transfer', [TransaksiLayananController::class, 'pembayaranLayananTransfer'])->name('kasir.layanan.pembayaran.transfer');
+
+        // Riwayat Transaksi Layanan 
+        Route::get('/get-data-riwayat-transaksi-layanan', [TransaksiLayananController::class, 'getDataRiwayatTransaksiLayanan'])->name('kasir.get.data.riwayat.transaksi.layanan');
+        Route::get('/kwitansi-transaksi-layanan/{kodeTransaksi}', [TransaksiLayananController::class, 'kwitansiTransaksiLayanan'])->name('kasir.show.kwitansi.transaksi.layanan');
     });
 });
 
@@ -376,7 +385,7 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
         Route::get('/dashboard', [PerawatController::class, 'dashboard'])->name('perawat.dashboard');
 
         Route::get('/kunjungan', [KunjunganController::class, 'index'])->name('perawat.kunjungan');
-        Route::get('/getDataKunjunganHariIni', [KunjunganController::class, 'getDataKunjunganHariIni'])->name('perawat.get.data.kunjungan.hari.ini');
+        Route::get('/getDataKunjunganHariIni', [KunjunganController::class, 'getDataKFkasirunjunganHariIni'])->name('perawat.get.data.kunjungan.hari.ini');
         Route::post('/updateStatusKunjunganKeEngaged/{id}', [KunjunganController::class, 'updateStatusKunjunganKeEngaged'])->name('perawat.update.status.kunjungan.ke.engaged');
         Route::get('/getDataKunjunganDenganStatusEngaged', [KunjunganController::class, 'getDataKunjunganDenganStatusEngaged'])->name('perawat.get.data.kunjungan.dengan.status.engaged');
         Route::get('/form-pengisian-vital-sign/{id}', [KunjunganController::class, 'formPengisianVitalSign'])->name('perawat.form.pengisian.vital.sign');

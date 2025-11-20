@@ -2,9 +2,13 @@ import axios from "axios";
 import { initFlowbite } from "flowbite";
 import $ from "jquery";
 
-// data tabel Pasien
+initFlowbite();
+
+// =======================
+// DataTable Pengambilan Obat
+// =======================
 $(function () {
-    var table = $("#pengambilanResepObat").DataTable({
+    const table = $("#pengambilanResepObat").DataTable({
         processing: true,
         serverSide: true,
         paging: true,
@@ -86,7 +90,7 @@ $(function () {
     function updatePagination() {
         const info = table.page.info();
         const currentPage = info.page + 1;
-        const totalPages = info.pages;
+        const totalPages = info.pages || 1;
 
         $info.text(
             `Menampilkan ${info.start + 1}–${info.end} dari ${
@@ -95,17 +99,20 @@ $(function () {
         );
         $pagination.empty();
 
+        // Prev
         const prevDisabled =
             currentPage === 1 ? "opacity-50 cursor-not-allowed" : "";
         $pagination.append(
             `<li><a href="#" id="btnPrev" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 ${prevDisabled}">Previous</a></li>`
         );
 
+        // Numbered pages
         const maxVisible = 5;
         let start = Math.max(currentPage - Math.floor(maxVisible / 2), 1);
         let end = Math.min(start + maxVisible - 1, totalPages);
-        if (end - start < maxVisible - 1)
+        if (end - start < maxVisible - 1) {
             start = Math.max(end - maxVisible + 1, 1);
+        }
 
         for (let i = start; i <= end; i++) {
             const active =
@@ -117,6 +124,7 @@ $(function () {
             );
         }
 
+        // Next
         const nextDisabled =
             currentPage === totalPages ? "opacity-50 cursor-not-allowed" : "";
         $pagination.append(
@@ -128,31 +136,73 @@ $(function () {
         e.preventDefault();
         const $link = $(this);
         if ($link.hasClass("opacity-50")) return;
-        if ($link.attr("id") === "btnPrev") table.page("previous").draw("page");
-        else if ($link.attr("id") === "btnNext")
+
+        if ($link.attr("id") === "btnPrev") {
+            table.page("previous").draw("page");
+        } else if ($link.attr("id") === "btnNext") {
             table.page("next").draw("page");
-        else if ($link.hasClass("page-number"))
+        } else if ($link.hasClass("page-number")) {
             table.page(parseInt($link.data("page")) - 1).draw("page");
+        }
     });
 
     $perPage.on("change", function () {
-        table.page.len(parseInt($(this).val())).draw();
+        table.page.len(parseInt($(this).val(), 10)).draw();
     });
 
     table.on("draw", updatePagination);
     updatePagination();
 });
 
+// =======================
+// Update Status Pengambilan Obat
+// =======================
 $(function () {
     $("body").on("click", ".btnUpdateStatus", function () {
-        let resepId = $(this).data("resep-id");
-        let obatData = $(this).data("obat"); // ini array of {id, jumlah}
+        const resepId = $(this).data("resep-id");
+        const obatRaw = $(this).data("obat"); // bisa array of object / 1 object / dll
+
+        // 🔄 Normalisasi obatData -> array [{id, jumlah}, ...]
+        let obatData = [];
+
+        if (Array.isArray(obatRaw)) {
+            obatData = obatRaw
+                .map((item) => {
+                    if (!item) return null;
+
+                    // dukung beberapa kemungkinan key
+                    const id = item.id ?? item.obat_id ?? item.obatId ?? null;
+                    const jumlah =
+                        item.jumlah ?? item.qty ?? item.kuantitas ?? null;
+
+                    if (!id || !jumlah) return null;
+
+                    return {
+                        id: Number(id),
+                        jumlah: Number(jumlah),
+                    };
+                })
+                .filter(Boolean);
+        } else if (obatRaw && typeof obatRaw === "object") {
+            const id = obatRaw.id ?? obatRaw.obat_id ?? obatRaw.obatId ?? null;
+            const jumlah =
+                obatRaw.jumlah ?? obatRaw.qty ?? obatRaw.kuantitas ?? null;
+
+            if (id && jumlah) {
+                obatData = [
+                    {
+                        id: Number(id),
+                        jumlah: Number(jumlah),
+                    },
+                ];
+            }
+        }
 
         if (!resepId || !Array.isArray(obatData) || obatData.length === 0) {
             Swal.fire({
                 icon: "warning",
                 title: "Data tidak lengkap!",
-                text: "Resep ID atau Obat ID tidak ditemukan.",
+                text: "Resep ID atau data obat tidak valid.",
             });
             return;
         }
@@ -165,59 +215,57 @@ $(function () {
             confirmButtonText: "Iya",
             cancelButtonText: "Belum",
         }).then((result) => {
-            if (result.isConfirmed) {
-                axios
-                    .post(`/pengambilan_obat/update-status-resep-obat`, {
-                        resep_id: resepId,
-                        obat_list: obatData, // kirim array [{id, jumlah}, ...]
-                    })
-                    .then((response) => {
-                        Swal.fire({
-                            icon: "success",
-                            title: "Berhasil!",
-                            text:
-                                response.data.message ||
-                                "Status resep obat berhasil diperbarui.",
-                            showConfirmButton: false,
-                            timer: 1500,
-                        }).then(() => {
-                            // reload DataTable atau halaman
-                            if ($("#resepTable").length) {
-                                $("#resepTable")
-                                    .DataTable()
-                                    .ajax.reload(null, false);
-                            } else {
-                                window.location.reload();
-                            }
-                        });
-                    })
-                    .catch((error) => {
-                        // Ambil pesan dari backend
-                        const msg =
-                            error.response?.data?.message ||
-                            "Terjadi kesalahan server. Silakan coba lagi.";
+            if (!result.isConfirmed) return;
 
-                        // Tampilkan pesan berbeda kalau belum bayar
-                        if (
-                            msg.includes("Belum Bayar") ||
-                            msg.includes("pembayaran")
-                        ) {
-                            Swal.fire({
-                                icon: "warning",
-                                title: "Tidak Bisa Diupdate!",
-                                text: msg,
-                                confirmButtonText: "OK",
-                            });
+            axios
+                .post(`farmasi/pengambilan-obat/update-status-resep-obat`, {
+                    resep_id: resepId,
+                    obat_list: obatData, // [{id, jumlah}, ...]
+                })
+                .then((response) => {
+                    Swal.fire({
+                        icon: "success",
+                        title: "Berhasil!",
+                        text:
+                            response.data.message ||
+                            "Status resep obat berhasil diperbarui.",
+                        showConfirmButton: false,
+                        timer: 1500,
+                    }).then(() => {
+                        // 🔁 reload DataTable pengambilanResepObat
+                        if ($("#pengambilanResepObat").length) {
+                            $("#pengambilanResepObat")
+                                .DataTable()
+                                .ajax.reload(null, false);
                         } else {
-                            Swal.fire({
-                                icon: "error",
-                                title: "Gagal!",
-                                text: msg,
-                                confirmButtonText: "OK",
-                            });
+                            window.location.reload();
                         }
                     });
-            }
+                })
+                .catch((error) => {
+                    const msg =
+                        error.response?.data?.message ||
+                        "Terjadi kesalahan server. Silakan coba lagi.";
+
+                    if (
+                        msg.includes("Belum Bayar") ||
+                        msg.toLowerCase().includes("pembayaran")
+                    ) {
+                        Swal.fire({
+                            icon: "warning",
+                            title: "Tidak Bisa Diupdate!",
+                            text: msg,
+                            confirmButtonText: "OK",
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: "error",
+                            title: "Gagal!",
+                            text: msg,
+                            confirmButtonText: "OK",
+                        });
+                    }
+                });
         });
     });
 });

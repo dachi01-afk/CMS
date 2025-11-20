@@ -73,6 +73,9 @@ export default defineConfig({
                 // Riwyat Transaksi Obat
                 "resources/js/kasir/pembayaran/riwayat-transaksi-obat.js",
 
+                // Riwayat Transaksi Layanan 
+                "resources/js/kasir/riwayat-transaksi/data-riwayat-transaksi-layanan.js",
+
                 // End Role Kasir
 
                 // Role Perawat

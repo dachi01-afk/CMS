@@ -106,8 +106,6 @@ class TransaksiObatController extends Controller
             ->make(true);
     }
 
-
-
     public function transaksiObat($kodeTransaksi)
     {
         $dataTransaksiObat = PenjualanObat::with([
@@ -179,11 +177,6 @@ class TransaksiObatController extends Controller
             'metode_pembayaran_id' => $request->metode_pembayaran,
         ]);
 
-        // 🔽 Kurangi stok obat untuk setiap item di transaksi
-        foreach ($transaksiList as $item) {
-            DB::table('obat')->where('id', $item->obat_id)->decrement('jumlah', $item->jumlah);
-        }
-
         return response()->json([
             'success' => true,
             'message' => 'Transaksi berhasil! Kembalian Rp ' . number_format($request->kembalian, 0, ',', '.') . '. Terimakasih 😊😊😊',
@@ -249,11 +242,6 @@ class TransaksiObatController extends Controller
             'status'               => 'Sudah Bayar',
             'metode_pembayaran_id' => $request->metode_pembayaran,
         ]);
-
-        // 🔽 Kurangi stok obat untuk setiap item di transaksi
-        foreach ($record as $item) {
-            DB::table('obat')->where('id', $item->obat_id)->decrement('jumlah', $item->jumlah);
-        }
 
         return response()->json([
             'success' => true,

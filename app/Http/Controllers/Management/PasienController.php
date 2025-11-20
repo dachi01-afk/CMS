@@ -5,47 +5,67 @@ namespace App\Http\Controllers\Management;
 use App\Models\User;
 use App\Models\Pasien;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Intervention\Image\ImageManager;
 use Illuminate\Support\Facades\Schema;
-use Intervention\Image\Laravel\Facades\Image;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Intervention\Image\Drivers\Gd\Driver;
-use Intervention\Image\ImageManager;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
+use Intervention\Image\Laravel\Facades\Image;
 
 class PasienController extends Controller
 {
+
     public function createPasien(Request $request)
     {
         $request->validate([
-            'foto_pasien'           => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
-            'username_pasien'       => 'required|string|max:255',
-            'nama_pasien'           => 'required|string|max:255',
-            'email_pasien'          => 'required|email|unique:user,email',
-            'alamat_pasien'         => 'nullable|string|max:255',
-            'password_pasien'       => 'required|string|min:8|confirmed',
-            'tanggal_lahir_pasien'  => 'nullable|date',
-            'jenis_kelamin_pasien'  => 'nullable|in:Laki-laki,Perempuan',
-            'no_hp_pasien'          => 'nullable|string|max:20',
+            // Foto
+            'foto_pasien'               => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
+
+            // Data akun
+            'username_pasien'           => 'required|string|max:255|unique:user,username',
+            'email_pasien'              => 'required|email|unique:user,email',
+            'password_pasien'           => 'required|string|min:8|confirmed',
+
+            // Identitas dasar
+            'nama_pasien'               => 'required|string|max:255',
+            'alamat_pasien'             => 'nullable|string|max:255',
+            'no_hp_pasien'              => 'nullable|string|max:20',
+            'tanggal_lahir_pasien'      => 'nullable|date',
+            'jenis_kelamin_pasien'      => 'nullable|in:Laki-laki,Perempuan',
+
+            // Identitas tambahan
+            'nik'                       => 'nullable|string|max:20',
+            'no_bpjs'                   => 'nullable|string|max:50',
+            'golongan_darah'            => 'nullable|string|max:3',
+            'status_perkawinan'         => 'nullable|string|max:50',
+            'pekerjaan'                 => 'nullable|string|max:100',
+
+            // Penanggung jawab
+            'nama_penanggung_jawab'     => 'nullable|string|max:255',
+            'no_hp_penanggung_jawab'    => 'nullable|string|max:20',
+
+            // Medis
+            'alergi'                    => 'nullable|string',
         ]);
 
-        // ✅ Ambil nomor EMR terakhir dari database
+        // ==== Generate Nomor EMR (RM-00000001) ====
         $lastPasien = Pasien::orderBy('id', 'desc')->first();
         $lastNumber = 0;
 
         if ($lastPasien && preg_match('/RM-(\d+)/', $lastPasien->no_emr, $matches)) {
-            $lastNumber = (int)$matches[1];
+            $lastNumber = (int) $matches[1];
         }
 
-        // ✅ Nomor EMR berikutnya
         $nextNumber = $lastNumber + 1;
         $no_emr = 'RM-' . str_pad($nextNumber, 8, '0', STR_PAD_LEFT);
 
-        // ✅ Buat user baru
+        // ==== Buat User ====
         $user = User::create([
             'username' => $request->username_pasien,
             'email'    => $request->email_pasien,
@@ -53,7 +73,7 @@ class PasienController extends Controller
             'role'     => 'Pasien',
         ]);
 
-        // ✅ Upload & kompres foto (jika ada)
+        // ==== Upload Foto ====
         $fotoPath = null;
         if ($request->hasFile('foto_pasien')) {
             $file = $request->file('foto_pasien');
@@ -70,22 +90,39 @@ class PasienController extends Controller
             } else {
                 $image = Image::read($file);
                 $image->scale(width: 800);
-                Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+
+                Storage::disk('public')->put(
+                    $path,
+                    (string) $image->encodeByExtension($extension, quality: 80)
+                );
             }
 
             $fotoPath = $path;
         }
 
-        // ✅ Simpan data pasien ke database
+        // ==== Simpan Pasien (no_emr == barcode_pasien) ====
         Pasien::create([
-            'user_id'       => $user->id,
-            'no_emr'        => $no_emr,
-            'foto_pasien'   => $fotoPath,
-            'nama_pasien'   => $request->nama_pasien,
-            'alamat'        => $request->alamat_pasien,
-            'tanggal_lahir' => $request->tanggal_lahir_pasien,
-            'jenis_kelamin' => $request->jenis_kelamin_pasien,
-            'no_hp_pasien'  => $request->no_hp_pasien,
+            'user_id'                => $user->id,
+            'no_emr'                 => $no_emr,
+            'barcode_pasien'         => $no_emr,                   // ⬅️ SAMA dengan no_emr
+            'foto_pasien'            => $fotoPath,
+
+            'nama_pasien'            => $request->nama_pasien,
+            'alamat'                 => $request->alamat_pasien,
+            'tanggal_lahir'          => $request->tanggal_lahir_pasien,
+            'jenis_kelamin'          => $request->jenis_kelamin_pasien,
+            'no_hp_pasien'           => $request->no_hp_pasien,
+
+            'nik'                    => $request->nik,
+            'no_bpjs'                => $request->no_bpjs,
+            'golongan_darah'         => $request->golongan_darah,
+            'status_perkawinan'      => $request->status_perkawinan,
+            'pekerjaan'              => $request->pekerjaan,
+
+            'nama_penanggung_jawab'  => $request->nama_penanggung_jawab,
+            'no_hp_penanggung_jawab' => $request->no_hp_penanggung_jawab,
+
+            'alergi'                 => $request->alergi,
         ]);
 
         return response()->json([
@@ -93,6 +130,7 @@ class PasienController extends Controller
             'no_emr'  => $no_emr,
         ]);
     }
+
 
     public function getPasienById($id)
     {
@@ -103,49 +141,55 @@ class PasienController extends Controller
 
     public function updatePasien(Request $request, $id)
     {
-        $pasien = Pasien::findOrFail($id);
-        $user = $pasien->user;
+        $pasien = Pasien::with('user')->findOrFail($id);
+        $user   = $pasien->user;
 
         $request->validate([
-            'edit_foto_pasien'          => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
-            'edit_username_pasien'      => 'required|string|max:255|unique:user,username,' . $user->id,
-            'edit_nama_pasien'          => 'required|string|max:255',
-            'edit_email_pasien'         => 'required|email|unique:user,email,' . $user->id,
-            'edit_alamat_pasien'        => 'nullable|string|max:255',
-            'edit_tanggal_lahir_pasien' => 'nullable|date',
-            'edit_jenis_kelamin_pasien' => 'nullable|in:Laki-laki,Perempuan',
-            'edit_password_pasien'      => 'nullable|string|min:8|confirmed',
-            'edit_no_hp_dokter'         => 'nullable|string|max:20',
+            'foto_pasien'               => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
+
+            'username_pasien'           => 'required|string|max:255|unique:user,username,' . $user->id,
+            'email_pasien'              => 'required|email|unique:user,email,' . $user->id,
+            'password_pasien'           => 'nullable|string|min:8|confirmed',
+
+            'nama_pasien'               => 'required|string|max:255',
+            'alamat_pasien'             => 'nullable|string|max:255',
+            'no_hp_pasien'              => 'nullable|string|max:20',
+            'tanggal_lahir_pasien'      => 'nullable|date',
+            'jenis_kelamin_pasien'      => 'nullable|in:Laki-laki,Perempuan',
+
+            'nik'                       => 'nullable|string|max:20',
+            'no_bpjs'                   => 'nullable|string|max:50',
+            'golongan_darah'            => 'nullable|string|max:3',
+            'status_perkawinan'         => 'nullable|string|max:50',
+            'pekerjaan'                 => 'nullable|string|max:100',
+
+            'nama_penanggung_jawab'     => 'nullable|string|max:255',
+            'no_hp_penanggung_jawab'    => 'nullable|string|max:20',
+
+            'alergi'                    => 'nullable|string',
+            // kalau suatu saat no_emr boleh diedit:
+            'no_emr'                    => 'nullable|string|max:50',
         ]);
 
-        // ✅ Jika pasien belum punya no_emr, buatkan otomatis
-        if (empty($pasien->no_emr)) {
-            $lastPasien = Pasien::orderBy('id', 'desc')->first();
-            $lastNumber = 0;
+        // ==== Update User ====
+        $user->username = $request->username_pasien;
+        $user->email    = $request->email_pasien;
 
-            if ($lastPasien && preg_match('/RM-(\d+)/', $lastPasien->no_emr, $matches)) {
-                $lastNumber = (int)$matches[1];
-            }
-
-            $nextNumber = $lastNumber + 1;
-            $no_emr = 'RM-' . str_pad($nextNumber, 8, '0', STR_PAD_LEFT);
-
-            $pasien->no_emr = $no_emr;
-        }
-
-        // ✅ Update akun user
-        $user->username = $request->input('edit_username_pasien');
-        $user->email    = $request->input('edit_email_pasien');
-
-        if ($request->filled('edit_password_pasien')) {
-            $user->password = Hash::make($request->input('edit_password_pasien'));
+        if ($request->filled('password_pasien')) {
+            $user->password = Hash::make($request->password_pasien);
         }
         $user->save();
 
-        // ✅ Upload & kompres foto jika ada
-        $fotoPath = null;
-        if ($request->hasFile('edit_foto_pasien')) {
-            $file = $request->file('edit_foto_pasien');
+        // ==== Upload Foto (jika diganti) ====
+        $fotoPath = $pasien->foto_pasien;
+
+        if ($request->hasFile('foto_pasien')) {
+            // hapus foto lama
+            if ($fotoPath && Storage::disk('public')->exists($fotoPath)) {
+                Storage::disk('public')->delete($fotoPath);
+            }
+
+            $file = $request->file('foto_pasien');
             $extension = strtolower($file->getClientOriginalExtension());
             if ($extension === 'jfif') {
                 $extension = 'jpg';
@@ -159,35 +203,44 @@ class PasienController extends Controller
             } else {
                 $image = Image::read($file);
                 $image->scale(width: 800);
-                Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+
+                Storage::disk('public')->put(
+                    $path,
+                    (string) $image->encodeByExtension($extension, quality: 80)
+                );
             }
 
             $fotoPath = $path;
-
-            // Opsional: hapus foto lama jika ada
-            if ($pasien->foto_pasien && Storage::disk('public')->exists($pasien->foto_pasien)) {
-                Storage::disk('public')->delete($pasien->foto_pasien);
-            }
         }
 
-        // ✅ Update data pasien
-        $updateData = [
-            'nama_pasien'   => $request->edit_nama_pasien,
-            'alamat'        => $request->edit_alamat_pasien,
-            'tanggal_lahir' => $request->edit_tanggal_lahir_pasien,
-            'jenis_kelamin' => $request->edit_jenis_kelamin_pasien,
-            'no_hp_pasien'  => $request->edit_no_hp_pasien,
-        ];
+        // ==== Pastikan no_emr dan barcode_pasien selalu sama ====
+        $no_emr = $request->input('no_emr', $pasien->no_emr); // readonly di form, tapi siap kalau nanti boleh diedit
 
-        if ($fotoPath) {
-            $updateData['foto_pasien'] = $fotoPath;
-        }
+        $pasien->update([
+            'no_emr'                 => $no_emr,
+            'barcode_pasien'         => $no_emr,                 // ⬅️ sync dengan no_emr
+            'foto_pasien'            => $fotoPath,
 
-        $pasien->update($updateData);
+            'nama_pasien'            => $request->nama_pasien,
+            'alamat'                 => $request->alamat_pasien,
+            'tanggal_lahir'          => $request->tanggal_lahir_pasien,
+            'jenis_kelamin'          => $request->jenis_kelamin_pasien,
+            'no_hp_pasien'           => $request->no_hp_pasien,
+
+            'nik'                    => $request->nik,
+            'no_bpjs'                => $request->no_bpjs,
+            'golongan_darah'         => $request->golongan_darah,
+            'status_perkawinan'      => $request->status_perkawinan,
+            'pekerjaan'              => $request->pekerjaan,
+
+            'nama_penanggung_jawab'  => $request->nama_penanggung_jawab,
+            'no_hp_penanggung_jawab' => $request->no_hp_penanggung_jawab,
+
+            'alergi'                 => $request->alergi,
+        ]);
 
         return response()->json([
             'message' => 'Data pasien berhasil diperbarui.',
-            'no_emr'  => $pasien->no_emr,
         ]);
     }
 
@@ -257,5 +310,46 @@ class PasienController extends Controller
             DB::rollBack();
             return back()->with('error', 'Gagal generate no_emr: ' . $e->getMessage());
         }
+    }
+
+    public function showPasien($noEMR)
+    {
+        $pasien = Pasien::with('user')->where('no_emr', $noEMR)->firstOrFail();
+
+        $umur = null;
+        if ($pasien->tanggal_lahir) {
+            $tgl = Carbon::parse($pasien->tanggal_lahir);
+            $diff = $tgl->diff(Carbon::now());
+            $umur = sprintf('%d Tahun %d Bulan %d Hari', $diff->y, $diff->m, $diff->d);
+        }
+
+        return view('admin.manajemenPengguna.detail-data-pasien', [
+            'pasien' => $pasien,
+            'umur'   => $umur,
+        ]);
+    }
+
+    public function cetakStiker($noEMR)
+    {
+        $pasien = Pasien::where('no_emr', $noEMR)->firstOrFail();
+
+        // umur lengkap: tahun – bulan – hari
+        $umur = null;
+        if ($pasien->tanggal_lahir) {
+            $tglLahir = Carbon::parse($pasien->tanggal_lahir);
+            $diff     = $tglLahir->diff(Carbon::now());
+
+            $umur = sprintf(
+                '%d Tahun %d Bulan %d Hari',
+                $diff->y,
+                $diff->m,
+                $diff->d
+            );
+        }
+
+        return view('admin.manajemenPengguna.cetak-stiker-pasien', [
+            'pasien' => $pasien,
+            'umur'   => $umur,
+        ]);
     }
 }

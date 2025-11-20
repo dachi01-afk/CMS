@@ -1,0 +1,222 @@
+[33mcommit f3abd82a0f27b1b3656d1e79c3119b24b796b5e5[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Wed Nov 19 22:52:02 2025 +0700
+
+    Selesai Membuat Fitur CRUD Kategori Layanan '
+
+[33mcommit 21ca1a1afc51e471dcddc9ac82757b2f99b728dd[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Mon Nov 17 05:49:31 2025 +0700
+
+    Menambahkan Input Riwayat Penyakit Dahulu Dan Riwayat Penyakit Keluarga Pada Form Pengisian Vital Sign Pasien Dari Sisi Perawat
+
+[33mcommit 86833df44b0457d18cafc96019290a9e6a0d2cbf[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Mon Nov 17 05:30:54 2025 +0700
+
+    Redesign Halaman Form Pengisian Vital Sign Dari Sisi Perawat, Dan Memperbaiki Pemunculan Data EMR Pada Menu Rekam Medis Pasien Dari Sisi Admin
+
+[33mcommit a801da5a7815cddf888a7cae68876df2ea3031d8[m
+Author: itsmeFer <ferdinandsianturi28@gmail.com>
+Date:   Mon Nov 17 12:52:48 2025 +0700
+
+    memperbaiki dashboard dokter dan menampilkan perawat, pemeriksanya siapa, dan nampilkan emr si pasien di dashborad dokter
+
+[33mcommit d2265619c6b1854c91fd8031bf4b4c8274cabf9f[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Sat Nov 15 04:03:42 2025 +0700
+
+    Selesai Membuat Fitur Update Kunjungan Dari Sisi Admin
+
+[33mcommit b7958af550d4e9242dc472ba80facc8176ea7b0f[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Fri Nov 14 16:10:22 2025 +0700
+
+    Selesai Membuat Fitur Submnit Data Vital Sign Pasien Dari Sisi Role Perawat
+
+[33mcommit 8284f736d145e569e072b3634dcc510efd519c59[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Thu Nov 13 21:52:50 2025 +0700
+
+    Menambahkan input data keluhan_utama pada function udpateStatusKunjunganKeEngaged Di KunjunganController Perawat
+
+[33mcommit 42079f3bda15566fc265bfd1e009d401748eb39e[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Thu Nov 13 21:30:02 2025 +0700
+
+    Selesai Membuat Fitur updateStatusKunjunganKeEngaged Di KunjunganController (Untuk Role Perawat)
+
+[33mcommit 9ef58f002912bed662f3a14ac02633129f2d4ece[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Thu Nov 13 21:13:53 2025 +0700
+
+    Selesai Menambahkan Field perawat_id ke Tabel emr
+
+[33mcommit 69e107043afdd3fc3c61f4d42889da3ec600ea15[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Thu Nov 13 21:00:26 2025 +0700
+
+    Merubah Relasi Database Di Kunjungan, Emr, Dokter. Menyesuaikan Model-model Nya Dan Menyesuaikan Function Untuk Memunculkan Datanya Ke Front End
+
+[33mcommit 365a08994f8ce7477e684851a4779692958f7842[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Wed Nov 12 19:56:43 2025 +0700
+
+    Selesai Memunculkan Data Kunjungan Pada Role Perawat Dan Sedang Membuat Halaman Vital Sign Nya
+
+[33mcommit f85f6209125d6aeacb20949bc586f56f11fceae4[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Wed Nov 12 11:54:00 2025 +0700
+
+    Selesai Memunculkan Data Kunjungan Ke Halaman Dashboard Dengan Role Perawat
+
+[33mcommit 65da6b370ee65a141856292115b04aae1654fc01[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Tue Nov 11 17:59:14 2025 +0700
+
+    Selesai Menambahkan Inputan No Hp Pasien Pada Fitur CRUD Pasien
+
+[33mcommit cb96e122a331ecea74876600eb91760df0265445[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Tue Nov 11 17:28:56 2025 +0700
+
+    Selesai Memperbaiki Bug Pada Halaman Tambah Kunjungan Baru
+
+[33mcommit a8f5efe6ec86c0e789c8efc9911521f1eca05743[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Mon Nov 10 16:10:30 2025 +0700
+
+    Selesai Menyesuaikan CRUD Perawat Dengan Relasi Nya
+
+[33mcommit a62f13271b93d9024af1925f53f1cb063f00d1a3[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Mon Nov 10 13:50:39 2025 +0700
+
+    Menambahkan Relasi Pada Tabel Perawat. Yaitu Menambahkan Field poli_id dan dokter_id
+
+[33mcommit 22ee55abfa12c54ee15db770f58226434c29d01f[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Mon Nov 10 10:14:36 2025 +0700
+
+    Menambahkan Js Pengambilan Obat Pada Role Farmasi Ke Dalam Vite.config
+
+[33mcommit ed8f5e06500548acab8ea776232acfba0c30463c[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Mon Nov 10 10:13:19 2025 +0700
+
+    Menambahkan Js Dashboard Perawat Ke Dalam Vite.config
+
+[33mcommit f521d1abfccd7e19ee869406d76ca64c7246ddb1[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Mon Nov 10 10:08:57 2025 +0700
+
+    Fix Bug Pada Menu Riwayat Transaksi Pada Role Kasir
+
+[33mcommit e74cc77bd025018530b31cf529919cfec4539684[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Mon Nov 10 10:07:57 2025 +0700
+
+    Fix Bug Pada Menu Riwayat Transaksi Pada Role Kasir
+
+[33mcommit d49089a381b12827695d166c053ecbbfaa5dbf89[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Mon Nov 10 10:03:05 2025 +0700
+
+    Fix Bug Pada Menu Riwayat Transaksi Pada Role Kasir
+
+[33mcommit 6a9d00d70c84e15cb114493267e26ba1b41a3ef1[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Mon Nov 10 09:59:30 2025 +0700
+
+    fix bug pada halaman transaksi pada role kasir
+
+[33mcommit a17cc4d92dd1c7e8bae15cf68f8715e7952282ec[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Mon Nov 10 09:54:45 2025 +0700
+
+    Memperbaiki Routeing Pada Role Kasir
+
+[33mcommit 814c47697054d171ca61e85f87c46b53e6e02c9d[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Mon Nov 10 09:53:50 2025 +0700
+
+    Memperbaiki Routeing Pada Role Kasir
+
+[33mcommit 1fb8a87b27d02f1dca7e8d23f026faee74a298c6[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Mon Nov 10 09:49:18 2025 +0700
+
+    Memperbaiki Routeing Pada Role Kasir
+
+[33mcommit c74b602cc221051b75f751974ba51aace7f7ccf2[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Mon Nov 10 09:48:18 2025 +0700
+
+    Memperbaiki Routeing Pada Role Kasir
+
+[33mcommit f9ef3b0cdd7e003204404e1b2ef9db1f6b59b76f[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Mon Nov 10 09:44:29 2025 +0700
+
+    Menambahkan field no_hp_pasien pada tabel pasien, Selesai Membuat Fitur Login Untuk Role Perawat
+
+[33mcommit 6ec440c057dd372c639bb110a8b470218f15d6cc[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Mon Nov 10 09:43:01 2025 +0700
+
+    Menambahkan field no_hp_pasien pada tabel pasien, Selesai Membuat Fitur Login Untuk Role Perawat
+
+[33mcommit 9efff5af0235c7aeaf8aa6ea642259d990052a9f[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Sat Nov 8 22:53:11 2025 +0700
+
+    Selesai Menambahkan js untuk menu Data Perawat Di file vite.config
+
+[33mcommit a6a086b75849238d1afeba6948cce452046b0b84[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Sat Nov 8 22:51:48 2025 +0700
+
+    Selesai Menambahkan Role Perawat Dan Selesai Membuat CRUD Data Perawat Dari Sisi Role Admin
+
+[33mcommit a37e5a2d2f665a9ef46a3fb550ce47e58bf4a4d8[m
+Merge: 07f7cc5 99e16a5
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Sat Nov 8 00:47:54 2025 +0700
+
+    Selesai Memperbaiki Fitur Kunjungan Dan Kunjungan Yang Akan Datang
+
+[33mcommit 07f7cc5b4d26cea4ff5de03debbbf4c0c721a6de[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Sat Nov 8 00:46:47 2025 +0700
+
+    Selesai Memperbaiki Fitur Kunjungan Dan Kunjungan Yang Akan Datang
+
+[33mcommit 99e16a540c86a06846353ebf4ac61d894860385c[m
+Author: itsmeFer <ferdinandsianturi28@gmail.com>
+Date:   Fri Nov 7 22:35:26 2025 +0700
+
+    fix poli  dokter
+
+[33mcommit 08cfbb74750808abdc0edbc013e25914f02f9dd9[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Fri Nov 7 11:55:01 2025 +0700
+
+    Selesai Memperbaiki CRUD Jadwal Dokter
+
+[33mcommit 9af91a91895a3353abc6f4053b6996198d25d585[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Thu Nov 6 12:11:19 2025 +0700
+
+    Memperbaiki Bug Pada Migrasi Kasir
+
+[33mcommit bc6fe12c93f9d00ba20f7163f91fdf7602dec1de[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Thu Nov 6 12:06:13 2025 +0700
+
+    Selesai Merubah Relasi Dokter Dengan Poli Yang Awalnya One To Many menjadi Many To Many Dengan Tabel Pivot dokter_poli
+
+[33mcommit 31273e8fe366235b95630260395480f3e95cbb80[m
+Author: Davidgultom <DavidgultomM@gmail.com>
+Date:   Thu Nov 6 00:19:56 2025 +0700
+
+    Memperbaiki placholder pada pop up modal create dan update p

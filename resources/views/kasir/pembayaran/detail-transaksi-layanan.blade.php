@@ -62,7 +62,7 @@
                         </button>
 
                         @if ($status === 'Belum Bayar')
-                            <a href="{{ route('kasir.proses.pembayaran.layanan', $transaksi->id) }}"
+                            <a href="{{ route('kasir.proses.pembayaran.layanan', $transaksi->kode_transaksi) }}"
                                 class="inline-flex items-center gap-2 px-3 py-1.5 text-xs md:text-sm font-semibold
                                       text-white bg-gradient-to-r from-sky-500 to-indigo-600 rounded-lg shadow
                                       hover:from-sky-600 hover:to-indigo-700">

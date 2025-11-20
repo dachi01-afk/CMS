@@ -104,7 +104,6 @@ class ManajemenPenggunaController extends Controller
             ->make(true);
     }
 
-
     public function dataPasien()
     {
         $query = Pasien::with('user')->select('pasien.*')->latest()->get();
@@ -123,18 +122,57 @@ class ManajemenPenggunaController extends Controller
             ->addColumn('email_user', fn($row) => $row->user->email ?? '-')
             ->addColumn('role', fn($row) => $row->user->role ?? '-')
             ->addColumn('action', function ($pasien) {
+
+                $showUrl   = route('manajemen_pengguna.show.detail.pasien', $pasien->no_emr);
+                $stikerUrl = route('manajemen_pengguna.cetak.stiker.pasien', $pasien->no_emr);
+
                 return '
-            <button class="btn-edit-pasien text-blue-600 hover:text-blue-800 mr-2" data-id="' . $pasien->id . '" title="Edit">
-                <i class="fa-regular fa-pen-to-square text-lg"></i>
+    <div class="relative inline-block text-left">
+
+        <!-- Trigger -->
+        <button type="button"
+    class="btn-action-menu w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200">
+    <i class="fa-solid fa-ellipsis-vertical text-gray-700"></i>
+</button>
+
+        <!-- Dropdown -->
+        <div class="hidden absolute right-0 mt-2 w-40 origin-top-right bg-white border border-gray-200 
+                    rounded-xl shadow-lg z-50 action-dropdown">
+
+            <a href="' . $showUrl . '" 
+               class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                <i class="fa-regular fa-eye text-blue-600"></i>
+                Detail Pasien
+            </a>
+
+            <a href="' . $stikerUrl . '" target="_blank"
+               class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                <i class="fa-solid fa-print text-amber-600"></i>
+                Cetak Stiker
+            </a>
+
+            <button type="button"
+                class="btn-edit-pasien flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                data-id="' . $pasien->id . '">
+                <i class="fa-regular fa-pen-to-square text-green-600"></i>
+                Edit Pasien
             </button>
-            <button class="btn-delete-pasien text-red-600 hover:text-red-800" data-id="' . $pasien->id . '" title="Hapus">
-                <i class="fa-regular fa-trash-can text-lg"></i>
+
+            <button type="button"
+                class="btn-delete-pasien flex items-center gap-2 w-full px-3 py-2 text-sm text-red-700 hover:bg-gray-50"
+                data-id="' . $pasien->id . '">
+                <i class="fa-regular fa-trash-can text-red-600"></i>
+                Hapus Pasien
             </button>
-            ';
+
+        </div>
+    </div>
+    ';
             })
             ->rawColumns(['foto', 'action'])
             ->make(true);
     }
+
 
     public function dataFarmasi()
     {

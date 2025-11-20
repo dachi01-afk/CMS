@@ -92,6 +92,7 @@
                         <h4 class="text-xl font-semibold text-gray-900 dark:text-white">Ringkasan Transaksi</h4>
 
                         <div class="space-y-4">
+                            {{-- total awal (sebelum diskon) --}}
                             <dl class="flex items-center justify-between gap-4">
                                 <dt class="text-gray-500 dark:text-gray-400">Total Harga</dt>
                                 <dd class="text-base font-medium text-gray-900 dark:text-white">
@@ -99,6 +100,31 @@
                                 </dd>
                             </dl>
 
+                            {{-- input diskon persen --}}
+                            <dl class="flex items-center justify-between gap-4">
+                                <dt class="text-gray-500 dark:text-gray-400">Diskon (%)</dt>
+                                <dd class="flex-1 text-right">
+                                    <input type="number" id="diskon_persen" min="0" max="100"
+                                        value="0"
+                                        class="w-32 text-right rounded-lg border-gray-300 dark:bg-gray-700 dark:text-white" />
+                                </dd>
+                            </dl>
+
+                            {{-- subtotal setelah diskon (tampil realtime) --}}
+                            <dl class="flex items-center justify-between gap-4">
+                                <dt class="text-gray-500 dark:text-gray-400">Subtotal Setelah Diskon</dt>
+                                <dd id="subtotal_setelah_diskon_display"
+                                    class="text-base font-semibold text-gray-900 dark:text-white">
+                                    Rp{{ number_format($dataPembayaran->total_tagihan, 0, ',', '.') }}
+                                </dd>
+                            </dl>
+
+                            {{-- hidden untuk dipakai JS & dikirim ke backend --}}
+                            <input type="hidden" id="total_setelah_diskon"
+                                value="{{ $dataPembayaran->total_tagihan }}">
+                        </div>
+
+                        <div class="space-y-4 mt-4">
                             {{-- Metode Pembayar --}}
                             <dl
                                 class="flex items-center justify-between gap-4 border-t border-gray-200 pt-2 dark:border-gray-700">
@@ -111,10 +137,12 @@
                                     @endforeach
                                 </select>
                             </dl>
+
+                            {{-- total tagihan akhir (ikut subtotal setelah diskon) --}}
                             <dl
                                 class="flex items-center justify-between gap-4 border-t border-gray-200 pt-2 dark:border-gray-700">
                                 <dt class="text-lg font-bold text-gray-900 dark:text-white">Total Tagihan</dt>
-                                <dd class="text-lg font-bold text-gray-900 dark:text-white">
+                                <dd class="text-lg font-bold text-gray-900 dark:text-white" id="total_tagihan_display">
                                     Rp{{ number_format($dataPembayaran->total_tagihan, 0, ',', '.') }}
                                 </dd>
                             </dl>
@@ -137,7 +165,10 @@
         </div>
     </section>
 
-    <!-- Modal Pembayaran -->
+    {{-- total awal (hidden) --}}
+    <input type="hidden" id="total_tagihan_awal" value="{{ $dataPembayaran->total_tagihan }}">
+
+    <!-- Modal Pembayaran CASH -->
     <div id="pembayaranCash" tabindex="-1" aria-hidden="true"
         class="hidden fixed inset-0 z-50 items-center justify-center bg-black bg-opacity-50">
         <div class="relative w-full max-w-md p-4">
@@ -208,7 +239,7 @@
         </div>
     </div>
 
-    <!-- Modal Transfer -->
+    <!-- Modal TRANSFER -->
     <div id="pembayaranTransfer" tabindex="-1" aria-hidden="true"
         class="hidden fixed inset-0 z-50 items-center justify-center bg-black bg-opacity-50">
         <div class="relative w-full max-w-2xl p-4">
@@ -295,7 +326,6 @@
     <!-- JS Section -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const totalInput = document.getElementById('total_tagihan');
             const uangDiterimaInput = document.getElementById('uang_diterima');
             const uangKembalianInput = document.getElementById('uang_kembalian');
 
@@ -305,6 +335,16 @@
             const modalCash = document.getElementById('pembayaranCash');
             const modalTransfer = document.getElementById('pembayaranTransfer');
 
+            // === DISKON & TOTAL ===
+            const totalAwalInput = document.getElementById('total_tagihan_awal');
+            const diskonInput = document.getElementById('diskon_persen');
+            const subtotalDisplay = document.getElementById('subtotal_setelah_diskon_display');
+            const totalSetelahDiskonHidden = document.getElementById('total_setelah_diskon');
+            const totalTagihanDisplay = document.getElementById('total_tagihan_display');
+            const totalInputsAll = document.querySelectorAll('input#total_tagihan');
+
+            const totalAwal = parseFloat(totalAwalInput?.value || '0') || 0;
+
             function onlyDigits(value) {
                 return value ? String(value).replace(/[^\d]/g, '') : '';
             }
@@ -312,6 +352,43 @@
             function formatRupiah(value) {
                 return new Intl.NumberFormat("id-ID").format(value);
             }
+
+            // Hitung total setelah diskon & update ke semua tampilan
+            function updateTotalSetelahDiskon() {
+                const persen = parseFloat(diskonInput?.value) || 0;
+
+                let potongan = totalAwal * (persen / 100);
+                if (potongan > totalAwal) potongan = totalAwal;
+
+                const totalSetelah = totalAwal - potongan;
+
+                if (subtotalDisplay) {
+                    subtotalDisplay.textContent = "Rp" + formatRupiah(totalSetelah);
+                }
+
+                if (totalTagihanDisplay) {
+                    totalTagihanDisplay.textContent = "Rp" + formatRupiah(totalSetelah);
+                }
+
+                if (totalSetelahDiskonHidden) {
+                    totalSetelahDiskonHidden.value = totalSetelah;
+                }
+
+                // update semua input total_tagihan di modal cash & transfer
+                totalInputsAll.forEach(inp => {
+                    inp.value = formatRupiah(totalSetelah);
+                });
+
+                // setiap total berubah, kembalian harus dihitung ulang
+                hitungKembalian();
+            }
+
+            if (diskonInput) {
+                diskonInput.addEventListener('input', updateTotalSetelahDiskon);
+            }
+
+            // inisialisasi awal (tanpa diskon)
+            updateTotalSetelahDiskon();
 
             function openModal(modal) {
                 if (!modal) return;
@@ -342,8 +419,6 @@
                     const metodeID = selected.value;
                     const metodeText = selected.textContent.toLowerCase();
 
-                    console.log(metodeID);
-
                     // Masukkan ID ke input hidden
                     const cashInput = document.getElementById("metode-pembayaran-cash");
                     const transferInput = document.getElementById("metode-pembayaran-transfer");
@@ -363,6 +438,7 @@
                     btn.addEventListener("click", () => {
                         const modal = btn.closest("#pembayaranCash") || btn.closest(
                             "#pembayaranTransfer");
+
                         // reset form & preview hanya saat explicit close
                         if (modal) {
                             const forms = modal.querySelectorAll("form");
@@ -381,8 +457,15 @@
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-400">SVG, PNG, JPG or GIF (MAX. 800x400px)</p>`;
                             }
+
                             const textGanti = modal.querySelector("#text-ganti-gambar");
                             if (textGanti) textGanti.classList.add("hidden");
+
+                            // ⬅️ PENTING: setelah form di-reset, apply lagi total setelah diskon ke semua input total_tagihan
+                            if (typeof updateTotalSetelahDiskon === 'function') {
+                                updateTotalSetelahDiskon();
+                            }
+
                             closeModal(modal);
                         }
                     });
@@ -405,9 +488,9 @@
             if (uangKembalianInput) uangKembalianInput.classList.add('pl-3');
 
             function hitungKembalian() {
-                const total = parseFloat(onlyDigits(totalInput?.value)) || 0;
+                const totalSesudahDiskon = parseFloat(totalSetelahDiskonHidden?.value || totalAwal) || 0;
                 const diterima = parseFloat(onlyDigits(uangDiterimaInput?.value)) || 0;
-                const kembalian = diterima - total;
+                const kembalian = diterima - totalSesudahDiskon;
                 if (uangKembalianInput) {
                     uangKembalianInput.value = (kembalian >= 0) ? "Rp " + formatRupiah(kembalian) : "Rp 0";
                 }
@@ -456,12 +539,14 @@
                 formPembayaranCash.addEventListener('submit', async function(e) {
                     e.preventDefault();
 
-                    const totalClean = parseFloat(onlyDigits(totalInput?.value)) || 0;
+                    const totalSesudahDiskon = parseFloat(totalSetelahDiskonHidden?.value ||
+                        totalAwal) || 0;
                     const uangDiterimaClean = parseFloat(onlyDigits(uangDiterimaInput?.value)) || 0;
-                    const kembalianClean = uangDiterimaClean - totalClean;
+                    const kembalianClean = uangDiterimaClean - totalSesudahDiskon;
                     const metodeCash = document.getElementById('metode-pembayaran-cash');
+                    const diskonPersen = parseFloat(diskonInput?.value) || 0;
 
-                    if (uangDiterimaClean === 0 || uangDiterimaClean < totalClean) {
+                    if (uangDiterimaClean === 0 || uangDiterimaClean < totalSesudahDiskon) {
                         Swal.fire({
                             icon: 'warning',
                             title: 'Uang Kurang',
@@ -473,9 +558,11 @@
                     const formData = new FormData(formPembayaranCash);
                     formData.set('uang_yang_diterima', uangDiterimaClean);
                     formData.set('kembalian', kembalianClean);
-                    formData.set('total_tagihan', totalClean);
+                    formData.set('total_tagihan', totalAwal); // sebelum diskon
+                    formData.set('total_setelah_diskon', totalSesudahDiskon);
+                    formData.set('diskon_tipe', diskonPersen > 0 ? 'persen' : '');
+                    formData.set('diskon_nilai', diskonPersen);
                     formData.set('metode_pembayaran_id', metodeCash?.value);
-
 
                     const submitBtn = this.querySelector('button[type="submit"]');
                     if (submitBtn) {
@@ -535,11 +622,19 @@
                     const formData = new FormData(this);
                     if (metodeInput) formData.set('metode_pembayaran_id', metodeInput.value);
 
+                    const totalSesudahDiskon = parseFloat(totalSetelahDiskonHidden?.value ||
+                        totalAwal) || 0;
+                    const diskonPersen = parseFloat(diskonInput?.value) || 0;
+
+                    formData.set('total_tagihan', totalAwal);
+                    formData.set('total_setelah_diskon', totalSesudahDiskon);
+                    formData.set('diskon_tipe', diskonPersen > 0 ? 'persen' : '');
+                    formData.set('diskon_nilai', diskonPersen);
+
                     // === FIX UNTUK FILE ===
                     const fileInput = document.getElementById('upload');
                     if (fileInput && fileInput.files.length > 0) {
-                        formData.set('bukti_pembayaran', fileInput.files[
-                            0]); // <— tambahkan manual agar pasti masuk
+                        formData.set('bukti_pembayaran', fileInput.files[0]);
                     }
 
                     // === VALIDASI FILE ===

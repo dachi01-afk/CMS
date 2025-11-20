@@ -67,6 +67,7 @@
                         <h4 class="text-xl font-semibold text-gray-900 dark:text-white">Ringkasan Transaksi</h4>
 
                         <div class="space-y-4">
+                            {{-- Total awal (sebelum diskon) --}}
                             <dl class="flex items-center justify-between gap-4">
                                 <dt class="text-gray-500 dark:text-gray-400">Total Harga</dt>
                                 <dd class="text-base font-medium text-gray-900 dark:text-white">
@@ -74,6 +75,29 @@
                                 </dd>
                             </dl>
 
+                            {{-- Input Diskon (%) --}}
+                            <dl class="flex items-center justify-between gap-4">
+                                <dt class="text-gray-500 dark:text-gray-400">Diskon (%)</dt>
+                                <dd class="flex-1 text-right">
+                                    <input type="number" id="diskon_persen" min="0" max="100" value="0"
+                                        class="w-32 text-right rounded-lg border-gray-300 dark:bg-gray-700 dark:text-white" />
+                                </dd>
+                            </dl>
+
+                            {{-- Subtotal setelah diskon (realtime) --}}
+                            <dl class="flex items-center justify-between gap-4">
+                                <dt class="text-gray-500 dark:text-gray-400">Subtotal Setelah Diskon</dt>
+                                <dd id="subtotal_setelah_diskon_display"
+                                    class="text-base font-semibold text-gray-900 dark:text-white">
+                                    Rp{{ number_format($subTotal, 0, ',', '.') }}
+                                </dd>
+                            </dl>
+
+                            {{-- Hidden untuk dipakai JS & dikirim ke backend --}}
+                            <input type="hidden" id="total_setelah_diskon" value="{{ $subTotal }}">
+                        </div>
+
+                        <div class="space-y-4 mt-4">
                             {{-- Metode Pembayar --}}
                             <dl
                                 class="flex items-center justify-between gap-4 border-t border-gray-200 pt-4 dark:border-gray-700">
@@ -86,10 +110,13 @@
                                     @endforeach
                                 </select>
                             </dl>
+
+                            {{-- Total Tagihan akhir (mengikuti subtotal setelah diskon) --}}
                             <dl
                                 class="flex items-center justify-between gap-4 border-t border-gray-200 pt-6 dark:border-gray-700">
                                 <dt class="text-lg font-bold text-gray-900 dark:text-white">Total Tagihan</dt>
-                                <dd class="text-lg font-bold text-gray-900 dark:text-white">
+                                <dd class="text-lg font-bold text-gray-900 dark:text-white"
+                                    id="total_tagihan_display">
                                     Rp{{ number_format($subTotal, 0, ',', '.') }}
                                 </dd>
                             </dl>
@@ -112,6 +139,10 @@
         </div>
     </section>
 
+    {{-- Total awal & pasien id (hidden) --}}
+    <input type="hidden" id="total_tagihan_awal" value="{{ $subTotal }}">
+    <input type="hidden" id="pasien-id" value="{{ $dataPasien->id }}">
+
     <!-- Modal Pembayaran Cash -->
     <div id="pembayaranCash" tabindex="-1" aria-hidden="true"
         class="hidden fixed inset-0 z-50 items-center justify-center bg-black bg-opacity-50">
@@ -130,7 +161,8 @@
                     <div class="p-4 space-y-4">
                         <input type="hidden" name="id" value="{{ $id }}">
                         <input type="hidden" name="metode_pembayaran" id="metode-pembayaran-cash" value="">
-                        <input type="hidden" name="kode_transaksi" id="kode-transaksi" value="{{ $kodeTransaksi }}">
+                        <input type="hidden" name="kode_transaksi" id="kode-transaksi"
+                            value="{{ $kodeTransaksi }}">
 
                         <div>
                             <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Total
@@ -138,7 +170,7 @@
                             <div class="relative mt-1">
                                 <span
                                     class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-300">Rp</span>
-                                <!-- NOTE: simpan format ribuan di tampilan, JS akan membersihkannya -->
+                                <!-- akan diupdate JS sesuai total setelah diskon -->
                                 <input type="text" id="total_tagihan" readonly
                                     value="{{ number_format($subTotal, 0, ',', '.') }}"
                                     class="w-full pl-10 rounded-lg border-gray-300 dark:bg-gray-700 dark:text-white" />
@@ -214,7 +246,7 @@
                             <div class="relative mt-1">
                                 <span
                                     class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-300">Rp</span>
-                                <!-- NOTE: simpan format ribuan di tampilan, JS akan membersihkannya -->
+                                <!-- akan diupdate JS sesuai total setelah diskon -->
                                 <input type="text" id="total_tagihan" readonly
                                     value="{{ number_format($subTotal, 0, ',', '.') }}"
                                     class="w-full pl-10 rounded-lg border-gray-300 dark:bg-gray-700 dark:text-white" />
@@ -271,337 +303,9 @@
         </div>
     </div>
 
-
     <!-- JS Section -->
-    {{-- <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const totalInput = document.getElementById('total_tagihan');
-            const uangDiterimaInput = document.getElementById('uang_diterima');
-            const uangKembalianInput = document.getElementById('uang_kembalian');
-            const submitBtn = document.getElementById('btnSubmitPembayaran');
-
-            const pilihMetode = document.getElementById("pilih-metode-pembayaran");
-            const inputHidden = document.getElementById("metode_pembayaran_id");
-            const btnLanjut = document.getElementById("btnLanjutPembayaran");
-
-            // ✅ Inisialisasi modal pakai Flowbite API
-            const modalCash = document.getElementById('pembayaranCash');
-            const modalTransfer = document.getElementById('pembayaranTransfer');
-
-            // ---------------------------
-            // Fungsi Bantu
-            // ---------------------------
-            function onlyDigits(value) {
-                return value ? String(value).replace(/[^\d]/g, '') : '';
-            }
-
-            function formatRupiah(value) {
-                return new Intl.NumberFormat("id-ID").format(value);
-            }
-
-            // helper untuk menampilkan/menyembunyikan modal
-            function openModal(modal) {
-                if (!modal) return;
-                modal.classList.remove("hidden");
-                modal.classList.add("flex");
-                // disable scroll body saat modal terbuka
-                document.documentElement.style.overflow = "hidden";
-            }
-
-            function closeModal(modal) {
-                if (!modal) return;
-                modal.classList.add("hidden");
-                modal.classList.remove("flex");
-                document.documentElement.style.overflow = "";
-            }
-
-            function closeAll() {
-                closeModal(modalCash);
-                closeModal(modalTransfer);
-            }
-
-            // klik tombol "Bayar Sekarang" -> baca pilihan dan buka modal sesuai
-            if (btnLanjut) {
-                btnLanjut.addEventListener("click", (e) => {
-                    e.preventDefault(); // kalau tombol berada di form dan kamu mau mencegah submit otomatis
-                    const selected = pilihMetode?.options[pilihMetode.selectedIndex];
-                    if (!selected) return alert("Pilih metode pembayaran dulu.");
-
-                    const metodeId = selected.value;
-                    const metodeText = (selected.textContent || "").toLowerCase();
-                    const hiddenInput = document.getElementById('id');
-
-                    // isi hidden input jika tersedia
-                    if (hiddenInput) hiddenInput.value = metodeId;
-
-                    // tutup dulu semua modal lalu buka yg sesuai
-                    closeAll();
-
-                    if (metodeText.includes("cash")) {
-                        openModal(modalCash);
-                    } else if (metodeText.includes("transfer")) {
-                        openModal(modalTransfer);
-                    } else {
-                        // fallback: jika nama metode tidak jelas
-                        alert("Metode pembayaran belum dikenali: " + selected.textContent);
-                    }
-                });
-            }
-
-            // pasang event untuk tombol close (✖) di masing-masing modal
-            document.querySelectorAll("#pembayaranCash button, #pembayaranTransfer button").forEach(btn => {
-                btn.addEventListener("click", () => {
-                    // cari modal terdekat (cash / transfer)
-                    const modal = btn.closest("#pembayaranCash") || btn.closest(
-                        "#pembayaranTransfer");
-
-                    // tutup modal
-                    closeModal(modal);
-
-                    // cari semua form di dalam modal ini
-                    const forms = modal.querySelectorAll("form");
-
-                    // reset setiap form di dalam modal
-                    forms.forEach(form => form.reset());
-
-                    // kalau ada elemen preview gambar, kita kosongkan juga
-                    const preview = modal.querySelector("#preview-bukti-pembayaran");
-                    if (preview) {
-                        preview.innerHTML = `
-                <svg class="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400" aria-hidden="true"
-                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
-                </svg>
-                <p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                    <span class="font-semibold">Click to upload</span> or drag and drop
-                </p>
-                <p class="text-xs text-gray-500 dark:text-gray-400">
-                    SVG, PNG, JPG or GIF (MAX. 800x400px)
-                </p>
-            `;
-                    }
-
-                    // sembunyikan teks “klik untuk ganti gambar”
-                    const textGanti = modal.querySelector("#text-ganti-gambar");
-                    if (textGanti) textGanti.classList.add("hidden");
-                });
-            });
-
-
-            // klik di area overlay (di luar dialog) -> tutup modal
-            [modalCash, modalTransfer].forEach(modal => {
-                if (!modal) return;
-                modal.addEventListener("click", (ev) => {
-                    // jika target click adalah overlay (bukan isi modal), tutup
-                    if (ev.target === modal) closeModal(modal);
-                });
-            });
-
-            // tombol Escape untuk menutup modal
-            document.addEventListener("keydown", (ev) => {
-                if (ev.key === "Escape") closeAll();
-            });
-
-            // ---------------------------
-            // Event format uang diterima
-            // ---------------------------
-            uangKembalianInput.classList.add('pl-3');
-            uangDiterimaInput.addEventListener("input", function(e) {
-                let angka = onlyDigits(e.target.value);
-                e.target.value = angka ? formatRupiah(angka) : "";
-                hitungKembalian();
-            });
-
-            function hitungKembalian() {
-                const total = parseFloat(onlyDigits(totalInput.value)) || 0;
-                const diterima = parseFloat(onlyDigits(uangDiterimaInput.value)) || 0;
-                const kembalian = diterima - total;
-
-                uangKembalianInput.value = (kembalian >= 0) ?
-                    "Rp " + formatRupiah(kembalian) :
-                    "Rp 0";
-            }
-
-            const fileInput = document.getElementById("upload");
-            const previewContainer = document.getElementById("preview-bukti-pembayaran");
-            const textGantiGambar = document.getElementById("text-ganti-gambar");
-
-            fileInput.addEventListener("change", (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
-
-                // pastikan hanya gambar
-                if (!file.type.startsWith("image/")) {
-                    alert("File yang diunggah harus berupa gambar (jpg, png, gif, dll).");
-                    fileInput.value = "";
-                    return;
-                }
-
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    previewContainer.innerHTML = `
-                <img src="${event.target.result}" 
-                    alt="Preview Bukti Pembayaran"
-                    class="object-cover w-full h-64 rounded-lg shadow-md" />`;
-
-                    // tampilkan teks “klik untuk ganti gambar”
-                    textGantiGambar.classList.remove("hidden");
-                };
-                reader.readAsDataURL(file);
-            });
-
-            // ---------------------------
-            // Submit form pembayaran cash
-            // ---------------------------
-            const formPembayaranCash = document.getElementById('formPembayaranCash');
-            formPembayaranCash.addEventListener('submit', async function(e) {
-                e.preventDefault();
-                const totalClean = parseFloat(onlyDigits(totalInput.value)) || 0;
-                const uangDiterimaClean = parseFloat(onlyDigits(uangDiterimaInput.value)) || 0;
-                const kembalianClean = uangDiterimaClean - totalClean;
-                const namaMetode = inputHidden.value;
-
-                if (uangDiterimaClean === 0 || uangDiterimaClean < totalClean) {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: 'Uang Kurang',
-                        text: 'Nominal uang yang diterima belum cukup untuk membayar tagihan.'
-                    });
-                    return;
-                }
-
-                const formData = new FormData(form);
-                formData.set('uang_yang_diterima', uangDiterimaClean);
-                formData.set('kembalian', kembalianClean);
-                formData.set('total_tagihan', totalClean);
-                formData.set('metode_pembayaran_id', namaMetode);
-
-                submitBtn.disabled = true;
-                submitBtn.classList.add('opacity-60', 'cursor-not-allowed');
-
-                try {
-                    const response = await fetch(formPembayaranCash.action, {
-                        method: 'POST',
-                        credentials: 'same-origin',
-                        headers: {
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')
-                                .content,
-                            'Accept': 'application/json'
-                        },
-                        body: formData
-                    });
-
-                    const data = await response.json();
-
-                    if (data.success) {
-                        await Swal.fire({
-                            icon: 'success',
-                            title: 'Berhasil!',
-                            text: data.message || 'Pembayaran berhasil diproses.',
-                            confirmButtonText: 'OK'
-                        });
-                        window.location.href = "{{ route('kasir.index') }}";
-                    } else {
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Gagal',
-                            text: data.message || 'Terjadi kesalahan saat memproses pembayaran.'
-                        });
-                    }
-                } catch (err) {
-                    console.error('Fetch error:', err);
-                    Swal.fire({
-                        icon: 'error',
-                        title: 'Error',
-                        text: 'Tidak dapat terhubung ke server. Periksa koneksi atau lihat log server.'
-                    });
-                } finally {
-                    submitBtn.disabled = false;
-                    submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
-                }
-            });
-
-            const formPembayaranTransfer = document.getElementById('formPembayaranTransfer');
-
-            if (formPembayaranTransfer) {
-                formPembayaranTransfer.addEventListener('submit', async function(e) {
-                    e.preventDefault();
-
-                    // ambil tombol submit biar bisa disable/enable nanti
-                    const submitBtn = this.querySelector('button[type="submit"]');
-                    const metodeInput = document.getElementById('transfer_metode_id');
-
-                    // ambil data form
-                    const formData = new FormData(this);
-                    formData.set('metode_pembayaran_id', metodeInput.value);
-
-                    // Validasi file upload
-                    const fileInput = document.getElementById("upload");
-                    if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Bukti Transfer Belum Diupload',
-                            text: 'Silakan unggah bukti pembayaran sebelum mengirim.',
-                        });
-                        return;
-                    }
-
-
-                    submitBtn.disabled = true;
-                    submitBtn.classList.add('opacity-60', 'cursor-not-allowed');
-
-                    try {
-                        const response = await fetch(this.action, {
-                            method: 'POST',
-                            credentials: 'same-origin',
-                            headers: {
-                                'X-CSRF-TOKEN': document.querySelector(
-                                    'meta[name="csrf-token"]').content,
-                                'Accept': 'application/json'
-                            },
-                            body: formData
-                        });
-
-                        const data = await response.json();
-
-                        if (data.success) {
-                            await Swal.fire({
-                                icon: 'success',
-                                title: 'Berhasil!',
-                                text: data.message || 'Bukti transfer berhasil dikirim.',
-                                confirmButtonText: 'OK'
-                            });
-                            // redirect ke halaman kasir
-                            window.location.href = "{{ route('kasir.index') }}";
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Gagal',
-                                text: data.message || 'Terjadi kesalahan saat mengirim data.'
-                            });
-                        }
-
-                    } catch (err) {
-                        console.error('Fetch error:', err);
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Error',
-                            text: 'Tidak dapat terhubung ke server. Periksa koneksi atau lihat log server.'
-                        });
-                    } finally {
-                        submitBtn.disabled = false;
-                        submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
-                    }
-                });
-            }
-
-        });
-    </script> --}}
-
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            const totalInput = document.getElementById('total_tagihan');
             const uangDiterimaInput = document.getElementById('uang_diterima');
             const uangKembalianInput = document.getElementById('uang_kembalian');
 
@@ -611,6 +315,16 @@
             const modalCash = document.getElementById('pembayaranCash');
             const modalTransfer = document.getElementById('pembayaranTransfer');
 
+            // === DISKON & TOTAL ===
+            const totalAwalInput = document.getElementById('total_tagihan_awal');
+            const diskonInput = document.getElementById('diskon_persen');
+            const subtotalDisplay = document.getElementById('subtotal_setelah_diskon_display');
+            const totalSetelahDiskonHidden = document.getElementById('total_setelah_diskon');
+            const totalTagihanDisplay = document.getElementById('total_tagihan_display');
+            const totalInputsAll = document.querySelectorAll('input#total_tagihan');
+
+            const totalAwal = parseFloat(totalAwalInput?.value || '0') || 0;
+
             function onlyDigits(value) {
                 return value ? String(value).replace(/[^\d]/g, '') : '';
             }
@@ -618,6 +332,43 @@
             function formatRupiah(value) {
                 return new Intl.NumberFormat("id-ID").format(value);
             }
+
+            // Hitung total setelah diskon & update ke semua tampilan
+            function updateTotalSetelahDiskon() {
+                const persen = parseFloat(diskonInput?.value) || 0;
+
+                let potongan = totalAwal * (persen / 100);
+                if (potongan > totalAwal) potongan = totalAwal;
+
+                const totalSetelah = totalAwal - potongan;
+
+                if (subtotalDisplay) {
+                    subtotalDisplay.textContent = "Rp" + formatRupiah(totalSetelah);
+                }
+
+                if (totalTagihanDisplay) {
+                    totalTagihanDisplay.textContent = "Rp" + formatRupiah(totalSetelah);
+                }
+
+                if (totalSetelahDiskonHidden) {
+                    totalSetelahDiskonHidden.value = totalSetelah;
+                }
+
+                // update semua input total_tagihan di modal cash & transfer
+                totalInputsAll.forEach(inp => {
+                    inp.value = formatRupiah(totalSetelah);
+                });
+
+                // setiap total berubah, kembalian harus dihitung ulang
+                hitungKembalian();
+            }
+
+            if (diskonInput) {
+                diskonInput.addEventListener('input', updateTotalSetelahDiskon);
+            }
+
+            // inisialisasi awal (tanpa diskon)
+            updateTotalSetelahDiskon();
 
             function openModal(modal) {
                 if (!modal) return;
@@ -648,8 +399,6 @@
                     const metodeID = selected.value;
                     const metodeText = selected.textContent.toLowerCase();
 
-                    console.log(metodeID);
-
                     // Masukkan ID ke input hidden
                     const cashInput = document.getElementById("metode-pembayaran-cash");
                     const transferInput = document.getElementById("metode-pembayaran-transfer");
@@ -667,8 +416,8 @@
             document.querySelectorAll("#pembayaranCash [data-modal-hide], #pembayaranTransfer [data-modal-hide]")
                 .forEach(btn => {
                     btn.addEventListener("click", () => {
-                        const modal = btn.closest("#pembayaranCash") || btn.closest(
-                            "#pembayaranTransfer");
+                        const modal = btn.closest("#pembayaranCash") || btn.closest("#pembayaranTransfer");
+
                         // reset form & preview hanya saat explicit close
                         if (modal) {
                             const forms = modal.querySelectorAll("form");
@@ -689,6 +438,12 @@
                             }
                             const textGanti = modal.querySelector("#text-ganti-gambar");
                             if (textGanti) textGanti.classList.add("hidden");
+
+                            // setelah reset, apply lagi total setelah diskon supaya tidak balik ke total awal
+                            if (typeof updateTotalSetelahDiskon === 'function') {
+                                updateTotalSetelahDiskon();
+                            }
+
                             closeModal(modal);
                         }
                     });
@@ -711,9 +466,9 @@
             if (uangKembalianInput) uangKembalianInput.classList.add('pl-3');
 
             function hitungKembalian() {
-                const total = parseFloat(onlyDigits(totalInput?.value)) || 0;
+                const totalSesudahDiskon = parseFloat(totalSetelahDiskonHidden?.value || totalAwal) || 0;
                 const diterima = parseFloat(onlyDigits(uangDiterimaInput?.value)) || 0;
-                const kembalian = diterima - total;
+                const kembalian = diterima - totalSesudahDiskon;
                 if (uangKembalianInput) {
                     uangKembalianInput.value = (kembalian >= 0) ? "Rp " + formatRupiah(kembalian) : "Rp 0";
                 }
@@ -762,13 +517,14 @@
                 formPembayaranCash.addEventListener('submit', async function(e) {
                     e.preventDefault();
 
-                    const totalClean = parseFloat(onlyDigits(totalInput?.value)) || 0;
+                    const totalSesudahDiskon = parseFloat(totalSetelahDiskonHidden?.value || totalAwal) || 0;
                     const uangDiterimaClean = parseFloat(onlyDigits(uangDiterimaInput?.value)) || 0;
-                    const kembalianClean = uangDiterimaClean - totalClean;
+                    const kembalianClean = uangDiterimaClean - totalSesudahDiskon;
                     const metodeCash = document.getElementById('metode-pembayaran-cash');
                     const pasienId = document.getElementById('pasien-id')?.value;
+                    const diskonPersen = parseFloat(diskonInput?.value) || 0;
 
-                    if (uangDiterimaClean === 0 || uangDiterimaClean < totalClean) {
+                    if (uangDiterimaClean === 0 || uangDiterimaClean < totalSesudahDiskon) {
                         Swal.fire({
                             icon: 'warning',
                             title: 'Uang Kurang',
@@ -780,10 +536,14 @@
                     const formData = new FormData(formPembayaranCash);
                     formData.set('uang_yang_diterima', uangDiterimaClean);
                     formData.set('kembalian', kembalianClean);
-                    formData.set('total_tagihan', totalClean);
+                    formData.set('total_tagihan', totalAwal); // sebelum diskon
+                    formData.set('total_setelah_diskon', totalSesudahDiskon);
+                    formData.set('diskon_tipe', diskonPersen > 0 ? 'persen' : '');
+                    formData.set('diskon_nilai', diskonPersen);
+                    // kirim kedua nama field untuk jaga-jaga
                     formData.set('metode_pembayaran', metodeCash?.value);
-                    formData.set('pasien_id', pasienId)
-
+                    formData.set('metode_pembayaran_id', metodeCash?.value);
+                    if (pasienId) formData.set('pasien_id', pasienId);
 
                     const submitBtn = this.querySelector('button[type="submit"]');
                     if (submitBtn) {
@@ -825,6 +585,7 @@
                             text: 'Tidak dapat terhubung ke server.'
                         });
                     } finally {
+                        const submitBtn = this.querySelector('button[type="submit"]');
                         if (submitBtn) {
                             submitBtn.disabled = false;
                             submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
@@ -841,20 +602,24 @@
 
                     const metodeInput = document.getElementById('metode-pembayaran-transfer');
                     const formData = new FormData(this);
-                    if (metodeInput) formData.set('metode_pembayaran', metodeInput.value);
-
-                    const totalInput = document.getElementById('total_tagihan');
-                    if (totalInput) {
-                        const totalBersih = totalInput.value.replace(/[^\d]/g,
-                        ''); // hapus Rp dan titik
-                        formData.set('total_tagihan', totalBersih);
+                    if (metodeInput) {
+                        // kirim dua field sekaligus untuk fleksibilitas backend
+                        formData.set('metode_pembayaran_id', metodeInput.value);
+                        formData.set('metode_pembayaran', metodeInput.value);
                     }
+
+                    const totalSesudahDiskon = parseFloat(totalSetelahDiskonHidden?.value || totalAwal) || 0;
+                    const diskonPersen = parseFloat(diskonInput?.value) || 0;
+
+                    formData.set('total_tagihan', totalAwal);
+                    formData.set('total_setelah_diskon', totalSesudahDiskon);
+                    formData.set('diskon_tipe', diskonPersen > 0 ? 'persen' : '');
+                    formData.set('diskon_nilai', diskonPersen);
 
                     // === FIX UNTUK FILE ===
                     const fileInput = document.getElementById('upload');
                     if (fileInput && fileInput.files.length > 0) {
-                        formData.set('bukti_pembayaran', fileInput.files[
-                            0]); // <— tambahkan manual agar pasti masuk
+                        formData.set('bukti_pembayaran', fileInput.files[0]);
                     }
 
                     // === VALIDASI FILE ===
@@ -932,6 +697,7 @@
                             text: 'Tidak dapat terhubung ke server.'
                         });
                     } finally {
+                        const submitBtn = this.querySelector('button[type="submit"]');
                         if (submitBtn) {
                             submitBtn.disabled = false;
                             submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');

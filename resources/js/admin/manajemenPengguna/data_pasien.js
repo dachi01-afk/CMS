@@ -25,11 +25,28 @@ function formatTanggalID(tanggal) {
             day: "2-digit",
             month: "long",
             year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
         })
         .replace(".", ":"); // opsional: 10.05 -> 10:05
 }
+
+// ===========================
+// DROPDOWN ACTION (3 TITIK)
+// ===========================
+$(document).on("click", ".btn-action-menu", function (e) {
+    e.stopPropagation();
+
+    // Tutup dropdown lain
+    $(".action-dropdown").addClass("hidden");
+
+    // Toggle dropdown untuk tombol ini
+    const dropdown = $(this).closest(".relative").find(".action-dropdown");
+    dropdown.toggleClass("hidden");
+});
+
+// Klik di luar → tutup semua dropdown
+$(document).on("click", function () {
+    $(".action-dropdown").addClass("hidden");
+});
 
 // data tabel Pasien
 $(function () {
@@ -184,10 +201,14 @@ $(function () {
         if (addModal) addModal.show();
     });
 
-    $("#closeAddPasienModal").on("click", function () {
-        resetAddForm();
-        if (addModal) addModal.hide();
-    });
+    // tutup dari header & footer
+    $("#closeAddPasienModal, #closeAddPasienModalFooter").on(
+        "click",
+        function () {
+            resetAddForm();
+            if (addModal) addModal.hide();
+        }
+    );
 
     $formAdd.on("submit", function (e) {
         e.preventDefault();
@@ -253,7 +274,7 @@ $(function () {
         $formEdit.data("url", initialEditUrl);
         $formEdit.attr("action", initialEditUrl);
 
-        // Reset preview foto
+        // reset foto
         $("#edit_preview_foto_pasien").addClass("hidden").attr("src", "");
         $("#edit_placeholder_foto_pasien").removeClass("hidden");
         $("#edit_foto_drop_area_pasien")
@@ -269,21 +290,44 @@ $(function () {
             .get(`/manajemen_pengguna/get_pasien_by_id/${pasienId}`)
             .then((response) => {
                 const pasien = response.data.data;
+                console.log(pasien);
                 const baseUrl = $formEdit.data("url");
                 const finalUrl = baseUrl.replace("/0", "/" + pasien.id);
                 $formEdit.data("url", finalUrl);
                 $formEdit.attr("action", finalUrl);
 
                 $("#edit_pasien_id").val(pasien.id);
+
+                // Data akun (dari relasi user)
                 $("#edit_username_pasien").val(pasien.user.username);
-                $("#edit_nama_pasien").val(pasien.nama_pasien);
                 $("#edit_email_pasien").val(pasien.user.email);
+
+                // Identitas dasar
+                $("#edit_nama_pasien").val(pasien.nama_pasien);
                 $("#edit_alamat_pasien").val(pasien.alamat);
+                $("#edit_no_hp_pasien").val(pasien.no_hp_pasien);
                 $("#edit_tanggal_lahir_pasien").val(pasien.tanggal_lahir);
                 $("#edit_jenis_kelamin_pasien").val(pasien.jenis_kelamin);
-                $("#edit_no_hp_pasien").val(pasien.no_hp_pasien);
 
-                // Tampilkan foto existing jika ada
+                // Identitas tambahan
+                $("#edit_nik").val(pasien.nik);
+                $("#edit_no_bpjs").val(pasien.no_bpjs);
+                $("#edit_no_emr").val(pasien.no_emr);
+                $("#edit_golongan_darah").val(pasien.golongan_darah);
+                $("#edit_status_perkawinan").val(pasien.status_perkawinan);
+                $("#edit_pekerjaan").val(pasien.pekerjaan);
+
+                // Penanggung jawab & medis
+                $("#edit_nama_penanggung_jawab").val(
+                    pasien.nama_penanggung_jawab
+                );
+                $("#edit_no_hp_penanggung_jawab").val(
+                    pasien.no_hp_penanggung_jawab
+                );
+                $("#edit_alergi").val(pasien.alergi);
+                $("#edit_catatan_medis").val(pasien.catatan_medis);
+
+                // Foto existing
                 if (pasien.foto_pasien) {
                     const fotoUrl = `/storage/${pasien.foto_pasien}`;
                     $("#edit_preview_foto_pasien")
@@ -294,6 +338,7 @@ $(function () {
                         .removeClass("border-dashed border-gray-400")
                         .addClass("border-solid border-gray-300");
                 }
+
                 if (editModal) editModal.show();
             })
             .catch(() => {
@@ -311,6 +356,10 @@ $(function () {
         const formData = new FormData($formEdit[0]);
         if (!formData.has("_method")) formData.append("_method", "PUT");
 
+        // bersihkan error lama
+        $formEdit.find(".text-red-600").html("");
+        $formEdit.find(".is-invalid").removeClass("is-invalid");
+
         axios
             .post(url, formData)
             .then((response) => {
@@ -321,7 +370,7 @@ $(function () {
                     showConfirmButton: false,
                     timer: 2000,
                 }).then(() => {
-                    editModal.hide();
+                    if (editModal) editModal.hide();
                     $("#pasienTable").DataTable().ajax.reload(null, false);
                     resetEditForm();
                 });
@@ -335,6 +384,7 @@ $(function () {
                         text: "Silakan periksa kembali isian formulir Anda.",
                     });
                     for (const field in errors) {
+                        // field = nama di validator (username_pasien, nik, dll)
                         $(`#edit_${field}`).addClass("is-invalid");
                         $(`#${field}-error`).html(errors[field][0]);
                     }
@@ -348,10 +398,13 @@ $(function () {
             });
     });
 
-    $("#closeEditPasienModal").on("click", function () {
-        if (editModal) editModal.hide();
-        resetEditForm();
-    });
+    $("#closeEditPasienModal, #closeEditPasienModalFooter").on(
+        "click",
+        function () {
+            if (editModal) editModal.hide();
+            resetEditForm();
+        }
+    );
 });
 
 // delete data
