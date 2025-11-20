@@ -16,7 +16,7 @@
 
 <body class="min-h-screen bg-gradient-to-b from-slate-100 to-slate-200">
 
-    <div class="max-w-6xl mx-auto px-4 py-8">
+    <div class="max-w-7xl mx-auto px-4 py-8">
 
         {{-- HEADER --}}
         <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
@@ -45,56 +45,81 @@
             </div>
         </div>
 
-        {{-- RINGKASAN PASIEN --}}
-        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-100 mb-6">
-            <div class="p-4 md:p-5 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div class="flex items-start gap-3">
-                    <div class="h-9 w-9 rounded-full bg-indigo-50 flex items-center justify-center">
-                        <i class="fa-regular fa-user text-indigo-600 text-sm"></i>
+        {{-- SECTION 1 : RINGKASAN DATA PASIEN --}}
+        <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-100 mb-6">
+
+            {{-- HEADER DALAM CARD (mirip No.2) --}}
+            <div class="px-5 pt-5 pb-3 border-b border-slate-100 flex items-center justify-between">
+                <h2 class="text-base md:text-lg font-semibold text-slate-800 flex items-center gap-2">
+                    <span
+                        class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-100 text-sky-700 text-xs font-bold">
+                        1
+                    </span>
+                    Ringkasan Data Pasien
+                </h2>
+                <span class="text-xs text-slate-500">
+                    Terakhir diperbarui: {{ now()->translatedFormat('d F Y') }}
+                </span>
+            </div>
+
+            {{-- ISI CARD: 3 BOX RINGKASAN --}}
+            <div class="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                {{-- BOX 1: PASIEN --}}
+                <div
+                    class="relative flex items-start gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="h-10 w-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-user text-indigo-700 text-lg">A</i>
                     </div>
                     <div>
-                        <div class="text-[11px] uppercase tracking-wide text-slate-400">Pasien</div>
-                        <div class="font-semibold text-slate-800">
+                        <p class="text-[11px] uppercase text-slate-500 font-medium">Pasien</p>
+                        <p class="font-semibold text-slate-900 text-sm">
                             {{ $pasien->nama_pasien ?? '-' }}
-                        </div>
-                        <div class="text-xs text-slate-500 mt-0.5">
+                        </p>
+                        <p class="text-xs text-slate-600">
                             NIK: {{ $pasien->nik ?? '-' }}
-                        </div>
+                        </p>
                     </div>
                 </div>
 
-                <div class="flex items-start gap-3">
-                    <div class="h-9 w-9 rounded-full bg-sky-50 flex items-center justify-center">
-                        <i class="fa-solid fa-venus-mars text-sky-600 text-sm"></i>
+                {{-- BOX 2: JENIS KELAMIN & TGL LAHIR --}}
+                <div
+                    class="relative flex items-start gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="h-10 w-10 bg-sky-100 rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-venus-mars text-sky-700 text-lg">B</i>
                     </div>
                     <div>
-                        <div class="text-[11px] uppercase tracking-wide text-slate-400">Jenis Kelamin & Tanggal Lahir
-                        </div>
-                        <div class="font-semibold text-slate-800">
+                        <p class="text-[11px] uppercase text-slate-500 font-medium">Jenis Kelamin & Tanggal Lahir</p>
+                        <p class="font-semibold text-slate-900 text-sm">
                             {{ $pasien->jenis_kelamin ?? '-' }}
-                        </div>
-                        <div class="text-xs text-slate-500 mt-0.5">
-                            Tanggal lahir: {{ optional($pasien->tanggal_lahir)->translatedFormat('d F Y') ?? '-' }}
-                        </div>
+                        </p>
+                        <p class="text-xs text-slate-600">
+                            Tanggal lahir:
+                            {{ optional($pasien->tanggal_lahir)->translatedFormat('d F Y') ?? '-' }}
+                        </p>
                     </div>
                 </div>
 
-                <div class="flex items-start gap-3">
-                    <div class="h-9 w-9 rounded-full bg-emerald-50 flex items-center justify-center">
-                        <i class="fa-solid fa-phone text-emerald-600 text-sm"></i>
+                {{-- BOX 3: KONTAK --}}
+                <div
+                    class="relative flex items-start gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="h-10 w-10 bg-emerald-100 rounded-lg flex items-center justify-center">
+                        <i class="fa-solid fa-phone text-emerald-700 text-lg">C</i>
                     </div>
                     <div>
-                        <div class="text-[11px] uppercase tracking-wide text-slate-400">Kontak</div>
-                        <div class="font-semibold text-slate-800">
+                        <p class="text-[11px] uppercase text-slate-500 font-medium">Kontak</p>
+                        <p class="font-semibold text-slate-900 text-sm">
                             {{ $pasien->no_hp_pasien ?? '-' }}
-                        </div>
-                        <div class="text-xs text-slate-500 mt-0.5">
+                        </p>
+                        <p class="text-xs text-slate-600">
                             Alamat: {{ $pasien->alamat ?? '-' }}
-                        </div>
+                        </p>
                     </div>
                 </div>
+
             </div>
         </div>
+
 
         {{-- TABEL RIWAYAT EMR --}}
         <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-100">
@@ -146,7 +171,7 @@
                                     {{ \Illuminate\Support\Str::limit($emr->diagnosis ?? '-', 50) }}
                                 </td>
                                 <td class="px-4 py-3 align-top text-center">
-                                    <a href="{{ route('data_medis_pasien.detail.emr.pasien', $emr->id) }}"
+                                    <a href="{{ route('data_medis_pasien.detail.emr.pasien', $emr->pasien->no_emr) }}"
                                         class="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium
                                           bg-indigo-50 text-indigo-700 hover:bg-indigo-100 border border-indigo-100">
                                         <i class="fa-solid fa-circle-info text-xs"></i>

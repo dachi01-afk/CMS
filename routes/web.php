@@ -248,7 +248,7 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::get('/data_emr', [DataMedisPasienController::class, 'getDataEMR'])->name('data_emr');
         Route::get('/get-data-emr-by-id/{id}', [DataMedisPasienController::class, 'getDataEMRById'])->name('get.data.emr.by.id');
         Route::get('/detail-emr/{no_emr}', [DataMedisPasienController::class, 'detailEMR'])->name('detail_emr');
-        Route::get('/detail-emr/pasien/{id}', [DataMedisPasienController::class, 'detailEMRPasien'])->name('detail.emr.pasien');
+        Route::get('/detail-emr/pasien/{noEMR}', [DataMedisPasienController::class, 'detailEMRPasien'])->name('detail.emr.pasien');
     });
 
     // Route::prefix('pengambilan_obat')->group(function () {

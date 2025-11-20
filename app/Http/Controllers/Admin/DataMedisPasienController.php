@@ -69,7 +69,7 @@ class DataMedisPasienController extends Controller
             ->make(true);
     }
 
-    public function detailEMRPasien($id)
+    public function detailEMRPasien($noEMR)
     {
         $emr = Emr::with([
             'dokter',
@@ -77,8 +77,11 @@ class DataMedisPasienController extends Controller
             'perawat',
             'kunjungan',
             'resep.obat',
+            'pasien',
         ])
-            ->where('id', $id)->firstOrFail();
+            ->whereHas('pasien', function ($pasien) use ($noEMR) {
+                $pasien->where('no_emr', $noEMR);
+            })->firstOrFail();
 
         if (!$emr) {
             // Kalau pasien belum punya EMR sama sekali

@@ -45,54 +45,78 @@
             </div>
         </div>
 
-        {{-- RINGKASAN PASIEN --}}
-        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-100 mb-6">
-            <div class="p-4 md:p-5 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div class="flex items-start gap-3">
-                    <div class="h-9 w-9 rounded-full bg-indigo-50 flex items-center justify-center">
-                        <i class="fa-regular fa-user text-indigo-600 text-sm"></i>
+        {{-- SECTION 1 : RINGKASAN DATA PASIEN --}}
+        <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-100 mb-6">
+
+            {{-- HEADER --}}
+            <div class="px-5 pt-5 pb-3 border-b border-slate-100 flex items-center justify-between">
+                <h2 class="text-base md:text-lg font-semibold text-slate-800 flex items-center gap-2">
+                    <span
+                        class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-100 text-sky-700 text-xs font-bold">
+                        1
+                    </span>
+                    Ringkasan Data Pasien
+                </h2>
+                <span class="text-xs text-slate-500">
+                    Terakhir diperbarui: {{ now()->translatedFormat('d F Y') }}
+                </span>
+            </div>
+
+            {{-- ISI 3 KOLOM --}}
+            <div class="p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                {{-- BOX 1: PASIEN --}}
+                <div
+                    class="relative flex items-start gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+                        <i class="fa-regular fa-user text-indigo-700 text-lg">A</i>
                     </div>
                     <div>
-                        <div class="text-[11px] uppercase tracking-wide text-slate-400">Pasien</div>
-                        <div class="font-semibold text-slate-800">
+                        <div class="text-[11px] uppercase tracking-wide text-slate-500">Pasien</div>
+                        <div class="font-semibold text-slate-900 text-sm">
                             {{ $emr->pasien->nama_pasien ?? '-' }}
                         </div>
-                        <div class="text-xs text-slate-500 mt-0.5">
+                        <div class="text-xs text-slate-600 mt-1">
                             NIK: {{ $emr->pasien->nik ?? '-' }}
                         </div>
                     </div>
                 </div>
 
-                <div class="flex items-start gap-3">
-                    <div class="h-9 w-9 rounded-full bg-sky-50 flex items-center justify-center">
-                        <i class="fa-solid fa-venus-mars text-sky-600 text-sm"></i>
+                {{-- BOX 2: JENIS KELAMIN & UMUR --}}
+                <div
+                    class="relative flex items-start gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="h-10 w-10 rounded-xl bg-sky-100 flex items-center justify-center">
+                        <i class="fa-solid fa-venus-mars text-sky-700 text-lg">B</i>
                     </div>
                     <div>
-                        <div class="text-[11px] uppercase tracking-wide text-slate-400">Jenis Kelamin & Umur</div>
-                        <div class="font-semibold text-slate-800">
+                        <div class="text-[11px] uppercase tracking-wide text-slate-500">Jenis Kelamin & Umur</div>
+                        <div class="font-semibold text-slate-900 text-sm">
                             {{ $emr->pasien->jenis_kelamin ?? '-' }}
                         </div>
-                        <div class="text-xs text-slate-500 mt-0.5">
+                        <div class="text-xs text-slate-600 mt-1">
                             Tanggal lahir:
                             {{ optional($emr->pasien->tanggal_lahir)->translatedFormat('d F Y') ?? '-' }}
                         </div>
                     </div>
                 </div>
 
-                <div class="flex items-start gap-3">
-                    <div class="h-9 w-9 rounded-full bg-emerald-50 flex items-center justify-center">
-                        <i class="fa-solid fa-stethoscope text-emerald-600 text-sm"></i>
+                {{-- BOX 3: DOKTER --}}
+                <div
+                    class="relative flex items-start gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200 shadow-sm">
+                    <div class="h-10 w-10 rounded-xl bg-emerald-100 flex items-center justify-center">
+                        <i class="fa-solid fa-stethoscope text-emerald-700 text-lg">C</i>
                     </div>
                     <div>
-                        <div class="text-[11px] uppercase tracking-wide text-slate-400">Dokter Penanggung Jawab</div>
-                        <div class="font-semibold text-slate-800">
+                        <div class="text-[11px] uppercase tracking-wide text-slate-500">Dokter Penanggung Jawab</div>
+                        <div class="font-semibold text-slate-900 text-sm">
                             {{ $emr->dokter->nama_dokter ?? '-' }}
                         </div>
-                        <div class="text-xs text-slate-500 mt-0.5">
+                        <div class="text-xs text-slate-600 mt-1">
                             Poli: {{ $emr->poli->nama_poli ?? '-' }}
                         </div>
                     </div>
                 </div>
+
             </div>
         </div>
 
@@ -102,7 +126,7 @@
                 <h2 class="text-base md:text-lg font-semibold text-slate-800 flex items-center gap-2">
                     <span
                         class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-sky-100 text-sky-700 text-xs font-bold">
-                        1
+                        2
                     </span>
                     Informasi Kunjungan & Keluhan
                 </h2>
@@ -162,7 +186,7 @@
                 <h2 class="text-base md:text-lg font-semibold text-slate-800 flex items-center gap-2">
                     <span
                         class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold">
-                        2
+                        3
                     </span>
                     Vital Sign & Diagnosis
                 </h2>
@@ -227,7 +251,7 @@
 
         {{-- FOOTER BUTTONS --}}
         <div class="flex justify-between items-center mt-4">
-            <a href="{{ url()->previous() }}"
+            <a href="{{ route('data_medis_pasien.index') }}"
                 class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 bg-white hover:bg-slate-50 hover:border-slate-400 transition">
                 <i class="fa-solid fa-arrow-left text-xs"></i>
                 <span>Kembali</span>
