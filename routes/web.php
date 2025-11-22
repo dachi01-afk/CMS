@@ -385,7 +385,7 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
         Route::get('/dashboard', [PerawatController::class, 'dashboard'])->name('perawat.dashboard');
 
         Route::get('/kunjungan', [KunjunganController::class, 'index'])->name('perawat.kunjungan');
-        Route::get('/getDataKunjunganHariIni', [KunjunganController::class, 'getDataKFkasirunjunganHariIni'])->name('perawat.get.data.kunjungan.hari.ini');
+        Route::get('/getDataKunjunganHariIni', [KunjunganController::class, 'getDataKunjunganHariIni'])->name('perawat.get.data.kunjungan.hari.ini');
         Route::post('/updateStatusKunjunganKeEngaged/{id}', [KunjunganController::class, 'updateStatusKunjunganKeEngaged'])->name('perawat.update.status.kunjungan.ke.engaged');
         Route::get('/getDataKunjunganDenganStatusEngaged', [KunjunganController::class, 'getDataKunjunganDenganStatusEngaged'])->name('perawat.get.data.kunjungan.dengan.status.engaged');
         Route::get('/form-pengisian-vital-sign/{id}', [KunjunganController::class, 'formPengisianVitalSign'])->name('perawat.form.pengisian.vital.sign');
