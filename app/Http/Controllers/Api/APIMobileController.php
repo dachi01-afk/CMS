@@ -2143,30 +2143,41 @@ class APIMobileController extends Controller
 
                 // ================== LAYANAN TAMBAHAN ==================
                 $pasienId = $kunjungan->pasien_id;
-                $kodeTransaksiBase = strtoupper(uniqid('TRX-'));
 
-                foreach ($request->layanan as $index => $layananData) {
+                // 🔥 CARI TRANSAKSI YANG SUDAH ADA
+                $existingTransaction = PenjualanLayanan::where('kunjungan_id', $kunjungan->id)->first();
+
+                if ($existingTransaction) {
+                    // gunakan kode transaksi yang sudah ada
+                    $kodeTransaksiBase = $existingTransaction->kode_transaksi;
+                } else {
+                    // buat kode transaksi baru sekali saja
+                    $kodeTransaksiBase = strtoupper(uniqid('TRX-'));
+                }
+
+                foreach ($request->layanan as $layananData) {
+
                     $layanan = Layanan::findOrFail($layananData['layanan_id']);
 
                     $jumlah = (int) $layananData['jumlah'];
                     $harga = (float) $layanan->harga_layanan;
                     $subTotal = $harga * $jumlah;
 
-                    // 1) SIMPAN DI kunjungan_layanan (riwayat medis)
+                    // SIMPAN di kunjungan_layanan
                     KunjunganLayanan::create([
                         'kunjungan_id' => $kunjungan->id,
                         'layanan_id' => $layanan->id,
                         'jumlah' => $jumlah,
                     ]);
 
-                    // 2) SIMPAN DI penjualan_layanan (billing)
+                    // SIMPAN di penjualan_layanan (🔥 pakai kode transaksi yang sama)
                     PenjualanLayanan::create([
                         'pasien_id' => $pasienId,
                         'layanan_id' => $layanan->id,
                         'kategori_layanan_id' => $layanan->kategori_layanan_id ?? null,
                         'kunjungan_id' => $kunjungan->id,
                         'metode_pembayaran_id' => null,
-                        'kode_transaksi' => $kodeTransaksiBase.'-'.($index + 1),
+                        'kode_transaksi' => $kodeTransaksiBase,   // 🔥 INI YANG PALING PENTING
                         'jumlah' => $jumlah,
                         'sub_total' => $subTotal,
                         'total_tagihan' => $subTotal,
