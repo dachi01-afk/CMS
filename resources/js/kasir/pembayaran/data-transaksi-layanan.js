@@ -6,6 +6,11 @@ $(function () {
     const $tableEl = $("#transaksiLayananTable");
     if (!$tableEl.length) return;
 
+    // ⬇️ ambil URL dari Blade, fallback ke path lama kalau belum diset
+    const dataUrl =
+           window.transaksiLayananDataUrl || "/kasir/get-data-transaksi-layanan";
+
+
     const table = $tableEl.DataTable({
         processing: true,
         serverSide: true,
@@ -15,8 +20,11 @@ $(function () {
         pageLength: 10,
         lengthChange: false,
         info: false,
-        scrollX: true, // ⬅️ penting supaya header & body ikut scroll X
-        ajax: "/kasir/get-data-transaksi-layanan",
+        scrollX: true, // penting supaya header & body ikut scroll X
+        ajax: {
+            url: dataUrl,
+            type: "GET",
+        },
         columns: [
             {
                 data: "DT_RowIndex",

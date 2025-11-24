@@ -1,49 +1,44 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\QrCodeController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Admin\PoliController;
-use App\Http\Controllers\Api\APIWebController;
-use App\Http\Controllers\Dokter\AuthController;
-use App\Http\Controllers\Kasir\KasirController;
-use App\Http\Controllers\Farmasi\ObatController;
-use App\Http\Controllers\Admin\LaporanController;
-use App\Http\Controllers\Admin\LayananController;
-use App\Http\Controllers\Admin\SettingsController;
-use App\Http\Controllers\JenisSpesialisController;
-use App\Http\Controllers\Management\EMRController;
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Farmasi\FarmasiController;
-use App\Http\Controllers\Management\UserController;
-use App\Http\Controllers\Perawat\PerawatController;
-use App\Http\Controllers\Testing\TestingController;
-use App\Http\Controllers\Admin\PembayaranController;
-use App\Http\Controllers\Farmasi\OrderObatController;
-use App\Http\Controllers\Management\DokterController;
-use App\Http\Controllers\Management\PasienController;
-use App\Http\Controllers\Perawat\KunjunganController;
-use App\Http\Controllers\Admin\OrderLayananController;
-use App\Http\Controllers\Kasir\TransaksiObatController;
-use App\Http\Controllers\Management\ApotekerController;
-use App\Http\Controllers\Testing\TestingChartController;
 use App\Http\Controllers\Admin\DataMedisPasienController;
 use App\Http\Controllers\Admin\JadwalKunjunganController;
 use App\Http\Controllers\Admin\KategoriLayananController;
+use App\Http\Controllers\Admin\LaporanController;
+use App\Http\Controllers\Admin\LayananController;
+use App\Http\Controllers\Admin\ManajemenPenggunaController;
+use App\Http\Controllers\Admin\OrderLayananController;
 use App\Http\Controllers\Admin\PengambilanObatController;
-use App\Http\Controllers\Testing\TestingQRCodeController;
 use App\Http\Controllers\Admin\PengaturanKlinikController;
+use App\Http\Controllers\Admin\PoliController;
+use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Api\APIWebController;
+use App\Http\Controllers\Apoteker\Obat\PenjualanObatController;
+use App\Http\Controllers\Dokter\AuthController;
+use App\Http\Controllers\Dokter\DokterController as DokterDokterController;
+use App\Http\Controllers\Farmasi\FarmasiController;
+use App\Http\Controllers\Farmasi\ObatController;
+use App\Http\Controllers\Farmasi\OrderObatController;
+use App\Http\Controllers\Farmasi\PengambilanObatController as FarmasiPengambilanObatController;
+use App\Http\Controllers\JenisSpesialisController;
+use App\Http\Controllers\Kasir\KasirController;
 use App\Http\Controllers\Kasir\MetodePembayaranController;
 use App\Http\Controllers\Kasir\RiwayatTransaksiController;
 use App\Http\Controllers\Kasir\TransaksiLayananController;
-use App\Http\Controllers\Admin\ManajemenPenggunaController;
+use App\Http\Controllers\Kasir\TransaksiObatController;
+use App\Http\Controllers\Management\ApotekerController;
+use App\Http\Controllers\Management\DokterController;
+use App\Http\Controllers\Management\EMRController;
 use App\Http\Controllers\Management\JadwalDokterController;
-use App\Http\Controllers\Admin\AturJadwalKunjunganController;
-use App\Http\Controllers\Apoteker\Obat\PenjualanObatController;
-use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
-use App\Http\Controllers\Dokter\DokterController as DokterDokterController;
-use App\Http\Controllers\Admin\DataMedisPasienController as AdminDataMedisPasienController;
-use App\Http\Controllers\Farmasi\PengambilanObatController as FarmasiPengambilanObatController;
+use App\Http\Controllers\Management\PasienController;
+use App\Http\Controllers\Management\UserController;
+use App\Http\Controllers\Perawat\KunjunganController;
+use App\Http\Controllers\Perawat\PerawatController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\QrCodeController;
+use App\Http\Controllers\Testing\TestingChartController;
+use App\Http\Controllers\Testing\TestingController;
+use Illuminate\Support\Facades\Route;
 
 // Rest of your web routes remain the same...
 Route::get('/')->middleware('checkAuth');
@@ -57,7 +52,6 @@ Route::get('/checkout', [TestingController::class, 'checkout'])->name('checkout'
 Route::post('/midtrans/notification', [TestingController::class, 'notificationHandler']);
 Route::get('/sebelum/checkout', [TestingController::class, 'sebelumCheckout']);
 Route::get('/contoh-detail-emr', [TestingController::class, 'contohDetailEMR']);
-
 
 Route::prefix('/testing-chart')->group(function () {
     Route::get('/', [TestingChartController::class, 'index'])->name('testing.chart.index');
@@ -80,16 +74,14 @@ Route::get('/contoh-kuitansi', function () {
     return view('kuitansi');
 });
 
-// API KHUSUS UNTUK AURELIO 
-// SIAPA YANG GANGGU PECAH KEPALANYA 
+// API KHUSUS UNTUK AURELIO
+// SIAPA YANG GANGGU PECAH KEPALANYA
 // BY AURELIO
 Route::get('/getDataDokter', [APIWebController::class, 'getDataDokter']);
 Route::get('/getDataTestimoni', [APIWebController::class, 'getDataTestimoni']);
 // END API KHUSUS AURELIO
 
-
-
-////////// ROLE DOKTER ///////////
+// //////// ROLE DOKTER ///////////
 Route::middleware('guest')->group(function () {
     Route::prefix('dokter')->group(function () {
         Route::get('/login', [AuthController::class, 'login'])->name('dokter.login');
@@ -262,8 +254,8 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
     });
 
     Route::prefix('jadwal_kunjungan')->name('jadwal_kunjungan.')->group(function () {
-        Route::get('/',         [JadwalKunjunganController::class, 'index'])->name('index');
-        Route::post('/create',         [JadwalKunjunganController::class, 'store'])->name('create');
+        Route::get('/', [JadwalKunjunganController::class, 'index'])->name('index');
+        Route::post('/create', [JadwalKunjunganController::class, 'store'])->name('create');
         Route::get('/search', [JadwalKunjunganController::class, 'search'])->name('pasien');
 
         Route::get('/waiting', [JadwalKunjunganController::class, 'waiting'])->name('waiting');
@@ -306,7 +298,7 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::post('/create-data-obat', [ObatController::class, 'createObat'])->name('obat.create');
             Route::get('/get-data-obat-by/{id}', [ObatController::class, 'getObatById'])->name('obat.get.data.by.id');
             Route::post('update-data-obat/{id}', [ObatController::class, 'updateObat'])->name('obat.update');
-            Route::delete('/delete-data-obat/{id}', [ObatController::class, 'deleteObat'])->name("obat.delete");
+            Route::delete('/delete-data-obat/{id}', [ObatController::class, 'deleteObat'])->name('obat.delete');
             // Route::get('jual-obat', [ApotekerController::class, 'index'])->name('obat.jual.obat');
 
             Route::get('/get-data-penjualan-obat', [OrderObatController::class, 'getDataPenjualanObat'])->name('obat.penjualan.obat');
@@ -343,14 +335,13 @@ Route::middleware(['auth', 'role:Kasir'])->group(function () {
         Route::post('/pembayaran-cash', [KasirController::class, 'transaksiCash'])->name('kasir.pembayaran.cash');
         Route::post('/pembayaran-transfer', [KasirController::class, 'transaksiTransfer'])->name('kasir.pembayaran.transfer');
 
-        // CRUD Metode Pembayaran 
+        // CRUD Metode Pembayaran
         Route::get('/metode-pembayaran', [MetodePembayaranController::class, 'index'])->name('kasir.metode.pembayaran');
         Route::get('/get-data-metode-pembayaran', [MetodePembayaranController::class, 'getDataMetodePembayaran'])->name('get.data.metode.pembayaran');
         Route::post('/create-metode-pembayaran', [MetodePembayaranController::class, 'createData'])->name('kasir.crate.data.metode.pembayaran');
         Route::post('/update-metode-pembayaran', [MetodePembayaranController::class, 'updateData'])->name('kasir.update.data.metode.pembayaran');
         Route::post('/delete-metode-pembayaran/{id}', [MetodePembayaranController::class, 'deleteData'])->name('kasir.delete.data.metode.pembayaran');
         Route::get('/get-data-metode-pembayaran/{id}', [MetodePembayaranController::class, 'getDataMetodePembayaranById'])->name('get.data.metode.pembayaran.by.id');
-
 
         Route::get('/get-data-transaksi-obat', [TransaksiObatController::class, 'getDataTransaksiObat'])->name('get.data.transaksi.obat');
         Route::get('/transaksi-obat/{kodeTransaksi}', [TransaksiObatController::class, 'transaksiObat'])->name('kasir.transaksi.obat');
@@ -361,19 +352,25 @@ Route::middleware(['auth', 'role:Kasir'])->group(function () {
         // Route Untuk Riwayat Transaksi Obat
         Route::get('/get-data-riwayat-transaksi-obat', [PenjualanObatController::class, 'getDataRiwayatTransaksiObat'])->name('get.data.riwayat.transaksi.obat');
 
-        // Riwayat Transaksi 
+        // Riwayat Transaksi
         Route::get('/riwayat-transaksi', [RiwayatTransaksiController::class, 'index'])->name('kasir.riwayat.transaksi');
         Route::get('/get-data-riwayat-pembayaran', [KasirController::class, 'getDataRiwayatPembayaran'])->name('get.data.riwayat.pembayaran');
 
-        // Transaksi Layanan 
-        Route::get('/get-data-transaksi-layanan', [TransaksiLayananController::class, 'getDataTransaksiLayanan'])->name('kasir.get.data.transaksi.layanan');
+        // Transaksi Layanan
+        // Transaksi Layanan
+        Route::get(
+            '/get-data-transaksi-layanan',
+            [KasirController::class, 'getDataTransaksiLayanan']
+        )->name('kasir.get.data.transaksi.layanan');
+
         Route::get('/show-detail-transaksi-layanan/{kodeTransaksi}', [TransaksiLayananController::class, 'showDetailTransaksiLayanan'])->name('kasir.show.detail.transaksi.layanan');
+
         Route::get('/proses-pembayaran-layanan/{kodeTransaksi}', [TransaksiLayananController::class, 'prosesPembayaranLayanan'])->name('kasir.proses.pembayaran.layanan');
-        Route::post('/proses-pembayaran-layanan', [TransaksiLayananController::class, 'submitPembayaranLayanan'])->name('kasir.submit.pembayaran.layanan');
+
         Route::post('/layanan-pembayaran-cash', [TransaksiLayananController::class, 'pembayaranLayananCash'])->name('kasir.layanan.pembayaran.cash');
         Route::post('/layanan-pembayaran-transfer', [TransaksiLayananController::class, 'pembayaranLayananTransfer'])->name('kasir.layanan.pembayaran.transfer');
 
-        // Riwayat Transaksi Layanan 
+        // Riwayat Transaksi Layanan
         Route::get('/get-data-riwayat-transaksi-layanan', [TransaksiLayananController::class, 'getDataRiwayatTransaksiLayanan'])->name('kasir.get.data.riwayat.transaksi.layanan');
         Route::get('/kwitansi-transaksi-layanan/{kodeTransaksi}', [TransaksiLayananController::class, 'kwitansiTransaksiLayanan'])->name('kasir.show.kwitansi.transaksi.layanan');
     });
@@ -384,7 +381,7 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
         Route::get('/dashboard', [PerawatController::class, 'dashboard'])->name('perawat.dashboard');
 
         Route::get('/kunjungan', [KunjunganController::class, 'index'])->name('perawat.kunjungan');
-        Route::get('/getDataKunjunganHariIni', [KunjunganController::class, 'getDataKFkasirunjunganHariIni'])->name('perawat.get.data.kunjungan.hari.ini');
+        Route::get('/getDataKunjunganHariIni', [KunjunganController::class, 'getDataKunjunganHariIni'])->name('perawat.get.data.kunjungan.hari.ini');
         Route::post('/updateStatusKunjunganKeEngaged/{id}', [KunjunganController::class, 'updateStatusKunjunganKeEngaged'])->name('perawat.update.status.kunjungan.ke.engaged');
         Route::get('/getDataKunjunganDenganStatusEngaged', [KunjunganController::class, 'getDataKunjunganDenganStatusEngaged'])->name('perawat.get.data.kunjungan.dengan.status.engaged');
         Route::get('/form-pengisian-vital-sign/{id}', [KunjunganController::class, 'formPengisianVitalSign'])->name('perawat.form.pengisian.vital.sign');
@@ -394,10 +391,11 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
 
 Route::get('/halo', function () {
     $nama = 'David Sebastian';
+
     return view('testing', compact('nama'));
 });
 
 Route::get('/login-dokter', [AuthController::class, 'login'])->name('login.dokter');
 Route::post('/proses-login-dokter', [AuthController::class, 'prosesLogin'])->name('proses.login.dokter');
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

@@ -1,8 +1,7 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\APIMobileController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -45,7 +44,7 @@ Route::get('/getAllDokter', [APIMobileController::class, 'getAllDokter'])->name(
 |--------------------------------------------------------------------------
 */
 Route::middleware(['auth:sanctum'])->group(function () {
-    
+
     // Auth
     Route::post('/logout', [APIMobileController::class, 'logout'])->name('api.logout');
 
@@ -125,10 +124,22 @@ Route::middleware(['auth:sanctum', 'role:Dokter'])
         Route::get('/get-layanan', [APIMobileController::class, 'getLayanan'])->name('layanan');
         Route::post('/save-emr', [APIMobileController::class, 'saveEMR'])->name('save_emr');
         Route::get('/riwayat-pasien-diperiksa', [APIMobileController::class, 'getRiwayatPasienDiperiksa'])->name('riwayat_pasien_diperiksa');
+
         Route::get('/detail-riwayat-pasien/{kunjunganId}', [APIMobileController::class, 'getDetailRiwayatPasien'])->name('detail_riwayat_pasien');
-        Route::get('/pasien/riwayat-emr/{pasien_id}', [APIMobileController::class, 'getRiwayatEMRPasien'])->name('riwayat_emr_pasien');        
+
+        // ✅ LIST ORDER LAYANAN UNTUK DOKTER (SUDAH SESUAI DENGAN FLUTTER)
+        Route::get('/layanan-order', [APIMobileController::class, 'getLayananOrderDokter']);
+
+        // ✅ DETAIL LAYANAN PER KUNJUNGAN (INI YANG BARU)
+        Route::get('/detail-order-layanan/{kunjunganId}', [APIMobileController::class, 'getDetailOrderLayanan']);
+
+        Route::get('/pasien/riwayat-emr/{pasien_id}', [APIMobileController::class, 'getRiwayatEMRPasien'])->name('riwayat_emr_pasien');
         Route::get('/get-data-kunjungan/{kunjungan_id}', [APIMobileController::class, 'getDataKunjunganById'])->name('get_data_kunjungan_by_id');
         Route::get('/riwayat-diagnosis/{pasien_id}', [APIMobileController::class, 'getRiwayatDiagnosisDokter'])->name('riwayat_diagnosis_dokter');
         Route::get('/detail-kunjungan/{kunjungan_id}', [APIMobileController::class, 'getDataKunjungan'])->name('get_data_kunjungan');
         Route::get('/perawat', [APIMobileController::class, 'getPerawatByDokter'])->name('perawat.index');
+        Route::get('/emr/{emr_id}', [APIMobileController::class, 'getEmrById']);
+        Route::post('/save-emr-layanan', [APIMobileController::class, 'saveEMRLayanan']);
+
+        Route::put('/edit-emr/{emr_id}', [APIMobileController::class, 'editEMR'])->name('edit_emr');
     });

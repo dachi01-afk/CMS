@@ -53,4 +53,8 @@
     </div>
 </div>
 
+<script>
+    window.transaksiLayananDataUrl = "{{ route('kasir.get.data.transaksi.layanan') }}";
+</script>
+
 @vite(['resources/js/kasir/pembayaran/data-transaksi-layanan.js'])
