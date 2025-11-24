@@ -31,7 +31,63 @@ function resetModalForm() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    // Buka modal dari tombol Pilih
+    // =========================
+    // SEARCH TABEL "JADWAL DOKTER YANG AKAN DATANG"
+    // =========================
+    const jadwalKyadSearchInput = document.getElementById(
+        "jadwal_kyad_searchInput"
+    );
+    const jadwalKyadTable = document.getElementById("jadwalKyadTable");
+
+    if (jadwalKyadSearchInput && jadwalKyadTable) {
+        const tbody = jadwalKyadTable.querySelector("tbody");
+        if (tbody) {
+            // Simpan semua baris data awal
+            const dataRows = Array.from(tbody.querySelectorAll("tr"));
+
+            // Buat row khusus untuk pesan "data tidak ada"
+            const noResultRow = document.createElement("tr");
+            noResultRow.id = "jadwal_kyad_no_result_row";
+            noResultRow.className = "bg-amber-50";
+            noResultRow.style.display = "none";
+            noResultRow.innerHTML = `
+                <td colspan="6" class="px-6 py-4 text-center text-sm text-slate-500 italic">
+                    Data yang anda cari tidak ada.
+                </td>
+            `;
+            tbody.appendChild(noResultRow);
+
+            jadwalKyadSearchInput.addEventListener("input", function () {
+                const query = this.value.toLowerCase().trim();
+                let hasVisible = false;
+
+                dataRows.forEach((row) => {
+                    const rowText = row.textContent.toLowerCase();
+
+                    if (query === "") {
+                        // Jika input kosong: tampilkan semua row data
+                        row.style.display = "";
+                        hasVisible = true;
+                    } else {
+                        const match = rowText.includes(query);
+                        row.style.display = match ? "" : "none";
+                        if (match) hasVisible = true;
+                    }
+                });
+
+                // Tampilkan / sembunyikan row "data tidak ada"
+                if (query !== "" && !hasVisible) {
+                    noResultRow.style.display = "";
+                } else {
+                    noResultRow.style.display = "none";
+                }
+            });
+        }
+    }
+
+    // =========================
+    // Buka modal dari tombol "Buat Kunjungan"
+    // =========================
     document.querySelectorAll(".pilih-kyad-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
             document.getElementById("dokter_id-kyad").value =
@@ -39,30 +95,51 @@ document.addEventListener("DOMContentLoaded", () => {
             document.getElementById(
                 "dokter_nama-kyad"
             ).value = `${btn.dataset.dokterNama} (${btn.dataset.spesialis})`;
+
             document.getElementById("nama_poli-kyad").value =
                 btn.dataset.namaPoli;
             document.getElementById("poli_id-kyad").value = btn.dataset.poliId;
+
             document.getElementById("tanggal-kunjungan-kyad").value =
                 btn.dataset.tanggal;
             document.getElementById("jadwal_id-kyad").value =
                 btn.dataset.jadwalId || "";
+
+            // Tampilkan info di section "Jadwal Praktik"
+            const tanggalDisplay = document.getElementById(
+                "tanggal_display-kyad"
+            );
+            const spesialisDisplay = document.getElementById(
+                "spesialis_display-kyad"
+            );
+            if (tanggalDisplay)
+                tanggalDisplay.textContent = btn.dataset.tanggal || "-";
+            if (spesialisDisplay)
+                spesialisDisplay.textContent = btn.dataset.spesialis || "-";
+
             modal.show();
         });
     });
 
+    // =========================
     // Tutup modal
+    // =========================
     document.getElementById("closeModalBtn").addEventListener("click", () => {
         modal.hide();
         resetModalForm();
     });
-    const cancelBtn = form.querySelector('button[type="button"]');
-    cancelBtn.addEventListener("click", () => {
-        modal.hide();
-        resetModalForm();
-    });
+    const cancelBtn = document.getElementById("closeModalBtn2");
+    if (cancelBtn) {
+        cancelBtn.addEventListener("click", () => {
+            modal.hide();
+            resetModalForm();
+        });
+    }
     modalEl.addEventListener("hidden.tw.modal", resetModalForm);
 
-    // Live search pasien
+    // =========================
+    // Live search pasien di modal KYAD
+    // =========================
     searchInput.addEventListener("keyup", async () => {
         const query = searchInput.value.trim();
         if (query.length < 2) {
@@ -70,11 +147,13 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        const response = await fetch(`/jadwal_kunjungan/search?query=${query}`);
+        const response = await fetch(
+            `/jadwal_kunjungan/search?query=${encodeURIComponent(query)}`
+        );
         const data = await response.json();
 
         resultsDiv.innerHTML = "";
-        if (data.length > 0) {
+        if (Array.isArray(data) && data.length > 0) {
             resultsDiv.classList.remove("hidden");
             data.forEach((pasien) => {
                 const item = document.createElement("div");
@@ -86,9 +165,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     document.getElementById("nama_pasien-kyad").textContent =
                         pasien.nama_pasien;
                     document.getElementById("alamat_pasien-kyad").textContent =
-                        pasien.alamat;
+                        pasien.alamat ?? "-";
                     document.getElementById("jk_pasien-kyad").textContent =
-                        pasien.jenis_kelamin;
+                        pasien.jenis_kelamin ?? "-";
+
                     pasienDataDiv.classList.remove("hidden");
                     resultsDiv.classList.add("hidden");
                     searchInput.value = pasien.nama_pasien;
@@ -101,7 +181,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    // =========================
     // Submit form via AJAX
+    // =========================
     form.addEventListener("submit", async (e) => {
         e.preventDefault();
 
@@ -141,7 +223,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 Swal.fire({
                     icon: "error",
                     title: "Gagal!",
-                    text: result.message || "Gagal menyimpan data kunjungan."   ,
+                    text: result.message || "Gagal menyimpan data kunjungan.",
                     confirmButtonText: "OK",
                 });
             }

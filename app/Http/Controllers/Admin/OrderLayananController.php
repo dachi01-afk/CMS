@@ -90,18 +90,34 @@ class OrderLayananController extends Controller
             // Tombol Action
             ->addColumn('action', function ($order) {
                 return '
-                <div class="flex gap-2">
-                    <button data-id="' . $order->id . '" 
-                        class="btn-update-order-layanan px-3 py-1 bg-blue-600 text-white rounded-lg text-xs hover:bg-blue-700">
-                        Edit
-                    </button>
+        <div class="flex items-center justify-center gap-1">
+            <button 
+                type="button"
+                data-id="' . $order->id . '"
+                class="btn-update-order-layanan inline-flex items-center gap-1
+                       px-3 py-1.5 rounded-lg text-[11px] font-semibold
+                       bg-sky-50 text-sky-700 border border-sky-200
+                       hover:bg-sky-100 hover:text-sky-900
+                       focus:outline-none focus:ring-1 focus:ring-sky-400
+                       transition-colors duration-150">
+                <i class="fa-solid fa-pen-to-square text-[10px]"></i>
+                <span>Edit</span>
+            </button>
 
-                    <button data-id="' . $order->id . '" 
-                        class="btn-delete-order-layanan px-3 py-1 bg-red-600 text-white rounded-lg text-xs hover:bg-red-700">
-                        Hapus
-                    </button>
-                </div>
-            ';
+            <button 
+                type="button"
+                data-id="' . $order->id . '"
+                class="btn-delete-order-layanan inline-flex items-center gap-1
+                       px-3 py-1.5 rounded-lg text-[11px] font-semibold
+                       bg-rose-50 text-rose-700 border border-rose-200
+                       hover:bg-rose-100 hover:text-rose-900
+                       focus:outline-none focus:ring-1 focus:ring-rose-400
+                       transition-colors duration-150">
+                <i class="fa-solid fa-trash-can text-[10px]"></i>
+                <span>Hapus</span>
+            </button>
+        </div>
+    ';
             })
             ->rawColumns(['status', 'action']) // Important!
             ->make(true);

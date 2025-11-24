@@ -260,10 +260,13 @@ $(function () {
         addModal && addModal.show();
     });
 
-    $("#closeAddPerawatModal").on("click", function () {
-        resetAddForm();
-        addModal && addModal.hide();
-    });
+    $("#closeAddPerawatModal, #closeAddPerawatModal_header").on(
+        "click",
+        function () {
+            resetAddForm();
+            addModal && addModal.hide();
+        }
+    );
 
     // Preview foto
     $("#foto_perawat").on("change", function () {
@@ -934,10 +937,13 @@ $(function () {
         }
     });
 
-    $("#closeEditPerawatModal").on("click", function () {
-        resetEditForm();
-        editModal && editModal.hide();
-    });
+    $("#closeEditPerawatModal, #closeEditPerawatModal_header").on(
+        "click",
+        function () {
+            resetEditForm();
+            editModal && editModal.hide();
+        }
+    );
 });
 
 // Bind change dokter → reload poli
@@ -948,63 +954,79 @@ $(document).on("change", "#edit_dokter_id", function () {
 
 // delete data perawat
 $(function () {
-  $("body").on("click", ".btn-delete-perawat", function () {
-    const perawatId = $(this).data("id");
-    if (!perawatId) return;
+    $("body").on("click", ".btn-delete-perawat", function () {
+        const perawatId = $(this).data("id");
+        if (!perawatId) return;
 
-    const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        const csrf =
+            document.querySelector('meta[name="csrf-token"]')?.content || "";
 
-    Swal.fire({
-      title: "Apakah Anda yakin?",
-      text: "Data yang dihapus tidak bisa dikembalikan!",
-      icon: "warning",
-      showCancelButton: true,
-      confirmButtonColor: "#d33",
-      cancelButtonColor: "#3085d6",
-      confirmButtonText: "Ya, hapus!",
-      cancelButtonText: "Batal",
-      reverseButtons: true
-    }).then((res) => {
-      if (!res.isConfirmed) return;
-
-      Swal.showLoading();
-
-      axios.delete(`/manajemen_pengguna/delete_perawat/${perawatId}`, {
-        headers: { 'X-CSRF-TOKEN': csrf, 'Accept': 'application/json' }
-      })
-      .then(({data}) => {
         Swal.fire({
-          icon: "success",
-          title: "Berhasil!",
-          text: data.message || "Data perawat berhasil dihapus.",
-          timer: 1400,
-          showConfirmButton: false
-        }).then(() => {
-          if ($("#userPerawat").length) {
-            $("#userPerawat").DataTable().ajax.reload(null, false);
-          } else {
-            window.location.reload();
-          }
-        });
-      })
-      .catch((error) => {
-        const status = error?.response?.status || 500;
-        const msg = error?.response?.data?.message
-                 || "Terjadi kesalahan server. Silakan coba lagi.";
+            title: "Apakah Anda yakin?",
+            text: "Data yang dihapus tidak bisa dikembalikan!",
+            icon: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#d33",
+            cancelButtonColor: "#3085d6",
+            confirmButtonText: "Ya, hapus!",
+            cancelButtonText: "Batal",
+            reverseButtons: true,
+        }).then((res) => {
+            if (!res.isConfirmed) return;
 
-        if (status === 409) {
-          // FK constraint
-          Swal.fire({
-            icon: "error",
-            title: "Tidak bisa dihapus",
-            html: msg.replace(/\n/g, "<br>")
-          });
-        } else if (status === 404) {
-          Swal.fire({ icon: "error", title: "Tidak ditemukan", text: "Data perawat tidak ditemukan." });
-        } else {
-          Swal.fire({ icon: "error", title: "Error!", text: msg });
-        }
-      });
+            Swal.showLoading();
+
+            axios
+                .delete(`/manajemen_pengguna/delete_perawat/${perawatId}`, {
+                    headers: {
+                        "X-CSRF-TOKEN": csrf,
+                        Accept: "application/json",
+                    },
+                })
+                .then(({ data }) => {
+                    Swal.fire({
+                        icon: "success",
+                        title: "Berhasil!",
+                        text: data.message || "Data perawat berhasil dihapus.",
+                        timer: 1400,
+                        showConfirmButton: false,
+                    }).then(() => {
+                        if ($("#userPerawat").length) {
+                            $("#userPerawat")
+                                .DataTable()
+                                .ajax.reload(null, false);
+                        } else {
+                            window.location.reload();
+                        }
+                    });
+                })
+                .catch((error) => {
+                    const status = error?.response?.status || 500;
+                    const msg =
+                        error?.response?.data?.message ||
+                        "Terjadi kesalahan server. Silakan coba lagi.";
+
+                    if (status === 409) {
+                        // FK constraint
+                        Swal.fire({
+                            icon: "error",
+                            title: "Tidak bisa dihapus",
+                            html: msg.replace(/\n/g, "<br>"),
+                        });
+                    } else if (status === 404) {
+                        Swal.fire({
+                            icon: "error",
+                            title: "Tidak ditemukan",
+                            text: "Data perawat tidak ditemukan.",
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: "error",
+                            title: "Error!",
+                            text: msg,
+                        });
+                    }
+                });
+        });
     });
-  });
 });

@@ -143,7 +143,7 @@ $(function () {
         if (addModal) addModal.show();
     });
 
-    $("#closeAddApotekerModal").on("click", function () {
+    $("#closeAddApotekerModal, #closeAddApotekerModal_footer").on("click", function () {
         resetAddForm();
         if (addModal) addModal.hide();
     });

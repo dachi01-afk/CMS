@@ -1,94 +1,147 @@
 {{-- resources/views/kasir/order-layanan/order-layanan.blade.php --}}
 
-<!-- Header -->
-<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-    <h2 class="text-2xl font-bold text-gray-700">Order Layanan</h2>
+<section class="space-y-5">
 
-    <!-- Modal toggle -->
-    <button id="buttonOpenModalCreateOrderLayanan"
-        class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg shadow hover:bg-blue-700 focus:outline-none">
-        + Tambah Order
-    </button>
-</div>
-
-<!-- Tabel Order Layanan -->
-<div class="overflow-hidden rounded-lg shadow-md">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 border-b border-gray-200">
-        <div>
-            <select id="order-layanan-page-length"
-                class="border border-gray-300 text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block w-24 p-1">
-                <option value="10">10</option>
-                <option value="25">25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-            </select>
+    {{-- ================= HEADER + CTA ================= --}}
+    <div
+        class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 md:px-6 py-4 shadow-sm">
+        <div class="flex items-start gap-3">
+            <div
+                class="mt-1 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-teal-500 text-white shadow-md">
+                <i class="fa-solid fa-stethoscope text-lg"></i>
+            </div>
+            <div>
+                <h2 class="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-50">
+                    Order Layanan
+                </h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    Kelola pemesanan layanan klinik, mulai dari pemeriksaan hingga tindakan penunjang untuk pasien.
+                </p>
+            </div>
         </div>
-        <div class="relative">
-            <input type="text" id="order-layanan-search-input"
-                class="block w-60 p-2 pl-3 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-sky-500 focus:border-sky-500"
-                placeholder="Cari order layanan...">
+
+        <div class="flex items-center gap-2 md:gap-3">
+            <button id="buttonOpenModalCreateOrderLayanan" type="button"
+                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl shadow-md
+                       bg-gradient-to-r from-sky-500 to-teal-600 hover:from-sky-600 hover:to-teal-700
+                       focus:outline-none focus:ring-2 focus:ring-sky-400">
+                <i class="fa-solid fa-plus text-xs"></i>
+                <span>Tambah Order</span>
+            </button>
         </div>
     </div>
 
-    <div class="overflow-x-auto">
-        <table id="orderLayanan" class="w-full text-sm text-left text-gray-600">
-            <thead class="text-xs uppercase bg-sky-500 text-white">
-                <tr>
-                    <th class="px-6 py-3">No</th>
-                    <th class="px-6 py-3">Kode Transaksi</th>
-                    <th class="px-6 py-3">Nama Pasien</th>
-                    <th class="px-6 py-3">Layanan</th>
-                    <th class="px-6 py-3">Kategori</th>
-                    <th class="px-6 py-3">Jumlah</th>
-                    <th class="px-6 py-3">Total Tagihan</th>
-                    <th class="px-6 py-3">Status</th>
-                    <th class="px-6 py-3">Tanggal</th>
-                    <th class="px-6 py-3">Action</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
+    {{-- ================= CARD TABEL ================= --}}
+    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm">
 
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between px-4 py-3 border-t border-gray-200 gap-3">
-        <div id="order-layanan-custom-info" class="text-sm text-gray-700"></div>
-        <ul id="order-layanan-custom-pagination" class="inline-flex -space-x-px text-sm"></ul>
-    </div>
-</div>
+        {{-- Toolbar --}}
+        <div
+            class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 md:px-6 py-3 border-b border-slate-200 dark:border-slate-700">
 
-<!-- Modal Create Order Layanan -->
+            {{-- Page length --}}
+            <div class="flex items-center gap-2 text-sm">
+                <span class="text-slate-600 dark:text-slate-300 hidden sm:inline">Tampil</span>
+                <select id="order-layanan-page-length"
+                    class="border border-slate-300 dark:border-slate-600 text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500
+                           bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 px-2 py-1 w-28">
+                    <option value="10">10 baris</option>
+                    <option value="25">25 baris</option>
+                    <option value="50">50 baris</option>
+                    <option value="100">100 baris</option>
+                </select>
+                <span class="text-slate-600 dark:text-slate-300 hidden sm:inline">per halaman</span>
+            </div>
+
+            {{-- Search --}}
+            <div class="w-full md:w-auto">
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs"></i>
+                    </span>
+                    <input type="text" id="order-layanan-search-input"
+                        class="block w-full md:w-80 pl-9 pr-3 py-2 text-sm text-slate-800 dark:text-slate-100
+                               border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700
+                               focus:ring-sky-500 focus:border-sky-500"
+                        placeholder="Cari kode transaksi, nama pasien, atau layanan...">
+                </div>
+                <p class="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
+                    Contoh: <span class="italic">TRX-2025..., Nama pasien, jenis layanan</span>.
+                </p>
+            </div>
+        </div>
+
+        {{-- Tabel --}}
+        <div class="overflow-x-auto">
+            <table id="orderLayanan"
+                class="w-full text-sm text-left text-slate-700 dark:text-slate-100 border-t border-slate-100 dark:border-slate-700">
+                <thead
+                    class="text-[11px] md:text-xs font-semibold uppercase bg-gradient-to-r from-sky-500 via-teal-500 to-teal-600 text-white tracking-wide">
+                    <tr>
+                        <th class="px-4 md:px-6 py-3">No</th>
+                        <th class="px-4 md:px-6 py-3">Kode Transaksi</th>
+                        <th class="px-4 md:px-6 py-3">Nama Pasien</th>
+                        <th class="px-4 md:px-6 py-3">Layanan</th>
+                        <th class="px-4 md:px-6 py-3">Kategori</th>
+                        <th class="px-4 md:px-6 py-3">Jumlah</th>
+                        <th class="px-4 md:px-6 py-3">Total Tagihan</th>
+                        <th class="px-4 md:px-6 py-3">Status</th>
+                        <th class="px-4 md:px-6 py-3">Tanggal</th>
+                        <th class="px-4 md:px-6 py-3 text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700"></tbody>
+            </table>
+        </div>
+
+        {{-- Footer --}}
+        <div
+            class="flex flex-col md:flex-row md:items-center md:justify-between px-4 md:px-6 py-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/60 gap-3 rounded-b-2xl">
+            <div id="order-layanan-custom-info" class="text-xs md:text-sm text-slate-600 dark:text-slate-300"></div>
+            <ul id="order-layanan-custom-pagination"
+                class="inline-flex items-center gap-0 text-sm isolate rounded-lg border border-slate-200 dark:border-slate-600 overflow-hidden">
+            </ul>
+        </div>
+    </div>
+</section>
+
+{{-- ================= MODAL CREATE ORDER LAYANAN ================= --}}
 <div id="modalCreateOrderLayanan" aria-hidden="true"
-    class="hidden overflow-y-auto overflow-x-auto fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    class="hidden fixed inset-0 z-50 flex items-start md:items-center justify-center 
+           w-full h-full p-4 md:p-6 bg-slate-900/60 backdrop-blur-sm overflow-y-auto overflow-x-auto">
 
-    <div class="relative w-full max-w-3xl max-h-full">
-        <div class="relative bg-white rounded-2xl shadow-2xl dark:bg-gray-800 overflow-hidden">
-            <!-- Header -->
-            <div class="bg-gradient-to-r from-blue-500 to-purple-600 p-6 flex items-center justify-between">
+    <div class="relative w-full max-w-3xl">
+        <div
+            class="relative bg-white rounded-2xl shadow-2xl dark:bg-gray-800 border border-slate-100 dark:border-slate-700 overflow-hidden flex flex-col max-h-[90vh]">
+
+            {{-- Header --}}
+            <div
+                class="bg-gradient-to-r from-sky-500 to-teal-600 px-5 md:px-6 pt-4 pb-3 flex items-start justify-between gap-3 rounded-t-2xl">
                 <div class="flex items-center gap-3">
-                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <h3 class="text-2xl font-bold text-white">Tambah Order Layanan</h3>
+                    <div class="h-9 w-9 rounded-xl bg-sky-500 flex items-center justify-center shadow-md text-white">
+                        <i class="fa-solid fa-file-medical text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base md:text-lg font-semibold text-white">Tambah Order Layanan</h3>
+                        <p class="text-[11px] text-sky-50/90 mt-0.5">
+                            Pilih pasien, layanan, dan (jika perlu) poli & jadwal dokter untuk membuat order baru.
+                        </p>
+                    </div>
                 </div>
                 <button type="button" id="buttonCloseModalCreateOrderLayanan"
-                    class="text-white hover:text-gray-200 transition-colors duration-200">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
-                        </path>
-                    </svg>
+                    class="inline-flex items-center justify-center h-8 w-8 rounded-full text-slate-100 hover:text-white hover:bg-white/10 transition">
+                    <i class="fa-solid fa-xmark text-sm"></i>
                 </button>
             </div>
 
-            <form id="formCreateOrderLayanan" class="p-6 flex flex-col gap-6" method="POST"
+            {{-- Form --}}
+            <form id="formCreateOrderLayanan"
+                class="px-5 md:px-6 pb-5 pt-4 flex flex-col gap-6 bg-slate-50/60 dark:bg-slate-800" method="POST"
                 data-url="{{ route('order.layanan.create.data.order.layanan') }}">
                 @csrf
 
-                {{-- ================= PASIEN SECTION ================= --}}
+                {{-- PASIEN --}}
                 <div
-                    class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600">
+                    class="bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-600">
                     <div class="flex items-center gap-2 mb-3">
                         <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                             xmlns="http://www.w3.org/2000/svg">
@@ -103,7 +156,7 @@
                     <div class="relative">
                         <input type="text" id="pasien_search_create"
                             class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg
-                                   focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3
+                                   focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-3 py-2.5
                                    dark:bg-gray-600 dark:border-gray-500 dark:text-white
                                    transition-all duration-200 hover:shadow-md"
                             placeholder="Ketik nama / No EMR / No RM / NIK pasien...">
@@ -112,12 +165,12 @@
 
                         <div id="pasien_search_results_create"
                             class="absolute z-20 mt-1 w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 
-                                   rounded-lg shadow-lg max-h-60 overflow-y-auto hidden">
+                                   rounded-lg shadow-lg max-h-60 overflow-y-auto hidden text-sm">
                         </div>
                     </div>
 
                     <div id="pasien_id_create-error"
-                        class="text-red-600 text-sm mt-2 opacity-100 transition-opacity duration-200">
+                        class="text-red-600 text-xs md:text-sm mt-2 opacity-100 transition-opacity duration-200">
                     </div>
 
                     {{-- Info pasien --}}
@@ -162,10 +215,10 @@
                     </div>
                 </div>
 
-                {{-- ================= LAYANAN & KATEGORI ================= --}}
+                {{-- LAYANAN & KATEGORI --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div
-                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600">
+                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-600">
                         <div class="flex items-center gap-2 mb-3">
                             <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -178,7 +231,7 @@
                         </div>
                         <select name="layanan_id" id="layanan_id_create"
                             class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg
-                                   focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3
+                                   focus:ring-2 focus:ring-green-500 focus:border-green-500 px-3 py-2.5
                                    dark:bg-gray-600 dark:border-gray-500 dark:text-white
                                    transition-all duration-200 hover:shadow-md">
                             <option value="">-- Pilih Layanan --</option>
@@ -192,12 +245,12 @@
                             @endforeach
                         </select>
                         <div id="layanan_id_create-error"
-                            class="text-red-600 text-sm mt-2 opacity-0 transition-opacity duration-200 hover:opacity-100">
+                            class="text-red-600 text-xs md:text-sm mt-2 opacity-0 transition-opacity duration-200">
                         </div>
                     </div>
 
                     <div
-                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600">
+                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-600">
                         <div class="flex items-center gap-2 mb-3">
                             <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -209,16 +262,16 @@
                                 class="text-sm font-semibold text-gray-900 dark:text-white">Kategori Layanan</label>
                         </div>
                         <input type="text" id="kategori_layanan_nama_create" readonly
-                            class="w-full bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 p-3 dark:bg-gray-600 dark:border-gray-500 dark:text-white transition-all duration-200"
+                            class="w-full bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 px-3 py-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white transition-all duration-200"
                             placeholder="Akan terisi otomatis">
                         <input type="hidden" name="kategori_layanan_id" id="kategori_layanan_id_create">
                     </div>
                 </div>
 
-                {{-- ================= JUMLAH & TOTAL ================= --}}
+                {{-- JUMLAH & TOTAL --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div
-                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600">
+                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-600">
                         <div class="flex items-center gap-2 mb-3">
                             <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -229,14 +282,14 @@
                                 class="text-sm font-semibold text-gray-900 dark:text-white">Jumlah</label>
                         </div>
                         <input type="number" name="jumlah" id="jumlah_create" min="1" value="1"
-                            class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 p-3 dark:bg-gray-600 dark:border-gray-500 dark:text-white transition-all duration-200 hover:shadow-md">
+                            class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 px-3 py-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white transition-all duration-200 hover:shadow-md">
                         <div id="jumlah_create-error"
-                            class="text-red-600 text-sm mt-2 opacity-0 transition-opacity duration-200 hover:opacity-100">
+                            class="text-red-600 text-xs md:text-sm mt-2 opacity-0 transition-opacity duration-200">
                         </div>
                     </div>
 
                     <div
-                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600">
+                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-600">
                         <div class="flex items-center gap-2 mb-3">
                             <svg class="w-5 h-5 text-teal-500" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -248,20 +301,20 @@
                                 class="text-sm font-semibold text-gray-900 dark:text-white">Total Tagihan</label>
                         </div>
                         <input type="text" id="total_tagihan_create" name="total_tagihan" readonly
-                            class="w-full bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 p-3 dark:bg-gray-600 dark:border-gray-500 dark:text-white transition-all duration-200"
+                            class="w-full bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 px-3 py-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white transition-all duration-200"
                             placeholder="Rp 0">
                         <div id="total_tagihan_create-error"
-                            class="text-red-600 text-sm mt-2 opacity-0 transition-opacity duration-200 hover:opacity-100">
+                            class="text-red-600 text-xs md:text-sm mt-2 opacity-0 transition-opacity duration-200">
                         </div>
                     </div>
                 </div>
 
-                {{-- ================= POLI & JADWAL (Hanya PEMERIKSAAN) ================= --}}
+                {{-- POLI & JADWAL (Hanya PEMERIKSAAN) --}}
                 <div id="section_poli_jadwal_create" class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2 hidden">
 
                     {{-- POLI --}}
                     <div
-                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600">
+                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-600">
                         <div class="flex items-center gap-2 mb-3">
                             <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -276,7 +329,7 @@
 
                         <select id="poli_id_select_create" name="poli_id"
                             class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg
-                                       focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-3
+                                       focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2.5
                                        dark:bg-gray-600 dark:border-gray-500 dark:text-white">
                             <option value="">-- Pilih Poli --</option>
                             @foreach ($dataPoli as $poli)
@@ -284,12 +337,13 @@
                             @endforeach
                         </select>
                         <div id="poli_id_create-error"
-                            class="text-red-600 text-sm mt-2 opacity-0 transition-opacity duration-200"></div>
+                            class="text-red-600 text-xs md:text-sm mt-2 opacity-0 transition-opacity duration-200">
+                        </div>
                     </div>
 
                     {{-- JADWAL DOKTER HARI INI --}}
                     <div
-                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600">
+                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-600">
                         <div class="flex items-center gap-2 mb-3">
                             <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -304,7 +358,7 @@
 
                         <select id="jadwal_dokter_id_create" name="jadwal_dokter_id"
                             class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg
-                                       focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 p-3
+                                       focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 px-3 py-2.5
                                        dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                             disabled>
                             <option value="">-- Pilih Jadwal Dokter --</option>
@@ -313,32 +367,25 @@
                         <input type="hidden" name="dokter_id" id="dokter_id_create">
 
                         <div id="jadwal_dokter_id_create-error"
-                            class="text-red-600 text-sm mt-2 opacity-0 transition-opacity duration-200"></div>
+                            class="text-red-600 text-xs md:text-sm mt-2 opacity-0 transition-opacity duration-200">
+                        </div>
 
                         <p id="info_jadwal_dokter_create"
                             class="mt-2 text-xs text-gray-500 dark:text-gray-300 hidden"></p>
                     </div>
                 </div>
 
-                {{-- ================= BUTTONS ================= --}}
-                <div class="flex justify-end gap-4 mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
+                {{-- BUTTONS --}}
+                <div class="flex justify-end gap-3 md:gap-4 mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
                     <button type="button" id="buttonCancaleModalCreateOrderLayanan"
-                        class="px-6 py-3 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-white transition-all duration-200 hover:shadow-lg flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                        Batal
+                        class="px-5 md:px-6 py-2.5 md:py-3 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-white transition-all duration-200 hover:shadow-lg inline-flex items-center gap-2">
+                        <i class="fa-solid fa-xmark text-xs"></i>
+                        <span>Batal</span>
                     </button>
                     <button type="submit" id="saveOrderLayananButton"
-                        class="px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg hover:from-blue-600 hover:to-purple-700 focus:ring-4 focus:ring-blue-300 transition-all duration-200 hover:shadow-lg flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7">
-                            </path>
-                        </svg>
-                        Simpan Order
+                        class="px-5 md:px-6 py-2.5 md:py-3 text-sm font-semibold text-white bg-gradient-to-r from-sky-500 to-teal-600 rounded-lg hover:from-sky-600 hover:to-teal-700 focus:ring-2 focus:ring-sky-400 transition-all duration-200 hover:shadow-lg inline-flex items-center gap-2">
+                        <i class="fa-solid fa-check text-xs"></i>
+                        <span>Simpan Order</span>
                     </button>
                 </div>
             </form>
@@ -346,40 +393,45 @@
     </div>
 </div>
 
-<!-- Modal Update Order Layanan -->
+{{-- ================= MODAL UPDATE ORDER LAYANAN ================= --}}
 <div id="modalUpdateOrderLayanan" aria-hidden="true"
-    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
+    class="hidden fixed inset-0 z-50 flex items-start md:items-center justify-center 
+           w-full h-full p-4 md:p-6 bg-slate-900/60 backdrop-blur-sm overflow-y-auto overflow-x-hidden">
 
-    <div class="relative w-full max-w-3xl max-h-full">
-        <div class="relative bg-white rounded-2xl shadow-2xl dark:bg-gray-800 overflow-hidden">
+    <div class="relative w-full max-w-3xl">
+        <div
+            class="relative bg-white rounded-2xl shadow-2xl dark:bg-gray-800 border border-slate-100 dark:border-slate-700 overflow-hidden flex flex-col max-h-[90vh]">
+
             {{-- Header --}}
-            <div class="bg-gradient-to-r from-blue-500 to-purple-600 p-6 flex items-center justify-between">
+            <div
+                class="bg-gradient-to-r from-teal-500 to-sky-600 px-5 md:px-6 pt-4 pb-3 flex items-start justify-between gap-3 rounded-t-2xl">
                 <div class="flex items-center gap-3">
-                    <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                    </svg>
-                    <h3 class="text-2xl font-bold text-white">Edit Order Layanan</h3>
+                    <div class="h-9 w-9 rounded-xl bg-teal-500 flex items-center justify-center shadow-md text-white">
+                        <i class="fa-solid fa-pen-to-square text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base md:text-lg font-semibold text-white">Edit Order Layanan</h3>
+                        <p class="text-[11px] text-sky-50/90 mt-0.5">
+                            Ubah informasi pasien, layanan, dan jumlah sesuai kebutuhan.
+                        </p>
+                    </div>
                 </div>
                 <button type="button" id="buttonCloseModalUpdateOrderLayanan"
-                    class="text-white hover:text-gray-200 transition-colors duration-200">
-                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                        xmlns="http://www.w3.org/2000/svg">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
+                    class="inline-flex items-center justify-center h-8 w-8 rounded-full text-slate-100 hover:text-white hover:bg-white/10 transition">
+                    <i class="fa-solid fa-xmark text-sm"></i>
                 </button>
             </div>
 
-            <form id="formUpdateOrderLayanan" class="p-6 flex flex-col gap-6"
+            {{-- Form --}}
+            <form id="formUpdateOrderLayanan"
+                class="px-5 md:px-6 pb-5 pt-4 flex flex-col gap-6 bg-slate-50/60 dark:bg-slate-800"
                 data-url="{{ route('order.layanan.update.data.order.layanan') }}" method="POST">
                 @csrf
                 <input type="hidden" id="id_update" name="id">
 
-                {{-- ================= PASIEN ================= --}}
+                {{-- PASIEN --}}
                 <div
-                    class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600">
+                    class="bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-600">
                     <div class="flex items-center gap-2 mb-3">
                         <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                             xmlns="http://www.w3.org/2000/svg">
@@ -393,13 +445,13 @@
 
                     <select name="pasien_id" id="pasien_id_update"
                         class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg
-                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 p-3
+                               focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-3 py-2.5
                                dark:bg-gray-600 dark:border-gray-500 dark:text-white
                                transition-all duration-200 hover:shadow-md">
                     </select>
 
                     <div id="pasien_id_update-error"
-                        class="text-red-600 text-sm mt-2 opacity-0 transition-opacity duration-200"></div>
+                        class="text-red-600 text-xs md:text-sm mt-2 opacity-0 transition-opacity duration-200"></div>
 
                     {{-- Info pasien --}}
                     <div id="pasien_info_update"
@@ -437,10 +489,10 @@
                     </div>
                 </div>
 
-                {{-- ================= LAYANAN & KATEGORI ================= --}}
+                {{-- LAYANAN & KATEGORI --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div
-                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600">
+                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-600">
                         <div class="flex items-center gap-2 mb-3">
                             <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -453,7 +505,7 @@
                         </div>
                         <select name="layanan_id" id="layanan_id_update"
                             class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg
-                                   focus:ring-2 focus:ring-green-500 focus:border-green-500 p-3
+                                   focus:ring-2 focus:ring-green-500 focus:border-green-500 px-3 py-2.5
                                    dark:bg-gray-600 dark:border-gray-500 dark:text-white
                                    transition-all duration-200 hover:shadow-md">
                             <option value="">-- Pilih Layanan --</option>
@@ -467,11 +519,12 @@
                             @endforeach
                         </select>
                         <div id="layanan_id_update-error"
-                            class="text-red-600 text-sm mt-2 opacity-0 transition-opacity duration-200"></div>
+                            class="text-red-600 text-xs md:text-sm mt-2 opacity-0 transition-opacity duration-200">
+                        </div>
                     </div>
 
                     <div
-                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600">
+                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-600">
                         <div class="flex items-center gap-2 mb-3">
                             <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -484,7 +537,7 @@
                         </div>
                         <input type="text" id="kategori_layanan_nama_update" readonly
                             class="w-full bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg
-                                   focus:ring-2 focus:ring-purple-500 focus:border-purple-500 p-3
+                                   focus:ring-2 focus:ring-purple-500 focus:border-purple-500 px-3 py-2.5
                                    dark:bg-gray-600 dark:border-gray-500 dark:text-white
                                    transition-all duration-200"
                             placeholder="Akan terisi otomatis">
@@ -492,10 +545,10 @@
                     </div>
                 </div>
 
-                {{-- ================= JUMLAH & TOTAL ================= --}}
+                {{-- JUMLAH & TOTAL --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div
-                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600">
+                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-600">
                         <div class="flex items-center gap-2 mb-3">
                             <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -507,15 +560,16 @@
                         </div>
                         <input type="number" name="jumlah" id="jumlah_update" min="1"
                             class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg
-                                   focus:ring-2 focus:ring-orange-500 focus:border-orange-500 p-3
+                                   focus:ring-2 focus:ring-orange-500 focus:border-orange-500 px-3 py-2.5
                                    dark:bg-gray-600 dark:border-gray-500 dark:text-white
                                    transition-all duration-200 hover:shadow-md">
                         <div id="jumlah_update-error"
-                            class="text-red-600 text-sm mt-2 opacity-0 transition-opacity duration-200"></div>
+                            class="text-red-600 text-xs md:text-sm mt-2 opacity-0 transition-opacity duration-200">
+                        </div>
                     </div>
 
                     <div
-                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600">
+                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-600">
                         <div class="flex items-center gap-2 mb-3">
                             <svg class="w-5 h-5 text-teal-500" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -526,25 +580,24 @@
                             <label for="total_tagihan_update"
                                 class="text-sm font-semibold text-gray-900 dark:text-white">Total Tagihan</label>
                         </div>
-                        {{-- tampil Rp di front-end --}}
                         <input type="text" id="total_tagihan_update" name="total_tagihan" readonly
                             class="w-full bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg
-                                   focus:ring-2 focus:ring-teal-500 focus:border-teal-500 p-3
+                                   focus:ring-2 focus:ring-teal-500 focus:border-teal-500 px-3 py-2.5
                                    dark:bg-gray-600 dark:border-gray-500 dark:text-white
                                    transition-all duration-200"
                             placeholder="Rp 0">
                         <div id="total_tagihan_update-error"
-                            class="text-red-600 text-sm mt-2 opacity-0 transition-opacity duration-200"></div>
+                            class="text-red-600 text-xs md:text-sm mt-2 opacity-0 transition-opacity duration-200">
+                        </div>
                     </div>
                 </div>
 
-                {{-- ================= POLI & JADWAL (Hanya PEMERIKSAAN) ================= --}}
-                <div id="section_poli_jadwal_update"
-                     class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2 hidden">
+                {{-- POLI & JADWAL (Hanya PEMERIKSAAN) --}}
+                <div id="section_poli_jadwal_update" class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2 hidden">
 
                     {{-- POLI --}}
                     <div
-                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600">
+                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-600">
                         <div class="flex items-center gap-2 mb-3">
                             <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -559,7 +612,7 @@
 
                         <select id="poli_id_select_update" name="poli_id"
                             class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg
-                                   focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 p-3
+                                   focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 px-3 py-2.5
                                    dark:bg-gray-600 dark:border-gray-500 dark:text-white">
                             <option value="">-- Pilih Poli --</option>
                             @foreach ($dataPoli as $poli)
@@ -567,12 +620,13 @@
                             @endforeach
                         </select>
                         <div id="poli_id_update-error"
-                            class="text-red-600 text-sm mt-2 opacity-0 transition-opacity duration-200"></div>
+                            class="text-red-600 text-xs md:text-sm mt-2 opacity-0 transition-opacity duration-200">
+                        </div>
                     </div>
 
                     {{-- JADWAL DOKTER HARI INI --}}
                     <div
-                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-600">
+                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-600">
                         <div class="flex items-center gap-2 mb-3">
                             <svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -587,7 +641,7 @@
 
                         <select id="jadwal_dokter_id_update" name="jadwal_dokter_id"
                             class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg
-                                   focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 p-3
+                                   focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 px-3 py-2.5
                                    dark:bg-gray-600 dark:border-gray-500 dark:text-white"
                             disabled>
                             <option value="">-- Pilih Jadwal Dokter --</option>
@@ -596,32 +650,25 @@
                         <input type="hidden" name="dokter_id" id="dokter_id_update">
 
                         <div id="jadwal_dokter_id_update-error"
-                            class="text-red-600 text-sm mt-2 opacity-0 transition-opacity duration-200"></div>
+                            class="text-red-600 text-xs md:text-sm mt-2 opacity-0 transition-opacity duration-200">
+                        </div>
 
                         <p id="info_jadwal_dokter_update"
-                           class="mt-2 text-xs text-gray-500 dark:text-gray-300 hidden"></p>
+                            class="mt-2 text-xs text-gray-500 dark:text-gray-300 hidden"></p>
                     </div>
                 </div>
 
-                {{-- ================= BUTTONS ================= --}}
-                <div class="flex justify-end gap-4 mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
+                {{-- BUTTONS --}}
+                <div class="flex justify-end gap-3 md:gap-4 mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
                     <button type="button" id="buttonCancleModalUpdateOrderLayanan"
-                        class="px-6 py-3 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-white transition-all duration-200 hover:shadow-lg flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M6 18L18 6M6 6l12 12"></path>
-                        </svg>
-                        Batal
+                        class="px-5 md:px-6 py-2.5 md:py-3 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-white transition-all duration-200 hover:shadow-lg inline-flex items-center gap-2">
+                        <i class="fa-solid fa-xmark text-xs"></i>
+                        <span>Batal</span>
                     </button>
                     <button type="submit" id="updateOrderLayananButton"
-                        class="px-6 py-3 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg hover:from-blue-600 hover:to-purple-700 focus:ring-4 focus:ring-blue-300 transition-all duration-200 hover:shadow-lg flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7">
-                            </path>
-                        </svg>
-                        Simpan Perubahan
+                        class="px-5 md:px-6 py-2.5 md:py-3 text-sm font-semibold text-white bg-gradient-to-r from-teal-500 to-sky-600 rounded-lg hover:from-teal-600 hover:to-sky-700 focus:ring-2 focus:ring-teal-400 transition-all duration-200 hover:shadow-lg inline-flex items-center gap-2">
+                        <i class="fa-solid fa-check text-xs"></i>
+                        <span>Simpan Perubahan</span>
                     </button>
                 </div>
             </form>

@@ -45,6 +45,7 @@ $(function () {
             { data: "jumlah_layanan", name: "jumlah_layanan" },
             { data: "total_tagihan", name: "total_tagihan" },
             { data: "metode_pembayaran", name: "metode_pembayaran" },
+            { data: "kode_transaksi", name: "kode_transaksi" },
             { data: "status", name: "status" },
             {
                 data: "action",

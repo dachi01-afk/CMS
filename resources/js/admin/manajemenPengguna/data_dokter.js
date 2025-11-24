@@ -184,10 +184,13 @@ $(function () {
         setTimeout(() => tsPoli && tsPoli.refreshOptions(false), 100);
     });
 
-    $("#closeAddDokterModal").on("click", function () {
-        addModal?.hide();
-        resetAddForm();
-    });
+    $("#closeAddDokterModal, #closeAddDokterModal_footer").on(
+        "click",
+        function () {
+            addModal?.hide();
+            resetAddForm();
+        }
+    );
 
     $("#formAddDokter").on("submit", function (e) {
         e.preventDefault();
@@ -470,10 +473,13 @@ $(function () {
             });
     });
 
-    $("#closeEditDokterModal").on("click", function () {
-        editModal?.hide();
-        resetEditForm();
-    });
+    $("#closeEditDokterModal, #closeEditDokterModal_footer").on(
+        "click",
+        function () {
+            editModal?.hide();
+            resetEditForm();
+        }
+    );
 });
 
 // delete data dokter

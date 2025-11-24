@@ -126,10 +126,13 @@ $(function () {
         addModal?.show();
     });
 
-    $("#buttonCloseModalCreatePoli").on("click", function () {
-        addModal?.hide();
-        resetAddForm();
-    });
+    $("#buttonCloseModalCreatePoli, #buttonCloseModalCreatePoli_footer").on(
+        "click",
+        function () {
+            addModal?.hide();
+            resetAddForm();
+        }
+    );
 
     $formAdd.on("submit", function (e) {
         e.preventDefault();
@@ -257,10 +260,13 @@ $(function () {
             });
     });
 
-    $("#buttonCloseModalUpdatePoli").on("click", function () {
-        editModal?.hide();
-        resetEditForm();
-    });
+    $("#buttonCloseModalUpdatePoli, #buttonCloseModalUpdatePoli_footer").on(
+        "click",
+        function () {
+            editModal?.hide();
+            resetEditForm();
+        }
+    );
 });
 
 // delete data poli

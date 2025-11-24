@@ -7,10 +7,12 @@ use App\Models\Pasien;
 use App\Models\Kunjungan;
 use App\Models\JadwalDokter;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Models\Dokter;
 use Carbon\CarbonImmutable;
+use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -43,14 +45,12 @@ class JadwalKunjunganController extends Controller
         ];
 
         // --- JADWAL HARI INI (yang masih berlangsung / belum lewat) ---
-        // Robust: TRIM + LOWER dan whereIn untuk cover ID/EN
         $jadwalHariIni = JadwalDokter::query()
             ->with([
                 'dokter:id,nama_dokter,jenis_spesialis_id',
                 'dokter.jenisSpesialis:id,nama_spesialis',
                 'poli:id,nama_poli',
             ])
-            // Cocokkan "hari" secara robust: trim + lower, cover ID & EN
             ->where(function ($q) use ($hariId, $hariEn) {
                 $q->whereRaw('LOWER(TRIM(hari)) = ?', [$hariId])
                     ->orWhereRaw('LOWER(TRIM(hari)) = ?', [$hariEn]);
@@ -58,7 +58,7 @@ class JadwalKunjunganController extends Controller
             ->orderBy('jam_awal')
             ->get();
 
-        // --- SEMUA JADWAL + TANGGAL BERIKUTNYA ---
+        // --- SEMUA JADWAL + TANGGAL BERIKUTNYA (masih berupa Collection) ---
         $jadwalSemua = JadwalDokter::query()
             ->with([
                 'dokter:id,nama_dokter,jenis_spesialis_id',
@@ -67,13 +67,12 @@ class JadwalKunjunganController extends Controller
             ])
             ->get();
 
-        $jadwalYangAkanDatang = $jadwalSemua
+        $jadwalYangAkanDatangCollection = $jadwalSemua
             ->map(function ($jd) use ($now, $mapHari) {
                 $hariIndo = Str::of($jd->hari ?? '')->trim()->lower()->toString();
 
-                // Normalisasi: kalau DB pakai English, konversi dulu ke Indo
-                // (kita tetap pakai $mapHari yang ID->EN; untuk EN->EN langsung pakai nilai EN)
-                $hariEng = $mapHari[$hariIndo] ?? $hariIndo; // jika sudah english, biarkan
+                // Normalisasi: kalau DB pakai English, konversi dulu ke Indo (atau biarkan kalau sudah EN)
+                $hariEng = $mapHari[$hariIndo] ?? $hariIndo;
 
                 if (!$hariEng) {
                     $jd->setAttribute('tanggal_berikutnya', null);
@@ -111,6 +110,26 @@ class JadwalKunjunganController extends Controller
             ])
             ->values();
 
+        // --- PAGINATION untuk Collection jadwalYangAkanDatang ---
+        $perPage     = (int) request('per_page', 10);              // bisa diubah dari query ?per_page=
+        $currentPage = Paginator::resolveCurrentPage('page');      // ambil ?page=
+        $total       = $jadwalYangAkanDatangCollection->count();
+
+        $itemsForCurrentPage = $jadwalYangAkanDatangCollection
+            ->slice(($currentPage - 1) * $perPage, $perPage)
+            ->values();
+
+        $jadwalYangAkanDatang = new LengthAwarePaginator(
+            $itemsForCurrentPage,
+            $total,
+            $perPage,
+            $currentPage,
+            [
+                'path'  => Paginator::resolveCurrentPath(),
+                'query' => request()->query(), // supaya param lain (misal search nanti) tetap ke-attach
+            ]
+        );
+
         // Simpan nama hari (rapi) untuk tampilan
         $hariIni = ucfirst($hariId); // "Senin", "Selasa", dst (dari versi Indonesia)
 
@@ -121,6 +140,7 @@ class JadwalKunjunganController extends Controller
             'tanggalHariIni'
         ));
     }
+
 
     public function search(Request $request)
     {

@@ -1,66 +1,126 @@
-<!-- Header -->
-<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-    <h2 class="text-2xl font-bold text-gray-700">Detail Layanan</h2>
+<section class="space-y-5">
 
-    <!-- Modal toggle -->
-    <button id="buttonModalCreateLayanan"
-        class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg shadow hover:bg-blue-700 focus:outline-none">
-        + Tambah Data
-    </button>
-</div>
-
-<!-- Tabel -->
-<div class="overflow-hidden rounded-lg shadow-md">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 border-b border-gray-200">
-        <div>
-            <select id="layanan-pageLength"
-                class="border border-gray-300 text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block w-24 p-1">
-                <option value="10">10</option>
-                <option value="25">25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-            </select>
+    <!-- HEADER ATAS + CTA -->
+    <div
+        class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 md:px-6 py-4 shadow-sm">
+        <div class="flex items-start gap-3">
+            <div
+                class="mt-1 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-teal-500 text-white shadow-md">
+                <i class="fa-solid fa-heart-pulse text-lg"></i>
+            </div>
+            <div>
+                <h2 class="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-50">
+                    Detail Layanan Klinik
+                </h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    Kelola daftar <span class="font-medium">layanan medis</span>, <span class="font-medium">tarif</span>,
+                    dan <span class="font-medium">kategori layanan</span> yang digunakan di pendaftaran, kasir, dan
+                    laporan keuangan.
+                </p>
+            </div>
         </div>
-        <div class="relative">
-            <input type="text" id="layanan-searchInput"
-                class="block w-60 p-2 pl-3 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-sky-500 focus:border-sky-500"
-                placeholder="Cari data...">
+
+        <div class="flex items-center gap-2 md:gap-3">
+            <button type="button"
+                class="hidden md:inline-flex items-center gap-2 px-3 py-2 text-xs md:text-sm rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-600">
+                <i class="fa-regular fa-circle-question text-sm"></i>
+                <span>Panduan Tarif</span>
+            </button>
+
+            <!-- Tombol Tambah -->
+            <button id="buttonModalCreateLayanan" type="button"
+                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl shadow-md
+                       bg-gradient-to-r from-sky-500 to-teal-600 hover:from-sky-600 hover:to-teal-700
+                       focus:outline-none focus:ring-2 focus:ring-sky-400">
+                <i class="fa-solid fa-plus text-xs"></i>
+                <span>Tambah Data Layanan</span>
+            </button>
         </div>
     </div>
 
-    <div class="overflow-x-auto">
-        <table id="layananTable" class="w-full text-sm text-left text-gray-600">
-            <thead class="text-xs uppercase bg-sky-500 text-white">
-                <tr>
-                    <th class="px-6 py-3">No</th>
-                    <th class="px-6 py-3">Nama Layanan</th>
-                    <th class="px-6 py-3">Tarif Layanan</th>
-                    <th class="px-6 py-3">Kategori Layanan</th>
-                    <th class="px-6 py-3 text-center">Aksi</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
+    <!-- CARD TABEL -->
+    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm">
+
+        <!-- Toolbar atas: page length + search -->
+        <div
+            class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 md:px-6 py-3 border-b border-slate-200 dark:border-slate-700">
+
+            <!-- Page length -->
+            <div class="flex items-center gap-2 text-sm">
+                <span class="text-slate-600 dark:text-slate-300 hidden sm:inline">Tampil</span>
+                <select id="layanan-pageLength"
+                    class="border border-slate-300 dark:border-slate-600 text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500
+                           bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 px-2 py-1 w-28">
+                    <option value="10">10 baris</option>
+                    <option value="25">25 baris</option>
+                    <option value="50">50 baris</option>
+                    <option value="100">100 baris</option>
+                </select>
+                <span class="text-slate-600 dark:text-slate-300 hidden sm:inline">per halaman</span>
+            </div>
+
+            <!-- Search -->
+            <div class="w-full md:w-auto">
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                        <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs"></i>
+                    </span>
+                    <input type="text" id="layanan-searchInput"
+                        class="block w-full md:w-80 pl-9 pr-3 py-2 text-sm text-slate-800 dark:text-slate-100
+                               border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700
+                               focus:ring-sky-500 focus:border-sky-500"
+                        placeholder="Cari nama layanan, kategori, atau tarif...">
+                </div>
+                <p class="mt-1 text-[11px] text-slate-400 dark:text-slate-500">
+                    Contoh: <span class="italic">Konsultasi Dokter Umum, Laboratorium, Tindakan Luka</span>.
+                </p>
+            </div>
+        </div>
+
+        <!-- Tabel -->
+        <div class="overflow-x-auto">
+            <table id="layananTable"
+                class="w-full text-sm text-left text-slate-700 dark:text-slate-100 border-t border-slate-100 dark:border-slate-700">
+                <thead
+                    class="text-xs font-semibold uppercase bg-gradient-to-r from-sky-500 to-teal-500 text-white tracking-wide">
+                    <tr>
+                        <th class="px-6 py-3">No</th>
+                        <th class="px-6 py-3">Nama Layanan</th>
+                        <th class="px-6 py-3">Tarif Layanan</th>
+                        <th class="px-6 py-3">Kategori Layanan</th>
+                        <th class="px-6 py-3 text-center w-32">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700"></tbody>
+            </table>
+        </div>
+
+        <!-- Footer: info + pagination -->
+        <div
+            class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 md:px-6 py-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/60 rounded-b-2xl">
+            <div id="layanan-customInfo" class="text-xs md:text-sm text-slate-600 dark:text-slate-300"></div>
+
+            <ul id="layanan-customPagination"
+                class="inline-flex items-center gap-0 text-sm isolate rounded-lg border border-slate-200 dark:border-slate-600 overflow-hidden">
+            </ul>
+        </div>
     </div>
 
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between px-4 py-3 border-t border-gray-200 gap-3">
-        <div id="layanan-customInfo" class="text-sm text-gray-700 dark:text-gray-300"></div>
-        <ul id="layanan-customPagination" class="inline-flex -space-x-px text-sm"></ul>
-    </div>
-</div>
+</section>
 
 <!-- Modal Create Layanan -->
 <div id="modalCreateLayanan" aria-hidden="true"
     class="hidden fixed inset-0 z-50 flex items-center justify-center p-4
-           bg-black/40 backdrop-blur-sm">
+               bg-slate-900/60 backdrop-blur-sm overflow-y-auto overflow-x-hidden">
 
     <div class="w-full max-w-2xl">
-        <div class="bg-white/95 dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+        <div
+            class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700">
 
             <!-- HEADER -->
-            <div class="px-6 py-4 bg-gradient-to-r from-sky-600 via-cyan-500 to-emerald-500">
+            <div class="px-6 py-4 bg-gradient-to-r from-sky-500 via-cyan-500 to-teal-500">
                 <div class="flex items-center gap-3">
-                    <div class="h-10 w-10 rounded-2xl bg-white/20 flex items-center justify-center">
+                    <div class="h-10 w-10 rounded-2xl bg-white/15 flex items-center justify-center">
                         <i class="fa-solid fa-heart-pulse text-white text-lg"></i>
                     </div>
                     <div>
@@ -75,32 +135,33 @@
             </div>
 
             <!-- FORM -->
-            <form id="formCreateLayanan" class="px-6 py-5 space-y-5 bg-slate-50/60 dark:bg-gray-800"
+            <form id="formCreateLayanan" class="px-6 pb-4 space-y-5 bg-slate-50/60 dark:bg-slate-800"
                 data-url="{{ route('layanan.create.data') }}" method="POST">
                 @csrf
 
                 <!-- Info strip -->
                 <div
                     class="flex items-center gap-2 text-xs rounded-xl px-3 py-2
-                            bg-emerald-50 text-emerald-700 border border-emerald-100
-                            dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-800">
+                                bg-emerald-50 text-emerald-700 border border-emerald-100
+                                dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-800">
                     <i class="fa-solid fa-circle-info"></i>
-                    <span>Pastikan nama layanan dan tarif sesuai dengan aturan klinik.</span>
+                    <span>Pastikan nama layanan, kategori, dan tarif sesuai dengan aturan klinik.</span>
                 </div>
 
                 {{-- Kategori Layanan --}}
-                <div>
+                <div class="space-y-1.5">
                     <label for="kategori_layanan_id_create"
-                        class="block mb-1.5 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                        class="block mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
                         Kategori Layanan
                     </label>
                     <div class="relative">
-                        <i class="fa-solid fa-layer-group absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <i
+                            class="fa-solid fa-layer-group absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                         <select id="kategori_layanan_id_create" name="kategori_layanan_id"
-                            class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300
-                                       bg-white text-gray-800 text-sm
+                            class="w-full pl-9 pr-3 py-2.5 rounded-lg border border-slate-300
+                                       bg-white text-slate-800 text-sm
                                        focus:ring-teal-500 focus:border-teal-500
-                                       dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+                                       dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100">
                             <option value="">Pilih kategori layanan</option>
                             @foreach ($dataKategoriLayanan as $kategori)
                                 <option value="{{ $kategori->id }}">
@@ -113,53 +174,54 @@
                 </div>
 
                 {{-- Nama Layanan --}}
-                <div>
+                <div class="space-y-1.5">
                     <label for="nama_layanan_create"
-                        class="block mb-1.5 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                        class="block mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
                         Nama Layanan
                     </label>
                     <div class="relative">
-                        <i class="fa-solid fa-stethoscope absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                        <i
+                            class="fa-solid fa-stethoscope absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                         <input type="text" name="nama_layanan" id="nama_layanan_create"
-                            class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300
-                                      bg-white text-gray-800 text-sm
+                            class="w-full pl-9 pr-3 py-2.5 rounded-lg border border-slate-300
+                                      bg-white text-slate-800 text-sm
                                       focus:ring-teal-500 focus:border-teal-500
-                                      dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                                      dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
                             placeholder="Contoh: Konsultasi Dokter Umum">
                     </div>
                     <div id="nama_layanan-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
                 <!-- Harga Layanan -->
-                <div>
+                <div class="space-y-1.5">
                     <label for="harga_layanan_create"
-                        class="block mb-1.5 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                        class="block mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
                         Harga Layanan
                     </label>
                     <div class="relative">
                         <span
-                            class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-300 text-sm">
+                            class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 dark:text-slate-300 text-sm">
                             Rp
                         </span>
                         <input type="text" name="harga_layanan" id="harga_layanan_create"
-                            class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300
-                                      bg-white text-gray-800 text-sm
+                            class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-300
+                                      bg-white text-slate-800 text-sm
                                       focus:ring-teal-500 focus:border-teal-500
-                                      dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                                      dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
                             placeholder="Contoh: 150.000">
                     </div>
-                    <p class="text-[11px] text-gray-500 mt-1">
-                        Tulis angka saja, sistem akan mengonversi sesuai format penyimpanan.
+                    <p class="text-[11px] text-slate-500 mt-1">
+                        Tulis angka saja, sistem akan mengonversi sesuai format rupiah.
                     </p>
                     <div id="harga_layanan-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
                 {{-- FOOTER --}}
-                <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                     <button type="button" id="buttonCloseModalCreateLayanan"
                         class="px-5 py-2.5 text-sm font-medium rounded-lg
-                                   bg-gray-200 text-gray-800 hover:bg-gray-300
-                                   dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
+                                   bg-slate-200 text-slate-800 hover:bg-slate-300
+                                   dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">
                         Batal
                     </button>
                     <button type="submit" id="saveJadwalButton"
@@ -178,15 +240,16 @@
 <!-- Modal Update Layanan -->
 <div id="modalUpdateLayanan" aria-hidden="true"
     class="hidden fixed inset-0 z-50 flex items-center justify-center p-4
-           bg-black/40 backdrop-blur-sm">
+               bg-slate-900/60 backdrop-blur-sm overflow-y-auto overflow-x-hidden">
 
     <div class="w-full max-w-2xl">
-        <div class="bg-white/95 dark:bg-gray-800 rounded-2xl shadow-2xl overflow-hidden">
+        <div
+            class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700">
 
             <!-- HEADER -->
-            <div class="px-6 py-4 bg-gradient-to-r from-sky-600 via-cyan-500 to-emerald-500">
+            <div class="px-6 py-4 bg-gradient-to-r from-sky-500 via-cyan-500 to-teal-500">
                 <div class="flex items-center gap-3">
-                    <div class="h-10 w-10 rounded-2xl bg-white/20 flex items-center justify-center">
+                    <div class="h-10 w-10 rounded-2xl bg-white/15 flex items-center justify-center">
                         <i class="fa-solid fa-pen-to-square text-white text-lg"></i>
                     </div>
                     <div>
@@ -201,35 +264,34 @@
             </div>
 
             <!-- FORM -->
-            <form id="formUpdateLayanan" class="px-6 py-5 space-y-5 bg-slate-50/60 dark:bg-gray-800"
+            <form id="formUpdateLayanan" class="px-6 pb-4 space-y-5 bg-slate-50/60 dark:bg-slate-800"
                 data-url="{{ route('layanan.update.data') }}" method="POST">
+                @csrf
+                <input type="hidden" id="id_update" name="id">
 
                 <!-- Info strip -->
                 <div
                     class="flex items-center gap-2 text-xs rounded-xl px-3 py-2
-                            bg-emerald-50 text-emerald-700 border border-emerald-100
-                            dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-800">
+                                bg-emerald-50 text-emerald-700 border border-emerald-100
+                                dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-800">
                     <i class="fa-solid fa-circle-info"></i>
-                    <span>Pastikan nama layanan dan tarif sesuai dengan aturan klinik.</span>
+                    <span>Pastikan perubahan tarif sudah disetujui oleh manajemen klinik.</span>
                 </div>
 
-                @csrf
-                <input type="hidden" id="id_update" name="id">
-
                 {{-- Kategori Layanan --}}
-                <div>
+                <div class="space-y-1.5">
                     <label for="kategori_layanan_id_update"
-                        class="block mb-1.5 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                        class="block mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
                         Kategori Layanan
                     </label>
                     <div class="relative">
-                        <i class="fa-solid fa-layer-group absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
-
+                        <i
+                            class="fa-solid fa-layer-group absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                         <select id="kategori_layanan_id_update" name="kategori_layanan_id"
-                            class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300
-                                   bg-white text-gray-800 text-sm
+                            class="w-full pl-9 pr-3 py-2.5 rounded-lg border border-slate-300
+                                   bg-white text-slate-800 text-sm
                                    focus:ring-teal-500 focus:border-teal-500
-                                   dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100">
+                                   dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100">
                             <option value="">Memuat kategori…</option>
                         </select>
                     </div>
@@ -237,48 +299,47 @@
                 </div>
 
                 {{-- Nama Layanan --}}
-                <div>
-                    <label class="block mb-1.5 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                <div class="space-y-1.5">
+                    <label class="block mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
                         Nama Layanan
                     </label>
                     <div class="relative">
                         <i
-                            class="fa-solid fa-stethoscope absolute left-3 top-1/2 -translate-y-1/2 
-                                   text-gray-400"></i>
-
+                            class="fa-solid fa-stethoscope absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                         <input type="text" id="nama_layanan_update" name="nama_layanan"
-                            class="w-full pl-10 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-800
-                                   focus:ring-teal-500 focus:border-teal-500
-                                   dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                            class="w-full pl-9 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800
+                                       focus:ring-teal-500 focus:border-teal-500
+                                       dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
                             placeholder="Masukkan nama layanan">
                     </div>
                     <div id="nama_layanan-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
                 {{-- Harga --}}
-                <div>
-                    <label class="block mb-1.5 text-sm font-semibold text-gray-800 dark:text-gray-100">
+                <div class="space-y-1.5">
+                    <label class="block mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
                         Harga Layanan
                     </label>
                     <div class="relative">
                         <span
                             class="absolute inset-y-0 left-0 flex items-center pl-3 
-                                     text-gray-500 dark:text-gray-300">Rp</span>
-
+                                     text-slate-500 dark:text-slate-300 text-sm">
+                            Rp
+                        </span>
                         <input type="text" id="harga_layanan_update" name="harga_layanan"
-                            class="w-full pl-10 py-2.5 rounded-lg border border-gray-300 bg-white text-gray-800
+                            class="w-full pl-10 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800
                                       focus:ring-teal-500 focus:border-teal-500
-                                      dark:bg-gray-700 dark:border-gray-600 dark:text-gray-100"
+                                      dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
                             placeholder="Contoh: 150.000">
                     </div>
                     <div id="harga_layanan-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
-                <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                     <button type="button" id="buttonCloseModalUpdateLayanan"
                         class="px-5 py-2.5 text-sm font-medium rounded-lg
-                               bg-gray-200 text-gray-800 hover:bg-gray-300
-                               dark:bg-gray-700 dark:text-gray-100 dark:hover:bg-gray-600">
+                               bg-slate-200 text-slate-800 hover:bg-slate-300
+                               dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">
                         Batal
                     </button>
 
@@ -294,6 +355,5 @@
         </div>
     </div>
 </div>
-
 
 @vite(['resources/js/admin/layanan/data-layanan.js'])

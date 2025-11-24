@@ -319,6 +319,7 @@ class KasirController extends Controller
 
             ->addColumn('total_tagihan', fn($p) => 'Rp ' .  number_format($p->total_tagihan, 0, ',', '.')  ?? '-')
             ->addColumn('metode_pembayaran', fn($p) => $p->metodePembayaran->nama_metode ?? '-')
+            ->addColumn('kode_transaksi', fn($p) => $p->kode_transaksi ?? '-')
             ->addColumn('status', fn($p) => $p->status ?? '-')
 
             // kolom action
@@ -600,30 +601,6 @@ HTML;
         ]);
     }
 
-
-    /**
-     * Kurangi stok obat berdasarkan detail resep pada sebuah pembayaran.
-     * Aman terhadap duplikasi pemanggilan (karena dibungkus transaction + lock).
-     */
-    private function reduceObatFromPembayaran(Pembayaran $pembayaran): void
-    {
-        $resep = optional($pembayaran->emr)->resep;
-        if (!$resep) return;
-
-        // relasi belongsToMany -> koleksi model Obat, qty di pivot
-        $obatItems = $resep->obat; // Collection<App\Models\Obat>
-        foreach ($obatItems as $obat) {
-            $obatId = (int) $obat->getKey();                 // id obat dari model Obat
-            $qty    = (int) ($obat->pivot->jumlah ?? 0);     // qty dari pivot
-
-            // (opsional) lewati item batal/retur jika Anda pakai status di pivot
-            // if (in_array($obat->pivot->status, ['batal','retur'])) continue;
-
-            $this->safeDecreaseObat($obatId, $qty);
-        }
-    }
-
-
     public function transaksiTransfer(Request $request)
     {
         // normalize diskon_tipe '' -> null
@@ -736,7 +713,6 @@ HTML;
         ]);
     }
 
-
     public function showKwitansi($kodeTransaksi)
     {
         $dataPembayaran = Pembayaran::with([
@@ -746,21 +722,70 @@ HTML;
             'metodePembayaran',
         ])->where('kode_transaksi', $kodeTransaksi)->firstOrFail();
 
-        // Hitung total harga obat & layanan
-        $totalObat = $dataPembayaran->emr->resep->obat->sum(function ($obat) {
-            return $obat->pivot->jumlah * $obat->total_harga;
+        /*
+    |--------------------------------------------------------------------------
+    | Hitung Total Obat (handle kalau tidak ada resep / tidak ada obat)
+    |--------------------------------------------------------------------------
+    */
+
+        $resep = optional($dataPembayaran->emr)->resep;
+
+        // Normalisasi jadi collection obat
+        if ($resep instanceof Collection) {
+            // Jika emr->resep = hasMany
+            $obatCollection = $resep->flatMap(function ($item) {
+                return $item->obat ?? collect();
+            });
+        } elseif ($resep) {
+            // Jika emr->resep = hasOne / belongsTo
+            $obatCollection = $resep->obat ?? collect();
+        } else {
+            // Jika tidak ada resep sama sekali
+            $obatCollection = collect();
+        }
+
+        $totalObat = $obatCollection->sum(function ($obat) {
+            $jumlah = $obat->pivot->jumlah ?? 0;
+            $harga  = $obat->total_harga ?? 0;
+
+            return $jumlah * $harga;
         });
 
-        $totalLayanan = $dataPembayaran->emr->kunjungan->layanan->sum(function ($layanan) {
-            return $layanan->pivot->jumlah * $layanan->harga_layanan;
+        /*
+    |--------------------------------------------------------------------------
+    | Hitung Total Layanan (juga dibikin aman)
+    |--------------------------------------------------------------------------
+    */
+
+        $layananCollection = optional(optional($dataPembayaran->emr)->kunjungan)->layanan ?? collect();
+
+        if (! $layananCollection instanceof Collection) {
+            // Kalau relasinya single, paksa jadi collection
+            $layananCollection = $layananCollection
+                ? collect([$layananCollection])
+                : collect();
+        }
+
+        $totalLayanan = $layananCollection->sum(function ($layanan) {
+            $jumlah = $layanan->pivot->jumlah ?? 0;
+            $harga  = $layanan->harga_layanan ?? 0;
+
+            return $jumlah * $harga;
         });
 
         $grandTotal = $totalObat + $totalLayanan;
 
         $namaPT = 'Royal Klinik';
 
-        return view('kasir.pembayaran.kwitansi', compact('dataPembayaran', 'totalObat', 'totalLayanan', 'grandTotal', 'namaPT'));
+        return view('kasir.pembayaran.kwitansi', compact(
+            'dataPembayaran',
+            'totalObat',
+            'totalLayanan',
+            'grandTotal',
+            'namaPT'
+        ));
     }
+
 
     public function totalTransaksiHariIni()
     {

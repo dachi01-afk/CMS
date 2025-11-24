@@ -335,7 +335,6 @@ Route::middleware(['auth', 'role:Kasir'])->group(function () {
         Route::get('/get-data-transaksi-obat-hari-ini', [KasirController::class, 'totalTransaksiObatHariIni'])->name('kasir.get.data.transaksi.obat.hari.ini');
         Route::get('/get-data-total-keseluruhan-transaksi-obat', [KasirController::class, 'totalKeseluruhanTransaksiObat'])->name('kasir.get.data.total.keseluruhan.transaksi.obat');
 
-
         Route::get('/pembayaran', [KasirController::class, 'index'])->name('kasir.pembayaran');
         Route::get('/get-data-pembayaran', [KasirController::class, 'getDataPembayaran'])->name('get.data.pembayaran');
         Route::get('/transaksi/{kode_transaksi}', [KasirController::class, 'transaksi'])->name('kasir.transaksi');
