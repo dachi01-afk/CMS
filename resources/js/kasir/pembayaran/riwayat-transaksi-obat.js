@@ -40,15 +40,6 @@ $(function () {
                 },
             },
 
-            //   {
-            //       data: "jumlah",
-            //       name: "jumlah",
-            //       render: function (data, type, row) {
-            //           if (!data) return "-";
-            //           return data + " capsul";
-            //       },
-            //   },
-
             {
                 data: "jumlah",
                 name: "jumlah",

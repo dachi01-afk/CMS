@@ -343,6 +343,7 @@ Route::middleware(['auth', 'role:Kasir'])->group(function () {
         Route::post('/delete-metode-pembayaran/{id}', [MetodePembayaranController::class, 'deleteData'])->name('kasir.delete.data.metode.pembayaran');
         Route::get('/get-data-metode-pembayaran/{id}', [MetodePembayaranController::class, 'getDataMetodePembayaranById'])->name('get.data.metode.pembayaran.by.id');
 
+        // Transaksi Obat
         Route::get('/get-data-transaksi-obat', [TransaksiObatController::class, 'getDataTransaksiObat'])->name('get.data.transaksi.obat');
         Route::get('/transaksi-obat/{kodeTransaksi}', [TransaksiObatController::class, 'transaksiObat'])->name('kasir.transaksi.obat');
 
@@ -351,6 +352,7 @@ Route::middleware(['auth', 'role:Kasir'])->group(function () {
 
         // Route Untuk Riwayat Transaksi Obat
         Route::get('/get-data-riwayat-transaksi-obat', [PenjualanObatController::class, 'getDataRiwayatTransaksiObat'])->name('get.data.riwayat.transaksi.obat');
+        Route::get('/');
 
         // Riwayat Transaksi
         Route::get('/riwayat-transaksi', [RiwayatTransaksiController::class, 'index'])->name('kasir.riwayat.transaksi');
@@ -387,12 +389,6 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
         Route::get('/form-pengisian-vital-sign/{id}', [KunjunganController::class, 'formPengisianVitalSign'])->name('perawat.form.pengisian.vital.sign');
         Route::post('/submitDataVitalSignPasien/{id}', [KunjunganController::class, 'submitDataVitalSignPasien'])->name('perawat.submit.data.vital.sign.pasien');
     });
-});
-
-Route::get('/halo', function () {
-    $nama = 'David Sebastian';
-
-    return view('testing', compact('nama'));
 });
 
 Route::get('/login-dokter', [AuthController::class, 'login'])->name('login.dokter');

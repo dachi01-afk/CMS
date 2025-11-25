@@ -28,6 +28,10 @@ class RoleMiddleware
 
         $user = $request->user();
 
+        if ($user->role === 'Super Admin') {
+            return $next($request);
+        }
+
         if (!$user || $user->role !== $role) {
             return response()->json([
                 'success' => false,

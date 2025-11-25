@@ -373,7 +373,7 @@ class JadwalKunjunganController extends Controller
     }
 
 
-    public function updateStatus($id)
+    public function updateStatusKunjunganToWaiting($id)
     {
         // Cari data kunjungan
         $kunjungan = Kunjungan::findOrFail($id);
@@ -405,7 +405,7 @@ class JadwalKunjunganController extends Controller
     }
 
 
-    public function masaDepan()
+    public function getDataKunjunganYangAkanDatang()
     {
         $besok = Carbon::tomorrow()->toDateString();
 

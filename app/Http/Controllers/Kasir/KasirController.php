@@ -890,7 +890,6 @@ HTML;
         ));
     }
 
-
     public function totalTransaksiHariIni()
     {
         $total = (float) DB::table('pembayaran')

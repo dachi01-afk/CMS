@@ -3,6 +3,8 @@
 namespace App\Providers;
 
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -22,5 +24,11 @@ class AppServiceProvider extends ServiceProvider
     {
         Carbon::setLocale(config('app.locale'));
         setlocale(LC_TIME, 'id_ID.UTF-8');
+
+        Blade::if(
+            'superAdmin',
+            fn() =>
+            Auth::check() && Auth::user()->role === 'Super Admin'
+        );
     }
 }

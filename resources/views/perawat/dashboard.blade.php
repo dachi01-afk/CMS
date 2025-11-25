@@ -1,4 +1,4 @@
-<x-layout-perawat>
+<x-mycomponents.layout>
     {{-- main --}}
     <div>
 
@@ -112,4 +112,4 @@
     </div>
 
     @vite(['resources/js/perawat/dashboard.js'])
-</x-layout-perawat>
+</x-mycomponents.layout>

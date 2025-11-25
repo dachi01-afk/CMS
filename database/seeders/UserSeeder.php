@@ -16,7 +16,21 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         // Seeder 1 Data User Dengan Role Admin. 
-        User::create([
+        User::updateOrCreate([
+            'username' => 'Super Admin',
+            'email' => 'superAdmin@gmail.com',
+            'password' => Hash::make('passwordSuperAdmin'),
+            'role' => 'Super Admin',
+        ]);
+
+        User::updateOrCreate([
+            'username' => 'Developer',
+            'email' => 'developer@gmail.com',
+            'password' => Hash::make('PasswordDeveloper'),
+            'role' => 'Super Admin',
+        ]);
+
+        User::updateOrCreate([
             'username' => 'Admin',
             'email' => 'admin@gmail.com',
             'password' => Hash::make('passwordAdmin'),
@@ -24,7 +38,7 @@ class UserSeeder extends Seeder
         ]);
 
         // Seeder 1 Data User Dengan Role Dokter. 
-        User::create([
+        User::updateOrCreate([
             'username' => 'Dokter',
             'email' => 'dokter@gmail.com',
             'password' => Hash::make('passwordDokter'),
@@ -33,7 +47,7 @@ class UserSeeder extends Seeder
 
 
         // Seeder 1 Data User Dengan Role Farmasi. 
-        User::create([
+        User::updateOrCreate([
             'username' => 'Farmasi',
             'email' => 'farmasi@gmail.com',
             'password' => Hash::make('passwordFarmasi'),
@@ -41,14 +55,14 @@ class UserSeeder extends Seeder
         ]);
 
         // Seeder 1 Data User Dengan Role Perawat. 
-        User::create([
+        User::updateOrCreate([
             'username' => 'Perawat',
             'email' => 'perawat@gmail.com',
             'password' => Hash::make('passwordPerawat'),
             'role' => 'Perawat',
         ]);
 
-        User::create([
+        User::updateOrCreate([
             'username' => 'Kasir',
             'email' => 'kasir@gmail.com',
             'password' => Hash::make('passwordKasir'),
@@ -56,20 +70,20 @@ class UserSeeder extends Seeder
         ]);
 
         // Seeder 1 Data User Dengan Role Pasien. 
-        User::create([
+        User::updateOrCreate([
             'username' => 'Pasien',
             'email' => 'pasien@gmail.com',
             'password' => Hash::make('passwordPasien'),
             'role' => 'Pasien',
         ]);
 
-        $faker = Faker::create();
+        $faker = Faker::create('id_ID');
 
         $role = ['Admin', 'Dokter', 'Farmasi', 'Perawat', 'Kasir'];
 
         foreach ($role as $r) {
             for ($i = 0; $i < 4; $i++) {
-                User::create([
+                User::updateOrCreate([
                     'username' => $faker->username,
                     'email' => $faker->unique()->safeEmail,
                     'password' => Hash::make('password'),
@@ -81,7 +95,7 @@ class UserSeeder extends Seeder
         $rolePasien = 'Pasien';
 
         for ($i = 0; $i < 19; $i++) {
-            User::create([
+            User::updateOrCreate([
                 'username' => $faker->username,
                 'email' => $faker->unique()->safeEmail,
                 'password' => Hash::make('password'),

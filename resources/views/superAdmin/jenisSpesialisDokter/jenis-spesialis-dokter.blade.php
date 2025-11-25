@@ -1,3 +1,7 @@
+@superAdmin
+    <x-layout-super-admin></x-layout-super-admin>
+@endsuperAdmin
+
 <x-mycomponents.layout>
 
     {{-- main --}}
@@ -8,10 +12,9 @@
             <div class="flex items-center justify-between">
 
                 <div class="flex items-center space-x-3">
-                    <i class="fa-solid fa-notes-medical fa-2xl text-blue-600"></i>
-
-                    <h1 class="text-3xl font-extrabold text-gray-900 leading-tight">
-                        Data Pengambilan Obat
+                    <i class="fa-solid fa-users fa-2xl text-blue-600"></i>
+                    <h1 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-gray-900 leading-tight">
+                        Jenis Spesialis Dokter
                     </h1>
                 </div>
             </div>
@@ -27,13 +30,12 @@
             <ul class="flex flex-wrap -mb-px text-sm font-medium text-center whitespace-nowrap" id="default-tab"
                 data-tabs-toggle="#tab-content" role="tablist">
                 <li class="me-2" role="presentation">
-                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="tab-pengambilan-obat"
-                        data-tabs-target="#pengambilan-obat" type="button" role="tab"
-                        aria-controls="pengambilan-obat" aria-selected="false">
-                        Data Pengambilan Obat
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="jenis-spesialis-dokter-tab"
+                        data-tabs-target="#data-jenis-spesialis-dokter" type="button" role="tab"
+                        aria-controls="data-jenis-spesialis-dokter" aria-selected="true">
+                        Jenis Spesialis Dokter
                     </button>
                 </li>
-
             </ul>
         </div>
 
@@ -42,15 +44,15 @@
 
             {{-- Tabs Content --}}
             <div id="tab-content">
-                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="pengambilan-obat"
-                    role="tabpanel" aria-labelledby="tab-pengambilan-obat">
-                    @include('farmasi.pengambilan-obat.data-pengambilan-obat')
+                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-jenis-spesialis-dokter"
+                    role="tabpanel" aria-labelledby="jenis-spesialis-dokter-tab">
+                    @include('admin.jenisSpesialisDokter.data-jenis-spesialis-dokter')
                 </div>
-
             </div>
 
         </div>
 
     </div>
 
+    </div>
 </x-mycomponents.layout>
