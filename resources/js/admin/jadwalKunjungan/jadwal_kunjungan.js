@@ -126,6 +126,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 item.className =
                     "px-4 py-2 hover:bg-indigo-100 cursor-pointer text-sm";
                 item.textContent = pasien.nama_pasien;
+                // item.textContent = pasien.no_emr;
+                // item.textContent = pasien.nik;
                 item.onclick = () => {
                     document.getElementById("pasien_id").value = pasien.id;
                     document.getElementById("nama_pasien").textContent =

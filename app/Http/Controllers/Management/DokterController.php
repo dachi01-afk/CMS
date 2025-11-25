@@ -23,7 +23,7 @@ class DokterController extends Controller
     {
         try {
             $validated = $request->validate([
-                'username_dokter'    => 'required|string|max:255|unique:user,username',
+                'username_dokter'    => 'required|string|max:255',
                 'poli_id'           => ['required', 'array', 'min:1'],
                 'poli_id.*'         => ['integer', 'distinct', 'exists:poli,id'],
                 'nama_dokter'        => 'required|string|max:255',
@@ -125,7 +125,6 @@ class DokterController extends Controller
                     'required',
                     'string',
                     'max:255',
-                    Rule::unique('user', 'username')->ignore($user->id)
                 ],
                 'edit_email_akun_dokter'  => [
                     'required',

@@ -145,7 +145,7 @@ class JadwalKunjunganController extends Controller
     public function search(Request $request)
     {
         $query = $request->get('query');
-        $pasien = Pasien::where('nama_pasien', 'LIKE', "%{$query}%")->get(['id', 'nama_pasien', 'alamat', 'jenis_kelamin']);
+        $pasien = Pasien::where('nama_pasien', 'LIKE', "%{$query}%")->orWhere('no_emr', 'LIKE', "%{$query}%")->orWhere('nik', 'LIKE', "%{$query}%")->get(['id', 'nama_pasien', 'alamat', 'jenis_kelamin']);
         return response()->json($pasien);
     }
 
