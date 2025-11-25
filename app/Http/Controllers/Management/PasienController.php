@@ -28,8 +28,8 @@ class PasienController extends Controller
             'foto_pasien'               => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
 
             // Data akun
-            'username_pasien'           => 'required|string|max:255|unique:user,username',
-            'email_pasien'              => 'required|email|unique:user,email',
+            'username_pasien'           => 'required|string|max:255',
+            'email_pasien'              => 'required|email',
             'password_pasien'           => 'required|string|min:8|confirmed',
 
             // Identitas dasar
@@ -147,8 +147,8 @@ class PasienController extends Controller
         $request->validate([
             'foto_pasien'               => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
 
-            'username_pasien'           => 'required|string|max:255|unique:user,username,' . $user->id,
-            'email_pasien'              => 'required|email|unique:user,email,' . $user->id,
+            'username_pasien'           => 'required|string|max:255',
+            'email_pasien'              => 'required|email',
             'password_pasien'           => 'nullable|string|min:8|confirmed',
 
             'nama_pasien'               => 'required|string|max:255',

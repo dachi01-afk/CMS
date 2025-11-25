@@ -934,9 +934,9 @@ HTML;
             // 🧩 Validasi input
             $request->validate([
                 'foto_kasir' => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
-                'username_kasir' => 'required|string|max:255|unique:user,username',
+                'username_kasir' => 'required|string|max:255|',
                 'nama_kasir' => 'required|string|max:255',
-                'email_kasir' => 'required|email|unique:user,email',
+                'email_kasir' => 'required|email',
                 'no_hp_kasir' => 'nullable|string|max:20',
                 'password_kasir' => 'required|string|min:8|confirmed',
             ]);
@@ -1016,9 +1016,9 @@ HTML;
             $user = $kasir->user;
 
             $request->validate([
-                'edit_username_kasir' => 'required|string|max:255|unique:user,username,' . $user->id,
+                'edit_username_kasir' => 'required|string|max:255',
                 'edit_nama_kasir' => 'required|string|max:255',
-                'edit_email_kasir' => 'required|email|unique:user,email,' . $user->id,
+                'edit_email_kasir' => 'required|email',
                 'edit_foto_kasir' => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
                 'edit_no_hp_kasir' => 'nullable|string|max:20',
                 'edit_password_kasir' => 'nullable|string|min:8|confirmed',

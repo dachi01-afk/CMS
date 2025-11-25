@@ -26,9 +26,9 @@ class PerawatController extends Controller
             // 🧩 Validasi input
             $validated = $request->validate([
                 'foto_perawat'                  => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
-                'username_perawat'              => 'required|string|max:255|unique:user,username', // ganti ke users jika tabelmu "users"
+                'username_perawat'              => 'required|string|max:255', // ganti ke users jika tabelmu "users"
                 'nama_perawat'                  => 'required|string|max:255',
-                'email_perawat'                 => 'required|email|unique:user,email',             // ganti ke users jika perlu
+                'email_perawat'                 => 'required|email',             // ganti ke users jika perlu
                 'no_hp_perawat'                 => 'nullable|string|max:20',
                 'password_perawat'              => 'required|string|min:8|confirmed',
 
@@ -156,9 +156,9 @@ class PerawatController extends Controller
 
             // ===== VALIDASI DASAR =====
             $validated = $request->validate([
-                'edit_username_perawat' => 'required|string|max:255|unique:user,username,' . $user->id,
+                'edit_username_perawat' => 'required|string|max:255',
                 'edit_nama_perawat'     => 'required|string|max:255',
-                'edit_email_perawat'    => 'required|email|unique:user,email,' . $user->id,
+                'edit_email_perawat'    => 'required|email',
                 'edit_foto_perawat'     => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
                 'edit_no_hp_perawat'    => 'nullable|string|max:20',
                 'edit_password_perawat' => 'nullable|string|min:8|confirmed',

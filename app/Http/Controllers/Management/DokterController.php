@@ -27,7 +27,7 @@ class DokterController extends Controller
                 'poli_id'           => ['required', 'array', 'min:1'],
                 'poli_id.*'         => ['integer', 'distinct', 'exists:poli,id'],
                 'nama_dokter'        => 'required|string|max:255',
-                'email_akun_dokter'  => 'required|email|max:255|unique:user,email',
+                'email_akun_dokter'  => 'required|email|max:255',
                 'spesialis_dokter'   => 'required|integer|exists:jenis_spesialis,id',
                 'password_dokter'    => 'required|string|min:8|confirmed',
                 'foto_dokter'        => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
@@ -130,7 +130,6 @@ class DokterController extends Controller
                     'required',
                     'email',
                     'max:255',
-                    Rule::unique('user', 'email')->ignore($user->id)
                 ],
                 'edit_nama_dokter'        => 'required|string|max:255',
                 'edit_spesialis_dokter'   => 'required|integer|exists:jenis_spesialis,id',
