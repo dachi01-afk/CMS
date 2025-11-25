@@ -1,5 +1,16 @@
 <section class="space-y-5">
 
+    @if (session('error'))
+        <div
+            class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700
+               dark:border-red-700/60 dark:bg-red-900/40 dark:text-red-100">
+            <div class="flex items-start gap-2">
+                <i class="fa-solid fa-circle-exclamation mt-0.5"></i>
+                <p>{{ session('error') }}</p>
+            </div>
+        </div>
+    @endif
+
     {{-- HEADER + FILTER / EXPORT --}}
     <div
         class="flex flex-col md:flex-row md:items-center md:justify-between gap-3

@@ -137,11 +137,76 @@ class LaporanController extends Controller
             ->make(true);
     }
 
-    public function exportKunjungan(Request $request)
-    {
-        $periode = $request->input('periode'); // ambil dari form
-        return Excel::download(new KunjunganExport($periode), 'kunjungan.xlsx');
+public function exportKunjungan(Request $request)
+{
+    $periode = $request->input('periode'); // "", minggu, bulan, tahun
+    $bulan   = $request->input('bulan');   // 01–12 (optional)
+    $tahun   = $request->input('tahun');   // optional
+
+    $today = Carbon::today();
+
+    if (!$tahun) {
+        $tahun = $today->year;
     }
+
+    $query = Kunjungan::with(['dokter', 'poli', 'pasien'])
+        ->latest('tanggal_kunjungan');
+
+    // 🔹 Filter tanggal – samakan dengan dataKunjungan()
+    if ($periode === 'minggu') {
+        $startOfWeek = $today->copy()->startOfWeek(Carbon::MONDAY);
+        $endOfWeek   = $today->copy()->endOfWeek(Carbon::SUNDAY);
+
+        $query->whereBetween('tanggal_kunjungan', [$startOfWeek, $endOfWeek]);
+    } elseif ($periode === 'bulan') {
+        $bulanDipakai = $bulan ?: $today->month;
+
+        $query->whereYear('tanggal_kunjungan', $tahun)
+              ->whereMonth('tanggal_kunjungan', $bulanDipakai);
+    } elseif ($periode === 'tahun') {
+        $query->whereYear('tanggal_kunjungan', $tahun);
+    }
+    // kalau "" (semua) → tanpa filter tanggal
+
+    $dataKunjungan = $query->get();
+
+    // 🔹 Kalau tidak ada data → balik dengan pesan error
+    if ($dataKunjungan->isEmpty()) {
+        $namaBulan = [
+            '01' => 'Januari',
+            '02' => 'Februari',
+            '03' => 'Maret',
+            '04' => 'April',
+            '05' => 'Mei',
+            '06' => 'Juni',
+            '07' => 'Juli',
+            '08' => 'Agustus',
+            '09' => 'September',
+            '10' => 'Oktober',
+            '11' => 'November',
+            '12' => 'Desember',
+        ];
+
+        if ($periode === 'bulan') {
+            // kalau bulan gak diisi, pakai bulan sekarang untuk teks
+            $bulanTeks = $bulan ? ($namaBulan[$bulan] ?? $bulan) : $namaBulan[$today->format('m')];
+            $teksPeriode = "bulan {$bulanTeks} pada tahun {$tahun}";
+        } elseif ($periode === 'tahun') {
+            $teksPeriode = "tahun {$tahun}";
+        } elseif ($periode === 'minggu') {
+            $startOfWeek = $today->copy()->startOfWeek(Carbon::MONDAY)->format('d M Y');
+            $endOfWeek   = $today->copy()->endOfWeek(Carbon::SUNDAY)->format('d M Y');
+            $teksPeriode = "minggu ini ({$startOfWeek} - {$endOfWeek})";
+        } else {
+            $teksPeriode = "periode yang dipilih";
+        }
+
+        return back()->with('error', "Data untuk {$teksPeriode} tidak ada.");
+    }
+
+    // 🔹 Kalau ada data → lanjutkan export
+    return Excel::download(new KunjunganExport($dataKunjungan), 'kunjungan.xlsx');
+}
 
     // public function exportKeuangan(Request $request)
     // {
