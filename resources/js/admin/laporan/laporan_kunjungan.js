@@ -13,7 +13,13 @@ $(function () {
         pageLength: 10,
         lengthChange: false,
         info: false,
-        ajax: "/laporan/laporan_kunjungan",
+        // 🔹 Kirim parameter periode ke server
+        ajax: {
+            url: "/laporan/laporan_kunjungan",
+            data: function (d) {
+                d.periode = $("#periode").val(); // ambil dari dropdown
+            },
+        },
         columns: [
             {
                 data: "DT_RowIndex",
@@ -44,13 +50,15 @@ $(function () {
         },
     });
 
+    // 🔍 search custom
     $("#kunjungan_searchInput").on("keyup", function () {
         table.search(this.value).draw();
     });
 
-    $("#btnExportExcel").on("click", function () {
-        window.location.href = "laporan/laporan-kunjungan-export";
-    });
+    // ❌ kalau tombol export sudah pakai <form> di Blade, blok ini sudah tidak perlu
+    // $("#btnExportExcel").on("click", function () {
+    //     window.location.href = "laporan/laporan-kunjungan-export";
+    // });
 
     const $info = $("#kunjungan_customInfo");
     const $pagination = $("#kunjungan_customPagination");
@@ -110,6 +118,11 @@ $(function () {
 
     $perPage.on("change", function () {
         table.page.len(parseInt($(this).val())).draw();
+    });
+
+    // 🔹 ketika periode diganti -> reload data
+    $("#periode").on("change", function () {
+        table.ajax.reload(); // reload data dari server dengan filter baru
     });
 
     table.on("draw", updatePagination);

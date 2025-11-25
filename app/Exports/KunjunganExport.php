@@ -35,7 +35,7 @@ class KunjunganExport implements FromCollection, WithHeadings
 
             case 'bulan':
                 $query->whereMonth('tanggal_kunjungan', Carbon::now()->month)
-                      ->whereYear('tanggal_kunjungan', Carbon::now()->year);
+                    ->whereYear('tanggal_kunjungan', Carbon::now()->year);
                 break;
 
             case 'tahun':
@@ -54,12 +54,12 @@ class KunjunganExport implements FromCollection, WithHeadings
         return $dataKunjungan->map(function ($item) {
             return [
                 'No Antrian' => $item->no_antrian ?? '-',
-                'Nama Dokter' => $item->poli->dokter->nama_dokter ?? '-',
+                'Nama Dokter' => $item->dokter->nama_dokter ?? '-',
                 'Nama Pasien' => $item->pasien->nama_pasien ?? '-',
                 'Poli Tujuan' => $item->poli->nama_poli ?? '-',
                 'Keluhan Awal' => $item->keluhan_awal ?? '-',
                 'Status' => ucfirst($item->status ?? '-'),
-                'Tanggal Kunjungan' => $item->tanggal_kunjungan 
+                'Tanggal Kunjungan' => $item->tanggal_kunjungan
                     ? Carbon::parse($item->tanggal_kunjungan)->format('d-m-Y H:i')
                     : '-',
             ];

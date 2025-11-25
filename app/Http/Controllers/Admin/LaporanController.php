@@ -10,6 +10,7 @@ use App\Models\Administrasi;
 use Illuminate\Http\Request;
 use App\Models\TransaksiApoteker;
 use App\Http\Controllers\Controller;
+use Illuminate\Support\Carbon;
 use Maatwebsite\Excel\Facades\Excel;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -20,11 +21,35 @@ class LaporanController extends Controller
         return view('admin.laporan');
     }
 
-    public function dataKunjungan()
+    public function dataKunjungan(Request $request)
     {
-        $dataKunjungan = Kunjungan::with('dokter', 'poli', 'pasien')->latest()->get();
+        // 🔹 Ambil nilai periode dari request (null | minggu | bulan | tahun)
+        $periode = $request->get('periode');
 
-        return DataTables::of($dataKunjungan)
+        // 🔹 Base query
+        $query = Kunjungan::with('dokter', 'poli', 'pasien')
+            ->latest('tanggal_kunjungan'); // atau latest() kalau pakai created_at
+
+        // 🔹 Tentukan filter berdasarkan periode
+        $today = Carbon::today();
+
+        if ($periode === 'minggu') {
+            // Minggu berjalan (Senin–Minggu, bisa disesuaikan)
+            $startOfWeek = $today->copy()->startOfWeek(Carbon::MONDAY);
+            $endOfWeek   = $today->copy()->endOfWeek(Carbon::SUNDAY);
+
+            $query->whereBetween('tanggal_kunjungan', [$startOfWeek, $endOfWeek]);
+        } elseif ($periode === 'bulan') {
+            // Bulan berjalan
+            $query->whereYear('tanggal_kunjungan', $today->year)
+                ->whereMonth('tanggal_kunjungan', $today->month);
+        } elseif ($periode === 'tahun') {
+            // Tahun berjalan
+            $query->whereYear('tanggal_kunjungan', $today->year);
+        }
+        // Kalau $periode kosong / null → tidak ada tambahan filter (semua data)
+
+        return DataTables::of($query)
             ->addIndexColumn()
             ->addColumn('no_antrian', fn($kunjungan) => $kunjungan->no_antrian ?? '-')
             ->addColumn('nama_dokter', fn($kunjungan) => $kunjungan->dokter->nama_dokter ?? '-')
