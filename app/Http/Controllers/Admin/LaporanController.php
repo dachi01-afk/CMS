@@ -22,58 +22,80 @@ class LaporanController extends Controller
     }
 
     public function dataKunjungan(Request $request)
-    {
-        // 🔹 Ambil nilai periode dari request (null | minggu | bulan | tahun)
-        $periode = $request->get('periode');
+{
+    $periode = $request->get('periode'); // "" | minggu | bulan | tahun
+    $bulan   = $request->get('bulan');
+    $tahun   = $request->get('tahun');
 
-        // 🔹 Base query
-        $query = Kunjungan::with('dokter', 'poli', 'pasien')
-            ->latest('tanggal_kunjungan'); // atau latest() kalau pakai created_at
+    $today = Carbon::today();
 
-        // 🔹 Tentukan filter berdasarkan periode
-        $today = Carbon::today();
+    // fallback tahun kalau kosong
+    if (!$tahun) {
+        $tahun = $today->year;
+    }
 
-        if ($periode === 'minggu') {
-            // Minggu berjalan (Senin–Minggu, bisa disesuaikan)
-            $startOfWeek = $today->copy()->startOfWeek(Carbon::MONDAY);
-            $endOfWeek   = $today->copy()->endOfWeek(Carbon::SUNDAY);
+    $query = Kunjungan::with(['dokter', 'poli', 'pasien'])
+        ->latest('tanggal_kunjungan');
 
-            $query->whereBetween('tanggal_kunjungan', [$startOfWeek, $endOfWeek]);
-        } elseif ($periode === 'bulan') {
-            // Bulan berjalan
-            $query->whereYear('tanggal_kunjungan', $today->year)
-                ->whereMonth('tanggal_kunjungan', $today->month);
-        } elseif ($periode === 'tahun') {
-            // Tahun berjalan
-            $query->whereYear('tanggal_kunjungan', $today->year);
-        }
-        // Kalau $periode kosong / null → tidak ada tambahan filter (semua data)
+    if ($periode === 'minggu') {
+        $startOfWeek = $today->copy()->startOfWeek(Carbon::MONDAY);
+        $endOfWeek   = $today->copy()->endOfWeek(Carbon::SUNDAY);
 
-        return DataTables::of($query)
-            ->addIndexColumn()
-            ->addColumn('no_antrian', fn($kunjungan) => $kunjungan->no_antrian ?? '-')
-            ->addColumn('nama_dokter', fn($kunjungan) => $kunjungan->dokter->nama_dokter ?? '-')
-            ->addColumn('nama_pasien', fn($kunjungan) => $kunjungan->pasien->nama_pasien ?? '-')
-            ->editColumn('tanggal_kunjungan', function ($kunjungan) {
-                return $kunjungan->tanggal_kunjungan
-                    ? \Carbon\Carbon::parse($kunjungan->tanggal_kunjungan)
+        $query->whereBetween('tanggal_kunjungan', [$startOfWeek, $endOfWeek]);
+    } elseif ($periode === 'bulan') {
+        // kalau user pilih bulan → pakai itu, kalau tidak → pakai bulan sekarang
+        $bulanDipakai = $bulan ?: $today->month;
+
+        $query->whereYear('tanggal_kunjungan', $tahun)
+              ->whereMonth('tanggal_kunjungan', $bulanDipakai);
+    } elseif ($periode === 'tahun') {
+        $query->whereYear('tanggal_kunjungan', $tahun);
+    }
+
+    return DataTables::of($query)
+        ->filter(function ($query) use ($request) {
+            $search = $request->input('search.value');
+
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('no_antrian', 'like', "%{$search}%")
+                      ->orWhere('tanggal_kunjungan', 'like', "%{$search}%")
+                      ->orWhere('keluhan_awal', 'like', "%{$search}%")
+                      ->orWhere('status', 'like', "%{$search}%")
+                      ->orWhereHas('dokter', function ($q2) use ($search) {
+                          $q2->where('nama_dokter', 'like', "%{$search}%");
+                      })
+                      ->orWhereHas('pasien', function ($q3) use ($search) {
+                          $q3->where('nama_pasien', 'like', "%{$search}%");
+                      });
+                });
+            }
+        })
+        ->addIndexColumn()
+        ->addColumn('no_antrian', fn($kunjungan) => $kunjungan->no_antrian ?? '-')
+        ->addColumn('nama_dokter', fn($kunjungan) => $kunjungan->dokter->nama_dokter ?? '-')
+        ->addColumn('nama_pasien', fn($kunjungan) => $kunjungan->pasien->nama_pasien ?? '-')
+        ->editColumn('tanggal_kunjungan', function ($kunjungan) {
+            return $kunjungan->tanggal_kunjungan
+                ? \Carbon\Carbon::parse($kunjungan->tanggal_kunjungan)
                     ->locale('id')
                     ->translatedFormat('j F Y')
-                    : '-';
-            })
-            ->editColumn('status', function ($kunjungan) {
-                return match ($kunjungan->status) {
-                    'Pending'  => '<span class="px-2 py-1 text-xs font-semibold text-yellow-700 bg-yellow-100 rounded">Pending</span>',
-                    'Waiting'  => '<span class="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded">Waiting</span>',
-                    'Engaged'  => '<span class="px-2 py-1 text-xs font-semibold text-sky-700 bg-sky-100 rounded">Engaged</span>',
-                    'Succeed'  => '<span class="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded">Succeed</span>',
-                    'Canceled' => '<span class="px-2 py-1 text-xs font-semibold text-red-700 bg-red-100 rounded">Canceled</span>',
-                    default    => '<span class="px-2 py-1 text-xs font-semibold text-gray-700 bg-gray-100 rounded">-</span>',
-                };
-            })
-            ->rawColumns(['status'])
-            ->make(true);
-    }
+                : '-';
+        })
+        ->editColumn('status', function ($kunjungan) {
+            return match ($kunjungan->status) {
+                'Pending'  => '<span class="px-2 py-1 text-xs font-semibold text-yellow-700 bg-yellow-100 rounded">Pending</span>',
+                'Waiting'  => '<span class="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded">Waiting</span>',
+                'Engaged'  => '<span class="px-2 py-1 text-xs font-semibold text-sky-700 bg-sky-100 rounded">Engaged</span>',
+                'Succeed'  => '<span class="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded">Succeed</span>',
+                'Canceled' => '<span class="px-2 py-1 text-xs font-semibold text-red-700 bg-red-100 rounded">Canceled</span>',
+                default    => '<span class="px-2 py-1 text-xs font-semibold text-gray-700 bg-gray-100 rounded">-</span>',
+            };
+        })
+        ->rawColumns(['status'])
+        ->make(true);
+}
+
 
     public function dataPembayaran()
     {

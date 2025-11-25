@@ -4,6 +4,12 @@ import $ from "jquery";
 
 // data tabel kunjungan
 $(function () {
+    initFlowbite?.();
+
+    const $periode = $("#periode");
+    const $bulanKunjungan = $("#bulanKunjungan");
+    const $tahunKunjungan = $("#tahunKunjungan");
+
     var table = $("#kunjunganTable").DataTable({
         processing: true,
         serverSide: true,
@@ -13,11 +19,13 @@ $(function () {
         pageLength: 10,
         lengthChange: false,
         info: false,
-        // 🔹 Kirim parameter periode ke server
+        // 🔹 Kirim parameter periode + bulan + tahun ke server
         ajax: {
             url: "/laporan/laporan_kunjungan",
             data: function (d) {
-                d.periode = $("#periode").val(); // ambil dari dropdown
+                d.periode = $periode.val(); // "", minggu, bulan, tahun
+                d.bulan = $bulanKunjungan.val(); // 01–12 kalau diisi
+                d.tahun = $tahunKunjungan.val(); // tahun kalau diisi
             },
         },
         columns: [
@@ -54,11 +62,6 @@ $(function () {
     $("#kunjungan_searchInput").on("keyup", function () {
         table.search(this.value).draw();
     });
-
-    // ❌ kalau tombol export sudah pakai <form> di Blade, blok ini sudah tidak perlu
-    // $("#btnExportExcel").on("click", function () {
-    //     window.location.href = "laporan/laporan-kunjungan-export";
-    // });
 
     const $info = $("#kunjungan_customInfo");
     const $pagination = $("#kunjungan_customPagination");
@@ -120,11 +123,40 @@ $(function () {
         table.page.len(parseInt($(this).val())).draw();
     });
 
-    // 🔹 ketika periode diganti -> reload data
-    $("#periode").on("change", function () {
-        table.ajax.reload(); // reload data dari server dengan filter baru
-    });
-
     table.on("draw", updatePagination);
     updatePagination();
+
+    // ==========================================
+    // 🔽 LOGIKA: tampilkan bulan/tahun sesuai periode
+    // ==========================================
+    $periode.on("change", function () {
+        const val = $(this).val(); // "", minggu, bulan, tahun
+
+        if (val === "bulan") {
+            $bulanKunjungan.removeClass("hidden");
+            $tahunKunjungan.removeClass("hidden");
+        } else if (val === "tahun") {
+            $bulanKunjungan.addClass("hidden");
+            $tahunKunjungan.removeClass("hidden");
+        } else {
+            // semua / minggu
+            $bulanKunjungan.addClass("hidden");
+            $tahunKunjungan.addClass("hidden");
+        }
+
+        table.ajax.reload();
+    });
+
+    $bulanKunjungan.on("change", function () {
+        if ($periode.val() === "bulan") {
+            table.ajax.reload();
+        }
+    });
+
+    $tahunKunjungan.on("change", function () {
+        const val = $periode.val();
+        if (val === "bulan" || val === "tahun") {
+            table.ajax.reload();
+        }
+    });
 });

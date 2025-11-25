@@ -95,47 +95,104 @@
         </nav>
     </header>
 
-    <div class="flex">
-        <!-- SIDEBAR -->
+    <div class="flex min-h-screen bg-slate-50 dark:bg-slate-900">
+
+        {{-- SIDEBAR --}}
         <aside id="logo-sidebar"
-            class="fixed top-0 left-0 z-40 w-64 h-screen pt-20 transition-transform -translate-x-full bg-white border-r border-gray-200 sm:translate-x-0"
+            class="fixed top-0 left-0 z-40 w-64 h-screen pt-20 transition-transform -translate-x-full
+               sm:translate-x-0
+               bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm
+               border-r border-slate-200 dark:border-slate-800"
             aria-label="Sidebar">
-            <div class="h-full px-3 pb-4 overflow-y-auto bg-white">
-                <ul class="space-y-2 font-medium">
-                    <x-mycomponents.sidebar_link href="kasir.dashboard" class="fa-solid fa-house" :active="Request::routeIs('kasir.dashboard')">
-                        Dashboard
-                    </x-mycomponents.sidebar_link>
 
-                    <x-mycomponents.sidebar_link href="kasir.pembayaran" class="fa-solid fa-hand-holding-dollar"
-                        :active="Request::routeIs('kasir.pembayaran')">
-                        Kasir
-                    </x-mycomponents.sidebar_link>
+            <div class="h-full px-3 pb-4 overflow-y-auto">
 
-                    <x-mycomponents.sidebar_link href="kasir.metode.pembayaran" class="fa-solid fa-wallet"
-                        :active="Request::routeIs('kasir.metode.pembayaran')">
-                        Metode Pembayaran
-                    </x-mycomponents.sidebar_link>
+                {{-- Brand / Section title --}}
+                <div class="hidden sm:flex items-center justify-between mb-4 px-2">
+                    <div>
+                        <p class="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-slate-500">
+                            Panel Kasir
+                        </p>
+                        <p class="text-sm text-slate-600 dark:text-slate-300">
+                            Navigasi utama
+                        </p>
+                    </div>
+                    <div
+                        class="h-8 w-8 rounded-xl bg-gradient-to-br from-sky-500 to-teal-500
+                           flex items-center justify-center text-white shadow-md">
+                        <i class="fa-solid fa-cash-register text-xs"></i>
+                    </div>
+                </div>
 
-                    <x-mycomponents.sidebar_link href="kasir.riwayat.transaksi"
-                        class="fa-solid fa-file-invoice text-blue-600" :active="Request::routeIs('kasir.riwayat.transaksi')">
-                        Riwayat Transaksi
-                    </x-mycomponents.sidebar_link>
+                <nav class="space-y-4 text-sm font-medium">
 
-                    <hr class="my-4 border-gray-300">
-                    <x-mycomponents.sidebar_link href="settings.index" class="fa-solid fa-gear">
-                        Settings
-                    </x-mycomponents.sidebar_link>
-                </ul>
+                    {{-- Group: Dashboard & Transaksi --}}
+                    <div class="space-y-1">
+                        <p
+                            class="px-2 text-[11px] font-semibold tracking-wide uppercase
+                              text-slate-400 dark:text-slate-500">
+                            Utama
+                        </p>
+                        <ul class="space-y-1">
+
+                            <x-mycomponents.sidebar_link href="kasir.dashboard" class="fa-solid fa-house"
+                                :active="Request::routeIs('kasir.dashboard')">
+                                Dashboard
+                            </x-mycomponents.sidebar_link>
+
+                            <x-mycomponents.sidebar_link href="kasir.pembayaran" class="fa-solid fa-hand-holding-dollar"
+                                :active="Request::routeIs('kasir.pembayaran')">
+                                Kasir
+                            </x-mycomponents.sidebar_link>
+
+                            <x-mycomponents.sidebar_link href="kasir.metode.pembayaran" class="fa-solid fa-wallet"
+                                :active="Request::routeIs('kasir.metode.pembayaran')">
+                                Metode Pembayaran
+                            </x-mycomponents.sidebar_link>
+
+                            <x-mycomponents.sidebar_link href="kasir.riwayat.transaksi" class="fa-solid fa-file-invoice"
+                                :active="Request::routeIs('kasir.riwayat.transaksi')">
+                                Riwayat Transaksi
+                            </x-mycomponents.sidebar_link>
+
+                        </ul>
+                    </div>
+
+                    {{-- Divider --}}
+                    <div class="border-t border-slate-200 dark:border-slate-800"></div>
+
+                    {{-- Group: Settings --}}
+                    <div class="space-y-1">
+                        <p
+                            class="px-2 text-[11px] font-semibold tracking-wide uppercase
+                              text-slate-400 dark:text-slate-500">
+                            Pengaturan
+                        </p>
+                        <ul class="space-y-1">
+                            <x-mycomponents.sidebar_link href="settings.index" class="fa-solid fa-gear"
+                                :active="Request::routeIs('settings.index')">
+                                Settings
+                            </x-mycomponents.sidebar_link>
+                        </ul>
+                    </div>
+
+                </nav>
+
+                {{-- Footer kecil --}}
+                <div class="mt-6 pt-3 border-t border-slate-200 dark:border-slate-800 px-2">
+                    <p class="text-[11px] text-slate-400 dark:text-slate-600">
+                        © {{ now()->year }} CMS-Royal-Klinik
+                    </p>
+                </div>
             </div>
         </aside>
 
-        <!-- MAIN CONTENT -->
-        <main class="p-4 sm:ml-64 w-full pt-16 ">
-
+        {{-- MAIN CONTENT --}}
+        <main class="flex-1 w-full pt-16 p-4 sm:ml-64">
             {{ $slot }}
-
         </main>
     </div>
+
 
     <!-- FOOTER -->
     <footer class="sm:ml-64 bg-white border-t border-gray-200 mt-8">
