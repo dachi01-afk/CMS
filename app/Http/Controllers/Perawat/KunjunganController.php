@@ -48,7 +48,6 @@ class KunjunganController extends Controller
             ->whereDate('tanggal_kunjungan', $today)
             ->where('status', 'Waiting')
             ->where('dokter_id', $perawat->dokter_id)
-            ->where('poli_id',   $perawat->poli_id)
             ->orderByRaw('CAST(no_antrian AS UNSIGNED)')
             ->get()
             ->map(function ($k) {

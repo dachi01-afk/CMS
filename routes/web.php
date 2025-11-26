@@ -362,7 +362,7 @@ Route::middleware(['auth', 'role:Kasir'])->group(function () {
         // Transaksi Layanan
         Route::get(
             '/get-data-transaksi-layanan',
-            [KasirController::class, 'getDataTransaksiLayanan']
+            [TransaksiLayananController::class, 'getDataTransaksiLayanan']
         )->name('kasir.get.data.transaksi.layanan');
 
         Route::get('/show-detail-transaksi-layanan/{kodeTransaksi}', [TransaksiLayananController::class, 'showDetailTransaksiLayanan'])->name('kasir.show.detail.transaksi.layanan');

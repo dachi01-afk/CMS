@@ -111,7 +111,8 @@
 
     <div class="relative w-full max-w-3xl">
         <div
-            class="relative bg-white rounded-2xl shadow-2xl dark:bg-gray-800 border border-slate-100 dark:border-slate-700 overflow-hidden flex flex-col max-h-[90vh]">
+    class="relative bg-white rounded-2xl shadow-2xl dark:bg-gray-800 border border-slate-100 dark:border-slate-700
+           flex flex-col max-h-[90vh] overflow-y-auto overflow-x-hidden">
 
             {{-- Header --}}
             <div
@@ -215,99 +216,128 @@
                     </div>
                 </div>
 
-                {{-- LAYANAN & KATEGORI --}}
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div
-                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-600">
-                        <div class="flex items-center gap-2 mb-3">
+                {{-- DAFTAR LAYANAN (MULTI ITEM) --}}
+                <div
+                    class="bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-600">
+
+                    <div class="flex items-center justify-between gap-2 mb-3">
+                        <div class="flex items-center gap-2">
                             <svg class="w-5 h-5 text-green-500" fill="none" stroke="currentColor"
                                 viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
                                 </path>
                             </svg>
-                            <label for="layanan_id_create"
-                                class="text-sm font-semibold text-gray-900 dark:text-white">Layanan</label>
+                            <div>
+                                <p class="text-sm font-semibold text-gray-900 dark:text-white">
+                                    Daftar Layanan
+                                </p>
+                                <p class="text-xs text-gray-500 dark:text-gray-300">
+                                    Tambahkan satu atau lebih layanan dalam satu transaksi.
+                                </p>
+                            </div>
                         </div>
-                        <select name="layanan_id" id="layanan_id_create"
-                            class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg
-                                   focus:ring-2 focus:ring-green-500 focus:border-green-500 px-3 py-2.5
-                                   dark:bg-gray-600 dark:border-gray-500 dark:text-white
-                                   transition-all duration-200 hover:shadow-md">
-                            <option value="">-- Pilih Layanan --</option>
-                            @foreach ($dataLayanan as $layanan)
-                                <option value="{{ $layanan->id }}"
-                                    data-kategori-id="{{ $layanan->kategori_layanan_id }}"
-                                    data-kategori-nama="{{ $layanan->kategoriLayanan->nama_kategori ?? '' }}"
-                                    data-harga="{{ $layanan->harga_layanan }}">
-                                    {{ $layanan->nama_layanan }}
-                                </option>
-                            @endforeach
-                        </select>
-                        <div id="layanan_id_create-error"
-                            class="text-red-600 text-xs md:text-sm mt-2 opacity-0 transition-opacity duration-200">
+
+                        <button type="button" id="btnAddLayananRow"
+                            class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg
+                       bg-gradient-to-r from-sky-500 to-teal-600 text-white hover:from-sky-600 hover:to-teal-700
+                       shadow-sm">
+                            <i class="fa-solid fa-plus text-[10px]"></i>
+                            <span>Tambah Layanan</span>
+                        </button>
+                    </div>
+
+                    {{-- WRAPPER BARIS LAYANAN --}}
+                    <div id="orderItemsWrapper" class="mt-3 space-y-3">
+
+                        {{-- TEMPLATE BARIS (SATU LAYANAN) --}}
+                        <div id="orderItemTemplate"
+                            class="order-item flex flex-col md:flex-row items-start gap-3
+                    bg-white/90 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600
+                    px-3 py-3">
+
+                            {{-- LAYANAN --}}
+                            <div class="w-full md:w-4/12">
+                                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1">
+                                    Layanan
+                                </label>
+                                <select
+                                    class="layanan-select w-full bg-white border border-gray-300 text-gray-900 text-xs md:text-sm rounded-lg
+                           focus:ring-2 focus:ring-green-500 focus:border-green-500 px-2.5 py-2
+                           dark:bg-gray-700 dark:border-gray-500 dark:text-white">
+                                    <option value="">-- Pilih Layanan --</option>
+                                    @foreach ($dataLayanan as $layanan)
+                                        <option value="{{ $layanan->id }}"
+                                            data-kategori-id="{{ $layanan->kategori_layanan_id }}"
+                                            data-kategori-nama="{{ $layanan->kategoriLayanan->nama_kategori ?? '' }}"
+                                            data-harga="{{ $layanan->harga_layanan }}">
+                                            {{ $layanan->nama_layanan }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            {{-- KATEGORI --}}
+                            <div class="w-full md:w-3/12">
+                                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1">
+                                    Kategori
+                                </label>
+                                <input type="text"
+                                    class="kategori-nama-input w-full bg-gray-100 border border-gray-300 text-gray-900 text-xs md:text-sm rounded-lg
+                              px-2.5 py-2 dark:bg-gray-700 dark:border-gray-500 dark:text-white"
+                                    placeholder="Otomatis" readonly>
+                                <input type="hidden" class="kategori-id-input">
+                            </div>
+
+                            {{-- JUMLAH --}}
+                            <div class="w-full md:w-2/12">
+                                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1">
+                                    Jumlah
+                                </label>
+                                <input type="number" min="1" value="1"
+                                    class="jumlah-input w-full bg-white border border-gray-300 text-gray-900 text-xs md:text-sm rounded-lg
+                              px-2.5 py-2 dark:bg-gray-700 dark:border-gray-500 dark:text-white">
+                            </div>
+
+                            {{-- SUBTOTAL --}}
+                            <div class="w-full md:w-3/12">
+                                <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1">
+                                    Subtotal
+                                </label>
+                                <input type="text"
+                                    class="subtotal-input w-full bg-gray-100 border border-gray-300 text-gray-900 text-xs md:text-sm rounded-lg
+                              px-2.5 py-2 dark:bg-gray-700 dark:border-gray-500 dark:text-white"
+                                    placeholder="Rp 0" readonly>
+                            </div>
+
+                            {{-- HAPUS BARIS --}}
+                            <div class="self-stretch flex items-center md:items-start pt-5">
+                                <button type="button"
+                                    class="btn-remove-item inline-flex items-center justify-center h-8 w-8 rounded-full
+                               text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30">
+                                    <i class="fa-solid fa-trash text-xs"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
+                    {{-- RINGKASAN TOTAL --}}
                     <div
-                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-600">
-                        <div class="flex items-center gap-2 mb-3">
-                            <svg class="w-5 h-5 text-purple-500" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z">
-                                </path>
-                            </svg>
-                            <label for="kategori_layanan_nama_create"
-                                class="text-sm font-semibold text-gray-900 dark:text-white">Kategori Layanan</label>
-                        </div>
-                        <input type="text" id="kategori_layanan_nama_create" readonly
-                            class="w-full bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 px-3 py-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white transition-all duration-200"
-                            placeholder="Akan terisi otomatis">
-                        <input type="hidden" name="kategori_layanan_id" id="kategori_layanan_id_create">
-                    </div>
-                </div>
-
-                {{-- JUMLAH & TOTAL --}}
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div
-                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-600">
-                        <div class="flex items-center gap-2 mb-3">
-                            <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M7 20l4-16m2 16l4-16M6 9h14M4 15h16"></path>
-                            </svg>
-                            <label for="jumlah_create"
-                                class="text-sm font-semibold text-gray-900 dark:text-white">Jumlah</label>
-                        </div>
-                        <input type="number" name="jumlah" id="jumlah_create" min="1" value="1"
-                            class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 px-3 py-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white transition-all duration-200 hover:shadow-md">
-                        <div id="jumlah_create-error"
-                            class="text-red-600 text-xs md:text-sm mt-2 opacity-0 transition-opacity duration-200">
-                        </div>
-                    </div>
-
-                    <div
-                        class="bg-gray-50 dark:bg-gray-700 p-4 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-600">
-                        <div class="flex items-center gap-2 mb-3">
-                            <svg class="w-5 h-5 text-teal-500" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1">
-                                </path>
-                            </svg>
-                            <label for="total_tagihan_create"
-                                class="text-sm font-semibold text-gray-900 dark:text-white">Total Tagihan</label>
-                        </div>
+                        class="mt-4 pt-3 border-t border-gray-200 dark:border-gray-600 flex items-center justify-between">
+                        <p class="text-xs md:text-sm text-gray-600 dark:text-gray-300 font-medium">
+                            Total Tagihan
+                        </p>
                         <input type="text" id="total_tagihan_create" name="total_tagihan" readonly
-                            class="w-full bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-teal-500 px-3 py-2.5 dark:bg-gray-600 dark:border-gray-500 dark:text-white transition-all duration-200"
+                            class="w-40 md:w-52 bg-gray-100 border border-gray-300 text-gray-900 text-sm rounded-lg
+                      px-3 py-2.5 dark:bg-gray-700 dark:border-gray-500 dark:text-white"
                             placeholder="Rp 0">
-                        <div id="total_tagihan_create-error"
-                            class="text-red-600 text-xs md:text-sm mt-2 opacity-0 transition-opacity duration-200">
-                        </div>
+                    </div>
+
+                    <div id="total_tagihan_create-error"
+                        class="text-red-600 text-xs md:text-sm mt-2 opacity-0 transition-opacity duration-200">
                     </div>
                 </div>
+
 
                 {{-- POLI & JADWAL (Hanya PEMERIKSAAN) --}}
                 <div id="section_poli_jadwal_create" class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2 hidden">

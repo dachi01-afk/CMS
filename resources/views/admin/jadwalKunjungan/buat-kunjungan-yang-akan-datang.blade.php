@@ -189,7 +189,7 @@
 </section>
 
 {{-- MODAL: TAMBAH KUNJUNGAN (KYAD) --}}
-<div id="modalCreateKYAD"
+<div id="modalCreateKYAD" data-modal-backdrop="static"
     class="hidden fixed inset-0 z-50 flex items-start md:items-center justify-center w-full h-full p-4 md:p-6
            bg-slate-900/60 backdrop-blur-sm overflow-y-auto overflow-x-hidden">
     <div class="relative w-full max-w-xl">

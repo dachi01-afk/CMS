@@ -32,51 +32,114 @@ class KasirController extends Controller
         return view('kasir.pembayaran.kasir');
     }
 
-
-
     public function getDataTransaksiLayanan(Request $request)
     {
-        $query = DB::table('penjualan_layanan')
-            ->leftJoin('pasien', 'pasien.id', '=', 'penjualan_layanan.pasien_id')
-            ->leftJoin('layanan', 'layanan.id', '=', 'penjualan_layanan.layanan_id')
-            ->leftJoin('kategori_layanan', 'kategori_layanan.id', '=', 'penjualan_layanan.kategori_layanan_id')
-            ->leftJoin('metode_pembayaran', 'metode_pembayaran.id', '=', 'penjualan_layanan.metode_pembayaran_id')
+        // ====== SUBQUERY TRANSAKSI LAYANAN ======
+        $subLayanan = DB::table('penjualan_layanan as pl')
+            ->leftJoin('pasien', 'pasien.id', '=', 'pl.pasien_id')
+            ->leftJoin('layanan', 'layanan.id', '=', 'pl.layanan_id')
+            ->leftJoin('kategori_layanan', 'kategori_layanan.id', '=', 'pl.kategori_layanan_id')
+            ->leftJoin('metode_pembayaran', 'metode_pembayaran.id', '=', 'pl.metode_pembayaran_id')
             ->selectRaw("
-        penjualan_layanan.kode_transaksi,
+            pl.kode_transaksi,
+            pasien.nama_pasien,
 
-        -- di tabel pasien namanya 'nama_pasien'
-        pasien.nama_pasien,
+            -- nanti di-outer query digabung lagi
+            GROUP_CONCAT(DISTINCT layanan.nama_layanan SEPARATOR ', ') AS nama_item,
+            GROUP_CONCAT(DISTINCT kategori_layanan.nama_kategori SEPARATOR ', ') AS kategori_item,
 
-        -- gabung semua nama layanan dalam 1 kode_transaksi
-        GROUP_CONCAT(DISTINCT layanan.nama_layanan SEPARATOR ', ') AS nama_layanan,
+            SUM(
+                COALESCE(pl.total_setelah_diskon, pl.total_tagihan, 0)
+            ) AS total_tagihan,
 
-        -- FIELD YANG SALAH TADI, BENARKAN JADI 'nama_kategori'
-        GROUP_CONCAT(DISTINCT kategori_layanan.nama_kategori SEPARATOR ', ') AS kategori_layanan,
+            MAX(metode_pembayaran.nama_metode) AS metode_pembayaran,
+            MIN(pl.tanggal_transaksi) AS tanggal_transaksi,
 
-        SUM(penjualan_layanan.jumlah) AS jumlah,
+            -- flag status numerik biar gampang di-merge
+            CASE
+                WHEN MIN(pl.status) = 'Sudah Bayar'
+                     AND MAX(pl.status) = 'Sudah Bayar'
+                THEN 1
+                ELSE 0
+            END AS status_flag,
 
-        SUM(
-            COALESCE(penjualan_layanan.total_setelah_diskon, penjualan_layanan.total_tagihan, 0)
-        ) AS total_tagihan,
-
-        MAX(metode_pembayaran.nama_metode) AS metode_pembayaran,
-        MIN(penjualan_layanan.tanggal_transaksi) AS tanggal_transaksi,
-
-        CASE
-            WHEN MIN(penjualan_layanan.status) = 'Sudah Bayar'
-                 AND MAX(penjualan_layanan.status) = 'Sudah Bayar'
-            THEN 'Sudah Bayar'
-            ELSE 'Belum Bayar'
-        END AS status,
-
-        MAX(penjualan_layanan.bukti_pembayaran) AS bukti_pembayaran
-    ")
+            MAX(pl.bukti_pembayaran) AS bukti_pembayaran
+        ")
             ->groupBy(
-                'penjualan_layanan.kode_transaksi',
+                'pl.kode_transaksi',
                 'pasien.nama_pasien'
             );
 
+        // ====== SUBQUERY TRANSAKSI OBAT ======
+        $subObat = DB::table('penjualan_obat as po')
+            ->leftJoin('pasien', 'pasien.id', '=', 'po.pasien_id')
+            ->leftJoin('obat', 'obat.id', '=', 'po.obat_id') // sesuaikan nama tabel/kolom obat
+            ->leftJoin('metode_pembayaran', 'metode_pembayaran.id', '=', 'po.metode_pembayaran_id')
+            ->selectRaw("
+            po.kode_transaksi,
+            pasien.nama_pasien,
 
+            -- tetap pakai field 'nama_item' supaya union cocok
+            GROUP_CONCAT(DISTINCT obat.nama_obat SEPARATOR ', ') AS nama_item,
+            GROUP_CONCAT(DISTINCT 'Obat' SEPARATOR ', ') AS kategori_item,
+
+            SUM(
+                COALESCE(po.total_setelah_diskon, po.total_tagihan, 0)
+            ) AS total_tagihan,
+
+            MAX(metode_pembayaran.nama_metode) AS metode_pembayaran,
+            MIN(po.tanggal_transaksi) AS tanggal_transaksi,
+
+            CASE
+                WHEN MIN(po.status) = 'Sudah Bayar'
+                     AND MAX(po.status) = 'Sudah Bayar'
+                THEN 1
+                ELSE 0
+            END AS status_flag,
+
+            MAX(po.bukti_pembayaran) AS bukti_pembayaran
+        ")
+            ->groupBy(
+                'po.kode_transaksi',
+                'pasien.nama_pasien'
+            );
+
+        // ====== UNION + GROUP ULANG BERDASARKAN KODE TRANSAKSI ======
+        $query = DB::query()
+            ->fromSub(
+                $subLayanan->unionAll($subObat),
+                't'
+            )
+            ->selectRaw("
+            t.kode_transaksi,
+            t.nama_pasien,
+
+            -- gabungkan semua nama layanan + nama obat
+            GROUP_CONCAT(DISTINCT t.nama_item SEPARATOR ', ') AS nama_layanan,
+
+            -- gabungkan kategori layanan + kategori 'Obat'
+            GROUP_CONCAT(DISTINCT t.kategori_item SEPARATOR ', ') AS kategori_layanan,
+
+            -- total tagihan = layanan + obat
+            SUM(t.total_tagihan) AS total_tagihan,
+
+            MAX(t.metode_pembayaran) AS metode_pembayaran,
+            MIN(t.tanggal_transaksi) AS tanggal_transaksi,
+
+            CASE
+                WHEN MIN(t.status_flag) = 1 AND MAX(t.status_flag) = 1
+                THEN 'Sudah Bayar'
+                ELSE 'Belum Bayar'
+            END AS status,
+
+            MAX(t.bukti_pembayaran) AS bukti_pembayaran
+        ")
+            ->groupBy(
+                't.kode_transaksi',
+                't.nama_pasien'
+            );
+
+        // ====== DATATABLES ======
         return DataTables::of($query)
             ->addIndexColumn()
             ->editColumn('total_tagihan', function ($row) {
@@ -113,8 +176,7 @@ class KasirController extends Controller
             ->rawColumns(['bukti_pembayaran', 'action'])
             ->make(true);
     }
-
-
+    
     public function chartKeuangan(Request $request)
     {
         $range = $request->get('range', 'harian'); // harian|mingguan|bulanan|tahunan

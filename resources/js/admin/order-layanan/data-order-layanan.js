@@ -135,6 +135,57 @@ $(function () {
     const $pasienEmrInfo = $("#pasien_no_emr_info_create");
     const $pasienJkInfo = $("#pasien_jk_info_create");
 
+    // --- elemen list layanan ---
+    const $itemsWrapper = $("#orderItemsWrapper");
+    const $itemTemplate = $("#orderItemTemplate");
+
+    // Tambah baris layanan
+    function addItemRow() {
+        const $row = $itemTemplate.clone();
+        $row.removeAttr("id"); // supaya tidak duplikat ID
+        $row.removeClass("hidden"); // kalau kamu mau template diset hidden, bisa di-aktifkan di HTML
+        $itemsWrapper.append($row);
+        recalcGrandTotal();
+        togglePoliSection();
+    }
+
+    // Hitung ulang grand total dari semua subtotal
+    function recalcGrandTotal() {
+        let grand = 0;
+        $itemsWrapper.find(".order-item").each(function () {
+            const sub = cleanRupiah($(this).find(".subtotal-input").val());
+            grand += sub;
+        });
+        $("#total_tagihan_create").val(toRupiah(grand));
+    }
+
+    // Tampilkan/hilangkan section poli & jadwal
+    function togglePoliSection() {
+        const $sectionPoliJadwal = $("#section_poli_jadwal_create");
+
+        const hasPemeriksaan =
+            $itemsWrapper.find(".kategori-nama-input").filter(function () {
+                return $(this).val() === "Pemeriksaan";
+            }).length > 0;
+
+        if (hasPemeriksaan) {
+            $sectionPoliJadwal.removeClass("hidden");
+        } else {
+            $sectionPoliJadwal.addClass("hidden");
+
+            $("#poli_id_select_create").val("");
+            $("#poli_id_create-error").text("").css("opacity", 0);
+
+            $("#jadwal_dokter_id_create")
+                .empty()
+                .append('<option value="">-- Pilih Jadwal Dokter --</option>')
+                .prop("disabled", true);
+            $("#jadwal_dokter_id_create-error").text("").css("opacity", 0);
+            $("#dokter_id_create").val("");
+            $("#info_jadwal_dokter_create").addClass("hidden").text("");
+        }
+    }
+
     // Helper: format rupiah
     function toRupiah(value) {
         const number = Number(value || 0);
@@ -165,10 +216,13 @@ $(function () {
         $pasienJkInfo.text("-");
 
         // Layanan / kategori / total
-        $("#kategori_layanan_nama_create").val("");
-        $("#kategori_layanan_id_create").val("");
-        $("#jumlah_create").val(1);
+        $itemsWrapper.empty();
+        addItemRow(); // selalu mulai dengan 1 baris kosong
         $("#total_tagihan_create").val("");
+        // $("#kategori_layanan_nama_create").val("");
+        // $("#kategori_layanan_id_create").val("");
+        // $("#jumlah_create").val(1);
+        // $("#total_tagihan_create").val("");
 
         // Poli & jadwal
         const $sectionPoliJadwal = $("#section_poli_jadwal_create");
@@ -186,6 +240,12 @@ $(function () {
         $("#info_jadwal_dokter_create").addClass("hidden").text("");
     }
 
+    // Tambah baris layanan
+    $("#btnAddLayananRow").on("click", function (e) {
+        e.preventDefault();
+        addItemRow();
+    });
+
     $("#buttonOpenModalCreateOrderLayanan").on("click", function () {
         resetAddForm();
         addModal?.show();
@@ -199,6 +259,27 @@ $(function () {
     $("#buttonCancaleModalCreateOrderLayanan").on("click", function () {
         addModal?.hide();
         resetAddForm();
+    });
+
+    // Hapus baris layanan
+    $formAdd.on("click", ".btn-remove-item", function (e) {
+        e.preventDefault();
+        const $row = $(this).closest(".order-item");
+        const count = $itemsWrapper.find(".order-item").length;
+
+        if (count <= 1) {
+            // minimal 1 baris: cuma clear isinya
+            $row.find(".layanan-select").val("");
+            $row.find(".kategori-nama-input").val("");
+            $row.find(".kategori-id-input").val("");
+            $row.find(".jumlah-input").val(1);
+            $row.find(".subtotal-input").val("");
+        } else {
+            $row.remove();
+        }
+
+        recalcGrandTotal();
+        togglePoliSection();
     });
 
     /* =========================
@@ -302,57 +383,94 @@ $(function () {
     });
 
     /* =========================
-     *  LAYANAN → KATEGORI + HARGA + SHOW/HIDE POLI/JADWAL
+     *  LAYANAN → KATEGORI + SUBTOTAL
      * ========================= */
-    $("#layanan_id_create").on("change", function () {
+    $formAdd.on("change", ".layanan-select", function () {
+        const $row = $(this).closest(".order-item");
         const selected = $(this).find("option:selected");
 
         const kategoriId = selected.data("kategori-id") || "";
         const kategoriNama = selected.data("kategori-nama") || "";
         const harga = parseFloat(selected.data("harga") || 0);
 
-        $("#kategori_layanan_id_create").val(kategoriId);
-        $("#kategori_layanan_nama_create").val(kategoriNama);
+        $row.find(".kategori-id-input").val(kategoriId);
+        $row.find(".kategori-nama-input").val(kategoriNama);
 
-        const qty = $("#jumlah_create").val() || 1;
-        const total = harga * qty;
-        $("#total_tagihan_create").val(toRupiah(total));
+        const qty = parseInt($row.find(".jumlah-input").val() || 1, 10);
+        const subtotal = harga * qty;
+        $row.find(".subtotal-input").val(toRupiah(subtotal));
 
-        const $sectionPoliJadwal = $("#section_poli_jadwal_create");
-
-        if (kategoriNama === "Pemeriksaan") {
-            $sectionPoliJadwal.removeClass("hidden");
-
-            $("#poli_id_select_create").val("");
-            $("#jadwal_dokter_id_create")
-                .empty()
-                .append('<option value="">-- Pilih Jadwal Dokter --</option>')
-                .prop("disabled", true);
-            $("#dokter_id_create").val("");
-            $("#info_jadwal_dokter_create").addClass("hidden").text("");
-        } else {
-            $sectionPoliJadwal.addClass("hidden");
-            $("#poli_id_select_create").val("");
-            $("#jadwal_dokter_id_create")
-                .empty()
-                .append('<option value="">-- Pilih Jadwal Dokter --</option>')
-                .prop("disabled", true);
-            $("#dokter_id_create").val("");
-            $("#info_jadwal_dokter_create").addClass("hidden").text("");
-        }
+        recalcGrandTotal();
+        togglePoliSection();
     });
 
     /* =========================
-     *  JUMLAH → UPDATE TOTAL
+     *  JUMLAH → UPDATE SUBTOTAL
      * ========================= */
-    $("#jumlah_create").on("input", function () {
-        const qty = parseInt($(this).val() || 1, 10);
-        const selected = $("#layanan_id_create").find("option:selected");
+    $formAdd.on("input", ".jumlah-input", function () {
+        const $row = $(this).closest(".order-item");
+        const selected = $row.find(".layanan-select option:selected");
         const harga = parseFloat(selected.data("harga") || 0);
+        const qty = parseInt($(this).val() || 1, 10);
 
-        const total = harga * qty;
-        $("#total_tagihan_create").val(toRupiah(total));
+        const subtotal = harga * qty;
+        $row.find(".subtotal-input").val(toRupiah(subtotal));
+
+        recalcGrandTotal();
     });
+
+    // /* =========================
+    //  *  LAYANAN → KATEGORI + HARGA + SHOW/HIDE POLI/JADWAL
+    //  * ========================= */
+    // $("#layanan_id_create").on("change", function () {
+    //     const selected = $(this).find("option:selected");
+
+    //     const kategoriId = selected.data("kategori-id") || "";
+    //     const kategoriNama = selected.data("kategori-nama") || "";
+    //     const harga = parseFloat(selected.data("harga") || 0);
+
+    //     $("#kategori_layanan_id_create").val(kategoriId);
+    //     $("#kategori_layanan_nama_create").val(kategoriNama);
+
+    //     const qty = $("#jumlah_create").val() || 1;
+    //     const total = harga * qty;
+    //     $("#total_tagihan_create").val(toRupiah(total));
+
+    //     const $sectionPoliJadwal = $("#section_poli_jadwal_create");
+
+    //     if (kategoriNama === "Pemeriksaan") {
+    //         $sectionPoliJadwal.removeClass("hidden");
+
+    //         $("#poli_id_select_create").val("");
+    //         $("#jadwal_dokter_id_create")
+    //             .empty()
+    //             .append('<option value="">-- Pilih Jadwal Dokter --</option>')
+    //             .prop("disabled", true);
+    //         $("#dokter_id_create").val("");
+    //         $("#info_jadwal_dokter_create").addClass("hidden").text("");
+    //     } else {
+    //         $sectionPoliJadwal.addClass("hidden");
+    //         $("#poli_id_select_create").val("");
+    //         $("#jadwal_dokter_id_create")
+    //             .empty()
+    //             .append('<option value="">-- Pilih Jadwal Dokter --</option>')
+    //             .prop("disabled", true);
+    //         $("#dokter_id_create").val("");
+    //         $("#info_jadwal_dokter_create").addClass("hidden").text("");
+    //     }
+    // });
+
+    // /* =========================
+    //  *  JUMLAH → UPDATE TOTAL
+    //  * ========================= */
+    // $("#jumlah_create").on("input", function () {
+    //     const qty = parseInt($(this).val() || 1, 10);
+    //     const selected = $("#layanan_id_create").find("option:selected");
+    //     const harga = parseFloat(selected.data("harga") || 0);
+
+    //     const total = harga * qty;
+    //     $("#total_tagihan_create").val(toRupiah(total));
+    // });
 
     /* =========================
      *  POLI → LOAD JADWAL DOKTER
@@ -434,6 +552,87 @@ $(function () {
         }
     });
 
+    // /* =========================
+    //  *  SUBMIT FORM
+    //  * ========================= */
+    // $formAdd.on("submit", function (e) {
+    //     e.preventDefault();
+    //     const url = $formAdd.data("url");
+
+    //     const kategoriNama = $("#kategori_layanan_nama_create").val();
+
+    //     const formData = {
+    //         pasien_id: $("#pasien_id_create").val(),
+    //         layanan_id: $("#layanan_id_create").val(),
+    //         kategori_layanan_id: $("#kategori_layanan_id_create").val(),
+    //         jumlah: $("#jumlah_create").val(),
+    //         // kirim angka murni ke backend
+    //         total_tagihan: cleanRupiah($("#total_tagihan_create").val()),
+    //     };
+
+    //     if (kategoriNama === "Pemeriksaan") {
+    //         formData.poli_id = $("#poli_id_select_create").val();
+    //         formData.jadwal_dokter_id = $("#jadwal_dokter_id_create").val();
+    //     }
+
+    //     axios
+    //         .post(url, formData)
+    //         .then((response) => {
+    //             Swal.fire({
+    //                 icon: "success",
+    //                 title: "Berhasil!",
+    //                 text: response.data.message,
+    //                 timer: 2000,
+    //                 showConfirmButton: false,
+    //             });
+
+    //             addModal?.hide();
+    //             if ($("#orderLayanan").length) {
+    //                 $("#orderLayanan").DataTable().ajax.reload(null, false);
+    //             }
+    //         })
+    //         .catch((error) => {
+    //             if (error.response?.status === 422) {
+    //                 const errors = error.response.data.errors || {};
+
+    //                 $formAdd.find(".is-invalid").removeClass("is-invalid");
+    //                 $formAdd.find(".text-red-600").empty().css("opacity", 0);
+
+    //                 for (const field in errors) {
+    //                     const msg = errors[field][0];
+
+    //                     if (field === "pasien_id") {
+    //                         $pasienSearch.addClass("is-invalid");
+    //                         $pasienError.text(msg).css("opacity", 1);
+    //                     } else if (field === "poli_id") {
+    //                         $("#poli_id_select_create").addClass("is-invalid");
+    //                         $("#poli_id_create-error")
+    //                             .text(msg)
+    //                             .css("opacity", 1);
+    //                     } else if (field === "jadwal_dokter_id") {
+    //                         $("#jadwal_dokter_id_create").addClass(
+    //                             "is-invalid"
+    //                         );
+    //                         $("#jadwal_dokter_id_create-error")
+    //                             .text(msg)
+    //                             .css("opacity", 1);
+    //                     } else {
+    //                         const fieldId = `#${field}_create`;
+    //                         const errId = `#${field}_create-error`;
+    //                         $(fieldId).addClass("is-invalid");
+    //                         $(errId).text(msg).css("opacity", 1);
+    //                     }
+    //                 }
+    //             } else {
+    //                 Swal.fire({
+    //                     icon: "error",
+    //                     title: "Server Error",
+    //                     text: "Terjadi kesalahan saat menyimpan data.",
+    //                 });
+    //             }
+    //         });
+    // });
+
     /* =========================
      *  SUBMIT FORM
      * ========================= */
@@ -441,18 +640,39 @@ $(function () {
         e.preventDefault();
         const url = $formAdd.data("url");
 
-        const kategoriNama = $("#kategori_layanan_nama_create").val();
+        // Kumpulkan item layanan
+        const items = [];
+        $itemsWrapper.find(".order-item").each(function () {
+            const $row = $(this);
+
+            const layananId = $row.find(".layanan-select").val();
+            if (!layananId) return; // skip baris kosong
+
+            const kategoriId = $row.find(".kategori-id-input").val();
+            const kategoriNama = $row.find(".kategori-nama-input").val();
+            const qty = $row.find(".jumlah-input").val() || 1;
+            const subtotal = cleanRupiah($row.find(".subtotal-input").val());
+
+            items.push({
+                layanan_id: layananId,
+                kategori_layanan_id: kategoriId,
+                kategori_layanan_nama: kategoriNama,
+                jumlah: qty,
+                total_tagihan: subtotal,
+            });
+        });
+
+        const hasPemeriksaan = items.some(
+            (item) => item.kategori_layanan_nama === "Pemeriksaan"
+        );
 
         const formData = {
             pasien_id: $("#pasien_id_create").val(),
-            layanan_id: $("#layanan_id_create").val(),
-            kategori_layanan_id: $("#kategori_layanan_id_create").val(),
-            jumlah: $("#jumlah_create").val(),
-            // kirim angka murni ke backend
+            items: items, // <--- kirim array layanan
             total_tagihan: cleanRupiah($("#total_tagihan_create").val()),
         };
 
-        if (kategoriNama === "Pemeriksaan") {
+        if (hasPemeriksaan) {
             formData.poli_id = $("#poli_id_select_create").val();
             formData.jadwal_dokter_id = $("#jadwal_dokter_id_create").val();
         }
@@ -475,10 +695,13 @@ $(function () {
             })
             .catch((error) => {
                 if (error.response?.status === 422) {
+                    // validasi lama: pasien/poli/jadwal masih bisa dipakai
                     const errors = error.response.data.errors || {};
 
                     $formAdd.find(".is-invalid").removeClass("is-invalid");
                     $formAdd.find(".text-red-600").empty().css("opacity", 0);
+
+                    let hasItemError = false;
 
                     for (const field in errors) {
                         const msg = errors[field][0];
@@ -498,12 +721,17 @@ $(function () {
                             $("#jadwal_dokter_id_create-error")
                                 .text(msg)
                                 .css("opacity", 1);
-                        } else {
-                            const fieldId = `#${field}_create`;
-                            const errId = `#${field}_create-error`;
-                            $(fieldId).addClass("is-invalid");
-                            $(errId).text(msg).css("opacity", 1);
+                        } else if (field.startsWith("items")) {
+                            hasItemError = true;
                         }
+                    }
+
+                    if (hasItemError) {
+                        Swal.fire({
+                            icon: "error",
+                            title: "Validasi Layanan",
+                            text: "Periksa kembali data layanan (layanan, jumlah, dll).",
+                        });
                     }
                 } else {
                     Swal.fire({
