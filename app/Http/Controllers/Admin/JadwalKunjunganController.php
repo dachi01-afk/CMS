@@ -404,7 +404,6 @@ class JadwalKunjunganController extends Controller
         ]);
     }
 
-
     public function getDataKunjunganYangAkanDatang()
     {
         $besok = Carbon::tomorrow()->toDateString();

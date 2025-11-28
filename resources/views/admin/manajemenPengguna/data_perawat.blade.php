@@ -238,35 +238,42 @@
                         Penugasan Perawat
                     </h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {{-- Dokter --}}
-                        <div class="space-y-1">
-                            <label for="add_dokter_select"
-                                class="block text-sm font-medium text-slate-800 dark:text-slate-100">Dokter</label>
-                            <select id="add_dokter_select" name="dokter_id"
-                                class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-xl
-                                       focus:ring-sky-500 focus:border-sky-500 px-3 py-2.5
-                                       dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
-                                placeholder="Cari & pilih dokter…">
-                                {{-- TomSelect inject --}}
-                            </select>
-                            <div id="dokter_id-error" class="text-red-600 text-xs mt-1"></div>
-                        </div>
 
                         {{-- Poli --}}
-                        <div id="group_poli_add" class="space-y-1 hidden">
+                        <div class="space-y-1">
                             <label for="add_poli_select"
-                                class="block text-sm font-medium text-slate-800 dark:text-slate-100">Poli</label>
-                            <select id="add_poli_select" name="poli_id"
+                                class="block text-sm font-medium text-slate-800 dark:text-slate-100">
+                                Poli
+                            </label>
+                            <select id="add_poli_select"
                                 class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-xl
-                                       focus:ring-sky-500 focus:border-sky-500 px-3 py-2.5
-                                       dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
+                       focus:ring-sky-500 focus:border-sky-500 px-3 py-2.5
+                       dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
                                 placeholder="Cari & pilih poli…">
                                 {{-- TomSelect inject --}}
                             </select>
                             <div id="poli_id-error" class="text-red-600 text-xs mt-1"></div>
                         </div>
+
+                        {{-- Dokter (hasil filter poli, value = dokter_poli_id) --}}
+                        <div class="space-y-1">
+                            <label for="add_dokter_select"
+                                class="block text-sm font-medium text-slate-800 dark:text-slate-100">
+                                Dokter
+                            </label>
+                            <select id="add_dokter_select" name="dokter_poli_id"
+                                class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-xl
+                       focus:ring-sky-500 focus:border-sky-500 px-3 py-2.5
+                       dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
+                                placeholder="Cari & pilih dokter…">
+                                {{-- TomSelect inject --}}
+                            </select>
+                            <div id="dokter_poli_id-error" class="text-red-600 text-xs mt-1"></div>
+                        </div>
+
                     </div>
                 </div>
+
 
                 {{-- Password --}}
                 <div class="mt-4 space-y-3 border-t border-slate-200 dark:border-slate-700 pt-4">

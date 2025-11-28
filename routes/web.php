@@ -179,8 +179,8 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::get('/data_perawat', [ManajemenPenggunaController::class, 'dataPerawat'])->name('data_perawat');
         Route::post('/add_perawat', [PerawatController::class, 'createPerawat'])->name('add_perawat');
         Route::get('/get_perawat_by_id/{id}', [PerawatController::class, 'getPerawatById'])->name('get_perawat_by_id');
-        Route::get('/list_dokter', [PerawatController::class, 'listDokter']);
-        Route::get('/dokter/{dokterId}/polis', [PerawatController::class, 'listPoliByDokter']);
+        Route::get('/list_poli', [PerawatController::class, 'listPoli']);
+        Route::get('/poli/{poliId}/dokter', [PerawatController::class, 'listDokterByPoli']);
         Route::put('/update_perawat/{id}', [PerawatController::class, 'updatePerawat'])->name('update_perawat');
         Route::delete('/delete_perawat/{id}', [PerawatController::class, 'deletePerawat'])->name('delete_perawat');
 
@@ -262,7 +262,7 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::post('/updateKunjungan/{id}', [JadwalKunjunganController::class, 'updateDataKunjungan'])->name('update.kunjungan');
         Route::post('/update-status/{id}', [JadwalKunjunganController::class, 'updateStatusKunjunganToWaiting'])->name('update_status');
 
-        Route::get('/masa-depan', [JadwalKunjunganController::class, 'masaDepan'])->name('masa.depan');
+        Route::get('/masa-depan', [JadwalKunjunganController::class, 'getDataKunjunganYangAkanDatang'])->name('masa.depan');
 
         Route::get('/get-data-KYAD/{id}', [JadwalKunjunganController::class, 'getDataKYAD']);
 
@@ -394,4 +394,4 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
 Route::get('/login-dokter', [AuthController::class, 'login'])->name('login.dokter');
 Route::post('/proses-login-dokter', [AuthController::class, 'prosesLogin'])->name('proses.login.dokter');
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

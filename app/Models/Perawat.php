@@ -15,19 +15,9 @@ class Perawat extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function poli()
+    public function perawatDokterPoli()
     {
-        return $this->belongsTo(Poli::class);
-    }
-
-    public function dokter()
-    {
-        return $this->belongsTo(Dokter::class);
-    }
-
-    public function perawat()
-    {
-        return $this->belongsTo(Perawat::class);
+        return $this->belongsToMany(DokterPoli::class, 'perawat_dokter_poli', 'perawat_id', 'dokter_poli_id');
     }
 
     public function emr()

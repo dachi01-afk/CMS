@@ -2,7 +2,7 @@ import axios from "axios";
 import { initFlowbite } from "flowbite";
 import $ from "jquery";
 
-// data tabel Apoteker
+// ================== DATA TABLE PERAWAT ==================
 $(function () {
     var table = $("#userPerawat").DataTable({
         processing: true,
@@ -121,28 +121,19 @@ $(function () {
     updatePagination();
 });
 
-// ADD PERAWAT: Dokter (search) → Poli (dependen) — single select
+// ================== ADD PERAWAT (Poli → Dokter / dokter_poli_id) ==================
 $(function () {
     const addModalElement = document.getElementById("addPerawatModal");
     const addModal = addModalElement ? new Modal(addModalElement) : null;
     const $formAdd = $("#formAddPerawat");
 
-    let tsAddDokter = null;
     let tsAddPoli = null;
+    let tsAddDokter = null;
 
     function destroyTS(ts) {
         try {
             ts && ts.destroy();
         } catch (_) {}
-    }
-    function showPoli() {
-        $("#group_poli_add").removeClass("hidden");
-    }
-    function hidePoli() {
-        $("#group_poli_add").addClass("hidden");
-        destroyTS(tsAddPoli);
-        tsAddPoli = null;
-        $("#add_poli_select").html("");
     }
 
     function resetAddForm() {
@@ -157,61 +148,17 @@ $(function () {
             .removeClass("border-solid border-gray-300")
             .addClass("border-dashed border-gray-400");
 
-        // reset selects
+        // reset TomSelects
+        destroyTS(tsAddPoli);
         destroyTS(tsAddDokter);
+        tsAddPoli = null;
         tsAddDokter = null;
-        hidePoli();
+        $("#add_poli_select").html("");
         $("#add_dokter_select").html("");
     }
 
-    // ---------- TomSelect Dokter ----------
-    function initTSAddDokter() {
-        destroyTS(tsAddDokter);
-        $("#add_dokter_select").html("");
-
-        tsAddDokter = new TomSelect("#add_dokter_select", {
-            create: false,
-            maxItems: 1,
-            valueField: "id",
-            labelField: "nama",
-            searchField: "nama",
-            placeholder: "Cari & pilih dokter…",
-            preload: false,
-            render: {
-                option: (it) => `<div class="py-1 px-2">${it.nama}</div>`,
-                item: (it) => `<div>${it.nama}</div>`,
-            },
-            load: function (q, cb) {
-                axios
-                    .get("/manajemen_pengguna/list_dokter", {
-                        params: { q: q || "" },
-                    })
-                    .then(({ data }) => {
-                        const arr = Array.isArray(data?.data) ? data.data : [];
-                        cb(
-                            arr.map((d) => ({
-                                id: d.id,
-                                nama:
-                                    d.nama_dokter ||
-                                    d.nama ||
-                                    `Dokter #${d.id}`,
-                            }))
-                        );
-                    })
-                    .catch(() => cb());
-            },
-            onChange: (val) => {
-                if (val) {
-                    initTSAddPoli(val);
-                } else {
-                    hidePoli();
-                }
-            },
-        });
-    }
-
-    // ---------- TomSelect Poli (dependen pada Dokter) ----------
-    function initTSAddPoli(dokterId) {
+    // ---------- TomSelect Poli ----------
+    function initTSAddPoli() {
         destroyTS(tsAddPoli);
         $("#add_poli_select").html("");
 
@@ -223,14 +170,13 @@ $(function () {
             searchField: "nama",
             placeholder: "Cari & pilih poli…",
             preload: "focus",
-            shouldLoad: () => true,
             render: {
                 option: (it) => `<div class="py-1 px-2">${it.nama}</div>`,
                 item: (it) => `<div>${it.nama}</div>`,
             },
             load: function (q, cb) {
                 axios
-                    .get(`/manajemen_pengguna/dokter/${dokterId}/polis`, {
+                    .get("/manajemen_pengguna/list_poli", {
                         params: { q: q || "" },
                     })
                     .then(({ data }) => {
@@ -244,19 +190,61 @@ $(function () {
                     })
                     .catch(() => cb());
             },
-            onInitialize() {
-                this.load("");
-                setTimeout(() => this.open(), 60);
+            onChange: (poliId) => {
+                destroyTS(tsAddDokter);
+                tsAddDokter = null;
+                $("#add_dokter_select").html("");
+
+                if (poliId) {
+                    initTSAddDokter(poliId);
+                }
             },
         });
+    }
 
-        showPoli();
+    // ---------- TomSelect Dokter (dependen Poli) ----------
+    function initTSAddDokter(poliId) {
+        destroyTS(tsAddDokter);
+        $("#add_dokter_select").html("");
+
+        tsAddDokter = new TomSelect("#add_dokter_select", {
+            create: false,
+            maxItems: 1,
+            valueField: "id", // dokter_poli_id
+            labelField: "nama",
+            searchField: "nama",
+            placeholder: "Cari & pilih dokter…",
+            preload: "focus",
+            render: {
+                option: (it) => `<div class="py-1 px-2">${it.nama}</div>`,
+                item: (it) => `<div>${it.nama}</div>`,
+            },
+            load: function (q, cb) {
+                axios
+                    .get(`/manajemen_pengguna/poli/${poliId}/dokter`, {
+                        params: { q: q || "" },
+                    })
+                    .then(({ data }) => {
+                        const arr = Array.isArray(data?.data) ? data.data : [];
+                        cb(
+                            arr.map((d) => ({
+                                id: d.dokter_poli_id, // <= pivot id
+                                nama:
+                                    d.nama_dokter ||
+                                    d.nama ||
+                                    `Dokter #${d.dokter_id || "?"}`,
+                            }))
+                        );
+                    })
+                    .catch(() => cb());
+            },
+        });
     }
 
     // tombol buka modal
     $("#btnAddPerawat").on("click", function () {
         resetAddForm();
-        initTSAddDokter();
+        initTSAddPoli();
         addModal && addModal.show();
     });
 
@@ -300,7 +288,7 @@ $(function () {
         reader.readAsDataURL(file);
     });
 
-    // drag & drop (opsional)
+    // drag & drop foto
     const $drop = $("#foto_drop_area_perawat");
     $drop.on("dragover", function (e) {
         e.preventDefault();
@@ -318,7 +306,7 @@ $(function () {
         }
     });
 
-    // submit
+    // submit tambah perawat
     $formAdd.on("submit", function (e) {
         e.preventDefault();
         const url = $formAdd.data("url");
@@ -374,280 +362,7 @@ $(function () {
     });
 });
 
-// // EDIT PERAWAT (Single Dokter & Single Poli)
-// $(function () {
-//     const editModalElement = document.getElementById("editPerawatModal");
-//     const editModal = editModalElement ? new Modal(editModalElement) : null;
-//     const $formEdit = $("#formEditPerawat");
-//     const initialEditUrl = $formEdit.data("url");
-
-//     function resetEditForm() {
-//         $formEdit[0].reset();
-//         $formEdit.find(".is-invalid").removeClass("is-invalid");
-//         $formEdit.find(".text-red-600").empty();
-
-//         // action URL reset
-//         $formEdit.data("url", initialEditUrl);
-//         $formEdit.attr("action", initialEditUrl);
-
-//         // Foto reset
-//         $("#edit_preview_foto_perawat").addClass("hidden").attr("src", "");
-//         $("#edit_placeholder_foto_perawat").removeClass("hidden");
-//         $("#edit_foto_drop_area_perawat")
-//             .removeClass("border-solid border-gray-300")
-//             .addClass("border-dashed border-gray-400");
-
-//         // Dokter & Poli reset
-//         $("#edit_dokter_id").html('<option value="">— pilih dokter —</option>');
-//         $("#edit_poli_id")
-//             .prop("disabled", true)
-//             .html('<option value="">— pilih poli —</option>');
-//     }
-
-//     // Preview foto
-//     $("#edit_foto_perawat").on("change", function () {
-//         const file = this.files?.[0];
-//         if (!file) return;
-//         const reader = new FileReader();
-//         reader.onload = (e) => {
-//             $("#edit_preview_foto_perawat")
-//                 .attr("src", e.target.result)
-//                 .removeClass("hidden");
-//             $("#edit_placeholder_foto_perawat").addClass("hidden");
-//         };
-//         reader.readAsDataURL(file);
-//     });
-
-//     // ===== Helpers =====
-//     async function loadDokterOptions($select, selectedId = null) {
-//         try {
-//             const url =
-//                 $select.data("url-list-dokter") ||
-//                 "/manajemen_pengguna/list_dokter";
-//             const resp = await axios.get(url);
-//             const body = resp?.data ?? {};
-//             const list = Array.isArray(body.data)
-//                 ? body.data
-//                 : Array.isArray(body)
-//                 ? body
-//                 : [];
-
-//             let html = '<option value="">— pilih dokter —</option>';
-//             if (list.length) {
-//                 for (const d of list) {
-//                     const id = d.id;
-//                     const text = (
-//                         d.nama_dokter ||
-//                         d.nama ||
-//                         `Dokter #${id}`
-//                     ).toString();
-//                     const sel =
-//                         selectedId && String(selectedId) === String(id)
-//                             ? " selected"
-//                             : "";
-//                     html += `<option value="${id}"${sel}>${text}</option>`;
-//                 }
-//             } else {
-//                 html += '<option value="">Tidak ada Data Dokter</option>';
-//             }
-//             $select.prop("disabled", false).html(html);
-//         } catch (e) {
-//             console.error("[loadDokterOptions] error:", e);
-//             $select
-//                 .prop("disabled", false)
-//                 .html(
-//                     '<option value="">— pilih dokter —</option><option value="">Tidak ada Data Dokter</option>'
-//                 );
-//         }
-//     }
-
-//     async function loadPoliOptions($select, dokterId, selectedId = null) {
-//         if (!dokterId) {
-//             $select
-//                 .prop("disabled", true)
-//                 .html('<option value="">— pilih poli —</option>');
-//             return;
-//         }
-//         try {
-//             const template =
-//                 $select.data("url-dokter-poli") ||
-//                 "/manajemen_pengguna/dokter/{dokterId}/polis";
-//             const url = template.replace("{dokterId}", dokterId);
-//             const resp = await axios.get(url);
-//             const body = resp?.data ?? {};
-//             const list = Array.isArray(body.data)
-//                 ? body.data
-//                 : Array.isArray(body)
-//                 ? body
-//                 : [];
-
-//             let html = '<option value="">— pilih poli —</option>';
-//             if (list.length) {
-//                 for (const p of list) {
-//                     const id = p.id;
-//                     const text = (
-//                         p.nama_poli ||
-//                         p.nama ||
-//                         `Poli #${id}`
-//                     ).toString();
-//                     const sel =
-//                         selectedId && String(selectedId) === String(id)
-//                             ? " selected"
-//                             : "";
-//                     html += `<option value="${id}"${sel}>${text}</option>`;
-//                 }
-//                 $select.prop("disabled", false).html(html);
-//             } else {
-//                 $select
-//                     .prop("disabled", true)
-//                     .html('<option value="">Tidak ada Data Poli</option>');
-//             }
-//         } catch (e) {
-//             console.error("[loadPoliOptions] error:", e);
-//             $select
-//                 .prop("disabled", true)
-//                 .html('<option value="">Tidak ada Data Poli</option>');
-//         }
-//     }
-
-//     // Change dokter → refresh poli
-//     $(document).on("change", "#edit_dokter_id", function () {
-//         const dokterId = $(this).val();
-//         loadPoliOptions($("#edit_poli_id"), dokterId, null);
-//     });
-
-//     // ===== Buka modal edit =====
-//     $("body").on("click", ".btn-edit-perawat", async function () {
-//         resetEditForm();
-//         const id = $(this).data("id");
-
-//         try {
-//             const response = await axios.get(
-//                 `/manajemen_pengguna/get_perawat_by_id/${id}`
-//             );
-//             const data = response.data.data;
-
-//             // set action PUT
-//             const baseUrl = $formEdit.data("url");
-//             const finalUrl = baseUrl.replace("/0", "/" + data.id);
-//             $formEdit.data("url", finalUrl);
-//             $formEdit.attr("action", finalUrl);
-
-//             // field utama
-//             $("#edit_perawat_id").val(data.id);
-//             $("#edit_username_perawat").val(data.user?.username || "");
-//             $("#edit_email_perawat").val(data.user?.email || "");
-//             $("#edit_nama_perawat").val(data.nama_perawat || "");
-//             $("#edit_no_hp_perawat").val(data.no_hp_perawat || "");
-
-//             // foto existing
-//             if (data.foto_perawat) {
-//                 const fotoUrl = `/storage/${data.foto_perawat}`;
-//                 $("#edit_preview_foto_perawat")
-//                     .attr("src", fotoUrl)
-//                     .removeClass("hidden");
-//                 $("#edit_placeholder_foto_perawat").addClass("hidden");
-//                 $("#edit_foto_drop_area_perawat")
-//                     .removeClass("border-dashed border-gray-400")
-//                     .addClass("border-solid border-gray-300");
-//             }
-
-//             // dokter & poli lama
-//             const dokterIdLama = data.dokter?.id || data.dokter_id || "";
-//             const poliIdLama = data.poli?.id || data.poli_id || "";
-
-//             await loadDokterOptions($("#edit_dokter_id"), dokterIdLama);
-//             if (dokterIdLama) {
-//                 await loadPoliOptions(
-//                     $("#edit_poli_id"),
-//                     dokterIdLama,
-//                     poliIdLama
-//                 );
-//             } else {
-//                 $("#edit_poli_id")
-//                     .prop("disabled", true)
-//                     .html('<option value="">— pilih poli —</option>');
-//             }
-
-//             editModal && editModal.show();
-//         } catch (e) {
-//             Swal.fire({
-//                 icon: "error",
-//                 title: "Gagal!",
-//                 text: "Tidak dapat memuat data perawat.",
-//             });
-//         }
-//     });
-
-//     // ===== Submit update =====
-//     $formEdit.on("submit", async function (e) {
-//         e.preventDefault();
-//         const url = $formEdit.data("url");
-//         const formData = new FormData($formEdit[0]);
-//         if (!formData.has("_method")) formData.append("_method", "PUT");
-
-//         // bersihkan error lama
-//         $formEdit.find(".is-invalid").removeClass("is-invalid");
-//         $formEdit.find('[id$="-error"]').html("");
-
-//         try {
-//             const { data } = await axios.post(url, formData);
-//             await Swal.fire({
-//                 icon: "success",
-//                 title: "Berhasil!",
-//                 text: data.message || "Tersimpan.",
-//                 timer: 1600,
-//                 showConfirmButton: false,
-//             });
-//             editModal && editModal.hide();
-//             $("#userPerawat").DataTable().ajax.reload(null, false);
-//             resetEditForm();
-//         } catch (error) {
-//             if (error.response && error.response.status === 422) {
-//                 const errors = error.response.data.errors || {};
-//                 Swal.fire({
-//                     icon: "error",
-//                     title: "Validasi Gagal!",
-//                     text: "Silakan cek kembali form Anda.",
-//                 });
-//                 Object.keys(errors).forEach((key) => {
-//                     // mapping id error
-//                     const baseKey = key.split(".")[0];
-//                     const targetId = "#" + baseKey;
-//                     const errId = targetId + "-error";
-//                     if ($(targetId).length) $(targetId).addClass("is-invalid");
-//                     if ($(errId).length) $(errId).html(errors[key][0]);
-
-//                     // fallback mapping nama validator → id input
-//                     if (baseKey === "edit_poli_id" || baseKey === "poli_id") {
-//                         $("#edit_poli_id").addClass("is-invalid");
-//                         $("#edit_poli_id-error").html(errors[key][0]);
-//                     }
-//                     if (
-//                         baseKey === "edit_dokter_id" ||
-//                         baseKey === "dokter_id"
-//                     ) {
-//                         $("#edit_dokter_id").addClass("is-invalid");
-//                         $("#edit_dokter_id-error").html(errors[key][0]);
-//                     }
-//                 });
-//             } else {
-//                 Swal.fire({
-//                     icon: "error",
-//                     title: "Error Server!",
-//                     text: "Terjadi kesalahan. Coba lagi.",
-//                 });
-//             }
-//         }
-//     });
-
-//     $("#closeEditPerawatModal").on("click", function () {
-//         resetEditForm();
-//         editModal && editModal.hide();
-//     });
-// });
-
-// EDIT PERAWAT: Dokter (search) → Poli (search, tergantung dokter) — single select
+// ================== EDIT PERAWAT (versi lama: Dokter → Poli) ==================
 $(function () {
     const editModalElement = document.getElementById("editPerawatModal");
     const editModal = editModalElement ? new Modal(editModalElement) : null;
@@ -749,7 +464,7 @@ $(function () {
         if (preId) tsDokter.setValue(String(preId), true);
     }
 
-    // ---------- TomSelect Poli (depend on Dokter) ----------
+    // ---------- TomSelect Poli (depend Dokter) ----------
     function initTomSelectPoli(dokterId, preId = null, preText = null) {
         destroyTS(tsPoli);
 
@@ -767,13 +482,13 @@ $(function () {
         }
 
         tsPoli = new TomSelect("#edit_poli_select", {
-            create: false, // hanya pilih dari daftar
+            create: false,
             maxItems: 1,
             valueField: "id",
             labelField: "nama",
             searchField: "nama",
             placeholder: "Cari & pilih poli…",
-            preload: "focus", // load saat fokus
+            preload: "focus",
             shouldLoad: () => true,
             render: {
                 option: (it) => `<div class="py-1 px-2">${it.nama}</div>`,
@@ -796,8 +511,8 @@ $(function () {
                     .catch(() => cb());
             },
             onInitialize() {
-                this.load(""); // load awal
-                setTimeout(() => this.open(), 60); // langsung buka daftar
+                this.load("");
+                setTimeout(() => this.open(), 60);
             },
             onFocus() {
                 if (this.options_count === 0) this.load("");
@@ -808,7 +523,7 @@ $(function () {
         showPoliGroup();
     }
 
-    // ---------- Preview foto ----------
+    // Preview foto edit
     $("#edit_foto_perawat").on("change", function () {
         const file = this.files?.[0];
         if (!file) return;
@@ -822,7 +537,7 @@ $(function () {
         reader.readAsDataURL(file);
     });
 
-    // ---------- Buka modal edit ----------
+    // Buka modal edit
     $("body").on("click", ".btn-edit-perawat", async function () {
         resetEditForm();
         const id = $(this).data("id");
@@ -833,20 +548,17 @@ $(function () {
             );
             const row = resp.data;
 
-            // set action
             const baseUrl = $formEdit.data("url");
             const finalUrl = baseUrl.replace("/0", "/" + row.id);
             $formEdit.data("url", finalUrl);
             $formEdit.attr("action", finalUrl);
 
-            // isi field
             $("#edit_perawat_id").val(row.id);
             $("#edit_username_perawat").val(row.user?.username || "");
             $("#edit_email_perawat").val(row.user?.email || "");
             $("#edit_nama_perawat").val(row.nama_perawat || "");
             $("#edit_no_hp_perawat").val(row.no_hp_perawat || "");
 
-            // foto lama
             if (row.foto_perawat) {
                 const url = `/storage/${row.foto_perawat}`;
                 $("#edit_preview_foto_perawat")
@@ -858,7 +570,6 @@ $(function () {
                     .addClass("border-solid border-gray-300");
             }
 
-            // preselect dokter & poli (jika ada)
             const dokterId = row.dokter?.id || row.dokter_id || null;
             const dokterNama = row.dokter?.nama_dokter || null;
             const poliId = row.poli?.id || row.poli_id || null;
@@ -881,7 +592,7 @@ $(function () {
         }
     });
 
-    // ---------- Submit ----------
+    // Submit edit
     $formEdit.on("submit", async function (e) {
         e.preventDefault();
         const url = $formEdit.data("url");
@@ -946,13 +657,7 @@ $(function () {
     );
 });
 
-// Bind change dokter → reload poli
-$(document).on("change", "#edit_dokter_id", function () {
-    const dokterId = $(this).val();
-    loadPoliOptions($("#edit_poli_id"), dokterId, null);
-});
-
-// delete data perawat
+// ================== DELETE PERAWAT ==================
 $(function () {
     $("body").on("click", ".btn-delete-perawat", function () {
         const perawatId = $(this).data("id");
@@ -1007,7 +712,6 @@ $(function () {
                         "Terjadi kesalahan server. Silakan coba lagi.";
 
                     if (status === 409) {
-                        // FK constraint
                         Swal.fire({
                             icon: "error",
                             title: "Tidak bisa dihapus",

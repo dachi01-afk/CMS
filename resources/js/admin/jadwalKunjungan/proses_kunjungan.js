@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
         editModalEl.classList.add("hidden");
     }
 
-    // tombol close modal
+    // tombol close modal (X dan Batal)
     document.querySelectorAll(".close-edit-kunjungan").forEach((btn) => {
         btn.addEventListener("click", (e) => {
             e.preventDefault();
@@ -83,14 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
     });
 
-    // klik backdrop
-    if (editModalEl) {
-        editModalEl.addEventListener("click", (e) => {
-            if (e.target === editModalEl) {
-                closeEditModal();
-            }
-        });
-    }
+    // ⚠️ Tidak ada listener klik backdrop → klik background tidak menutup modal
 
     // ---------- TomSelect Dokter ----------
     function initTomSelectDokter(preId = null, preText = null) {
@@ -225,7 +218,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center py-6 text-gray-500 italic">
+                <td colspan="7" class="text-center py-6 text-gray-500 italic">
                     Memuat data...
                 </td>
             </tr>`;
@@ -248,7 +241,7 @@ document.addEventListener("DOMContentLoaded", () => {
             if (!payload.length) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="6" class="text-center py-6 text-gray-500 italic">
+                        <td colspan="7" class="text-center py-6 text-gray-500 italic">
                             Tidak ada kunjungan pending hari ini.
                         </td>
                     </tr>`;
@@ -284,8 +277,8 @@ document.addEventListener("DOMContentLoaded", () => {
                             <td class="px-6 py-3 text-gray-800 text-center">${namaPoli}</td>
                             <td class="px-6 py-3 text-gray-800 text-center">${keluhan}</td>
                             <td class="px-6 py-3 text-gray-800 text-center">${status}</td>
-                            <td class="px-6 py-3 text-right">
-                                <div class="relative flex justify-center">
+                            <td class="px-6 py-3 text-right align-top">
+                                <div class="aksi-dropdown-wrapper">
                                     <button type="button"
                                             class="aksiDropdownToggle inline-flex items-center justify-center h-8 w-8 rounded-full
                                                    text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition">
@@ -293,8 +286,8 @@ document.addEventListener("DOMContentLoaded", () => {
                                     </button>
 
                                     <div
-                                        class="aksiDropdownMenu hidden absolute right-0 top-9 z-50 w-44 rounded-lg shadow-lg
-                                               bg-white border border-gray-100">
+                                        class="aksiDropdownMenu aksi-dropdown-menu hidden bg-white border border-gray-100
+                                               w-44 rounded-lg shadow-lg">
                                         <div class="py-1 text-left text-sm">
 
                                             <button data-id="${item.id}"
@@ -341,7 +334,7 @@ document.addEventListener("DOMContentLoaded", () => {
             console.error("Gagal memuat waiting list:", err);
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="text-center py-6 text-red-600">
+                    <td colspan="7" class="text-center py-6 text-red-600">
                         ${esc(err.message ?? "Gagal memuat data. Coba lagi.")}
                     </td>
                 </tr>`;
@@ -360,7 +353,7 @@ document.addEventListener("DOMContentLoaded", () => {
         // Toggle dropdown
         const toggle = e.target.closest(".aksiDropdownToggle");
         if (toggle) {
-            const wrapper = toggle.closest(".relative");
+            const wrapper = toggle.closest(".aksi-dropdown-wrapper");
             const menu = wrapper?.querySelector(".aksiDropdownMenu");
 
             document.querySelectorAll(".aksiDropdownMenu").forEach((m) => {
@@ -386,7 +379,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const cancelBtn = e.target.closest(".batalkanKunjunganBtn");
         const editBtn = e.target.closest(".editKunjunganBtn");
 
-        // Mulai Konsultasi (pakai SweetAlert)
+        // Mulai Konsultasi
         if (startBtn) {
             const id = startBtn.dataset.id;
             const konfirmasi = await Swal.fire({
@@ -445,7 +438,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // Batalkan Kunjungan (pakai SweetAlert)
+        // Batalkan Kunjungan
         if (cancelBtn) {
             const id = cancelBtn.dataset.id;
             const konfirmasi = await Swal.fire({
@@ -504,7 +497,7 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        // Edit Kunjungan (TANPA SweetAlert) → buka modal dengan TomSelect Dokter & Poli
+        // Edit Kunjungan → buka modal
         if (editBtn) {
             if (!editForm) return;
 
@@ -516,7 +509,6 @@ document.addEventListener("DOMContentLoaded", () => {
                 d.updateUrl || `jadwal_kunjungan/updateKunjungan/${d.id}`;
             editForm.setAttribute("action", updateUrl);
 
-            // isi field dasar
             document.getElementById("edit_no_antrian").value =
                 d.no_antrian || "-";
             document.getElementById("edit_nama_pasien").value =
@@ -531,7 +523,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const poliId = d.poli_id || "";
             const poliNama = d.nama_poli || null;
 
-            // inisialisasi TS dokter & poli dengan preselect
             initTomSelectDokter(dokterId || null, dokterNama);
             if (dokterId) {
                 initTomSelectPoli(dokterId, poliId || null, poliNama);
@@ -544,7 +535,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
-    // ---------- Submit Edit (SweetAlert Success/Error + reload table saja) ----------
+    // ---------- Submit Edit ----------
     if (editForm) {
         editForm.addEventListener("submit", async (e) => {
             e.preventDefault();
@@ -557,11 +548,14 @@ document.addEventListener("DOMContentLoaded", () => {
             const action = editForm.getAttribute("action");
             const formData = new FormData(editForm);
 
-            // Reset error
-            editErrorBox.classList.add("hidden");
-            editErrorBox.textContent = "";
-            document.getElementById("edit_dokter_id-error").textContent = "";
-            document.getElementById("edit_poli_id-error").textContent = "";
+            if (editErrorBox) {
+                editErrorBox.classList.add("hidden");
+                editErrorBox.textContent = "";
+            }
+            const errDokEl = document.getElementById("edit_dokter_id-error");
+            const errPoliEl = document.getElementById("edit_poli_id-error");
+            if (errDokEl) errDokEl.textContent = "";
+            if (errPoliEl) errPoliEl.textContent = "";
 
             try {
                 const res = await fetch(action, {
@@ -574,7 +568,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     body: formData,
                 });
 
-                // === VALIDATION ERROR ===
+                // VALIDATION ERROR
                 if (res.status === 422) {
                     const json = await res.json();
                     const errors = json.errors || {};
@@ -587,35 +581,35 @@ document.addEventListener("DOMContentLoaded", () => {
                     });
 
                     let messages = Object.values(errors).flat().join(" ");
-                    editErrorBox.textContent = messages;
-                    editErrorBox.classList.remove("hidden");
-
-                    if (errors.dokter_id) {
-                        document.getElementById(
-                            "edit_dokter_id-error"
-                        ).textContent = errors.dokter_id[0];
+                    if (editErrorBox) {
+                        editErrorBox.textContent = messages;
+                        editErrorBox.classList.remove("hidden");
                     }
-                    if (errors.poli_id) {
-                        document.getElementById(
-                            "edit_poli_id-error"
-                        ).textContent = errors.poli_id[0];
+
+                    if (errors.dokter_id && errDokEl) {
+                        errDokEl.textContent = errors.dokter_id[0];
+                    }
+                    if (errors.poli_id && errPoliEl) {
+                        errPoliEl.textContent = errors.poli_id[0];
                     }
                     return;
                 }
 
-                // === SERVER ERROR ===
+                // SERVER ERROR
                 if (!res.ok) {
                     await Swal.fire({
                         icon: "error",
                         title: "Error Server",
                         text: "Terjadi kesalahan pada server.",
                     });
-                    editErrorBox.textContent = "Kesalahan server!";
-                    editErrorBox.classList.remove("hidden");
+                    if (editErrorBox) {
+                        editErrorBox.textContent = "Kesalahan server!";
+                        editErrorBox.classList.remove("hidden");
+                    }
                     return;
                 }
 
-                // === SUCCESS ===
+                // SUCCESS
                 const json = await res.json();
 
                 await Swal.fire({
@@ -626,10 +620,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     showConfirmButton: false,
                 });
 
-                // TUTUP MODAL
                 closeEditModal();
-
-                // REFRESH KOMPONEN TABEL SAJA
                 loadWaitingList();
             } catch (err) {
                 console.error("Error:", err);
@@ -640,8 +631,10 @@ document.addEventListener("DOMContentLoaded", () => {
                     text: "Tidak dapat terhubung ke server.",
                 });
 
-                editErrorBox.textContent = "Gagal terhubung ke server.";
-                editErrorBox.classList.remove("hidden");
+                if (editErrorBox) {
+                    editErrorBox.textContent = "Gagal terhubung ke server.";
+                    editErrorBox.classList.remove("hidden");
+                }
             }
         });
     }

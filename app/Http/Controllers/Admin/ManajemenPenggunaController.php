@@ -207,10 +207,13 @@ class ManajemenPenggunaController extends Controller
 
     public function dataPerawat()
     {
-        $query = Perawat::with(['user', 'poli', 'dokter'])
+        $query = Perawat::with([
+            'user',
+            'perawatDokterPoli.dokter',
+            'perawatDokterPoli.poli',
+        ])
             ->select('perawat.*')
-            ->latest()
-            ->get();
+            ->latest();
 
         // helper untuk teks fallback (single value)
         $fallback = function (string $rel, $value) {
@@ -222,8 +225,8 @@ class ManajemenPenggunaController extends Controller
         return DataTables::of($query)
             ->addIndexColumn()
 
-            // Foto
-            ->addColumn('foto', function ($row) {
+            // ================= FOTO =================
+            ->addColumn('foto', function (Perawat $row) {
                 if (!empty($row->foto_perawat)) {
                     $url = asset('storage/' . $row->foto_perawat);
                     return '<img src="' . $url . '" alt="Foto Perawat" class="w-12 h-12 rounded-lg object-cover mx-auto shadow">';
@@ -231,31 +234,60 @@ class ManajemenPenggunaController extends Controller
                 return '<span class="text-gray-400 italic">Tidak ada</span>';
             })
 
-            // === Kolom dari relasi USER ===
-            ->addColumn('username', function ($row) use ($fallback) {
+            // ================= USER =================
+            ->addColumn('username', function (Perawat $row) use ($fallback) {
                 return $fallback('User', optional($row->user)->username);
             })
-            ->addColumn('email_user', function ($row) use ($fallback) {
+
+            ->addColumn('email_user', function (Perawat $row) use ($fallback) {
                 return $fallback('User', optional($row->user)->email);
             })
-            ->addColumn('role', function ($row) use ($fallback) {
+
+            ->addColumn('role', function (Perawat $row) use ($fallback) {
                 return $fallback('User', optional($row->user)->role);
             })
 
-            // === Kolom dari relasi POLI (opsional, kalau mau ditampilkan) ===
-            ->addColumn('nama_poli', function ($row) use ($fallback) {
-                // ganti 'nama_poli' sesuai field di tabel poli kamu
-                return $fallback('poli', optional($row->poli)->nama_poli);
+            // ================= POLI (dari relasi dokterPolis) =================
+            ->addColumn('nama_poli', function (Perawat $row) {
+                // Ambil semua nama poli dari relasi dokterPolis
+                $polis = $row->perawatDokterPoli
+                    ->pluck('poli.nama_poli')
+                    ->filter()
+                    ->unique()
+                    ->values();
+
+                if ($polis->isEmpty()) {
+                    return '<span class="text-gray-400 italic">Tidak ada Data Poli</span>';
+                }
+
+                $htmlList = $polis->map(function ($nama) {
+                    return '<span class="inline-block">' . e($nama) . '</span>';
+                })->implode('<br>');
+
+                return $htmlList;
             })
 
-            // === Kolom dari relasi DOKTER (opsional) ===
-            ->addColumn('nama_dokter', function ($row) use ($fallback) {
-                // ganti 'nama_dokter' sesuai field di tabel dokter kamu
-                return $fallback('dokter', optional($row->dokter)->nama_dokter);
+            // ================= DOKTER (dari relasi dokterPolis) =================
+            ->addColumn('nama_dokter', function (Perawat $row) {
+                $dokters = $row->perawatDokterPoli
+                    ->pluck('dokter.nama_dokter')
+                    ->filter()
+                    ->unique()
+                    ->values();
+
+                if ($dokters->isEmpty()) {
+                    return '<span class="text-gray-400 italic">Tidak ada Data Dokter</span>';
+                }
+
+                $htmlList = $dokters->map(function ($nama) {
+                    return '<span class="inline-block">' . e($nama) . '</span>';
+                })->implode('<br>');
+
+                return $htmlList;
             })
 
-            // Action
-            ->addColumn('action', function ($perawat) {
+            // ================= ACTION =================
+            ->addColumn('action', function (Perawat $perawat) {
                 return '
                 <button class="btn-edit-perawat text-blue-600 hover:text-blue-800 mr-2" data-id="' . $perawat->id . '" title="Edit">
                     <i class="fa-regular fa-pen-to-square text-lg"></i>
@@ -266,10 +298,20 @@ class ManajemenPenggunaController extends Controller
             ';
             })
 
-            // Kolom yang mengandung HTML
-            ->rawColumns(['foto', 'username', 'email_user', 'role', 'nama_poli', 'nama_dokter', 'action'])
+            // kolom yang berisi HTML
+            ->rawColumns([
+                'foto',
+                'username',
+                'email_user',
+                'role',
+                'nama_poli',
+                'nama_dokter',
+                'action',
+            ])
+
             ->make(true);
     }
+
 
     public function dataKasir()
     {

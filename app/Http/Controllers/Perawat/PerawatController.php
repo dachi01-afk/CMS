@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Perawat;
 
 use App\Http\Controllers\Controller;
 use App\Models\Dokter;
+use App\Models\DokterPoli;
 use App\Models\Perawat;
+use App\Models\Poli;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,49 +21,21 @@ class PerawatController extends Controller
         return view('perawat.dashboard');
     }
 
-
     public function createPerawat(Request $request)
     {
         try {
             // 🧩 Validasi input
             $validated = $request->validate([
-                'foto_perawat'                  => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
-                'username_perawat'              => 'required|string|max:255', // ganti ke users jika tabelmu "users"
-                'nama_perawat'                  => 'required|string|max:255',
-                'email_perawat'                 => 'required|email',             // ganti ke users jika perlu
-                'no_hp_perawat'                 => 'nullable|string|max:20',
-                'password_perawat'              => 'required|string|min:8|confirmed',
+                'foto_perawat'         => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
+                'username_perawat'     => 'required|string|max:255',
+                'nama_perawat'         => 'required|string|max:255',
+                'email_perawat'        => 'required|email',
+                'no_hp_perawat'        => 'nullable|string|max:20',
+                'password_perawat'     => 'required|string|min:8|confirmed',
 
-                // baru
-                'dokter_id'                     => 'nullable|exists:dokter,id',
-                'poli_id'                       => 'nullable|exists:poli,id',
+                // relasi baru: dokter_poli (pivot dokter_poli)
+                'dokter_poli_id'       => 'nullable|exists:dokter_poli,id',
             ]);
-
-            $dokterId = $request->input('dokter_id');
-            $poliId   = $request->input('poli_id');
-
-            // Jika isi poli tanpa dokter -> tidak diizinkan
-            if ($poliId && !$dokterId) {
-                return response()->json([
-                    'message' => 'Validasi gagal.',
-                    'errors'  => ['poli_id' => ['Pilih dokter terlebih dahulu sebelum memilih poli.']]
-                ], 422);
-            }
-
-            // Jika dokter & poli diisi, cek poli memang milik dokter
-            if ($dokterId && $poliId) {
-                $exists = DB::table('dokter_poli')
-                    ->where('dokter_id', $dokterId)
-                    ->where('poli_id',   $poliId)
-                    ->exists();
-
-                if (!$exists) {
-                    return response()->json([
-                        'message' => 'Validasi gagal.',
-                        'errors'  => ['poli_id' => ['Poli yang dipilih tidak terdaftar pada dokter tersebut.']]
-                    ], 422);
-                }
-            }
 
             DB::beginTransaction();
 
@@ -79,7 +53,9 @@ class PerawatController extends Controller
                 $file = $request->file('foto_perawat');
 
                 $extension = strtolower($file->getClientOriginalExtension());
-                if ($extension === 'jfif') $extension = 'jpg';
+                if ($extension === 'jfif') {
+                    $extension = 'jpg';
+                }
 
                 $fileName = 'perawat_' . time() . '.' . $extension;
                 $path     = 'perawat/' . $fileName;
@@ -89,37 +65,49 @@ class PerawatController extends Controller
                 } else {
                     $image = Image::read($file);
                     $image->scale(width: 800);
-                    Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+                    Storage::disk('public')->put(
+                        $path,
+                        (string) $image->encodeByExtension($extension, quality: 80)
+                    );
                 }
 
                 $fotoPath = $path;
             }
 
-            // 🏥 Buat data perawat
-            Perawat::create([
-                'user_id'        => $user->id,
-                'nama_perawat'   => $validated['nama_perawat'],
-                'foto_perawat'   => $fotoPath,
-                'no_hp_perawat'  => $validated['no_hp_perawat'] ?? null,
-                'dokter_id'      => $dokterId, // boleh null
-                'poli_id'        => $poliId,   // boleh null
+            // 🏥 Buat data perawat (tanpa dokter_id & poli_id lagi)
+            $perawat = Perawat::create([
+                'user_id'       => $user->id,
+                'nama_perawat'  => $validated['nama_perawat'],
+                'foto_perawat'  => $fotoPath,
+                'no_hp_perawat' => $validated['no_hp_perawat'] ?? null,
             ]);
+
+            // 🔗 Simpan relasi ke pivot perawat_dokter_poli (jika diisi)
+            if (!empty($validated['dokter_poli_id'])) {
+                $perawat->perawatDokterPoli()->attach($validated['dokter_poli_id']);
+            }
 
             DB::commit();
 
             return response()->json(['message' => 'Data perawat berhasil ditambahkan.']);
         } catch (\Illuminate\Http\Exceptions\PostTooLargeException $e) {
+            DB::rollBack();
             return response()->json(['message' => 'Ukuran file terlalu besar! Maksimal 5 MB.'], 413);
         } catch (\Illuminate\Validation\ValidationException $e) {
-            return response()->json(['message' => 'Validasi gagal.', 'errors' => $e->errors()], 422);
+            DB::rollBack();
+            return response()->json([
+                'message' => 'Validasi gagal.',
+                'errors'  => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
             DB::rollBack();
             return response()->json([
-                'message' => 'Tidak ada respon dari server.',
-                'error_detail' => $e->getMessage(),
+                'message'       => 'Tidak ada respon dari server.',
+                'error_detail'  => $e->getMessage(),
             ], 500);
         }
     }
+
 
     public function getPerawatById($id)
     {
@@ -127,27 +115,44 @@ class PerawatController extends Controller
         return response()->json(['data' => $data]);
     }
 
-    public function listDokter(Request $request)
+    public function listPoli(Request $request)
     {
         $q = $request->input('q', '');
-        $data = Dokter::select('id', 'nama_dokter')
-            ->when($q, fn($w) => $w->where('nama_dokter', 'like', "%{$q}%"))
-            ->orderBy('nama_dokter')
+
+        $data = Poli::select('id', 'nama_poli')
+            ->when($q, fn($w) => $w->where('nama_poli', 'like', "%{$q}%"))
+            ->orderBy('nama_poli')
             ->get();
+
         return response()->json(['data' => $data]);
     }
 
-    public function listPoliByDokter(Request $request, $dokterId)
+    // List dokter berdasarkan poli (ambil dari tabel dokter_poli)
+    public function listDokterByPoli(Request $request, $poliId)
     {
         $q = $request->input('q', '');
-        $dokter = Dokter::with(['poli' => function ($w) use ($q) {
-            $w->select('poli.id', 'nama_poli')
-                ->when($q, fn($qq) => $qq->where('nama_poli', 'like', "%{$q}%"));
-        }])->findOrFail($dokterId);
 
-        return response()->json(['data' => $dokter->poli ?? []]);
+        $dokterPolis = DokterPoli::with('dokter:id,nama_dokter')
+            ->where('poli_id', $poliId)
+            ->when($q, function ($w) use ($q) {
+                $w->whereHas('dokter', function ($qq) use ($q) {
+                    $qq->where('nama_dokter', 'like', "%{$q}%");
+                });
+            })
+            ->get()
+            ->sortBy('dokter.nama_dokter')
+            ->values();
+
+        $data = $dokterPolis->map(function ($dp) {
+            return [
+                'dokter_poli_id' => $dp->id,
+                'dokter_id'      => $dp->dokter_id,
+                'nama_dokter'    => $dp->dokter->nama_dokter ?? 'Tanpa Nama',
+            ];
+        });
+
+        return response()->json(['data' => $data]);
     }
-
     public function updatePerawat(Request $request, $id)
     {
         try {

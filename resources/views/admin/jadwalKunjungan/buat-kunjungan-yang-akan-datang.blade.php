@@ -138,9 +138,16 @@
                             <td class="px-5 py-2.5 text-center">
                                 <button type="button"
                                     class="pilih-kyad-btn inline-flex items-center justify-center gap-1.5
-                                           text-xs md:text-sm font-semibold text-white rounded-full shadow-sm
-                                           bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-600 hover:to-indigo-700
-                                           focus:outline-none focus:ring-2 focus:ring-sky-400 px-3 py-1.5">
+               text-xs md:text-sm font-semibold text-white rounded-full shadow-sm
+               bg-gradient-to-r from-sky-500 to-teal-500 hover:from-sky-600 hover:to-indigo-700
+               focus:outline-none focus:ring-2 focus:ring-sky-400 px-3 py-1.5"
+                                    {{-- DATA UNTUK JS --}} data-dokter-id="{{ $jadwal->dokter->id }}"
+                                    data-dokter-nama="{{ $jadwal->dokter->nama_dokter }}"
+                                    data-spesialis="{{ $jadwal->dokter->jenisSpesialis->nama_spesialis ?? '-' }}"
+                                    data-poli-id="{{ $jadwal->poli->id }}"
+                                    data-nama-poli="{{ $jadwal->poli->nama_poli }}"
+                                    data-tanggal="{{ \Carbon\Carbon::parse($jadwal->tanggal_berikutnya)->toDateString() }}"
+                                    data-jadwal-id="{{ $jadwal->id }}">
                                     <i class="fa-solid fa-plus text-[11px]"></i>
                                     <span>Buat Kunjungan</span>
                                 </button>
@@ -192,7 +199,7 @@
 <div id="modalCreateKYAD" data-modal-backdrop="static"
     class="hidden fixed inset-0 z-50 flex items-start md:items-center justify-center w-full h-full p-4 md:p-6
            bg-slate-900/60 backdrop-blur-sm overflow-y-auto overflow-x-hidden">
-    <div class="relative w-full max-w-xl">
+    <div class="relative w-full max-w-3xl">
         <div
             class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-100 dark:border-slate-700 flex flex-col max-h-[90vh] overflow-y-auto">
 
@@ -213,7 +220,7 @@
                     </div>
                 </div>
 
-                <button type="button" id="closeModalBtn"
+                <button type="button" id="buttonCloseModalCreateKYAD"
                     class="inline-flex items-center justify-center h-8 w-8 rounded-full text-slate-100 hover:text-white hover:bg-white/10 transition">
                     <i class="fa-solid fa-xmark text-sm"></i>
                 </button>
@@ -316,14 +323,14 @@
                     <label class="block mb-1.5 text-sm font-medium text-slate-800 dark:text-slate-100">
                         Keluhan Awal
                     </label>
-                    <textarea name="keluhan_awal" rows="3" required
+                    <textarea name="keluhan_awal" rows="5" required
                         class="w-full bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl px-3 py-2.5 focus:ring-sky-500 focus:border-sky-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
                         placeholder="Contoh: Demam sejak 2 hari, batuk kering, sakit kepala."></textarea>
                 </div>
 
                 {{-- Footer --}}
                 <div class="flex justify-end gap-3 mt-4 border-t border-slate-200 dark:border-slate-700 pt-4">
-                    <button type="button" id="closeModalBtn2"
+                    <button type="button" id="buttonCloseModalCreateKYAD_footer"
                         class="px-4 py-2.5 text-sm font-medium text-slate-700 bg-slate-200 rounded-xl hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">
                         Batal
                     </button>
