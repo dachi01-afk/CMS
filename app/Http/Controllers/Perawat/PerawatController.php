@@ -33,8 +33,9 @@ class PerawatController extends Controller
                 'no_hp_perawat'        => 'nullable|string|max:20',
                 'password_perawat'     => 'required|string|min:8|confirmed',
 
-                // relasi baru: dokter_poli (pivot dokter_poli)
-                'dokter_poli_id'       => 'nullable|exists:dokter_poli,id',
+                // relasi banyak dokter_poli
+                'dokter_poli_id'      => 'nullable|array',
+                'dokter_poli_id.*'    => 'exists:dokter_poli,id',
             ]);
 
             DB::beginTransaction();
@@ -74,7 +75,7 @@ class PerawatController extends Controller
                 $fotoPath = $path;
             }
 
-            // 🏥 Buat data perawat (tanpa dokter_id & poli_id lagi)
+            // 🏥 Buat data perawat (tanpa dokter_id & poli_id)
             $perawat = Perawat::create([
                 'user_id'       => $user->id,
                 'nama_perawat'  => $validated['nama_perawat'],
@@ -82,7 +83,7 @@ class PerawatController extends Controller
                 'no_hp_perawat' => $validated['no_hp_perawat'] ?? null,
             ]);
 
-            // 🔗 Simpan relasi ke pivot perawat_dokter_poli (jika diisi)
+            // 🔗 Simpan relasi ke pivot perawat_dokter_poli (boleh banyak)
             if (!empty($validated['dokter_poli_id'])) {
                 $perawat->perawatDokterPoli()->attach($validated['dokter_poli_id']);
             }
@@ -107,11 +108,9 @@ class PerawatController extends Controller
             ], 500);
         }
     }
-
-
     public function getPerawatById($id)
     {
-        $data = Perawat::with('user', 'poli', 'dokter')->findOrFail($id);
+        $data = Perawat::with('user', 'perawatDokterPoli.poli', 'perawatDokterPoli.dokter')->findOrFail($id);
         return response()->json(['data' => $data]);
     }
 
@@ -153,60 +152,35 @@ class PerawatController extends Controller
 
         return response()->json(['data' => $data]);
     }
+
     public function updatePerawat(Request $request, $id)
     {
         try {
             $perawat = Perawat::with('user')->findOrFail($id);
             $user    = $perawat->user;
 
-            // ===== VALIDASI DASAR =====
             $validated = $request->validate([
-                'edit_username_perawat' => 'required|string|max:255',
-                'edit_nama_perawat'     => 'required|string|max:255',
-                'edit_email_perawat'    => 'required|email',
-                'edit_foto_perawat'     => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
-                'edit_no_hp_perawat'    => 'nullable|string|max:20',
-                'edit_password_perawat' => 'nullable|string|min:8|confirmed',
+                'edit_username_perawat'  => 'required|string|max:255',
+                'edit_nama_perawat'      => 'required|string|max:255',
+                'edit_email_perawat'     => 'required|email',
+                'edit_foto_perawat'      => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
+                'edit_no_hp_perawat'     => 'nullable|string|max:20',
+                'edit_password_perawat'  => 'nullable|string|min:8|confirmed',
 
-                // baru
-                'edit_dokter_id'        => 'nullable|exists:dokter,id',
-                'edit_poli_id'          => 'nullable|exists:poli,id',
+                // multi penugasan
+                'dokter_poli_id'        => 'nullable|array',
+                'dokter_poli_id.*'      => 'integer|exists:dokter_poli,id',
             ]);
 
-            $dokterId = $request->input('edit_dokter_id'); // bisa null
-            $poliId   = $request->input('edit_poli_id');   // bisa null
+            $dokterPoliIds = $request->input('dokter_poli_id', []);
 
-            // Jika isi poli tanpa dokter -> tidak diizinkan
-            if ($poliId && !$dokterId) {
-                return response()->json([
-                    'message' => 'Validasi gagal.',
-                    'errors'  => ['edit_poli_id' => ['Pilih dokter terlebih dahulu sebelum memilih poli.']]
-                ], 422);
-            }
-
-            // Jika dokter & poli diisi, pastikan poli tsb memang milik dokter (cek pivot dokter_poli)
-            if ($dokterId && $poliId) {
-                $exists = DB::table('dokter_poli')
-                    ->where('dokter_id', $dokterId)
-                    ->where('poli_id',   $poliId)
-                    ->exists();
-
-                if (!$exists) {
-                    return response()->json([
-                        'message' => 'Validasi gagal.',
-                        'errors'  => ['edit_poli_id' => ['Poli yang dipilih tidak terdaftar pada dokter tersebut.']]
-                    ], 422);
-                }
-            }
-
-            // ===== TRANSAKSI =====
             DB::beginTransaction();
 
             // --- update user ---
             $user->username = $validated['edit_username_perawat'];
             $user->email    = $validated['edit_email_perawat'];
 
-            if ($request->filled('edit_password_perawat')) {
+            if (!empty($validated['edit_password_perawat'])) {
                 $user->password = Hash::make($validated['edit_password_perawat']);
             }
             $user->save();
@@ -230,7 +204,6 @@ class PerawatController extends Controller
                     Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
                 }
 
-                // hapus foto lama jika ada
                 if ($perawat->foto_perawat && Storage::disk('public')->exists($perawat->foto_perawat)) {
                     Storage::disk('public')->delete($perawat->foto_perawat);
                 }
@@ -242,8 +215,6 @@ class PerawatController extends Controller
             $updateData = [
                 'nama_perawat'  => $validated['edit_nama_perawat'],
                 'no_hp_perawat' => $validated['edit_no_hp_perawat'] ?? $perawat->no_hp_perawat,
-                'dokter_id'     => $dokterId, // boleh null
-                'poli_id'       => $poliId,   // boleh null
             ];
             if ($fotoPath) {
                 $updateData['foto_perawat'] = $fotoPath;
@@ -251,11 +222,14 @@ class PerawatController extends Controller
 
             $perawat->update($updateData);
 
+            // --- sync pivot penugasan ---
+            $perawat->perawatDokterPoli()->sync($dokterPoliIds);
+
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Data perawat berhasil diperbarui.'
+                'message' => 'Data perawat berhasil diperbarui.',
             ]);
         } catch (\Illuminate\Http\Exceptions\PostTooLargeException $e) {
             return response()->json([
@@ -274,6 +248,7 @@ class PerawatController extends Controller
             ], 500);
         }
     }
+
 
 
     public function deletePerawat($id)

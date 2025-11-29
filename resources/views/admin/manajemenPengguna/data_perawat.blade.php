@@ -233,18 +233,18 @@
                 <div id="foto_perawat-error" class="text-red-600 text-xs mt-1 text-center"></div>
 
                 {{-- Dokter & Poli (TomSelect) --}}
+                {{-- Dokter & Poli (multi-penugasan) --}}
                 <div class="mt-4 space-y-3">
                     <h4 class="text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400 uppercase">
-                        Penugasan Perawat
+                        Penugasan Perawat (bisa lebih dari 1 poli & dokter)
                     </h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
+                    {{-- Form pilih poli & dokter --}}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {{-- Poli --}}
                         <div class="space-y-1">
                             <label for="add_poli_select"
-                                class="block text-sm font-medium text-slate-800 dark:text-slate-100">
-                                Poli
-                            </label>
+                                class="block text-sm font-medium text-slate-800 dark:text-slate-100">Poli</label>
                             <select id="add_poli_select"
                                 class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-xl
                        focus:ring-sky-500 focus:border-sky-500 px-3 py-2.5
@@ -252,27 +252,74 @@
                                 placeholder="Cari & pilih poli…">
                                 {{-- TomSelect inject --}}
                             </select>
-                            <div id="poli_id-error" class="text-red-600 text-xs mt-1"></div>
+                            <div id="add_poli_select-error" class="text-red-600 text-xs mt-1"></div>
                         </div>
 
-                        {{-- Dokter (hasil filter poli, value = dokter_poli_id) --}}
-                        <div class="space-y-1">
+                        {{-- Dokter (tergantung poli) --}}
+                        <div id="group_dokter_add" class="space-y-1 hidden">
                             <label for="add_dokter_select"
-                                class="block text-sm font-medium text-slate-800 dark:text-slate-100">
-                                Dokter
-                            </label>
-                            <select id="add_dokter_select" name="dokter_poli_id"
+                                class="block text-sm font-medium text-slate-800 dark:text-slate-100">Dokter</label>
+                            {{-- VALUE = dokter_poli_id --}}
+                            <select id="add_dokter_select"
                                 class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-xl
                        focus:ring-sky-500 focus:border-sky-500 px-3 py-2.5
                        dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
                                 placeholder="Cari & pilih dokter…">
                                 {{-- TomSelect inject --}}
                             </select>
-                            <div id="dokter_poli_id-error" class="text-red-600 text-xs mt-1"></div>
+                            <div id="add_dokter_select-error" class="text-red-600 text-xs mt-1"></div>
                         </div>
+                    </div>
 
+                    {{-- Tombol tambah ke list --}}
+                    <div class="flex justify-end mt-2">
+                        <button type="button" id="btnAddPenugasan"
+                            class="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-xl
+                   bg-emerald-500 text-white hover:bg-emerald-600 focus:ring-2 focus:ring-emerald-400">
+                            <i class="fa-solid fa-plus"></i>
+                            Tambahkan Penugasan
+                        </button>
+                    </div>
+
+                    {{-- Error global untuk array dokter_poli_id[] --}}
+                    <div id="dokter_poli_id-error" class="text-red-600 text-xs mt-1"></div>
+
+                    {{-- List penugasan yang sudah dipilih --}}
+                    <div id="penugasan_list_wrapper"
+                        class="mt-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60">
+                        <div
+                            class="px-3 py-2 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase">
+                                Daftar Penugasan
+                            </span>
+                            <span class="text-[11px] text-slate-400">
+                                Tambahkan minimal satu kombinasi poli & dokter (opsional jika perawat belum dijadwalkan)
+                            </span>
+                        </div>
+                        <div class="max-h-40 overflow-y-auto">
+                            <table class="min-w-full text-xs">
+                                <thead class="bg-slate-50 dark:bg-slate-800/80">
+                                    <tr>
+                                        <th
+                                            class="px-3 py-2 text-left font-semibold text-slate-500 dark:text-slate-300">
+                                            Poli</th>
+                                        <th
+                                            class="px-3 py-2 text-left font-semibold text-slate-500 dark:text-slate-300">
+                                            Dokter</th>
+                                        <th
+                                            class="px-3 py-2 text-center font-semibold text-slate-500 dark:text-slate-300 w-10">
+                                            Aksi
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="penugasan_list_add">
+                                    {{-- Row penugasan akan di-inject via JS --}}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
+
 
 
                 {{-- Password --}}
@@ -453,42 +500,94 @@
                 </div>
                 <div id="edit_foto_perawat-error" class="text-red-600 text-xs mt-1 text-center"></div>
 
-                {{-- Dokter & Poli --}}
+                {{-- Dokter & Poli (multi-penugasan) --}}
                 <div class="mt-4 space-y-3">
                     <h4 class="text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400 uppercase">
-                        Penugasan Perawat
+                        Penugasan Perawat (bisa lebih dari 1 poli & dokter)
                     </h4>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {{-- Dokter --}}
-                        <div class="space-y-1">
-                            <label for="edit_dokter_select"
-                                class="block text-sm font-medium text-slate-800 dark:text-slate-100">
-                                Dokter
-                            </label>
-                            <select id="edit_dokter_select" name="edit_dokter_id"
-                                class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-xl
-                                       focus:ring-sky-500 focus:border-sky-500 px-3 py-2.5
-                                       dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
-                                placeholder="Cari & pilih dokter…">
-                                {{-- TomSelect async --}}
-                            </select>
-                            <div id="edit_dokter_id-error" class="text-red-600 text-xs mt-1"></div>
-                        </div>
 
+                    {{-- Form pilih poli & dokter --}}
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {{-- Poli --}}
-                        <div id="group_poli_edit" class="space-y-1 hidden">
+                        <div class="space-y-1">
                             <label for="edit_poli_select"
                                 class="block text-sm font-medium text-slate-800 dark:text-slate-100">
                                 Poli
                             </label>
-                            <select id="edit_poli_select" name="edit_poli_id"
+                            <select id="edit_poli_select"
                                 class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-xl
-                                       focus:ring-sky-500 focus:border-sky-500 px-3 py-2.5
-                                       dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
+                       focus:ring-sky-500 focus:border-sky-500 px-3 py-2.5
+                       dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
                                 placeholder="Cari & pilih poli…">
-                                {{-- TomSelect async --}}
+                                {{-- TomSelect inject --}}
                             </select>
-                            <div id="edit_poli_id-error" class="text-red-600 text-xs mt-1"></div>
+                            <div id="edit_poli_select-error" class="text-red-600 text-xs mt-1"></div>
+                        </div>
+
+                        {{-- Dokter (depend on poli, value = dokter_poli_id) --}}
+                        <div id="group_dokter_edit" class="space-y-1 hidden">
+                            <label for="edit_dokter_select"
+                                class="block text-sm font-medium text-slate-800 dark:text-slate-100">
+                                Dokter
+                            </label>
+                            <select id="edit_dokter_select"
+                                class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-xl
+                       focus:ring-sky-500 focus:border-sky-500 px-3 py-2.5
+                       dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
+                                placeholder="Cari & pilih dokter…">
+                                {{-- TomSelect inject --}}
+                            </select>
+                            <div id="edit_dokter_select-error" class="text-red-600 text-xs mt-1"></div>
+                        </div>
+                    </div>
+
+                    {{-- Tombol tambah ke list --}}
+                    <div class="flex justify-end mt-2">
+                        <button type="button" id="btnEditAddPenugasan"
+                            class="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-xl
+                   bg-emerald-500 text-white hover:bg-emerald-600 focus:ring-2 focus:ring-emerald-400">
+                            <i class="fa-solid fa-plus"></i>
+                            Tambahkan Penugasan
+                        </button>
+                    </div>
+
+                    {{-- Error global untuk array dokter_poli_id[] --}}
+                    <div id="edit_dokter_poli_id-error" class="text-red-600 text-xs mt-1"></div>
+
+                    {{-- List penugasan yang sudah dipilih --}}
+                    <div id="penugasan_list_edit_wrapper"
+                        class="mt-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60">
+                        <div
+                            class="px-3 py-2 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase">
+                                Daftar Penugasan
+                            </span>
+                            <span class="text-[11px] text-slate-400">
+                                Hapus atau tambah kombinasi poli & dokter sesuai kebutuhan penugasan perawat.
+                            </span>
+                        </div>
+                        <div class="max-h-40 overflow-y-auto">
+                            <table class="min-w-full text-xs">
+                                <thead class="bg-slate-50 dark:bg-slate-800/80">
+                                    <tr>
+                                        <th
+                                            class="px-3 py-2 text-left font-semibold text-slate-500 dark:text-slate-300">
+                                            Poli
+                                        </th>
+                                        <th
+                                            class="px-3 py-2 text-left font-semibold text-slate-500 dark:text-slate-300">
+                                            Dokter
+                                        </th>
+                                        <th
+                                            class="px-3 py-2 text-center font-semibold text-slate-500 dark:text-slate-300 w-10">
+                                            Aksi
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="penugasan_list_edit">
+                                    {{-- Row penugasan akan di-inject via JS --}}
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>

@@ -215,11 +215,11 @@ class ManajemenPenggunaController extends Controller
             ->select('perawat.*')
             ->latest();
 
-        // helper untuk teks fallback (single value)
+        // helper fallback teks
         $fallback = function (string $rel, $value) {
             return ($value !== null && $value !== '')
                 ? e($value)
-                : '<span class="text-gray-400 italic">Tidak ada Data ' . ucfirst($rel) . '</span>';
+                : '<span class="text-gray-400 italic text-xs">Tidak ada data ' . ucfirst($rel) . '</span>';
         };
 
         return DataTables::of($query)
@@ -229,72 +229,103 @@ class ManajemenPenggunaController extends Controller
             ->addColumn('foto', function (Perawat $row) {
                 if (!empty($row->foto_perawat)) {
                     $url = asset('storage/' . $row->foto_perawat);
-                    return '<img src="' . $url . '" alt="Foto Perawat" class="w-12 h-12 rounded-lg object-cover mx-auto shadow">';
+                    return '
+                    <div class="flex items-center justify-center">
+                        <img src="' . $url . '" alt="Foto Perawat"
+                             class="w-10 h-10 md:w-12 md:h-12 rounded-xl object-cover shadow" />
+                    </div>
+                ';
                 }
-                return '<span class="text-gray-400 italic">Tidak ada</span>';
+
+                return '<span class="text-gray-400 italic text-xs">Tidak ada</span>';
             })
 
             // ================= USER =================
             ->addColumn('username', function (Perawat $row) use ($fallback) {
-                return $fallback('User', optional($row->user)->username);
+                return $fallback('user', optional($row->user)->username);
             })
 
             ->addColumn('email_user', function (Perawat $row) use ($fallback) {
-                return $fallback('User', optional($row->user)->email);
+                return $fallback('user', optional($row->user)->email);
             })
 
             ->addColumn('role', function (Perawat $row) use ($fallback) {
-                return $fallback('User', optional($row->user)->role);
+                return $fallback('user', optional($row->user)->role);
             })
 
-            // ================= POLI (dari relasi dokterPolis) =================
+            // ================= POLI (chip + nomor urut) =================
             ->addColumn('nama_poli', function (Perawat $row) {
-                // Ambil semua nama poli dari relasi dokterPolis
-                $polis = $row->perawatDokterPoli
-                    ->pluck('poli.nama_poli')
-                    ->filter()
-                    ->unique()
+                $items = $row->perawatDokterPoli
+                    ->filter(function ($rel) {
+                        return !empty($rel->poli?->nama_poli);
+                    })
                     ->values();
 
-                if ($polis->isEmpty()) {
-                    return '<span class="text-gray-400 italic">Tidak ada Data Poli</span>';
+                if ($items->isEmpty()) {
+                    return '<span class="text-gray-400 italic text-xs">Belum ada penugasan</span>';
                 }
 
-                $htmlList = $polis->map(function ($nama) {
-                    return '<span class="inline-block">' . e($nama) . '</span>';
-                })->implode('<br>');
+                $html = $items->map(function ($rel, $idx) {
+                    $nama = $rel->poli->nama_poli ?? 'Tanpa nama poli';
 
-                return $htmlList;
+                    return '
+                    <div class="flex items-start gap-1 mb-0.5">
+                        <span class="text-[11px] text-slate-400">' . ($idx + 1) . '.</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full
+                                     bg-sky-50 text-[11px] font-medium text-sky-700
+                                     dark:bg-sky-900/40 dark:text-sky-200">
+                            ' . e($nama) . '
+                        </span>
+                    </div>
+                ';
+                })->implode('');
+
+                return $html;
             })
 
-            // ================= DOKTER (dari relasi dokterPolis) =================
+            // ================= DOKTER (chip + nomor urut) =================
             ->addColumn('nama_dokter', function (Perawat $row) {
-                $dokters = $row->perawatDokterPoli
-                    ->pluck('dokter.nama_dokter')
-                    ->filter()
-                    ->unique()
+                $items = $row->perawatDokterPoli
+                    ->filter(function ($rel) {
+                        return !empty($rel->dokter?->nama_dokter);
+                    })
                     ->values();
 
-                if ($dokters->isEmpty()) {
-                    return '<span class="text-gray-400 italic">Tidak ada Data Dokter</span>';
+                if ($items->isEmpty()) {
+                    return '<span class="text-gray-400 italic text-xs">Belum ada penugasan</span>';
                 }
 
-                $htmlList = $dokters->map(function ($nama) {
-                    return '<span class="inline-block">' . e($nama) . '</span>';
-                })->implode('<br>');
+                $html = $items->map(function ($rel, $idx) {
+                    $nama = $rel->dokter->nama_dokter ?? 'Tanpa nama dokter';
 
-                return $htmlList;
+                    return '
+                    <div class="flex items-start gap-1 mb-0.5">
+                        <span class="text-[11px] text-slate-400">' . ($idx + 1) . '.</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full
+                                     bg-emerald-50 text-[11px] font-medium text-emerald-700
+                                     dark:bg-emerald-900/30 dark:text-emerald-200">
+                            ' . e($nama) . '
+                        </span>
+                    </div>
+                ';
+                })->implode('');
+
+                return $html;
             })
 
             // ================= ACTION =================
             ->addColumn('action', function (Perawat $perawat) {
                 return '
-                <button class="btn-edit-perawat text-blue-600 hover:text-blue-800 mr-2" data-id="' . $perawat->id . '" title="Edit">
-                    <i class="fa-regular fa-pen-to-square text-lg"></i>
-                </button>
-                <button class="btn-delete-perawat text-red-600 hover:text-red-800" data-id="' . $perawat->id . '" title="Hapus">
-                    <i class="fa-regular fa-trash-can text-lg"></i>
-                </button>
+                <div class="flex items-center justify-center gap-2">
+                    <button class="btn-edit-perawat text-sky-600 hover:text-sky-800"
+                            data-id="' . $perawat->id . '" title="Edit">
+                        <i class="fa-regular fa-pen-to-square text-lg"></i>
+                    </button>
+                    <button class="btn-delete-perawat text-red-600 hover:text-red-800"
+                            data-id="' . $perawat->id . '" title="Hapus">
+                        <i class="fa-regular fa-trash-can text-lg"></i>
+                    </button>
+                </div>
             ';
             })
 
@@ -311,7 +342,6 @@ class ManajemenPenggunaController extends Controller
 
             ->make(true);
     }
-
 
     public function dataKasir()
     {

@@ -26,10 +26,18 @@ $(function () {
                 name: "foto",
                 orderable: false,
                 searchable: false,
-                className: "text-center",
+                className: "text-center align-middle",
             },
-            { data: "nama_poli", name: "nama_poli" },
-            { data: "nama_dokter", name: "nama_dokter" },
+            {
+                data: "nama_poli",
+                name: "nama_poli",
+                className: "align-top text-xs leading-snug",
+            },
+            {
+                data: "nama_dokter",
+                name: "nama_dokter",
+                className: "align-top text-xs leading-snug",
+            },
             { data: "nama_perawat", name: "nama_perawat" },
             { data: "username", name: "username" },
             { data: "email_user", name: "email_user" },
@@ -43,6 +51,7 @@ $(function () {
                 className: "text-center whitespace-nowrap",
             },
         ],
+
         dom: "t",
         rowCallback: function (row, data) {
             $(row).addClass(
@@ -53,7 +62,7 @@ $(function () {
     });
 
     // 🔎 Search
-    $("#kasir_searchInput").on("keyup", function () {
+    $("#perawat_searchInput").on("keyup", function () {
         table.search(this.value).draw();
     });
 
@@ -121,7 +130,7 @@ $(function () {
     updatePagination();
 });
 
-// ================== ADD PERAWAT (Poli → Dokter / dokter_poli_id) ==================
+// ================== ADD PERAWAT: multi poli & dokter (pivot dokter_poli) ==================
 $(function () {
     const addModalElement = document.getElementById("addPerawatModal");
     const addModal = addModalElement ? new Modal(addModalElement) : null;
@@ -136,6 +145,32 @@ $(function () {
         } catch (_) {}
     }
 
+    function escapeHtml(str) {
+        if (!str) return "";
+        return str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function showDokterGroup() {
+        $("#group_dokter_add").removeClass("hidden");
+    }
+
+    function hideDokterGroup() {
+        $("#group_dokter_add").addClass("hidden");
+        destroyTS(tsAddDokter);
+        tsAddDokter = null;
+        $("#add_dokter_select").html("");
+    }
+
+    function resetPenugasanList() {
+        $("#penugasan_list_add").empty();
+        $("#dokter_poli_id-error").html("");
+    }
+
     function resetAddForm() {
         $formAdd[0].reset();
         $formAdd.find(".is-invalid").removeClass("is-invalid");
@@ -148,16 +183,17 @@ $(function () {
             .removeClass("border-solid border-gray-300")
             .addClass("border-dashed border-gray-400");
 
-        // reset TomSelects
+        // reset tomselect
         destroyTS(tsAddPoli);
-        destroyTS(tsAddDokter);
         tsAddPoli = null;
-        tsAddDokter = null;
+        hideDokterGroup();
         $("#add_poli_select").html("");
-        $("#add_dokter_select").html("");
+
+        // reset list penugasan
+        resetPenugasanList();
     }
 
-    // ---------- TomSelect Poli ----------
+    // ---------- TomSelect POLI ----------
     function initTSAddPoli() {
         destroyTS(tsAddPoli);
         $("#add_poli_select").html("");
@@ -169,7 +205,7 @@ $(function () {
             labelField: "nama",
             searchField: "nama",
             placeholder: "Cari & pilih poli…",
-            preload: "focus",
+            preload: false,
             render: {
                 option: (it) => `<div class="py-1 px-2">${it.nama}</div>`,
                 item: (it) => `<div>${it.nama}</div>`,
@@ -190,22 +226,25 @@ $(function () {
                     })
                     .catch(() => cb());
             },
-            onChange: (poliId) => {
-                destroyTS(tsAddDokter);
-                tsAddDokter = null;
-                $("#add_dokter_select").html("");
-
-                if (poliId) {
-                    initTSAddDokter(poliId);
+            onChange: (val) => {
+                if (val) {
+                    initTSAddDokter(val);
+                } else {
+                    hideDokterGroup();
                 }
             },
         });
     }
 
-    // ---------- TomSelect Dokter (dependen Poli) ----------
+    // ---------- TomSelect DOKTER (depend on poli, value = dokter_poli_id) ----------
     function initTSAddDokter(poliId) {
         destroyTS(tsAddDokter);
         $("#add_dokter_select").html("");
+
+        if (!poliId) {
+            hideDokterGroup();
+            return;
+        }
 
         tsAddDokter = new TomSelect("#add_dokter_select", {
             create: false,
@@ -215,6 +254,7 @@ $(function () {
             searchField: "nama",
             placeholder: "Cari & pilih dokter…",
             preload: "focus",
+            shouldLoad: () => true,
             render: {
                 option: (it) => `<div class="py-1 px-2">${it.nama}</div>`,
                 item: (it) => `<div>${it.nama}</div>`,
@@ -228,20 +268,97 @@ $(function () {
                         const arr = Array.isArray(data?.data) ? data.data : [];
                         cb(
                             arr.map((d) => ({
-                                id: d.dokter_poli_id, // <= pivot id
-                                nama:
-                                    d.nama_dokter ||
-                                    d.nama ||
-                                    `Dokter #${d.dokter_id || "?"}`,
+                                id: d.dokter_poli_id, // <<=== penting
+                                nama: d.nama_dokter || `Dokter #${d.dokter_id}`,
                             }))
                         );
                     })
                     .catch(() => cb());
             },
+            onFocus() {
+                if (this.options_count === 0) this.load("");
+            },
         });
+
+        showDokterGroup();
     }
 
-    // tombol buka modal
+    // ---------- Tambahkan penugasan ke list ----------
+    $("#btnAddPenugasan").on("click", function () {
+        const poliId = tsAddPoli ? tsAddPoli.getValue() : null;
+        const dokterPoliId = tsAddDokter ? tsAddDokter.getValue() : null;
+
+        const poliText = tsAddPoli
+            ? (tsAddPoli.getItem(poliId)?.textContent || "").trim()
+            : "";
+        const dokterText = tsAddDokter
+            ? (tsAddDokter.getItem(dokterPoliId)?.textContent || "").trim()
+            : "";
+
+        $("#add_poli_select-error").html("");
+        $("#add_dokter_select-error").html("");
+        $("#dokter_poli_id-error").html("");
+
+        if (!poliId) {
+            $("#add_poli_select-error").html(
+                "Silakan pilih poli terlebih dahulu."
+            );
+            return;
+        }
+        if (!dokterPoliId) {
+            $("#add_dokter_select-error").html(
+                "Silakan pilih dokter terlebih dahulu."
+            );
+            return;
+        }
+
+        // Cek duplikat dokter_poli_id
+        const exists = $(
+            `#penugasan_list_add tr[data-dokter-poli-id="${dokterPoliId}"]`
+        ).length;
+        if (exists) {
+            $("#dokter_poli_id-error").html(
+                "Kombinasi poli & dokter ini sudah ditambahkan."
+            );
+            return;
+        }
+
+        // Tambah row ke list
+        const rowHtml = `
+        <tr data-dokter-poli-id="${dokterPoliId}" class="border-t border-slate-100 dark:border-slate-700">
+            <td class="px-3 py-2 text-xs text-slate-700 dark:text-slate-100 align-middle">
+                ${escapeHtml(poliText)}
+            </td>
+            <td class="px-3 py-2 text-xs text-slate-700 dark:text-slate-100 align-middle">
+                ${escapeHtml(dokterText)}
+            </td>
+            <td class="px-3 py-2 text-center align-middle">
+                <button type="button"
+                    class="btn-remove-penugasan inline-flex items-center justify-center h-7 w-7 rounded-full
+                           bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300"
+                    title="Hapus penugasan">
+                    <i class="fa-solid fa-xmark text-[11px]"></i>
+                </button>
+                <input type="hidden" name="dokter_poli_id[]" value="${dokterPoliId}">
+            </td>
+        </tr>
+    `;
+
+        $("#penugasan_list_add").append(rowHtml);
+
+        // reset dokter saja
+        if (tsAddDokter) {
+            tsAddDokter.clear();
+            tsAddDokter.clearOptions();
+        }
+    });
+
+    // Hapus penugasan
+    $(document).on("click", ".btn-remove-penugasan", function () {
+        $(this).closest("tr").remove();
+    });
+
+    // ---------- Buka & tutup modal ----------
     $("#btnAddPerawat").on("click", function () {
         resetAddForm();
         initTSAddPoli();
@@ -256,7 +373,7 @@ $(function () {
         }
     );
 
-    // Preview foto
+    // ---------- Preview foto (tetap seperti sebelumnya) ----------
     $("#foto_perawat").on("change", function () {
         const file = this.files?.[0];
         if (!file) {
@@ -288,7 +405,7 @@ $(function () {
         reader.readAsDataURL(file);
     });
 
-    // drag & drop foto
+    // drag & drop
     const $drop = $("#foto_drop_area_perawat");
     $drop.on("dragover", function (e) {
         e.preventDefault();
@@ -306,7 +423,7 @@ $(function () {
         }
     });
 
-    // submit tambah perawat
+    // ---------- Submit form ----------
     $formAdd.on("submit", function (e) {
         e.preventDefault();
         const url = $formAdd.data("url");
@@ -350,6 +467,10 @@ $(function () {
                         if ($inp.length) $inp.addClass("is-invalid");
                         const $err = $("#" + base + "-error");
                         if ($err.length) $err.html(errors[k][0]);
+
+                        if (base.startsWith("dokter_poli_id")) {
+                            $("#dokter_poli_id-error").html(errors[k][0]);
+                        }
                     });
                 } else {
                     Swal.fire({
@@ -362,29 +483,46 @@ $(function () {
     });
 });
 
-// ================== EDIT PERAWAT (versi lama: Dokter → Poli) ==================
+// ================== EDIT PERAWAT (multi poli & dokter) ==================
 $(function () {
     const editModalElement = document.getElementById("editPerawatModal");
     const editModal = editModalElement ? new Modal(editModalElement) : null;
     const $formEdit = $("#formEditPerawat");
     const initialEditUrl = $formEdit.data("url");
 
-    let tsDokter = null;
-    let tsPoli = null;
+    let tsEditPoli = null;
+    let tsEditDokter = null;
 
     function destroyTS(ts) {
         try {
             ts && ts.destroy();
         } catch (_) {}
     }
-    function showPoliGroup() {
-        $("#group_poli_edit").removeClass("hidden");
+
+    function escapeHtml(str) {
+        if (!str) return "";
+        return str
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
     }
-    function hidePoliGroup() {
-        $("#group_poli_edit").addClass("hidden");
-        destroyTS(tsPoli);
-        tsPoli = null;
-        $("#edit_poli_select").html("");
+
+    function showDokterGroup() {
+        $("#group_dokter_edit").removeClass("hidden");
+    }
+
+    function hideDokterGroup() {
+        $("#group_dokter_edit").addClass("hidden");
+        destroyTS(tsEditDokter);
+        tsEditDokter = null;
+        $("#edit_dokter_select").html("");
+    }
+
+    function resetPenugasanListEdit() {
+        $("#penugasan_list_edit").empty();
+        $("#edit_dokter_poli_id-error").html("");
     }
 
     function resetEditForm() {
@@ -395,108 +533,43 @@ $(function () {
         $formEdit.data("url", initialEditUrl);
         $formEdit.attr("action", initialEditUrl);
 
-        // foto
+        // Foto
         $("#edit_preview_foto_perawat").addClass("hidden").attr("src", "");
         $("#edit_placeholder_foto_perawat").removeClass("hidden");
         $("#edit_foto_drop_area_perawat")
             .removeClass("border-solid border-gray-300")
             .addClass("border-dashed border-gray-400");
 
-        // selects
-        destroyTS(tsDokter);
-        tsDokter = null;
-        hidePoliGroup();
-        $("#edit_dokter_select").html("");
+        // TomSelect
+        destroyTS(tsEditPoli);
+        tsEditPoli = null;
+        hideDokterGroup();
+        $("#edit_poli_select").html("");
+
+        // List penugasan
+        resetPenugasanListEdit();
     }
 
-    // ---------- TomSelect Dokter ----------
-    function initTomSelectDokter(preId = null, preText = null) {
-        destroyTS(tsDokter);
+    // ---------- TomSelect POLI (EDIT) ----------
+    function initEditTSPoli() {
+        destroyTS(tsEditPoli);
+        $("#edit_poli_select").html("");
 
-        if (preId && preText) {
-            $("#edit_dokter_select").html(
-                `<option value="${preId}" selected>${preText}</option>`
-            );
-        } else {
-            $("#edit_dokter_select").html("");
-        }
-
-        tsDokter = new TomSelect("#edit_dokter_select", {
-            create: false,
-            maxItems: 1,
-            valueField: "id",
-            labelField: "nama",
-            searchField: "nama",
-            placeholder: "Cari & pilih dokter…",
-            preload: !!preId,
-            render: {
-                option: (it) => `<div class="py-1 px-2">${it.nama}</div>`,
-                item: (it) => `<div>${it.nama}</div>`,
-            },
-            load: function (q, cb) {
-                axios
-                    .get("/manajemen_pengguna/list_dokter", {
-                        params: { q: q || "" },
-                    })
-                    .then(({ data }) => {
-                        const arr = Array.isArray(data?.data) ? data.data : [];
-                        cb(
-                            arr.map((d) => ({
-                                id: d.id,
-                                nama:
-                                    d.nama_dokter ||
-                                    d.nama ||
-                                    `Dokter #${d.id}`,
-                            }))
-                        );
-                    })
-                    .catch(() => cb());
-            },
-            onChange: (val) => {
-                if (val) {
-                    initTomSelectPoli(val, null, null);
-                } else {
-                    hidePoliGroup();
-                }
-            },
-        });
-
-        if (preId) tsDokter.setValue(String(preId), true);
-    }
-
-    // ---------- TomSelect Poli (depend Dokter) ----------
-    function initTomSelectPoli(dokterId, preId = null, preText = null) {
-        destroyTS(tsPoli);
-
-        if (!dokterId) {
-            hidePoliGroup();
-            return;
-        }
-
-        if (preId && preText) {
-            $("#edit_poli_select").html(
-                `<option value="${preId}" selected>${preText}</option>`
-            );
-        } else {
-            $("#edit_poli_select").html("");
-        }
-
-        tsPoli = new TomSelect("#edit_poli_select", {
+        tsEditPoli = new TomSelect("#edit_poli_select", {
             create: false,
             maxItems: 1,
             valueField: "id",
             labelField: "nama",
             searchField: "nama",
             placeholder: "Cari & pilih poli…",
-            preload: "focus",
-            shouldLoad: () => true,
+            preload: false,
             render: {
                 option: (it) => `<div class="py-1 px-2">${it.nama}</div>`,
                 item: (it) => `<div>${it.nama}</div>`,
             },
             load: function (q, cb) {
                 axios
-                    .get(`/manajemen_pengguna/dokter/${dokterId}/polis`, {
+                    .get("/manajemen_pengguna/list_poli", {
                         params: { q: q || "" },
                     })
                     .then(({ data }) => {
@@ -510,18 +583,137 @@ $(function () {
                     })
                     .catch(() => cb());
             },
-            onInitialize() {
-                this.load("");
-                setTimeout(() => this.open(), 60);
+            onChange: (val) => {
+                if (val) {
+                    initEditTSDokter(val);
+                } else {
+                    hideDokterGroup();
+                }
+            },
+        });
+    }
+
+    // ---------- TomSelect DOKTER (EDIT, value = dokter_poli_id) ----------
+    function initEditTSDokter(poliId) {
+        destroyTS(tsEditDokter);
+        $("#edit_dokter_select").html("");
+
+        if (!poliId) {
+            hideDokterGroup();
+            return;
+        }
+
+        tsEditDokter = new TomSelect("#edit_dokter_select", {
+            create: false,
+            maxItems: 1,
+            valueField: "id", // dokter_poli_id
+            labelField: "nama",
+            searchField: "nama",
+            placeholder: "Cari & pilih dokter…",
+            preload: "focus",
+            shouldLoad: () => true,
+            render: {
+                option: (it) => `<div class="py-1 px-2">${it.nama}</div>`,
+                item: (it) => `<div>${it.nama}</div>`,
+            },
+            load: function (q, cb) {
+                axios
+                    .get(`/manajemen_pengguna/poli/${poliId}/dokter`, {
+                        params: { q: q || "" },
+                    })
+                    .then(({ data }) => {
+                        const arr = Array.isArray(data?.data) ? data.data : [];
+                        cb(
+                            arr.map((d) => ({
+                                id: d.dokter_poli_id,
+                                nama:
+                                    d.nama_dokter ||
+                                    `Dokter #${d.dokter_id}`,
+                            }))
+                        );
+                    })
+                    .catch(() => cb());
             },
             onFocus() {
                 if (this.options_count === 0) this.load("");
             },
         });
 
-        if (preId) tsPoli.setValue(String(preId), true);
-        showPoliGroup();
+        showDokterGroup();
     }
+
+    // ---------- Tambah penugasan ke LIST (EDIT) ----------
+    $("#btnEditAddPenugasan").on("click", function () {
+        const poliId = tsEditPoli ? tsEditPoli.getValue() : null;
+        const dokterPoliId = tsEditDokter ? tsEditDokter.getValue() : null;
+
+        const poliText = tsEditPoli
+            ? (tsEditPoli.getItem(poliId)?.textContent || "").trim()
+            : "";
+        const dokterText = tsEditDokter
+            ? (tsEditDokter.getItem(dokterPoliId)?.textContent || "").trim()
+            : "";
+
+        $("#edit_poli_select-error").html("");
+        $("#edit_dokter_select-error").html("");
+        $("#edit_dokter_poli_id-error").html("");
+
+        if (!poliId) {
+            $("#edit_poli_select-error").html(
+                "Silakan pilih poli terlebih dahulu."
+            );
+            return;
+        }
+        if (!dokterPoliId) {
+            $("#edit_dokter_select-error").html(
+                "Silakan pilih dokter terlebih dahulu."
+            );
+            return;
+        }
+
+        // cek duplikat
+        const exists = $(
+            `#penugasan_list_edit tr[data-dokter-poli-id="${dokterPoliId}"]`
+        ).length;
+        if (exists) {
+            $("#edit_dokter_poli_id-error").html(
+                "Kombinasi poli & dokter ini sudah ada."
+            );
+            return;
+        }
+
+        const rowHtml = `
+        <tr data-dokter-poli-id="${dokterPoliId}" class="border-t border-slate-100 dark:border-slate-700">
+            <td class="px-3 py-2 text-xs text-slate-700 dark:text-slate-100 align-middle">
+                ${escapeHtml(poliText)}
+            </td>
+            <td class="px-3 py-2 text-xs text-slate-700 dark:text-slate-100 align-middle">
+                ${escapeHtml(dokterText)}
+            </td>
+            <td class="px-3 py-2 text-center align-middle">
+                <button type="button"
+                    class="btn-remove-penugasan-edit inline-flex items-center justify-center h-7 w-7 rounded-full
+                           bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300"
+                    title="Hapus penugasan">
+                    <i class="fa-solid fa-xmark text-[11px]"></i>
+                </button>
+                <input type="hidden" name="dokter_poli_id[]" value="${dokterPoliId}">
+            </td>
+        </tr>
+        `;
+        $("#penugasan_list_edit").append(rowHtml);
+
+        // reset dokter saja
+        if (tsEditDokter) {
+            tsEditDokter.clear();
+            tsEditDokter.clearOptions();
+        }
+    });
+
+    // Hapus penugasan di edit
+    $(document).on("click", ".btn-remove-penugasan-edit", function () {
+        $(this).closest("tr").remove();
+    });
 
     // Preview foto edit
     $("#edit_foto_perawat").on("change", function () {
@@ -537,7 +729,7 @@ $(function () {
         reader.readAsDataURL(file);
     });
 
-    // Buka modal edit
+    // ---------- Buka modal edit ----------
     $("body").on("click", ".btn-edit-perawat", async function () {
         resetEditForm();
         const id = $(this).data("id");
@@ -548,11 +740,13 @@ $(function () {
             );
             const row = resp.data;
 
+            // set URL
             const baseUrl = $formEdit.data("url");
             const finalUrl = baseUrl.replace("/0", "/" + row.id);
             $formEdit.data("url", finalUrl);
             $formEdit.attr("action", finalUrl);
 
+            // field dasar
             $("#edit_perawat_id").val(row.id);
             $("#edit_username_perawat").val(row.user?.username || "");
             $("#edit_email_perawat").val(row.user?.email || "");
@@ -570,17 +764,40 @@ $(function () {
                     .addClass("border-solid border-gray-300");
             }
 
-            const dokterId = row.dokter?.id || row.dokter_id || null;
-            const dokterNama = row.dokter?.nama_dokter || null;
-            const poliId = row.poli?.id || row.poli_id || null;
-            const poliNama = row.poli?.nama_poli || null;
+            // isi daftar penugasan dari relasi pivot
+            resetPenugasanListEdit();
+            const penugasan = row.perawat_dokter_poli || [];
+            penugasan.forEach((dp) => {
+                const dokterPoliId = dp.id; // id di tabel dokter_poli
+                const poliNama = dp.poli?.nama_poli || "Tanpa nama poli";
+                const dokterNama =
+                    dp.dokter?.nama_dokter || "Tanpa nama dokter";
 
-            initTomSelectDokter(dokterId, dokterNama);
-            if (dokterId) {
-                initTomSelectPoli(dokterId, poliId, poliNama);
-            } else {
-                hidePoliGroup();
-            }
+                const rowHtml = `
+                <tr data-dokter-poli-id="${dokterPoliId}" class="border-t border-slate-100 dark:border-slate-700">
+                    <td class="px-3 py-2 text-xs text-slate-700 dark:text-slate-100 align-middle">
+                        ${escapeHtml(poliNama)}
+                    </td>
+                    <td class="px-3 py-2 text-xs text-slate-700 dark:text-slate-100 align-middle">
+                        ${escapeHtml(dokterNama)}
+                    </td>
+                    <td class="px-3 py-2 text-center align-middle">
+                        <button type="button"
+                            class="btn-remove-penugasan-edit inline-flex items-center justify-center h-7 w-7 rounded-full
+                                   bg-red-50 text-red-500 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-300"
+                            title="Hapus penugasan">
+                            <i class="fa-solid fa-xmark text-[11px]"></i>
+                        </button>
+                        <input type="hidden" name="dokter_poli_id[]" value="${dokterPoliId}">
+                    </td>
+                </tr>
+                `;
+                $("#penugasan_list_edit").append(rowHtml);
+            });
+
+            // init TomSelect poli & dokter kosong (untuk tambah baru)
+            initEditTSPoli();
+            hideDokterGroup();
 
             editModal && editModal.show();
         } catch (e) {
@@ -592,7 +809,7 @@ $(function () {
         }
     });
 
-    // Submit edit
+    // ---------- Submit edit ----------
     $formEdit.on("submit", async function (e) {
         e.preventDefault();
         const url = $formEdit.data("url");
@@ -624,18 +841,15 @@ $(function () {
                 });
                 Object.keys(errs).forEach((k) => {
                     const base = k.split(".")[0];
+
                     const $inp = $("#" + base);
                     if ($inp.length) $inp.addClass("is-invalid");
                     const $err = $("#" + base + "-error");
                     if ($err.length) $err.html(errs[k][0]);
 
-                    if (base === "edit_poli_id" || base === "poli_id") {
-                        $("#edit_poli_select").addClass("is-invalid");
-                        $("#edit_poli_id-error").html(errs[k][0]);
-                    }
-                    if (base === "edit_dokter_id" || base === "dokter_id") {
-                        $("#edit_dokter_select").addClass("is-invalid");
-                        $("#edit_dokter_id-error").html(errs[k][0]);
+                    // mapping spesifik untuk array dokter_poli_id
+                    if (base.startsWith("dokter_poli_id")) {
+                        $("#edit_dokter_poli_id-error").html(errs[k][0]);
                     }
                 });
             } else {
@@ -656,6 +870,7 @@ $(function () {
         }
     );
 });
+
 
 // ================== DELETE PERAWAT ==================
 $(function () {
