@@ -749,6 +749,7 @@ $(function () {
             // field dasar
             $("#edit_perawat_id").val(row.id);
             $("#edit_username_perawat").val(row.user?.username || "");
+            $("#edit_password_perawat").val(row.user?.password || "");
             $("#edit_email_perawat").val(row.user?.email || "");
             $("#edit_nama_perawat").val(row.nama_perawat || "");
             $("#edit_no_hp_perawat").val(row.no_hp_perawat || "");

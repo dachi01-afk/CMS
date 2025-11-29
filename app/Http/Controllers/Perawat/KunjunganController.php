@@ -23,31 +23,36 @@ class KunjunganController extends Controller
         return view('perawat.kunjungan.kunjungan');
     }
 
-    public function getDataKunjunganHariIni(Request $request)
+    public function getDataKunjunganHariIni()
     {
         $userId = Auth::id();
 
-        $perawat = Perawat::with('dokter', 'poli')->where('user_id', $userId)->first();
+        // Ambil perawat berdasarkan user yang login
+        $perawat = Perawat::where('user_id', $userId)->first();
 
-        // Kalau belum di-set dokter_id / poli_id → balikin data kosong
-        if (!$perawat || empty($perawat->dokter_id) || empty($perawat->poli_id)) {
+        if (!$perawat) {
             return response()->json(['data' => []]);
         }
 
-        $tz         = config('app.timezone', 'Asia/Jakarta');
-        $todayLocal = Carbon::today($tz);
-        $today      = $todayLocal->toDateString();
+        $perawatId = $perawat->id;
 
-        // Ambil nama dokter & poli via JOIN supaya pasti muncul
+        $tz    = config('app.timezone', 'Asia/Jakarta');
+        $today = Carbon::today($tz)->toDateString();
+
         $rows = Kunjungan::query()
-            ->with([
-                'pasien',
-                'dokter',
-                'poli',
-            ])
+            ->with(['pasien', 'dokter', 'poli'])
             ->whereDate('tanggal_kunjungan', $today)
             ->where('status', 'Waiting')
-            ->where('dokter_id', $perawat->dokter_id)
+            // cek kunjungan ini terhubung ke perawat melalui dokter_poli & perawat_dokter_poli
+            ->whereExists(function ($q) use ($perawatId) {
+                $q->select(DB::raw(1))
+                    ->from('perawat_dokter_poli as pdp')
+                    ->join('dokter_poli as dp', 'dp.id', '=', 'pdp.dokter_poli_id')
+                    // pasangan dokter & poli di kunjungan harus sama dengan di dokter_poli
+                    ->whereColumn('dp.dokter_id', 'kunjungan.dokter_id')
+                    ->whereColumn('dp.poli_id', 'kunjungan.poli_id')
+                    ->where('pdp.perawat_id', $perawatId);
+            })
             ->orderByRaw('CAST(no_antrian AS UNSIGNED)')
             ->get()
             ->map(function ($k) {
@@ -58,7 +63,7 @@ class KunjunganController extends Controller
                     'poli_id'      => $k->poli_id,
                     'no_antrian'   => $k->no_antrian ?? '-',
                     'nama_pasien'  => $k->pasien->nama_pasien ?? '-',
-                    'dokter'       => $k->dokter->nama_dokter ?? '-', // ← pasti ada dari JOIN
+                    'dokter'       => $k->dokter->nama_dokter ?? '-',
                     'poli'         => $k->poli->nama_poli ?? '-',
                     'keluhan'      => $k->keluhan_awal ?? '-',
                 ];
@@ -137,33 +142,52 @@ class KunjunganController extends Controller
     }
 
     // Sumber data untuk DataTables (AJAX, client-side)
-    public function getDataKunjunganDenganStatusEngaged(Request $request)
+    public function getDataKunjunganDenganStatusEngaged()
     {
-        $userId  = Auth::id();
-        $perawat = Perawat::with(['dokter', 'poli'])->where('user_id', $userId)->firstOrFail();
+        $userId = Auth::id();
 
-        if (empty($perawat->dokter_id) || empty($perawat->poli_id)) {
+        // Ambil perawat berdasarkan user yg login
+        $perawat = Perawat::where('user_id', $userId)->first();
+
+        // Kalau tidak ada perawat → balikin DT kosong (tidak 404)
+        if (!$perawat) {
             return DataTables::of(collect())->make(true);
         }
 
-        $dataKunjunganEngaged = EMR::with(['pasien', 'dokter', 'poli', 'perawat', 'kunjungan'])->whereHas('kunjungan', function ($k) {
-            $k->where('status', 'Engaged');
-        })->whereHas('perawat', function ($p) use ($perawat) {
-            $p->where('id', $perawat->id);
-        })->get();
+        $perawatId = $perawat->id;
 
-        // return $dataKunjunganEngaged;
+        // Ambil EMR yg:
+        //  - perawat_id = perawat login
+        //  - kunjungan.status = 'Engaged'
+        //  - kunjungan (dokter_id, poli_id) memang terhubung ke perawat via pivot
+        $dataKunjunganEngaged = EMR::with(['pasien', 'dokter', 'poli', 'perawat', 'kunjungan'])
+            ->where('perawat_id', $perawatId)
+            ->whereHas('kunjungan', function ($q) use ($perawatId) {
+                $q->where('status', 'Engaged')
+                    ->whereExists(function ($qq) use ($perawatId) {
+                        $qq->select(DB::raw(1))
+                            ->from('perawat_dokter_poli as pdp')
+                            ->join('dokter_poli as dp', 'dp.id', '=', 'pdp.dokter_poli_id')
+                            // pasangan dokter & poli di kunjungan harus sama dengan di dokter_poli
+                            ->whereColumn('dp.dokter_id', 'kunjungan.dokter_id')
+                            ->whereColumn('dp.poli_id', 'kunjungan.poli_id')
+                            ->where('pdp.perawat_id', $perawatId);
+                    });
+            })
+            ->orderBy('id', 'desc')
+            ->get();
 
         return DataTables::of($dataKunjunganEngaged)
             ->addIndexColumn()
-            ->addColumn('no_antrian', fn($engaged) => $engaged->kunjungan->no_antrian)
-            ->addColumn('nama_pasien', fn($engaged) => $engaged->pasien->nama_pasien)
-            ->addColumn('nama_dokter', fn($engaged) => $engaged->dokter->nama_dokter)
-            ->addColumn('nama_poli', fn($engaged) => $engaged->poli->nama_poli)
-            ->addColumn('keluhan_utama', fn($engaged) => $engaged->keluhan_utama)
+            ->addColumn('no_antrian', fn($emr) => optional($emr->kunjungan)->no_antrian ?? '-')
+            ->addColumn('nama_pasien', fn($emr) => optional($emr->pasien)->nama_pasien ?? '-')
+            ->addColumn('nama_dokter', fn($emr) => optional($emr->dokter)->nama_dokter ?? '-')
+            ->addColumn('nama_poli', fn($emr) => optional($emr->poli)->nama_poli ?? '-')
+            ->addColumn('keluhan_utama', fn($emr) => $emr->keluhan_utama ?? '-')
             ->addColumn('action', function ($row) {
                 if (!empty($row->id)) {
                     $url = route('perawat.form.pengisian.vital.sign', $row->id);
+
                     return '
                     <a href="' . $url . '"
                        class="inline-flex items-center px-3 py-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
@@ -171,7 +195,8 @@ class KunjunganController extends Controller
                     </a>
                 ';
                 }
-                // fallback kalau EMR belum ada
+
+                // fallback kalau EMR belum ada (harusnya jarang kepakai di endpoint ini)
                 return '
                 <span class="inline-flex items-center px-3 py-1 rounded-lg bg-gray-300 text-gray-600 cursor-not-allowed"
                       title="EMR belum dibuat">
@@ -182,6 +207,7 @@ class KunjunganController extends Controller
             ->rawColumns(['action'])
             ->make(true);
     }
+
 
 
     // Stub: halaman khusus vital sign (nanti kamu isi)
