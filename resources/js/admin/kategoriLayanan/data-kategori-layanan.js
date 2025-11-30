@@ -47,6 +47,28 @@ $(function () {
         table.search(this.value).draw();
     });
 
+    // 🔔 Ketika tombol "Penting!" diklik → munculkan pop up
+    $("#btnInfoKategoriLayanan").on("click", function () {
+        Swal.fire({
+            icon: "info",
+            title: "Informasi Kategori Layanan",
+            width: "600px",
+            html: `
+                <div class="flex flex-col mx-4 my-2 text-center gap-2">
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                    Data kategori layanan hanya ada 2, yaitu 
+                    <span class="font-medium">"Pemeriksaan"</span> dan 
+                    <span class="font-medium">"Non Pemeriksaan"</span>.
+                </p>
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                    Dan data kategori ini akan ada di dalam setiap layanan yang tersedia.
+                </p>
+                </div>
+            `,
+            confirmButtonText: "Saya Mengerti",
+        });
+    });
+
     const $info = $("#layanan-customInfo");
     const $pagination = $("#layanan-customPagination");
     const $perPage = $("#layanan-pageLength");
@@ -115,7 +137,12 @@ $(function () {
 $(function () {
     // Inisialisasi modal menggunakan library Modal (misalnya Bootstrap Modal)
     const addModalEl = document.getElementById("modalCreateKategoriLayanan");
-    const addModal = addModalEl ? new Modal(addModalEl) : null;
+    const addModal = addModalEl
+        ? new Modal(addModalEl, {
+              backdrop: "static",
+              closable: false,
+          })
+        : null;
     const $formAdd = $("#formCreateKategoriLayanan");
 
     // Fungsi untuk reset form: bersihkan input, hapus class error, dan kosongkan pesan error
@@ -132,9 +159,11 @@ $(function () {
     });
 
     // Event: Tutup modal saat tombol close diklik
-    $("#buttonCloseModalCreateLayanan").on("click", function () {
-        addModal?.hide(); // Sembunyikan modal
-        resetAddForm(); // Reset form setelah tutup
+    $(
+        "#buttonCloseModalCreateKategoriLayanan, #buttonCloseModalCreateKategoriLayanan_footer"
+    ).on("click", function () {
+        addModal?.hide(); // Tutup modal
+        resetAddForm(); // Reset form
     });
 
     // Event: Submit form untuk create data
@@ -364,22 +393,10 @@ $(function () {
     });
 
     // Tombol Cancel
-    $("#buttonCloseModalUpdateLayanan").on("click", function () {
+    $(
+        "#buttonCloseModalUpdateLayanan , #buttonCloseModalUpdateKategoriLayanan"
+    ).on("click", function () {
         hideModal();
-    });
-
-    // Tutup modal saat klik backdrop
-    $(document).on("click", function (e) {
-        if (e.target === editModalEl) {
-            hideModal();
-        }
-    });
-
-    // Tutup modal saat ESC
-    $(document).on("keydown", function (e) {
-        if (e.key === "Escape" && !editModalEl.classList.contains("hidden")) {
-            hideModal();
-        }
     });
 });
 
