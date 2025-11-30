@@ -19,12 +19,14 @@
         </div>
 
         <div class="flex items-center gap-2 md:gap-3">
+
             <!-- Tombol Info -->
             <button type="button" id="btnInfoKategoriLayanan"
                 class="hidden md:inline-flex items-center gap-2 px-3 py-2 text-xs md:text-sm rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-600">
-                <i class="fa-regular fa-circle-question text-sm"></i>
-                <span>Penting !</span>
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span>Penting</span>
             </button>
+
             <!-- Tombol Tambah -->
             <button id="buttonModalCreateLayanan" type="button"
                 class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl shadow-md

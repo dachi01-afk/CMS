@@ -59,6 +59,30 @@ $(function () {
         table.search(this.value).draw();
     });
 
+    // 🔔 Ketika tombol "Penting!" diklik → munculkan pop up
+    $("#btnInfoLayanan").on("click", function () {
+        Swal.fire({
+            icon: "info",
+            title: "Informasi Layanan",
+            width: "600px",
+            html: `
+                <div class="flex flex-col mx-4 my-2 text-center gap-2">
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                    Setiap layanan medis yang tersedia di sistem ini harus dikaitkan dengan
+                    sebuah <span class="font-medium">kategori layanan</span>.
+                </p>
+                <p class="text-sm text-slate-500 dark:text-slate-400">
+                    Kategori layanan ini berfungsi untuk mengelompokkan layanan berdasarkan
+                    jenisnya, yaitu
+                    <span class="font-medium">"Pemeriksaan"</span> dan 
+                    <span class="font-medium">"Non Pemeriksaan"</span>.
+                </p>
+                </div>
+            `,
+            confirmButtonText: "Saya Mengerti",
+        });
+    });
+
     const $info = $("#layanan-customInfo");
     const $pagination = $("#layanan-customPagination");
     const $perPage = $("#layanan-pageLength");
@@ -161,20 +185,10 @@ $(function () {
     });
 
     // Event: Tutup modal saat tombol close diklik
-    $("#buttonCloseModalCreateLayanan").on("click", function () {
+    $(
+        "#buttonCloseModalCreateLayanan, #buttonCloseModalCreateLayanan_footer"
+    ).on("click", function () {
         hideModal();
-    });
-
-    // Opsional: Tutup modal saat klik backdrop atau tekan ESC
-    $(document).on("click", function (e) {
-        if (e.target === addModalEl) {
-            hideModal();
-        }
-    });
-    $(document).on("keydown", function (e) {
-        if (e.key === "Escape" && !addModalEl.classList.contains("hidden")) {
-            hideModal();
-        }
     });
 
     // 💰 Auto Format Rupiah Input (tampilan saja)
@@ -267,7 +281,12 @@ $(function () {
 // update data layanan
 $(function () {
     const editModalEl = document.getElementById("modalUpdateLayanan");
-    const editModal = editModalEl ? new Modal(editModalEl) : null;
+    const editModal = editModalEl
+        ? new Modal(editModalEl, {
+              backdrop: "static",
+              closable: false,
+          })
+        : null;
     const $formEdit = $("#formUpdateLayanan");
     const $selectKategori = $("#kategori_layanan_id_update");
 
@@ -419,7 +438,9 @@ $(function () {
             });
     });
 
-    $("#buttonCloseModalUpdateLayanan").on("click", function () {
+    $(
+        "#buttonCloseModalUpdateLayanan, #buttonCloseModalUpdateLayanan_footer"
+    ).on("click", function () {
         editModal?.hide();
         resetEditForm();
     });
