@@ -8,8 +8,7 @@ $(function () {
 
     // ⬇️ ambil URL dari Blade, fallback ke path lama kalau belum diset
     const dataUrl =
-           window.transaksiLayananDataUrl || "/kasir/get-data-transaksi-layanan";
-
+        window.transaksiLayananDataUrl || "/kasir/get-data-transaksi-layanan";
 
     const table = $tableEl.DataTable({
         processing: true,
@@ -20,7 +19,7 @@ $(function () {
         pageLength: 10,
         lengthChange: false,
         info: false,
-        scrollX: true, // penting supaya header & body ikut scroll X
+        scrollX: true,
         ajax: {
             url: dataUrl,
             type: "GET",
@@ -49,7 +48,7 @@ $(function () {
                 name: "jumlah",
                 render: function (data) {
                     if (!data) return "-";
-                    return data + " x";
+                    return data + " x"; // sekarang ini jumlah total item per transaksi
                 },
             },
             {

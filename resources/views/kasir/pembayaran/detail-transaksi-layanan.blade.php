@@ -33,14 +33,14 @@
                     <p class="text-xs md:text-sm text-slate-500 mt-1">
                         Kode Transaksi:
                         <span class="font-semibold text-sky-600">
-                            {{ $transaksi->kode_transaksi ?? '-' }}
+                            {{ $summary->kode_transaksi ?? '-' }}
                         </span>
                     </p>
                 </div>
 
                 <div class="flex flex-col items-end gap-2">
                     @php
-                        $status = $transaksi->status ?? 'Belum Bayar';
+                        $status = $summary->status ?? 'Belum Bayar';
                         $statusClass = match ($status) {
                             'Sudah Bayar' => 'bg-emerald-100 text-emerald-700 border-emerald-200',
                             'Dibatalkan' => 'bg-rose-100 text-rose-700 border-rose-200',
@@ -62,14 +62,15 @@
                         </button>
 
                         @if ($status === 'Belum Bayar')
-                            <a href="{{ route('kasir.proses.pembayaran.layanan', $transaksi->kode_transaksi) }}"
+                            <a href="{{ route('kasir.proses.pembayaran.layanan', $summary->kode_transaksi) }}"
                                 class="inline-flex items-center gap-2 px-3 py-1.5 text-xs md:text-sm font-semibold
-                                      text-white bg-gradient-to-r from-sky-500 to-indigo-600 rounded-lg shadow
-                                      hover:from-sky-600 hover:to-indigo-700">
+              text-white bg-gradient-to-r from-sky-500 to-indigo-600 rounded-lg shadow
+              hover:from-sky-600 hover:to-indigo-700">
                                 <i class="fa-solid fa-credit-card text-[11px]"></i>
                                 Proses Pembayaran
                             </a>
                         @endif
+
                     </div>
                 </div>
             </div>
@@ -91,11 +92,11 @@
                                 Total Tagihan
                             </p>
                             <p class="text-lg font-bold text-slate-900">
-                                Rp {{ number_format($transaksi->total_tagihan ?? 0, 0, ',', '.') }}
+                                Rp {{ number_format($summary->total_tagihan ?? 0, 0, ',', '.') }}
                             </p>
                             <p class="text-xs text-slate-500 mt-0.5">
                                 Jumlah:
-                                <span class="font-semibold">{{ $transaksi->jumlah ?? 1 }} x</span>
+                                <span class="font-semibold">{{ $summary->jumlah_total ?? 1 }} x</span>
                             </p>
                         </div>
                     </div>
@@ -110,12 +111,12 @@
                                 Metode Pembayaran
                             </p>
                             <p class="text-base font-semibold text-slate-900">
-                                {{ $transaksi->metode_pembayaran ?? '-' }}
+                                {{ $summary->metode_pembayaran ?? '-' }}
                             </p>
                             <p class="text-xs text-slate-500 mt-0.5">
                                 Kode:
                                 <span class="font-mono text-slate-700">
-                                    {{ $transaksi->kode_transaksi ?? '-' }}
+                                    {{ $summary->kode_transaksi ?? '-' }}
                                 </span>
                             </p>
                         </div>
@@ -131,16 +132,20 @@
                                 Tanggal Transaksi
                             </p>
                             <p class="text-sm font-semibold text-slate-900">
-                                @if ($transaksi->tanggal_transaksi)
-                                    {{ \Carbon\Carbon::parse($transaksi->tanggal_transaksi)->translatedFormat('d F Y, H:i') }}
+                                @if ($summary->tanggal_transaksi)
+                                    {{ \Carbon\Carbon::parse($summary->tanggal_transaksi)->translatedFormat('d F Y, H:i') }}
                                 @else
                                     -
                                 @endif
                             </p>
+                            @php
+                                $user = auth()->user();
+                                $kasir = $user->kasir->nama_kasir ??= null;
+                            @endphp
                             <p class="text-xs text-slate-500 mt-0.5">
                                 Kasir:
                                 <span class="font-semibold">
-                                    {{ $transaksi->kasir_nama ?? (auth()->user()->name ?? '-') }}
+                                    {{ $kasir ?? (auth()->user()->username ?? '-') }}
                                 </span>
                             </p>
                         </div>
@@ -163,7 +168,7 @@
                                         Data Pasien
                                     </p>
                                     <p class="text-base font-semibold text-slate-900">
-                                        {{ $transaksi->pasien->nama_pasien ?? '-' }}
+                                        {{ $summary->pasien->nama_pasien ?? '-' }}
                                     </p>
                                 </div>
                             </div>
@@ -172,26 +177,26 @@
                                 <div class="flex justify-between gap-2">
                                     <dt class="text-slate-500">No EMR</dt>
                                     <dd class="font-medium">
-                                        {{ $transaksi->pasien->no_emr ?? '-' }}
+                                        {{ $summary->pasien->no_emr ?? '-' }}
                                     </dd>
                                 </div>
                                 <div class="flex justify-between gap-2">
                                     <dt class="text-slate-500">No RM / NIK</dt>
                                     <dd class="font-medium">
-                                        {{ $transaksi->pasien->no_rm ?? ($transaksi->pasien->nik ?? '-') }}
+                                        {{ $summary->pasien->no_rm ?? ($summary->pasien->nik ?? '-') }}
                                     </dd>
                                 </div>
                                 <div class="flex justify-between gap-2">
                                     <dt class="text-slate-500">Jenis Kelamin</dt>
                                     <dd class="font-medium">
-                                        {{ $transaksi->pasien->jenis_kelamin ?? '-' }}
+                                        {{ $summary->pasien->jenis_kelamin ?? '-' }}
                                     </dd>
                                 </div>
                                 <div class="flex justify-between gap-2">
                                     <dt class="text-slate-500">Tanggal Lahir</dt>
                                     <dd class="font-medium">
-                                        @if (!empty($transaksi->pasien->tanggal_lahir))
-                                            {{ \Carbon\Carbon::parse($transaksi->pasien->tanggal_lahir)->translatedFormat('d F Y') }}
+                                        @if (!empty($summary->pasien->tanggal_lahir))
+                                            {{ \Carbon\Carbon::parse($summary->pasien->tanggal_lahir)->translatedFormat('d F Y') }}
                                         @else
                                             -
                                         @endif
@@ -200,7 +205,7 @@
                                 <div class="flex flex-col gap-1">
                                     <dt class="text-slate-500">Alamat</dt>
                                     <dd class="font-medium text-right">
-                                        {{ $transaksi->pasien->alamat ?? '-' }}
+                                        {{ $summary->pasien->alamat ?? '-' }}
                                     </dd>
                                 </div>
                             </dl>
@@ -220,7 +225,7 @@
                                     <p class="text-sm font-semibold text-slate-900">
                                         Nomor Antrian:
                                         <span class="font-mono">
-                                            {{ $transaksi->kunjungan->nomor_antrian ?? '-' }}
+                                            {{ $summary->kunjungan->nomor_antrian ?? '-' }}
                                         </span>
                                     </p>
                                 </div>
@@ -230,8 +235,8 @@
                                 <div class="flex justify-between gap-2">
                                     <dt class="text-slate-500">Tanggal Kunjungan</dt>
                                     <dd class="font-medium">
-                                        @if (!empty($transaksi->kunjungan->tanggal_kunjungan))
-                                            {{ \Carbon\Carbon::parse($transaksi->kunjungan->tanggal_kunjungan)->translatedFormat('d F Y') }}
+                                        @if (!empty($summary->kunjungan->tanggal_kunjungan))
+                                            {{ \Carbon\Carbon::parse($summary->kunjungan->tanggal_kunjungan)->translatedFormat('d F Y') }}
                                         @else
                                             -
                                         @endif
@@ -240,13 +245,13 @@
                                 <div class="flex justify-between gap-2">
                                     <dt class="text-slate-500">Poli</dt>
                                     <dd class="font-medium">
-                                        {{ $transaksi->kunjungan->poli->nama_poli ?? '-' }}
+                                        {{ $summary->kunjungan->poli->nama_poli ?? '-' }}
                                     </dd>
                                 </div>
                                 <div class="flex justify-between gap-2">
                                     <dt class="text-slate-500">Dokter</dt>
                                     <dd class="font-medium">
-                                        {{ $transaksi->kunjungan->dokter->nama_dokter ?? '-' }}
+                                        {{ $summary->kunjungan->dokter->nama_dokter ?? '-' }}
                                     </dd>
                                 </div>
                             </dl>
@@ -268,7 +273,7 @@
                                             Detail Layanan
                                         </p>
                                         <p class="text-sm font-semibold text-slate-900">
-                                            {{ $transaksi->layanan->nama_layanan ?? '-' }}
+                                            {{ $summary->layanan->nama_layanan ?? '-' }}
                                         </p>
                                     </div>
                                 </div>
@@ -286,35 +291,37 @@
                                         </tr>
                                     </thead>
                                     <tbody class="bg-white">
-                                        @php
-                                            $hargaSatuan = $transaksi->layanan->harga_layanan ?? null;
-                                            $jumlah = $transaksi->jumlah ?? 1;
-                                            $subtotal =
-                                                $transaksi->total_tagihan ??
-                                                ($hargaSatuan ? $hargaSatuan * $jumlah : 0);
-                                        @endphp
-                                        <tr class="border-t border-slate-100">
-                                            <td class="px-4 py-2">
-                                                {{ $transaksi->layanan->nama_layanan ?? '-' }}
-                                            </td>
-                                            <td class="px-4 py-2">
-                                                {{ $transaksi->layanan->kategoriLayanan->nama_kategori ?? ($transaksi->kategori_layanan ?? '-') }}
-                                            </td>
-                                            <td class="px-4 py-2 text-right">
-                                                @if ($hargaSatuan)
-                                                    Rp {{ number_format($hargaSatuan, 0, ',', '.') }}
-                                                @else
-                                                    -
-                                                @endif
-                                            </td>
-                                            <td class="px-4 py-2 text-center">
-                                                {{ $jumlah }}
-                                            </td>
-                                            <td class="px-4 py-2 text-right font-semibold">
-                                                Rp {{ number_format($subtotal, 0, ',', '.') }}
-                                            </td>
-                                        </tr>
+                                        @foreach ($items as $item)
+                                            @php
+                                                $hargaSatuan = $item->layanan->harga_layanan ?? null;
+                                                $jumlah = $item->jumlah ?? 1;
+                                                $subtotal =
+                                                    $item->total_tagihan ?? ($hargaSatuan ? $hargaSatuan * $jumlah : 0);
+                                            @endphp
+                                            <tr class="border-t border-slate-100">
+                                                <td class="px-4 py-2">
+                                                    {{ $item->layanan->nama_layanan ?? '-' }}
+                                                </td>
+                                                <td class="px-4 py-2">
+                                                    {{ $item->layanan->kategoriLayanan->nama_kategori ?? '-' }}
+                                                </td>
+                                                <td class="px-4 py-2 text-right">
+                                                    @if ($hargaSatuan)
+                                                        Rp {{ number_format($hargaSatuan, 0, ',', '.') }}
+                                                    @else
+                                                        -
+                                                    @endif
+                                                </td>
+                                                <td class="px-4 py-2 text-center">
+                                                    {{ $jumlah }}
+                                                </td>
+                                                <td class="px-4 py-2 text-right font-semibold">
+                                                    Rp {{ number_format($subtotal, 0, ',', '.') }}
+                                                </td>
+                                            </tr>
+                                        @endforeach
                                     </tbody>
+
                                     <tfoot class="bg-slate-50">
                                         <tr>
                                             <th colspan="4"
@@ -322,8 +329,7 @@
                                                 Grand Total
                                             </th>
                                             <th class="px-4 py-3 text-right text-lg font-bold text-sky-600">
-                                                Rp
-                                                {{ number_format($transaksi->total_tagihan ?? $subtotal, 0, ',', '.') }}
+                                                Rp {{ number_format($summary->total_tagihan ?? 0, 0, ',', '.') }}
                                             </th>
                                         </tr>
                                     </tfoot>
@@ -344,7 +350,7 @@
                                             Bukti Pembayaran
                                         </p>
                                         <p class="text-sm text-slate-700">
-                                            @if ($transaksi->bukti_pembayaran)
+                                            @if ($summary->bukti_pembayaran)
                                                 Bukti pembayaran telah diunggah.
                                             @else
                                                 Belum ada bukti pembayaran yang diunggah.
@@ -354,10 +360,10 @@
                                 </div>
                             </div>
 
-                            @if ($transaksi->bukti_pembayaran)
+                            @if ($summary->bukti_pembayaran)
                                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                                     <div class="max-w-xs">
-                                        <img src="{{ asset('storage/' . $transaksi->bukti_pembayaran) }}"
+                                        <img src="{{ asset('storage/' . $summary->bukti_pembayaran) }}"
                                             alt="Bukti Pembayaran"
                                             class="rounded-xl border border-slate-200 shadow-sm">
                                     </div>
@@ -365,7 +371,7 @@
                                         <p>
                                             Verifikasi bukti pembayaran bila diperlukan atau simpan sebagai arsip.
                                         </p>
-                                        <a href="{{ asset('storage/' . $transaksi->bukti_pembayaran) }}"
+                                        <a href="{{ asset('storage/' . $summary->bukti_pembayaran) }}"
                                             target="_blank"
                                             class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold
                                                   text-sky-700 bg-sky-50 rounded-lg border border-sky-100

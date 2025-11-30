@@ -45,7 +45,19 @@ $(function () {
             { data: "nama_layanan", name: "nama_layanan" },
             { data: "nama_kategori", name: "nama_kategori" },
             { data: "jumlah_layanan", name: "jumlah_layanan" },
-            { data: "total_tagihan", name: "total_tagihan" },
+            {
+                data: "total_tagihan",
+                name: "total_tagihan",
+                render: function (data) {
+                    if (!data) return "-";
+                    const n = Number(data) || 0;
+                    return n.toLocaleString("id-ID", {
+                        style: "currency",
+                        currency: "IDR",
+                        minimumFractionDigits: 0,
+                    });
+                },
+            },
             { data: "metode_pembayaran", name: "metode_pembayaran" },
             { data: "status", name: "status" },
             { data: "bukti_pembayaran", name: "bukti_pembayaran" },

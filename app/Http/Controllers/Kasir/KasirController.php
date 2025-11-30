@@ -659,10 +659,6 @@ HTML;
             ->firstOrFail();
 
         $dataMetodePembayaran = MetodePembayaran::all();
-        // Debug (kalau masih mau cek hasil, bisa pakai info log biar nggak ganggu tampilan)
-        Log::info($dataPembayaran);
-
-        // dd($dataPembayaran);
 
         return view('kasir.pembayaran.transaksi', compact('dataPembayaran', 'dataMetodePembayaran'));
     }
