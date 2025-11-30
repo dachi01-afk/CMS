@@ -112,7 +112,12 @@ $(function () {
     const addModalElement = document.getElementById(
         "addJenisSpesialisDokterModal"
     );
-    const addModal = addModalElement ? new Modal(addModalElement) : null;
+    const addModal = addModalElement
+        ? new Modal(addModalElement, {
+              backdrop: "static",
+              closable: false,
+          })
+        : null;
     const $formAdd = $("#formAddJenisSpesialisDokter");
 
     function resetAddForm() {
@@ -194,7 +199,10 @@ $(function () {
         "modalUpdateJenisSpesialis"
     );
     const updateModal = updateModalElement
-        ? new Modal(updateModalElement)
+        ? new Modal(updateModalElement, {
+              backdrop: "static",
+              closable: false,
+          })
         : null;
     const $formEdit = $("#formUpdateModalJenisSpesialis");
 

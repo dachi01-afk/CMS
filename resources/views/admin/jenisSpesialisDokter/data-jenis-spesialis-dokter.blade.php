@@ -14,19 +14,13 @@
                 </h2>
                 <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
                     Kelola daftar jenis spesialis dokter yang akan digunakan pada modul
-                    <span class="font-medium">Jadwal Dokter</span>, <span class="font-medium">Kunjungan</span>, dan modul
+                    <span class="font-medium">Dokter</span>, <span class="font-medium">Kunjungan</span>, dan modul
                     lainnya.
                 </p>
             </div>
         </div>
 
         <div class="flex items-center gap-2 md:gap-3">
-            <button type="button"
-                class="hidden md:inline-flex items-center gap-2 px-3 py-2 text-xs md:text-sm rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-600">
-                <i class="fa-regular fa-circle-question text-sm"></i>
-                <span>Panduan Spesialis</span>
-            </button>
-
             <!-- Tombol Tambah -->
             <button id="btnAddJenisSpesialisDokter" type="button"
                 class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl shadow-md
