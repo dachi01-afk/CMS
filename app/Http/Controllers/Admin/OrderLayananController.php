@@ -100,9 +100,7 @@ class OrderLayananController extends Controller
                     ? 'bg-green-100 text-green-700'
                     : 'bg-yellow-100 text-yellow-700';
 
-                return '<span class="px-3 py-1 rounded-lg text-xs font-semibold ' . $color . '">'
-                    . $status .
-                    '</span>';
+                return '<span class="text-center py-1 rounded-lg text-xs font-semibold ' . $color . '">' . $status . '</span>';
             })
 
             // Tanggal Transaksi (MIN dari semua baris dalam transaksi)

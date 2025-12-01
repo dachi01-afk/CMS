@@ -26,7 +26,7 @@ class PerawatController extends Controller
         try {
             // 🧩 Validasi input
             $validated = $request->validate([
-                'foto_perawat'         => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
+                'foto_perawat'         => 'required|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
                 'username_perawat'     => 'required|string|max:255',
                 'nama_perawat'         => 'required|string|max:255',
                 'email_perawat'        => 'required|email',

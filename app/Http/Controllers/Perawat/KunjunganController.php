@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Perawat;
 
 use App\Http\Controllers\Controller;
+use App\Models\Dokter;
+use App\Models\DokterPoli;
 use App\Models\EMR;
 use App\Models\Kunjungan;
 use App\Models\Perawat;
@@ -77,7 +79,7 @@ class KunjunganController extends Controller
         $userId = Auth::id();
 
         // Ambil perawat yang login (untuk pembatasan scope)
-        $perawat = Perawat::with('dokter', 'poli')->where('user_id', $userId)->firstOrFail();
+        $perawat = Perawat::with('perawatDokterPoli')->where('user_id', $userId)->firstOrFail();
 
         try {
             DB::transaction(function () use ($id, $perawat) {
@@ -207,8 +209,6 @@ class KunjunganController extends Controller
             ->rawColumns(['action'])
             ->make(true);
     }
-
-
 
     // Stub: halaman khusus vital sign (nanti kamu isi)
     public function formPengisianVitalSign($id)

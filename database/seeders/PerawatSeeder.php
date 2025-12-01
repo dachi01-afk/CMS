@@ -23,41 +23,19 @@ class PerawatSeeder extends Seeder
             return;
         }
 
-        // Ambil mapping dokter-poli supaya kombinasi dokter_id & poli_id selalu valid
-        $dokterPoliList = DokterPoli::select('dokter_id', 'poli_id')->get();
-
-        if ($dokterPoliList->isEmpty()) {
-            $this->command?->warn('PerawatSeeder: tabel dokter_poli kosong. Jalankan DokterPoliSeeder dulu.');
-            return;
-        }
-
-        // Ambil kombinasi unik per dokter, diacak dulu biar distribusi random
-        $uniqueDokterPoli = $dokterPoliList->shuffle()->unique('dokter_id')->values();
-
-        if ($uniqueDokterPoli->isEmpty()) {
-            $this->command?->warn('PerawatSeeder: tidak ada dokter unik pada tabel dokter_poli.');
-            return;
-        }
+        $fotoPerawat = 'perawat/foto_perawat.jpg';
 
         $jumlahPerawat = min(5, $perawatUsers->count());
-        $jumlahDokterUnik = $uniqueDokterPoli->count();
 
         for ($i = 0; $i < $jumlahPerawat; $i++) {
             $user = $perawatUsers[$i];
-
-            // Rotasi dokter jika jumlah perawat > jumlah dokter
-            $dp = $uniqueDokterPoli[$i % $jumlahDokterUnik];
 
             Perawat::updateOrCreate(
                 ['user_id' => $user->id], // kalau sudah ada perawat untuk user ini, di-update saja
                 [
                     'nama_perawat'   => $faker->name,
                     'no_hp_perawat'  => $faker->phoneNumber(),
-                    'foto_perawat'   => $fotoDefault,
-
-                    // Relasi dokter–poli yang valid
-                    'dokter_id'      => $dp->dokter_id,
-                    'poli_id'        => $dp->poli_id,
+                    'foto_perawat'   => $fotoPerawat,
                 ]
             );
         }

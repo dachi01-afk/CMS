@@ -148,7 +148,12 @@ $(function () {
 // ADD DOKTER
 $(function () {
     const addModalElement = document.getElementById("addDokterModal");
-    const addModal = addModalElement ? new Modal(addModalElement) : null;
+    const addModal = addModalElement
+        ? new Modal(addModalElement, {
+              backdrop: "static",
+              closable: false,
+          })
+        : null;
     const $formAdd = $("#formAddDokter");
 
     function resetAddForm() {
@@ -314,11 +319,21 @@ function initTomSelectEditPoli() {
     });
 }
 
+// EDIT DOKTER
 $(function () {
     const editModalElement = document.getElementById("editDokterModal");
-    const editModal = editModalElement ? new Modal(editModalElement) : null;
     const $formEdit = $("#formEditDokter");
     const initialEditUrl = $formEdit.data("url");
+
+    function showEditModal() {
+        if (!editModalElement) return;
+        editModalElement.classList.remove("hidden");
+    }
+
+    function hideEditModal() {
+        if (!editModalElement) return;
+        editModalElement.classList.add("hidden");
+    }
 
     function resetEditForm() {
         $formEdit[0].reset();
@@ -391,7 +406,7 @@ $(function () {
                         .addClass("border-solid border-gray-300");
                 }
 
-                editModal?.show();
+                showEditModal();
                 // refresh options width setelah modal tampil
                 setTimeout(
                     () => tsEditPoli && tsEditPoli.refreshOptions(false),
@@ -427,7 +442,7 @@ $(function () {
                     showConfirmButton: false,
                     timer: 1600,
                 }).then(() => {
-                    editModal?.hide();
+                    hideEditModal();
                     $("#dokterTable").DataTable().ajax.reload(null, false);
                     resetEditForm();
                 });
@@ -476,7 +491,7 @@ $(function () {
     $("#closeEditDokterModal, #closeEditDokterModal_footer").on(
         "click",
         function () {
-            editModal?.hide();
+            hideEditModal();
             resetEditForm();
         }
     );
@@ -575,13 +590,12 @@ document.addEventListener("DOMContentLoaded", function () {
         document.getElementById("formAddDokter").reset(); // reset seluruh form juga
     });
 
-    // Reset ketika klik di luar modal (backdrop)
+    // Klik di luar modal TIDAK MENUTUP modal
     modalElement.addEventListener("click", function (e) {
-        // jika klik di luar konten (div bg putih)
         if (e.target === modalElement) {
-            modalElement.classList.add("hidden");
-            resetFotoPreview();
-            formAdd.reset();
+            // Tidak melakukan apa-apa
+            // Kalau mau, bisa hanya reset foto tanpa nutup:
+            // resetFotoPreview();
         }
     });
 });
@@ -636,13 +650,45 @@ document.addEventListener("DOMContentLoaded", function () {
         formEdit.reset();
     });
 
-    // Tutup modal via backdrop klik (optional)
+    // Klik di luar modal edit TIDAK MENUTUP modal
     const modalElement = document.getElementById("editDokterModal");
     modalElement?.addEventListener("click", function (e) {
         if (e.target === modalElement) {
-            modalElement.classList.add("hidden");
-            resetFotoPreview();
-            formEdit.reset();
+            // 🔒 Block klik di backdrop biar Flowbite nggak nutup modal
+            e.preventDefault();
+            e.stopPropagation();
+
+            // Kalau mau sambil reset foto tanpa nutup modal:
+            // resetFotoPreview();
         }
     });
 });
+
+// 🔒 Blok SEMUA klik di luar panel putih edit modal
+document.addEventListener(
+    "click",
+    function (e) {
+        const editModalElement = document.getElementById("editDokterModal");
+        if (!editModalElement) return;
+
+        // cek kalau modal lagi terbuka
+        const isOpen = !editModalElement.classList.contains("hidden");
+        if (!isOpen) return;
+
+        // panel putih di dalam modal (card konten)
+        const panel = editModalElement.querySelector(
+            ".relative.bg-white.rounded-2xl"
+        );
+        if (!panel) return;
+
+        // apakah klik terjadi DI DALAM panel?
+        const clickInside = panel.contains(e.target);
+
+        // kalau klik DI LUAR panel putih → block
+        if (!clickInside) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    },
+    true // pakai capture biar eksekusi LEBIH DULU dari handler lain (Flowbite dll)
+);

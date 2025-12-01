@@ -122,7 +122,10 @@ $(function () {
 // add data apoteker
 $(function () {
     const addModalElement = document.getElementById("addApotekerModal");
-    const addModal = addModalElement ? new Modal(addModalElement) : null;
+    const addModal = addModalElement ? new Modal(addModalElement , {
+        backdrop: 'static',
+        closable: false,
+    }) : null;
     const $formAdd = $("#formAddApoteker");
 
     function resetAddForm() {
@@ -139,7 +142,6 @@ $(function () {
     }
 
     $("#btnAddApoteker").on("click", function () {
-        resetAddForm();
         if (addModal) addModal.show();
     });
 
@@ -420,16 +422,6 @@ document.addEventListener("DOMContentLoaded", function () {
         resetFotoPreview();
         document.getElementById("formAddDokter").reset(); // reset seluruh form juga
     });
-
-    // Reset ketika klik di luar modal (backdrop)
-    modalElement.addEventListener("click", function (e) {
-        // jika klik di luar konten (div bg putih)
-        if (e.target === modalElement) {
-            modalElement.classList.add("hidden");
-            resetFotoPreview();
-            formAdd.reset();
-        }
-    });
 });
 
 // edit foto
@@ -482,15 +474,5 @@ document.addEventListener("DOMContentLoaded", function () {
     closeButton?.addEventListener("click", function () {
         resetFotoPreview();
         formEdit.reset();
-    });
-
-    // Tutup modal via backdrop klik (optional)
-    const modalElement = document.getElementById("editDokterModal");
-    modalElement?.addEventListener("click", function (e) {
-        if (e.target === modalElement) {
-            modalElement.classList.add("hidden");
-            resetFotoPreview();
-            formEdit.reset();
-        }
     });
 });

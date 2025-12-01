@@ -16,6 +16,7 @@ function resetModalForm() {
     document.getElementById("nama_pasien").textContent = "";
     document.getElementById("alamat_pasien").textContent = "";
     document.getElementById("jk_pasien").textContent = "";
+    document.getElementById("no_emr_pasien").textContent = "";
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -136,6 +137,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         pasien.alamat ?? "-";
                     document.getElementById("jk_pasien").textContent =
                         pasien.jenis_kelamin ?? "-";
+                    document.getElementById("no_emr_pasien").textContent =
+                        pasien.no_emr ?? "-";
                     pasienDataDiv.classList.remove("hidden");
                     resultsDiv.classList.add("hidden");
                     searchInput.value = pasien.nama_pasien;

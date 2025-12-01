@@ -240,7 +240,7 @@ class FarmasiController extends Controller
         try {
             // 🧩 Validasi input
             $request->validate([
-                'foto_apoteker'     => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
+                'foto_apoteker'     => 'required|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
                 'username_apoteker' => 'required|string|max:255',
                 'nama_apoteker'     => 'required|string|max:255',
                 'email_apoteker'    => 'required|email',
@@ -308,7 +308,6 @@ class FarmasiController extends Controller
             ], 500);
         }
     }
-
 
     public function getFarmasiById($id)
     {
@@ -404,7 +403,6 @@ class FarmasiController extends Controller
             ], 500);
         }
     }
-
 
     public function deleteFarmasi($id)
     {

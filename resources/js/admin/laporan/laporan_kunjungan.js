@@ -38,6 +38,7 @@ $(function () {
             { data: "no_antrian", name: "no_antrian" },
             { data: "nama_dokter", name: "nama_dokter" },
             { data: "nama_pasien", name: "nama_pasien" },
+            { data: "nama_poli", name: "nama_poli" },
             { data: "tanggal_kunjungan", name: "tanggal_kunjungan" },
             { data: "keluhan_awal", name: "keluhan_awal" },
             { data: "status", name: "status" },

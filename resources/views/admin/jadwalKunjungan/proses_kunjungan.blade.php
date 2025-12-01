@@ -54,7 +54,7 @@
         </div>
 
         {{-- WRAPPER TABEL --}}
-        <div class="relative overflow-x-auto overflow-y-visible rounded-b-2xl">
+        <div class="relative overflow-x-auto overflow-y-visible rounded-b-2xl !overflow-visible">
             <table class="min-w-full text-sm text-slate-700 dark:text-slate-100 align-middle" id="tabelProses">
                 <thead
                     class="text-xs font-semibold uppercase bg-gradient-to-r from-sky-500 via-teal-500 to-teal-600
@@ -83,24 +83,6 @@
 
 </section>
 
-{{-- CSS KHUSUS DROPDOWN AKSI (BIAR MELAYANG SEPERTI FLOWBITE) --}}
-<style>
-    .aksi-dropdown-wrapper {
-        position: relative;
-        display: inline-flex;
-        justify-content: flex-end;
-        width: 100%;
-    }
-
-    .aksi-dropdown-menu {
-        position: absolute;
-        right: 0;
-        top: 100%;
-        margin-top: 0.5rem;
-        /* mt-2 */
-        z-index: 50;
-    }
-</style>
 
 {{-- MODAL: Edit Kunjungan --}}
 <div id="editKunjunganModal" aria-hidden="true"

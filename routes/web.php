@@ -243,12 +243,6 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::get('/detail-emr/pasien/{noEMR}', [DataMedisPasienController::class, 'detailEMRPasien'])->name('detail.emr.pasien');
     });
 
-    // Route::prefix('pengambilan_obat')->group(function () {
-    //     Route::get('/', [PengambilanObatController::class, 'index'])->name('pengambilan.obat');
-    //     Route::get('/get-data', [PengambilanObatController::class, 'getDataResepObat'])->name('get.data.resep.obat');
-    //     Route::post('/update-status-resep-obat', [PengambilanObatController::class, 'updateStatusResepObat'])->name('update.status.resep.obat');
-    // });
-
     Route::prefix('settings')->name('settings.')->group(function () {
         Route::get('/', [SettingsController::class, 'index'])->name('index');
     });
@@ -257,6 +251,9 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::get('/', [JadwalKunjunganController::class, 'index'])->name('index');
         Route::post('/create', [JadwalKunjunganController::class, 'store'])->name('create');
         Route::get('/search', [JadwalKunjunganController::class, 'search'])->name('pasien');
+
+        Route::get('/listDokter', [JadwalKunjunganController::class, 'listDokter'])->name('list.dokter');
+        Route::get('/listPoliByDokter/{dokterId}/poli', [JadwalKunjunganController::class, 'listPoliByDokter'])->name('list.dokter.poli');
 
         Route::get('/waiting', [JadwalKunjunganController::class, 'waiting'])->name('waiting');
         Route::post('/updateKunjungan/{id}', [JadwalKunjunganController::class, 'updateDataKunjungan'])->name('update.kunjungan');

@@ -80,55 +80,52 @@
         </div>
     </div>
 
+</section>
 
-    {{-- MODAL DETAIL KUNJUNGAN YANG AKAN DATANG --}}
-    <div id="modalDetailKYAD" aria-hidden="true"
-        class="hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 md:p-6
+{{-- MODAL DETAIL KUNJUNGAN YANG AKAN DATANG --}}
+<div id="modalDetailKYAD" aria-hidden="true"
+    class="hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 md:p-6
                bg-slate-900/60 backdrop-blur-sm overflow-y-auto overflow-x-hidden">
-        <div class="relative w-full max-w-lg max-h-[90vh]">
-            <div
-                class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl
+    <div class="relative w-full max-w-lg max-h-[90vh]">
+        <div
+            class="relative bg-white dark:bg-slate-800 rounded-2xl shadow-2xl
                        border border-slate-100 dark:border-slate-700 flex flex-col max-h-[90vh] overflow-y-auto">
 
-                {{-- HEADER MODAL --}}
-                <div
-                    class="flex items-center justify-between gap-3 px-5 md:px-6 pt-4 pb-3
+            {{-- HEADER MODAL --}}
+            <div
+                class="flex items-center justify-between gap-3 px-5 md:px-6 pt-4 pb-3
                            border-b border-slate-100 dark:border-slate-700
                            bg-gradient-to-r from-sky-500 to-teal-500 rounded-t-2xl">
-                    <div>
-                        <h2 class="text-base md:text-lg font-semibold text-slate-50">
-                            Detail Kunjungan
-                        </h2>
-                        <p class="text-xs text-sky-50/90 mt-0.5">
-                            Informasi lengkap kunjungan pasien yang telah dijadwalkan.
-                        </p>
-                    </div>
-                    <button id="closeModalKYAD"
-                        class="inline-flex items-center justify-center h-8 w-8 rounded-full
+                <div>
+                    <h2 class="text-base md:text-lg font-semibold text-slate-50">
+                        Detail Kunjungan
+                    </h2>
+                    <p class="text-xs text-sky-50/90 mt-0.5">
+                        Informasi lengkap kunjungan pasien yang telah dijadwalkan.
+                    </p>
+                </div>
+                <button id="closeModalKYAD"
+                    class="inline-flex items-center justify-center h-8 w-8 rounded-full
                                text-slate-100 hover:text-white hover:bg-white/10 transition">
-                        <i class="fa-solid fa-xmark text-sm"></i>
-                    </button>
-                </div>
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
 
-                {{-- BODY MODAL --}}
-                <div id="detailKYADContent"
-                    class="px-5 md:px-6 py-4 space-y-2 text-sm text-slate-700 dark:text-slate-100">
-                    {{-- detailnya diisi via JS --}}
-                </div>
+            {{-- BODY MODAL --}}
+            <div id="detailKYADContent" class="px-5 md:px-6 py-4 space-y-2 text-sm text-slate-700 dark:text-slate-100">
+                {{-- detailnya diisi via JS --}}
+            </div>
 
-                {{-- FOOTER --}}
-                <div
-                    class="flex justify-end gap-2 px-5 md:px-6 pt-3 pb-4 border-t border-slate-200 dark:border-slate-700">
-                    <button id="closeModalKYADFooter"
-                        class="px-4 py-2 text-xs md:text-sm bg-slate-200 text-slate-700 rounded-xl
+            {{-- FOOTER --}}
+            <div class="flex justify-end gap-2 px-5 md:px-6 pt-3 pb-4 border-t border-slate-200 dark:border-slate-700">
+                <button id="closeModalKYADFooter"
+                    class="px-4 py-2 text-xs md:text-sm bg-slate-200 text-slate-700 rounded-xl
                                hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">
-                        Tutup
-                    </button>
-                </div>
+                    Tutup
+                </button>
             </div>
         </div>
     </div>
-
-</section>
+</div>
 
 @vite(['resources/js/admin/jadwalKunjungan/kunjungan-masa-depan.js'])

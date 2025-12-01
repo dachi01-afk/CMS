@@ -187,7 +187,6 @@ class TransaksiLayananController extends Controller
             'pasien',
             'layanan.kategoriLayanan',
             'kunjungan',
-            'metodePembayaran',
         ])
             ->where('kode_transaksi', $kodeTransaksi)
             ->get();
@@ -473,17 +472,18 @@ class TransaksiLayananController extends Controller
                 'success' => true,
                 'message' => 'Pembayaran layanan (transfer) berhasil diproses.',
             ]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             DB::rollBack();
+            throw $e; // biarkan Laravel munculin error aslinya
 
-            Log::error('Error pembayaran layanan transfer: ' . $e->getMessage(), [
-                'request' => $request->all(),
-            ]);
+            // Log::error('Error pembayaran layanan transfer: ' . $e->getMessage(), [
+            //     'request' => $request->all(),
+            // ]);
 
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat memproses pembayaran transfer.',
-            ], 500);
+            // return response()->json([
+            //     'success' => false,
+            //     'message' => 'Terjadi kesalahan saat memproses pembayaran transfer.',
+            // ], 500);
         }
     }
 

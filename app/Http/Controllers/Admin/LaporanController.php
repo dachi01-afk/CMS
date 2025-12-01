@@ -22,79 +22,80 @@ class LaporanController extends Controller
     }
 
     public function dataKunjungan(Request $request)
-{
-    $periode = $request->get('periode'); // "" | minggu | bulan | tahun
-    $bulan   = $request->get('bulan');
-    $tahun   = $request->get('tahun');
+    {
+        $periode = $request->get('periode'); // "" | minggu | bulan | tahun
+        $bulan   = $request->get('bulan');
+        $tahun   = $request->get('tahun');
 
-    $today = Carbon::today();
+        $today = Carbon::today();
 
-    // fallback tahun kalau kosong
-    if (!$tahun) {
-        $tahun = $today->year;
-    }
+        // fallback tahun kalau kosong
+        if (!$tahun) {
+            $tahun = $today->year;
+        }
 
-    $query = Kunjungan::with(['dokter', 'poli', 'pasien'])
-        ->latest('tanggal_kunjungan');
+        $query = Kunjungan::with(['dokter', 'poli', 'pasien'])
+            ->latest('tanggal_kunjungan');
 
-    if ($periode === 'minggu') {
-        $startOfWeek = $today->copy()->startOfWeek(Carbon::MONDAY);
-        $endOfWeek   = $today->copy()->endOfWeek(Carbon::SUNDAY);
+        if ($periode === 'minggu') {
+            $startOfWeek = $today->copy()->startOfWeek(Carbon::MONDAY);
+            $endOfWeek   = $today->copy()->endOfWeek(Carbon::SUNDAY);
 
-        $query->whereBetween('tanggal_kunjungan', [$startOfWeek, $endOfWeek]);
-    } elseif ($periode === 'bulan') {
-        // kalau user pilih bulan → pakai itu, kalau tidak → pakai bulan sekarang
-        $bulanDipakai = $bulan ?: $today->month;
+            $query->whereBetween('tanggal_kunjungan', [$startOfWeek, $endOfWeek]);
+        } elseif ($periode === 'bulan') {
+            // kalau user pilih bulan → pakai itu, kalau tidak → pakai bulan sekarang
+            $bulanDipakai = $bulan ?: $today->month;
 
-        $query->whereYear('tanggal_kunjungan', $tahun)
-              ->whereMonth('tanggal_kunjungan', $bulanDipakai);
-    } elseif ($periode === 'tahun') {
-        $query->whereYear('tanggal_kunjungan', $tahun);
-    }
+            $query->whereYear('tanggal_kunjungan', $tahun)
+                ->whereMonth('tanggal_kunjungan', $bulanDipakai);
+        } elseif ($periode === 'tahun') {
+            $query->whereYear('tanggal_kunjungan', $tahun);
+        }
 
-    return DataTables::of($query)
-        ->filter(function ($query) use ($request) {
-            $search = $request->input('search.value');
+        return DataTables::of($query)
+            ->filter(function ($query) use ($request) {
+                $search = $request->input('search.value');
 
-            if ($search) {
-                $query->where(function ($q) use ($search) {
-                    $q->where('no_antrian', 'like', "%{$search}%")
-                      ->orWhere('tanggal_kunjungan', 'like', "%{$search}%")
-                      ->orWhere('keluhan_awal', 'like', "%{$search}%")
-                      ->orWhere('status', 'like', "%{$search}%")
-                      ->orWhereHas('dokter', function ($q2) use ($search) {
-                          $q2->where('nama_dokter', 'like', "%{$search}%");
-                      })
-                      ->orWhereHas('pasien', function ($q3) use ($search) {
-                          $q3->where('nama_pasien', 'like', "%{$search}%");
-                      });
-                });
-            }
-        })
-        ->addIndexColumn()
-        ->addColumn('no_antrian', fn($kunjungan) => $kunjungan->no_antrian ?? '-')
-        ->addColumn('nama_dokter', fn($kunjungan) => $kunjungan->dokter->nama_dokter ?? '-')
-        ->addColumn('nama_pasien', fn($kunjungan) => $kunjungan->pasien->nama_pasien ?? '-')
-        ->editColumn('tanggal_kunjungan', function ($kunjungan) {
-            return $kunjungan->tanggal_kunjungan
-                ? \Carbon\Carbon::parse($kunjungan->tanggal_kunjungan)
+                if ($search) {
+                    $query->where(function ($q) use ($search) {
+                        $q->where('no_antrian', 'like', "%{$search}%")
+                            ->orWhere('tanggal_kunjungan', 'like', "%{$search}%")
+                            ->orWhere('keluhan_awal', 'like', "%{$search}%")
+                            ->orWhere('status', 'like', "%{$search}%")
+                            ->orWhereHas('dokter', function ($q2) use ($search) {
+                                $q2->where('nama_dokter', 'like', "%{$search}%");
+                            })
+                            ->orWhereHas('pasien', function ($q3) use ($search) {
+                                $q3->where('nama_pasien', 'like', "%{$search}%");
+                            });
+                    });
+                }
+            })
+            ->addIndexColumn()
+            ->addColumn('no_antrian', fn($kunjungan) => $kunjungan->no_antrian ?? '-')
+            ->addColumn('nama_dokter', fn($kunjungan) => $kunjungan->dokter->nama_dokter ?? '-')
+            ->addColumn('nama_pasien', fn($kunjungan) => $kunjungan->pasien->nama_pasien ?? '-')
+            ->addColumn('nama_poli', fn($kunjungan) => $kunjungan->poli->nama_poli ?? '-')
+            ->editColumn('tanggal_kunjungan', function ($kunjungan) {
+                return $kunjungan->tanggal_kunjungan
+                    ? \Carbon\Carbon::parse($kunjungan->tanggal_kunjungan)
                     ->locale('id')
                     ->translatedFormat('j F Y')
-                : '-';
-        })
-        ->editColumn('status', function ($kunjungan) {
-            return match ($kunjungan->status) {
-                'Pending'  => '<span class="px-2 py-1 text-xs font-semibold text-yellow-700 bg-yellow-100 rounded">Pending</span>',
-                'Waiting'  => '<span class="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded">Waiting</span>',
-                'Engaged'  => '<span class="px-2 py-1 text-xs font-semibold text-sky-700 bg-sky-100 rounded">Engaged</span>',
-                'Succeed'  => '<span class="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded">Succeed</span>',
-                'Canceled' => '<span class="px-2 py-1 text-xs font-semibold text-red-700 bg-red-100 rounded">Canceled</span>',
-                default    => '<span class="px-2 py-1 text-xs font-semibold text-gray-700 bg-gray-100 rounded">-</span>',
-            };
-        })
-        ->rawColumns(['status'])
-        ->make(true);
-}
+                    : '-';
+            })
+            ->editColumn('status', function ($kunjungan) {
+                return match ($kunjungan->status) {
+                    'Pending'  => '<span class="px-2 py-1 text-xs font-semibold text-yellow-700 bg-yellow-100 rounded">Pending</span>',
+                    'Waiting'  => '<span class="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded">Waiting</span>',
+                    'Engaged'  => '<span class="px-2 py-1 text-xs font-semibold text-sky-700 bg-sky-100 rounded">Engaged</span>',
+                    'Succeed'  => '<span class="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded">Succeed</span>',
+                    'Canceled' => '<span class="px-2 py-1 text-xs font-semibold text-red-700 bg-red-100 rounded">Canceled</span>',
+                    default    => '<span class="px-2 py-1 text-xs font-semibold text-gray-700 bg-gray-100 rounded">-</span>',
+                };
+            })
+            ->rawColumns(['status'])
+            ->make(true);
+    }
 
 
     public function dataPembayaran()
@@ -137,76 +138,76 @@ class LaporanController extends Controller
             ->make(true);
     }
 
-public function exportKunjungan(Request $request)
-{
-    $periode = $request->input('periode'); // "", minggu, bulan, tahun
-    $bulan   = $request->input('bulan');   // 01–12 (optional)
-    $tahun   = $request->input('tahun');   // optional
+    public function exportKunjungan(Request $request)
+    {
+        $periode = $request->input('periode'); // "", minggu, bulan, tahun
+        $bulan   = $request->input('bulan');   // 01–12 (optional)
+        $tahun   = $request->input('tahun');   // optional
 
-    $today = Carbon::today();
+        $today = Carbon::today();
 
-    if (!$tahun) {
-        $tahun = $today->year;
-    }
-
-    $query = Kunjungan::with(['dokter', 'poli', 'pasien'])
-        ->latest('tanggal_kunjungan');
-
-    // 🔹 Filter tanggal – samakan dengan dataKunjungan()
-    if ($periode === 'minggu') {
-        $startOfWeek = $today->copy()->startOfWeek(Carbon::MONDAY);
-        $endOfWeek   = $today->copy()->endOfWeek(Carbon::SUNDAY);
-
-        $query->whereBetween('tanggal_kunjungan', [$startOfWeek, $endOfWeek]);
-    } elseif ($periode === 'bulan') {
-        $bulanDipakai = $bulan ?: $today->month;
-
-        $query->whereYear('tanggal_kunjungan', $tahun)
-              ->whereMonth('tanggal_kunjungan', $bulanDipakai);
-    } elseif ($periode === 'tahun') {
-        $query->whereYear('tanggal_kunjungan', $tahun);
-    }
-    // kalau "" (semua) → tanpa filter tanggal
-
-    $dataKunjungan = $query->get();
-
-    // 🔹 Kalau tidak ada data → balik dengan pesan error
-    if ($dataKunjungan->isEmpty()) {
-        $namaBulan = [
-            '01' => 'Januari',
-            '02' => 'Februari',
-            '03' => 'Maret',
-            '04' => 'April',
-            '05' => 'Mei',
-            '06' => 'Juni',
-            '07' => 'Juli',
-            '08' => 'Agustus',
-            '09' => 'September',
-            '10' => 'Oktober',
-            '11' => 'November',
-            '12' => 'Desember',
-        ];
-
-        if ($periode === 'bulan') {
-            // kalau bulan gak diisi, pakai bulan sekarang untuk teks
-            $bulanTeks = $bulan ? ($namaBulan[$bulan] ?? $bulan) : $namaBulan[$today->format('m')];
-            $teksPeriode = "bulan {$bulanTeks} pada tahun {$tahun}";
-        } elseif ($periode === 'tahun') {
-            $teksPeriode = "tahun {$tahun}";
-        } elseif ($periode === 'minggu') {
-            $startOfWeek = $today->copy()->startOfWeek(Carbon::MONDAY)->format('d M Y');
-            $endOfWeek   = $today->copy()->endOfWeek(Carbon::SUNDAY)->format('d M Y');
-            $teksPeriode = "minggu ini ({$startOfWeek} - {$endOfWeek})";
-        } else {
-            $teksPeriode = "periode yang dipilih";
+        if (!$tahun) {
+            $tahun = $today->year;
         }
 
-        return back()->with('error', "Data untuk {$teksPeriode} tidak ada.");
-    }
+        $query = Kunjungan::with(['dokter', 'poli', 'pasien'])
+            ->latest('tanggal_kunjungan');
 
-    // 🔹 Kalau ada data → lanjutkan export
-    return Excel::download(new KunjunganExport($dataKunjungan), 'kunjungan.xlsx');
-}
+        // 🔹 Filter tanggal – samakan dengan dataKunjungan()
+        if ($periode === 'minggu') {
+            $startOfWeek = $today->copy()->startOfWeek(Carbon::MONDAY);
+            $endOfWeek   = $today->copy()->endOfWeek(Carbon::SUNDAY);
+
+            $query->whereBetween('tanggal_kunjungan', [$startOfWeek, $endOfWeek]);
+        } elseif ($periode === 'bulan') {
+            $bulanDipakai = $bulan ?: $today->month;
+
+            $query->whereYear('tanggal_kunjungan', $tahun)
+                ->whereMonth('tanggal_kunjungan', $bulanDipakai);
+        } elseif ($periode === 'tahun') {
+            $query->whereYear('tanggal_kunjungan', $tahun);
+        }
+        // kalau "" (semua) → tanpa filter tanggal
+
+        $dataKunjungan = $query->get();
+
+        // 🔹 Kalau tidak ada data → balik dengan pesan error
+        if ($dataKunjungan->isEmpty()) {
+            $namaBulan = [
+                '01' => 'Januari',
+                '02' => 'Februari',
+                '03' => 'Maret',
+                '04' => 'April',
+                '05' => 'Mei',
+                '06' => 'Juni',
+                '07' => 'Juli',
+                '08' => 'Agustus',
+                '09' => 'September',
+                '10' => 'Oktober',
+                '11' => 'November',
+                '12' => 'Desember',
+            ];
+
+            if ($periode === 'bulan') {
+                // kalau bulan gak diisi, pakai bulan sekarang untuk teks
+                $bulanTeks = $bulan ? ($namaBulan[$bulan] ?? $bulan) : $namaBulan[$today->format('m')];
+                $teksPeriode = "bulan {$bulanTeks} pada tahun {$tahun}";
+            } elseif ($periode === 'tahun') {
+                $teksPeriode = "tahun {$tahun}";
+            } elseif ($periode === 'minggu') {
+                $startOfWeek = $today->copy()->startOfWeek(Carbon::MONDAY)->format('d M Y');
+                $endOfWeek   = $today->copy()->endOfWeek(Carbon::SUNDAY)->format('d M Y');
+                $teksPeriode = "minggu ini ({$startOfWeek} - {$endOfWeek})";
+            } else {
+                $teksPeriode = "periode yang dipilih";
+            }
+
+            return back()->with('error', "Data untuk {$teksPeriode} tidak ada.");
+        }
+
+        // 🔹 Kalau ada data → lanjutkan export
+        return Excel::download(new KunjunganExport($dataKunjungan), 'kunjungan.xlsx');
+    }
 
     // public function exportKeuangan(Request $request)
     // {

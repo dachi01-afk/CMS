@@ -276,7 +276,7 @@
                         class="px-5 py-2.5 text-sm font-medium text-slate-700 bg-slate-200 rounded-xl 
                                hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">
                         Batal
-                    </button>e
+                    </button>
                     <button type="submit" id="saveApotekerButton"
                         class="px-5 py-2.5 text-sm font-semibold text-white rounded-xl 
                                bg-gradient-to-r from-sky-500 to-teal-600 hover:from-sky-600 hover:to-teal-700

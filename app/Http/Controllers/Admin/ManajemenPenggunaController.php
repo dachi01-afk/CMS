@@ -313,6 +313,28 @@ class ManajemenPenggunaController extends Controller
                 return $html;
             })
 
+            ->filter(function ($query) {
+                $search = request('search.value');
+
+                if ($search) {
+                    $query->where(function ($q) use ($search) {
+                        // 🔍 cari di NAMA PERAWAT (kolom di tabel perawat)
+                        $q->where('nama_perawat', 'like', '%' . $search . '%')
+
+                            // 🔍 cari di POLI
+                            ->orWhereHas('perawatDokterPoli.poli', function ($qq) use ($search) {
+                                $qq->where('nama_poli', 'like', '%' . $search . '%');
+                            })
+
+                            // 🔍 cari di DOKTER
+                            ->orWhereHas('perawatDokterPoli.dokter', function ($qq) use ($search) {
+                                $qq->where('nama_dokter', 'like', '%' . $search . '%');
+                            });
+                    });
+                }
+            })
+
+
             // ================= ACTION =================
             ->addColumn('action', function (Perawat $perawat) {
                 return '

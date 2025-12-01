@@ -148,6 +148,7 @@
                         <th class="px-6 py-3">No. Antrian</th>
                         <th class="px-6 py-3">Nama Dokter</th>
                         <th class="px-6 py-3">Nama Pasien</th>
+                        <th class="px-6 py-3">Nama Poli</th>
                         <th class="px-6 py-3">Tanggal Kunjungan</th>
                         <th class="px-6 py-3">Keluhan Awal</th>
                         <th class="px-6 py-3">Status</th>

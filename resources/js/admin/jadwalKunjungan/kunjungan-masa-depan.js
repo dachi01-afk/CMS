@@ -1,14 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
     loadWaitingList();
 
-    const menuProses = document.getElementById("menuProsesKunjunganMasaDepan");
-    if (menuProses) {
-        menuProses.addEventListener("click", (e) => {
-            e.preventDefault();
-            loadWaitingList();
-        });
-    }
-
     async function loadWaitingList() {
         const tbody = document.getElementById("waitingBodyMasaDepan");
 
@@ -66,7 +58,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 <td class="px-6 py-3 text-center">
                     <button data-id="${item.id}"
                             data-dokter="${namaDokter}"
-                            class="ubahStatusBtn text-blue-600 hover:text-blue-800 mr-2 text-center items-center">
+                            class="lihatDetailKYAD text-blue-600 hover:text-blue-800 mr-2 text-center items-center">
                         <i class="fa-solid fa-circle-info text-lg"></i>
                         Lihat Detail
                     </button>
@@ -76,7 +68,7 @@ document.addEventListener("DOMContentLoaded", () => {
         });
 
         // === Event listener tombol Lihat Detail ===
-        document.querySelectorAll(".ubahStatusBtn").forEach((btn) => {
+        document.querySelectorAll(".lihatDetailKYAD").forEach((btn) => {
             btn.addEventListener("click", async () => {
                 const id = btn.dataset.id;
                 const namaDokter = btn.dataset.dokter;

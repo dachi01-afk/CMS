@@ -112,7 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
             },
             load: function (query, callback) {
                 fetch(
-                    `/manajemen_pengguna/list_dokter?q=${encodeURIComponent(
+                    `/jadwal_kunjungan/listDokter?q=${encodeURIComponent(
                         query || ""
                     )}`,
                     {
@@ -125,10 +125,7 @@ document.addEventListener("DOMContentLoaded", () => {
                         callback(
                             arr.map((d) => ({
                                 id: d.id,
-                                nama:
-                                    d.nama_dokter ||
-                                    d.nama ||
-                                    `Dokter #${d.id}`,
+                                nama: d.nama_dokter || d.nama || `Dokter #${d.id}`,
                             }))
                         );
                     })
@@ -179,7 +176,7 @@ document.addEventListener("DOMContentLoaded", () => {
             },
             load: function (query, callback) {
                 fetch(
-                    `/manajemen_pengguna/dokter/${dokterId}/polis?q=${encodeURIComponent(
+                    `/jadwal_kunjungan/listPoliByDokter/${dokterId}/poli?q=${encodeURIComponent(
                         query || ""
                     )}`,
                     { headers: { Accept: "application/json" } }
@@ -277,56 +274,64 @@ document.addEventListener("DOMContentLoaded", () => {
                             <td class="px-6 py-3 text-gray-800 text-center">${namaPoli}</td>
                             <td class="px-6 py-3 text-gray-800 text-center">${keluhan}</td>
                             <td class="px-6 py-3 text-gray-800 text-center">${status}</td>
-                            <td class="px-6 py-3 text-right align-top">
-                                <div class="aksi-dropdown-wrapper">
-                                    <button type="button"
-                                            class="aksiDropdownToggle inline-flex items-center justify-center h-8 w-8 rounded-full
-                                                   text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition">
-                                        <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
-                                    </button>
+                           <td class="px-6 py-3 text-right align-top overflow-visible relative">
 
-                                    <div
-                                        class="aksiDropdownMenu aksi-dropdown-menu hidden bg-white border border-gray-100
-                                               w-44 rounded-lg shadow-lg">
-                                        <div class="py-1 text-left text-sm">
+    <div class="aksi-dropdown-wrapper relative inline-block text-left">
 
-                                            <button data-id="${item.id}"
-                                                    class="ubahStatusBtn w-full px-4 py-2 flex items-center gap-2 text-xs
-                                                           text-indigo-700 hover:bg-indigo-50">
-                                                <i class="fa-solid fa-play text-[11px]"></i>
-                                                <span>Mulai Konsultasi</span>
-                                            </button>
+        <!-- Tombol Toggle -->
+        <button type="button"
+                class="aksiDropdownToggle inline-flex items-center justify-center h-8 w-8 rounded-full
+                       text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition">
+            <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
+        </button>
 
-                                            <button data-id="${item.id}"
-                                                    class="batalkanKunjunganBtn w-full px-4 py-2 flex items-center gap-2 text-xs
-                                                           text-red-600 hover:bg-red-50">
-                                                <i class="fa-solid fa-xmark text-[11px]"></i>
-                                                <span>Batalkan Kunjungan</span>
-                                            </button>
+        <!-- MENU FLOAT / MELAYANG -->
+        <div
+            class="aksiDropdownMenu hidden absolute right-0 top-9 z-50 bg-white dark:bg-slate-800
+                   border border-gray-100 dark:border-slate-700 w-44 rounded-xl shadow-xl
+                   py-1 text-sm transition-all">
 
-                                            <div class="border-t border-gray-100 my-1"></div>
+            <!-- Mulai Konsultasi -->
+            <button data-id="${item.id}"
+                    class="ubahStatusBtn w-full px-4 py-2 flex items-center gap-2 text-xs
+                           text-indigo-700 hover:bg-indigo-50 dark:hover:bg-slate-700">
+                <i class="fa-solid fa-play text-[11px]"></i>
+                <span>Mulai Konsultasi</span>
+            </button>
 
-                                            <button
-                                                data-id="${item.id}"
-                                                data-no_antrian="${noAntrian}"
-                                                data-nama_pasien="${namaPasien}"
-                                                data-nama_dokter="${namaDokter}"
-                                                data-nama_poli="${namaPoli}"
-                                                data-dokter_id="${dokterId}"
-                                                data-poli_id="${poliId}"
-                                                data-keluhan="${keluhan}"
-                                                data-status-kunjungan="${status}"
-                                                data-update-url="/jadwal_kunjungan/updateKunjungan/${item.id}"
-                                                class="editKunjunganBtn w-full px-4 py-2 flex items-center gap-2 text-xs
-                                                       text-gray-700 hover:bg-gray-50">
-                                                <i class="fa-solid fa-pen-to-square text-[11px]"></i>
-                                                <span>Edit Kunjungan</span>
-                                            </button>
+            <!-- Batalkan -->
+            <button data-id="${item.id}"
+                    class="batalkanKunjunganBtn w-full px-4 py-2 flex items-center gap-2 text-xs
+                           text-red-600 hover:bg-red-50 dark:hover:bg-slate-700/40">
+                <i class="fa-solid fa-xmark text-[11px]"></i>
+                <span>Batalkan Kunjungan</span>
+            </button>
 
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
+            <div class="border-t border-gray-200 dark:border-slate-600 my-1"></div>
+
+            <!-- Edit -->
+            <button
+                data-id="${item.id}"
+                data-no_antrian="${noAntrian}"
+                data-nama_pasien="${namaPasien}"
+                data-nama_dokter="${namaDokter}"
+                data-nama_poli="${namaPoli}"
+                data-dokter_id="${dokterId}"
+                data-poli_id="${poliId}"
+                data-keluhan="${keluhan}"
+                data-status-kunjungan="${status}"
+                data-update-url="/jadwal_kunjungan/updateKunjungan/${item.id}"
+                class="editKunjunganBtn w-full px-4 py-2 flex items-center gap-2 text-xs
+                       text-gray-700 hover:bg-gray-50 dark:hover:bg-slate-700">
+                <i class="fa-solid fa-pen-to-square text-[11px]"></i>
+                <span>Edit Kunjungan</span>
+            </button>
+
+        </div>
+    </div>
+
+</td>
+
                         </tr>`;
                 })
                 .join("");

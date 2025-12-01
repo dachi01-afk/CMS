@@ -292,7 +292,7 @@
                             Cari Pasien
                         </label>
                         <input type="text" id="search_pasien-kyad" name="search_pasien"
-                            placeholder="Ketik nama atau NIK pasien..."
+                            placeholder="Ketik nama Pasien atau No EMR Pasien"
                             class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl w-full px-3 py-2.5 focus:ring-sky-500 focus:border-sky-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50">
                         <div id="search_results-kyad"
                             class="mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow max-h-40 overflow-y-auto hidden text-sm">
@@ -313,6 +313,10 @@
                         <p>
                             <span class="text-slate-400">Jenis Kelamin:</span>
                             <span id="jk_pasien-kyad" class="ml-1"></span>
+                        </p>
+                        <p>
+                            <span class="text-slate-400">No EMR Pasien:</span>
+                            <span id="no_emr_pasien-kyad" class="ml-1"></span>
                         </p>
                     </div>
                 </div>

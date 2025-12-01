@@ -175,7 +175,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 namaPoli.textContent = btn.dataset.namaPoli || "-";
             }
             if (tanggalDisplay) {
-                tanggalDisplay.textContent = formatTanggalIndo(btn.dataset.tanggal || "-");
+                tanggalDisplay.textContent = formatTanggalIndo(
+                    btn.dataset.tanggal || "-"
+                );
             }
             if (spesialisDisplay) {
                 spesialisDisplay.textContent = btn.dataset.spesialis || "-";
@@ -242,6 +244,8 @@ document.addEventListener("DOMContentLoaded", () => {
                             document.getElementById("alamat_pasien-kyad");
                         const jkPasien =
                             document.getElementById("jk_pasien-kyad");
+                        const noEmrPasien =
+                            document.getElementById("no_emr_pasien-kyad");
 
                         if (pasienId) pasienId.value = pasien.id;
                         if (namaPasien)
@@ -250,6 +254,8 @@ document.addEventListener("DOMContentLoaded", () => {
                             alamatPasien.textContent = pasien.alamat ?? "-";
                         if (jkPasien)
                             jkPasien.textContent = pasien.jenis_kelamin ?? "-";
+                        if (noEmrPasien)
+                            noEmrPasien.textContent = pasien.no_emr ?? "-";
 
                         if (pasienDataDiv)
                             pasienDataDiv.classList.remove("hidden");

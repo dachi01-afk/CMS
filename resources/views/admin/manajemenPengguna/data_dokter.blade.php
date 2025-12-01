@@ -158,7 +158,7 @@
                 {{-- BLOK ATAS: FOTO + AKUN & LOGIN --}}
                 <div class="grid grid-cols-1 md:grid-cols-[auto,1fr] gap-6 items-start mt-1">
                     {{-- FOTO --}}
-                    <div class="flex justify-center md:justify-start">
+                    <div class="flex flex-col justify-center md:justify-start">
                         <div id="foto_drop_area"
                             class="relative w-32 md:w-36 aspect-[3/4] rounded-xl border-2 border-dashed border-sky-300/80 
                                    flex items-center justify-center cursor-pointer overflow-hidden
@@ -173,6 +173,7 @@
                             <input type="file" name="foto_dokter" id="foto_dokter" accept="image/*"
                                 class="absolute inset-0 opacity-0 cursor-pointer">
                         </div>
+                        <div id="foto_dokter-error" class="text-red-600 text-xs mt-1"></div>
                     </div>
                     <div class="space-y-4">
                         <h4 class="text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400 uppercase">

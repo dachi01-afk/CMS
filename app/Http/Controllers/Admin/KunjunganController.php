@@ -117,6 +117,4 @@ class KunjunganController extends Controller
             'message' => 'Berhasil Merubah Status Kunjungan Dari Pending Menjadi Canceled',
         ]);
     }
-
-    
 }
