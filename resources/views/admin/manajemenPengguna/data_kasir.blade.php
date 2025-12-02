@@ -109,7 +109,7 @@
 {{-- Modal Add Kasir (CREATE) --}}
 <div id="addKasirModal" aria-hidden="true"
     class="hidden fixed inset-0 z-50 flex items-start md:items-center justify-center w-full h-full p-4 md:p-6 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
-    <div class="relative w-full max-w-3xl">
+    <div class="relative w-full max-w-5xl">
         <div
             class="relative bg-white rounded-2xl shadow-2xl dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex flex-col max-h-[90vh] overflow-y-auto">
 
@@ -272,7 +272,7 @@
 
                 {{-- Buttons --}}
                 <div class="flex justify-end gap-3 mt-6 border-t border-slate-200 pt-4 dark:border-slate-700">
-                    <button type="button" id="closeAddKasirModal"
+                    <button type="button" id="closeAddKasirModal_footer"
                         class="px-5 py-2.5 text-sm font-medium text-slate-700 bg-slate-200 rounded-xl 
                                hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">
                         Batal
@@ -292,7 +292,7 @@
 {{-- Modal Edit Kasir (UPDATE) --}}
 <div id="editKasirModal" aria-hidden="true"
     class="hidden fixed inset-0 z-50 flex items-start md:items-center justify-center w-full h-full p-4 md:p-6 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
-    <div class="relative w-full max-w-3xl">
+    <div class="relative w-full max-w-5xl">
         <div
             class="relative bg-white rounded-2xl shadow-2xl dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex flex-col max-h-[90vh] overflow-y-auto">
 
@@ -465,7 +465,8 @@
                                 class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-xl
                                        focus:ring-sky-500 focus:border-sky-500 px-3 py-2.5
                                        dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
-                                placeholder="Ulangi password baru (opsional)">
+                                placeholder="Ulangi password baru (opsional)" 
+                                oninput="this.setCustomValidity(this.value !== edit_password_perawat.value ? 'Password tidak sama!' : '')">
                             <div id="edit_password_kasir_confirmation-error" class="text-red-600 text-xs mt-1"></div>
                         </div>
                     </div>
@@ -473,7 +474,7 @@
 
                 {{-- Buttons --}}
                 <div class="flex justify-end gap-3 mt-6 border-t border-slate-200 pt-4 dark:border-slate-700">
-                    <button type="button" id="closeEditKasirrModal"
+                    <button type="button" id="closeEditKasirrModal_footer"
                         class="px-5 py-2.5 text-sm font-medium text-slate-700 bg-slate-200 rounded-xl 
                                hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">
                         Batal
