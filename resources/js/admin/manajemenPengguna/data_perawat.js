@@ -133,7 +133,12 @@ $(function () {
 // ================== ADD PERAWAT: multi poli & dokter (pivot dokter_poli) ==================
 $(function () {
     const addModalElement = document.getElementById("addPerawatModal");
-    const addModal = addModalElement ? new Modal(addModalElement) : null;
+    const addModal = addModalElement
+        ? new Modal(addModalElement, {
+              backdrop: "static",
+              closable: false,
+          })
+        : null;
     const $formAdd = $("#formAddPerawat");
 
     let tsAddPoli = null;
@@ -486,7 +491,12 @@ $(function () {
 // ================== EDIT PERAWAT (multi poli & dokter) ==================
 $(function () {
     const editModalElement = document.getElementById("editPerawatModal");
-    const editModal = editModalElement ? new Modal(editModalElement) : null;
+    const editModal = editModalElement
+        ? new Modal(editModalElement, {
+              backdrop: "static",
+              closable: false,
+          })
+        : null;
     const $formEdit = $("#formEditPerawat");
     const initialEditUrl = $formEdit.data("url");
 
@@ -626,9 +636,7 @@ $(function () {
                         cb(
                             arr.map((d) => ({
                                 id: d.dokter_poli_id,
-                                nama:
-                                    d.nama_dokter ||
-                                    `Dokter #${d.dokter_id}`,
+                                nama: d.nama_dokter || `Dokter #${d.dokter_id}`,
                             }))
                         );
                     })
@@ -871,7 +879,6 @@ $(function () {
         }
     );
 });
-
 
 // ================== DELETE PERAWAT ==================
 $(function () {

@@ -415,36 +415,41 @@
                 </div>
                 <div id="edit_foto_apoteker-error" class="text-red-600 text-xs mt-1 text-center"></div>
 
-                {{-- Password (Opsional) --}}
+
+                <!-- Password (Opsional) -->
                 <div class="mt-4 space-y-3 border-t border-slate-200 dark:border-slate-700 pt-4">
                     <h4 class="text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400 uppercase">
                         Keamanan Akun
                     </h4>
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {{-- Password baru --}}
+                        <!-- Password baru -->
                         <div class="space-y-1">
                             <label for="edit_password_apoteker"
-                                class="block text-sm font-medium text-slate-800 dark:text-slate-100">Password
-                                Baru</label>
+                                class="block text-sm font-medium text-slate-800 dark:text-slate-100">
+                                Password (opsional)
+                            </label>
                             <input type="password" name="edit_password_apoteker" id="edit_password_apoteker"
                                 class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-xl
-                                       focus:ring-sky-500 focus:border-sky-500 px-3 py-2.5
-                                       dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
-                                placeholder="••••••••">
+                                           focus:ring-sky-500 focus:border-sky-500 px-3 py-2.5
+                                           dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
+                                placeholder="Isi jika ingin mengubah">
                             <div id="edit_password_apoteker-error" class="text-red-600 text-xs mt-1"></div>
                         </div>
 
-                        {{-- Konfirmasi Password --}}
+
+                        {{-- Password (opsional) --}}
                         <div class="space-y-1">
                             <label for="edit_password_apoteker_confirmation"
-                                class="block text-sm font-medium text-slate-800 dark:text-slate-100">Konfirmasi
-                                Password</label>
+                                class="block text-sm font-medium text-slate-800 dark:text-slate-100">
+                                Konfirmasi Password
+                            </label>
                             <input type="password" name="edit_password_apoteker_confirmation"
                                 id="edit_password_apoteker_confirmation"
                                 class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-xl
-                                       focus:ring-sky-500 focus:border-sky-500 px-3 py-2.5
-                                       dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
-                                placeholder="••••••••">
+                                           focus:ring-sky-500 focus:border-sky-500 px-3 py-2.5
+                                           dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
+                                placeholder="Ulangi password baru"
+                                oninput="this.setCustomValidity(this.value !== edit_password_dokter.value ? 'Password tidak sama!' : '')">
                             <div id="edit_password_apoteker_confirmation-error" class="text-red-600 text-xs mt-1">
                             </div>
                         </div>
