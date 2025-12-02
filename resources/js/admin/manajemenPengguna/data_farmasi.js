@@ -122,10 +122,12 @@ $(function () {
 // add data apoteker
 $(function () {
     const addModalElement = document.getElementById("addApotekerModal");
-    const addModal = addModalElement ? new Modal(addModalElement , {
-        backdrop: 'static',
-        closable: false,
-    }) : null;
+    const addModal = addModalElement
+        ? new Modal(addModalElement, {
+              backdrop: "static",
+              closable: false,
+          })
+        : null;
     const $formAdd = $("#formAddApoteker");
 
     function resetAddForm() {
@@ -145,10 +147,13 @@ $(function () {
         if (addModal) addModal.show();
     });
 
-    $("#closeAddApotekerModal, #closeAddApotekerModal_footer").on("click", function () {
-        resetAddForm();
-        if (addModal) addModal.hide();
-    });
+    $("#closeAddApotekerModal, #closeAddApotekerModal_footer").on(
+        "click",
+        function () {
+            resetAddForm();
+            if (addModal) addModal.hide();
+        }
+    );
 
     $formAdd.on("submit", function (e) {
         e.preventDefault();
@@ -211,7 +216,12 @@ $(function () {
 // edit data apoteker
 $(function () {
     const editModalElement = document.getElementById("editApotekerModal");
-    const editModal = editModalElement ? new Modal(editModalElement) : null;
+    const editModal = editModalElement
+        ? new Modal(editModalElement, {
+              backdrop: "static",
+              closable: false,
+          })
+        : null;
     const $formEdit = $("#formEditApoteker");
     const initialEditUrl = $formEdit.data("url");
 
@@ -324,10 +334,13 @@ $(function () {
             });
     });
 
-    $("#closeEditApotekerModal").on("click", function () {
-        resetEditForm();
-        if (editModal) editModal.hide();
-    });
+    $("#closeEditApotekerModal, #closeEditApotekerModal_footer").on(
+        "click",
+        function () {
+            resetEditForm();
+            if (editModal) editModal.hide();
+        }
+    );
 });
 
 // delete data dokter
