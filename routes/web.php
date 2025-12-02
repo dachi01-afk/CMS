@@ -273,9 +273,9 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::get('/get-data-pasien', [OrderLayananController::class, 'searchPasien'])->name('order.layanan.get.data.pasien');
         Route::get('/get-data-jadwal-dokter-hari-ini', [OrderLayananController::class, 'getJadwalDokterHariIni'])->name('order.layanan.get.data.jadwal.dokter.hari.ini');
         Route::post('/create-data-order-layanan', [OrderLayananController::class, 'createDataOrderLayanan'])->name('order.layanan.create.data.order.layanan');
-        Route::get('/get-data-order-layanan/{id}', [OrderLayananController::class, 'getDataOrderLayananById'])->name('order.layanan.get.data.order.layanan.by.id');
+        Route::get('/get-data-order-layanan/{kodeTransaksi}', [OrderLayananController::class, 'getDataOrderLayananById'])->name('order.layanan.get.data.order.layanan.by.id');
         Route::post('/update-data-order-layanan', [OrderLayananController::class, 'updateDataOrderLayanan'])->name('order.layanan.update.data.order.layanan');
-        Route::post('/delete-data-order-layanan/{id}', [OrderLayananController::class, 'deleteDataOrderLayanan'])->name('order.layanan.delete.data.order.layanan');
+        Route::post('/delete-data-order-layanan/{kodeTransaksi}', [OrderLayananController::class, 'deleteDataOrderLayanan'])->name('order.layanan.delete.data.order.layanan');
     });
 });
 

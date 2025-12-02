@@ -121,7 +121,7 @@ class OrderLayananController extends Controller
         <div class="flex items-center justify-center gap-1">
             <button 
                 type="button"
-                data-id="' . $order->id . '"
+                data-kode-transaksi="' . $order->kode_transaksi . '"
                 class="btn-update-order-layanan inline-flex items-center gap-1
                        px-3 py-1.5 rounded-lg text-[11px] font-semibold
                        bg-sky-50 text-sky-700 border border-sky-200
@@ -134,7 +134,7 @@ class OrderLayananController extends Controller
 
             <button 
                 type="button"
-                data-id="' . $order->id . '"
+                data-kode-transaksi="' . $order->kode_transaksi . '"
                 class="btn-delete-order-layanan inline-flex items-center gap-1
                        px-3 py-1.5 rounded-lg text-[11px] font-semibold
                        bg-rose-50 text-rose-700 border border-rose-200
@@ -344,63 +344,142 @@ class OrderLayananController extends Controller
         ]);
     }
 
-    public function getDataOrderLayananById($id)
+    public function getDataOrderLayananById($kodeTransaksi)
     {
-        $order = PenjualanLayanan::with(['pasien', 'layanan', 'kategoriLayanan'])
-            ->findOrFail($id);
+        $orders = PenjualanLayanan::with([
+            'pasien',
+            'layanan',
+            'kategoriLayanan',
+            'kunjungan.poli',
+            'kunjungan.jadwalDokter',
+        ])
+            ->where('kode_transaksi', $kodeTransaksi)
+            ->get();
 
-        $tanggalTransaksi = $order->tanggal_transaksi
-            ? Carbon::parse($order->tanggal_transaksi)->format('Y-m-d\TH:i')
+        if ($orders->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data order layanan tidak ditemukan.',
+            ], 404);
+        }
+
+        $first = $orders->first();
+
+        $tanggalTransaksi = $first->tanggal_transaksi
+            ? Carbon::parse($first->tanggal_transaksi)->format('Y-m-d\TH:i')
             : null;
+
+        // Ambil kunjungan utk header
+        $kunjungan = $first->kunjungan;
+        $poli      = optional($kunjungan)->poli;
+        $jadwal    = optional($kunjungan)->jadwalDokter;
+
+        // Mapping setiap baris menjadi item layanan
+        $items = $orders->map(function ($row) {
+            $kunjunganRow = $row->kunjungan;
+            $poliRow      = optional($kunjunganRow)->poli;
+            $jadwalRow    = optional($kunjunganRow)->jadwalDokter;
+
+            return [
+                'id'                     => $row->id, // id penjualan_layanan
+                'layanan_id'             => $row->layanan_id,
+                'nama_layanan'           => optional($row->layanan)->nama_layanan,
+                'kategori_layanan_id'    => $row->kategori_layanan_id,
+                'kategori_layanan_nama'  => optional($row->kategoriLayanan)->nama_kategori,
+                'jumlah'                 => $row->jumlah,
+                'total_tagihan'          => $row->total_tagihan,
+
+                // info poli / jadwal per transaksi (biasanya sama utk semua items)
+                'poli_id'                => optional($kunjunganRow)->poli_id,
+                'nama_poli'              => optional($poliRow)->nama_poli,
+                'jadwal_dokter_id'       => optional($kunjunganRow)->jadwal_dokter_id,
+                'jadwal_dokter'          => $jadwalRow
+                    ? $jadwalRow->jam_awal . ' - ' . $jadwalRow->jam_selesai
+                    : null,
+            ];
+        })->values();
 
         return response()->json([
             'success' => true,
             'data' => [
-                'id' => $order->id,
-                'pasien_id' => $order->pasien_id,
-                'nama_pasien' => $order->pasien->nama_pasien ?? null,
-                'pasien_no_emr' => $order->pasien->no_emr ?? null,
-                'pasien_jenis_kelamin' => $order->pasien->jenis_kelamin ?? null,
-
-                'layanan_id' => $order->layanan_id,
-                'nama_layanan' => $order->layanan->nama_layanan ?? null,
-
-                'kategori_layanan_id' => $order->kategori_layanan_id,
-                'kategori_layanan' => $order->kategoriLayanan->nama_kategori ?? null,
-
-                'jumlah' => $order->jumlah,
-                'total_tagihan' => $order->total_tagihan,
+                // header transaksi
+                'kode_transaksi'    => $first->kode_transaksi,
                 'tanggal_transaksi' => $tanggalTransaksi,
-                'status' => $order->status,
+                'status'            => $first->status,
+
+                // ==> TAMBAH INI
+                'order_layanan_id'  => $items->first()->id ?? null,
+
+                // data pasien
+                'pasien' => [
+                    'id'            => $first->pasien_id,
+                    'nama_pasien'   => optional($first->pasien)->nama_pasien,
+                    'no_emr'        => optional($first->pasien)->no_emr,
+                    'jenis_kelamin' => optional($first->pasien)->jenis_kelamin,
+                ],
+
+                // header poli / jadwal
+                'poli_id'          => optional($kunjungan)->poli_id,
+                'nama_poli'        => optional($poli)->nama_poli,
+                'jadwal_dokter_id' => optional($kunjungan)->jadwal_dokter_id,
+                'jadwal_dokter'    => $jadwal
+                    ? $jadwal->jam_awal . ' - ' . $jadwal->jam_selesai
+                    : null,
+
+                // daftar item layanan
+                'items' => $items,
+
+                // total keseluruhan
+                'total_tagihan' => $items->sum('total_tagihan'),
             ],
         ]);
     }
 
     /**
-     * Update data order layanan
+     * Update data order layanan (multi item per kode_transaksi)
      */
     public function updateDataOrderLayanan(Request $request)
     {
-        // VALIDASI UTAMA
+        // ==============
+        // VALIDASI DASAR
+        // ==============
         $validated = $request->validate([
-            'id'                  => 'required|exists:penjualan_layanan,id',
-            'pasien_id'           => 'required|exists:pasien,id',
-            'layanan_id'          => 'required|exists:layanan,id',
-            'kategori_layanan_id' => 'required|exists:kategori_layanan,id',
-            'jumlah'              => 'required|integer|min:1',
-            'total_tagihan'       => 'required|numeric|min:0',
+            'order_layanan_id'        => 'required|exists:penjualan_layanan,id',
+            'pasien_id'               => 'required|exists:pasien,id',
+
+            'items'                   => 'required|array|min:1',
+            'items.*.layanan_id'      => 'required|exists:layanan,id',
+            'items.*.kategori_layanan_id' => 'required|exists:kategori_layanan,id',
+            'items.*.jumlah'          => 'required|integer|min:1',
+            'items.*.total_tagihan'   => 'required|numeric|min:0',
+
+            'total_tagihan'           => 'required|numeric|min:0',
         ], [
             'required' => 'Field ini wajib diisi.',
             'exists'   => 'Data tidak valid.',
             'integer'  => 'Harus berupa angka.',
             'numeric'  => 'Harus berupa angka.',
+            'array'    => 'Format data tidak valid.',
+            'min'      => 'Nilai minimal tidak valid.',
         ]);
 
-        $kategori = KategoriLayanan::find($validated['kategori_layanan_id']);
-        $isPemeriksaan = $kategori && $kategori->nama_kategori === 'Pemeriksaan';
+        $itemsInput = collect($validated['items']);
 
-        // VALIDASI TAMBAHAN JIKA PEMERIKSAAN
-        if ($isPemeriksaan) {
+        // ==================================
+        // CEK APAKAH ADA KATEGORI PEMERIKSAAN
+        // ==================================
+        $kategoriIds = $itemsInput->pluck('kategori_layanan_id')->unique()->all();
+
+        $kategoriList = KategoriLayanan::whereIn('id', $kategoriIds)
+            ->get()
+            ->keyBy('id');
+
+        $hasPemeriksaan = $kategoriList->contains(function ($kat) {
+            return $kat->nama_kategori === 'Pemeriksaan';
+        });
+
+        // VALIDASI TAMBAHAN JIKA ADA PEMERIKSAAN
+        if ($hasPemeriksaan) {
             $request->validate([
                 'poli_id'          => 'required|exists:poli,id',
                 'jadwal_dokter_id' => 'required|exists:jadwal_dokter,id',
@@ -413,16 +492,26 @@ class OrderLayananController extends Controller
         DB::beginTransaction();
 
         try {
-            /** @var PenjualanLayanan $order */
-            $order = PenjualanLayanan::lockForUpdate()->findOrFail($validated['id']);
+            /** @var PenjualanLayanan $firstOrder */
+            $firstOrder = PenjualanLayanan::lockForUpdate()
+                ->with('kunjungan')
+                ->findOrFail($validated['order_layanan_id']);
 
-            $kunjunganId = $order->kunjungan_id;
+            $kodeTransaksi    = $firstOrder->kode_transaksi;
+            $statusTransaksi  = $firstOrder->status;
+            $tanggalTransaksi = $firstOrder->tanggal_transaksi ?? Carbon::now();
+            $kunjunganId      = $firstOrder->kunjungan_id;
 
-            if ($isPemeriksaan) {
-                $poliId = (int) $request->poli_id;
+            // =====================================================
+            // JIKA ADA PEMERIKSAAN → UPDATE / BUAT KUNJUNGAN SEKALI
+            // (dipakai bersama utk semua item Pemeriksaan)
+            // =====================================================
+            if ($hasPemeriksaan) {
+                $poliId  = (int) $request->poli_id;
+                $jadwalId = (int) $request->jadwal_dokter_id;
 
-                // ambil jadwal & pastikan poli cocok
-                $jadwal = JadwalDokter::where('id', $request->jadwal_dokter_id)
+                // pastikan jadwal valid utk poli tsb
+                $jadwal = JadwalDokter::where('id', $jadwalId)
                     ->where('poli_id', $poliId)
                     ->first();
 
@@ -432,18 +521,18 @@ class OrderLayananController extends Controller
                     ]);
                 }
 
-                // kalau sudah punya kunjungan -> update poli/jadwal/dokter
                 if ($kunjunganId) {
-                    $kunjungan = Kunjungan::find($kunjunganId);
+                    // sudah punya kunjungan → update poli/jadwal/dokter
+                    $kunjungan = Kunjungan::lockForUpdate()->find($kunjunganId);
                     if ($kunjungan) {
                         $kunjungan->poli_id          = $jadwal->poli_id;
                         $kunjungan->dokter_id        = $jadwal->dokter_id;
                         $kunjungan->jadwal_dokter_id = $jadwal->id;
-                        // no_antrian tetap, tanggal_kunjungan bisa dibiarkan apa adanya
+                        // no_antrian & tanggal_kunjungan dibiarkan
                         $kunjungan->save();
                     }
                 } else {
-                    // sebelumnya tidak punya kunjungan → buat baru (tanpa ubah antrian lain)
+                    // belum ada kunjungan → buat antrian baru utk hari ini
                     $tanggal = today();
 
                     $lastRow = Kunjungan::where('poli_id', $poliId)
@@ -468,29 +557,49 @@ class OrderLayananController extends Controller
 
                     $kunjunganId = $kunjungan->id;
                 }
+            } else {
+                // Kalau sebelumnya punya kunjungan tapi sekarang SEMUA layanan bukan Pemeriksaan,
+                // bisa pilih: mau dibiarkan / di-null-kan. Di sini kita biarkan saja.
             }
 
-            // UPDATE ORDER (tanpa utak-atik tanggal_transaksi & status)
-            $order->pasien_id           = $validated['pasien_id'];
-            $order->layanan_id          = $validated['layanan_id'];
-            $order->kategori_layanan_id = $validated['kategori_layanan_id'];
-            $order->jumlah              = $validated['jumlah'];
-            $order->total_tagihan       = $validated['total_tagihan'];
-            $order->sub_total           = $validated['total_tagihan'];
+            // ==========================
+            // HAPUS SEMUA ITEM LAMA
+            // ==========================
+            PenjualanLayanan::where('kode_transaksi', $kodeTransaksi)
+                ->lockForUpdate()
+                ->delete();
 
-            if ($isPemeriksaan) {
-                $order->kunjungan_id = $kunjunganId;
+            // ==========================
+            // INSERT ULANG ITEM BARU
+            // ==========================
+            foreach ($itemsInput as $item) {
+                $kategoriId = (int) $item['kategori_layanan_id'];
+                $kat        = $kategoriList->get($kategoriId);
+                $isPemeriksaanItem = $kat && $kat->nama_kategori === 'Pemeriksaan';
+
+                PenjualanLayanan::create([
+                    'kode_transaksi'      => $kodeTransaksi,
+                    'pasien_id'           => $validated['pasien_id'],
+                    'layanan_id'          => (int) $item['layanan_id'],
+                    'kategori_layanan_id' => $kategoriId,
+                    'jumlah'              => (int) $item['jumlah'],
+                    'total_tagihan'       => (float) $item['total_tagihan'],
+                    'sub_total'           => (float) $item['total_tagihan'],
+                    'tanggal_transaksi'   => $tanggalTransaksi,
+                    'status'              => $statusTransaksi,
+                    'kunjungan_id'        => $isPemeriksaanItem ? $kunjunganId : null,
+                ]);
             }
-
-            $order->save();
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Order Layanan Berhasil Diperbarui!',
-                'data'    => $order,
+                'message' => 'Order Layanan berhasil diperbarui!',
             ]);
+        } catch (ValidationException $e) {
+            DB::rollBack();
+            throw $e; // biar tetap balik sebagai 422 ke front-end
         } catch (\Throwable $e) {
             DB::rollBack();
 
@@ -504,58 +613,61 @@ class OrderLayananController extends Controller
 
 
     /**
-     * Hapus data order layanan.
-     * - Jika order punya kunjungan_id dan hanya order ini yang pakai,
-     *   maka kunjungan ikut dihapus (order ikut hilang via cascade).
-     * - Jika kunjungan dipakai order lain, hanya order ini yang dihapus.
+     * Hapus data order layanan berdasarkan kode_transaksi.
+     *
+     * - Ambil SEMUA baris PenjualanLayanan dengan kode_transaksi tsb.
+     * - Untuk setiap kunjungan_id yang terlibat:
+     *      - Jika kunjungan tersebut HANYA dipakai oleh baris-baris pada kode_transaksi ini,
+     *        maka kunjungan dihapus (dan baris PenjualanLayanan yang terkait ikut terhapus via FK cascade).
+     * - Setelah itu, hapus semua sisa baris PenjualanLayanan dengan kode_transaksi tsb
+     *   (jika masih ada yang belum terhapus oleh cascade).
      */
-    public function deleteDataOrderLayanan($id, Request $request)
+    public function deleteDataOrderLayanan($kodeTransaksi)
     {
         try {
             DB::beginTransaction();
 
-            /** @var \App\Models\PenjualanLayanan|null $order */
-            $order = PenjualanLayanan::lockForUpdate()->find($id);
+            // Ambil semua order untuk kode_transaksi ini (lock for update supaya aman secara konkurensi)
+            $orders = PenjualanLayanan::lockForUpdate()
+                ->where('kode_transaksi', $kodeTransaksi)
+                ->get();
 
-            if (!$order) {
+            if ($orders->isEmpty()) {
+                DB::rollBack();
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Data order tidak ditemukan.',
                 ], 404);
             }
 
-            // (opsional) kalau mau larang hapus yang sudah bayar, buka komentar ini:
-            /*
-            if ($order->status === 'Sudah Bayar') {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Order yang sudah dibayar tidak boleh dihapus.',
-                ], 422);
-            }
-            */
+            // Ambil semua kunjungan_id unik yang tidak null dari kumpulan order ini
+            $kunjunganIds = $orders->pluck('kunjungan_id')
+                ->filter()      // buang null
+                ->unique()
+                ->values();
 
-            $kunjunganId = $order->kunjungan_id;
-
-            if ($kunjunganId) {
-                // hitung berapa order yang pakai kunjungan ini
+            foreach ($kunjunganIds as $kunjunganId) {
+                // Total semua order (semua kode_transaksi) yang memakai kunjungan ini
                 $totalOrderKunjungan = PenjualanLayanan::where('kunjungan_id', $kunjunganId)->count();
 
-                if ($totalOrderKunjungan === 1) {
-                    // cuma order ini yang pakai kunjungan tsb
-                    // hapus kunjungan → lewat FK cascadeOnDelete, order ikut terhapus
+                // Berapa banyak baris pada kode_transaksi ini yang pakai kunjungan tsb
+                $totalOrderKunjunganDiTransaksiIni = $orders
+                    ->where('kunjungan_id', $kunjunganId)
+                    ->count();
+
+                // Jika kunjungan hanya dipakai oleh baris-baris di transaksi ini
+                if ($totalOrderKunjungan === $totalOrderKunjunganDiTransaksiIni) {
+                    // Hapus kunjungan
+                    // Dengan FK cascadeOnDelete dari penjualan_layanan.kunjungan_id → kunjungan.id,
+                    // semua PenjualanLayanan yang terkait kunjungan ini ikut terhapus otomatis.
                     Kunjungan::where('id', $kunjunganId)->delete();
-
-                    DB::commit();
-
-                    return response()->json([
-                        'success' => true,
-                        'message' => 'Order layanan & kunjungan terkait berhasil dihapus.',
-                    ]);
                 }
             }
 
-            // kalau tidak punya kunjungan, atau kunjungan dipakai banyak order
-            $order->delete();
+            // Setelah penghapusan kunjungan (yang bisa menghapus beberapa PenjualanLayanan via cascade),
+            // pastikan TIDAK ada lagi baris dengan kode_transaksi ini yang tersisa.
+            PenjualanLayanan::where('kode_transaksi', $kodeTransaksi)->delete();
 
             DB::commit();
 
@@ -569,7 +681,7 @@ class OrderLayananController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menghapus data.',
-                // 'error'   => $e->getMessage(), // boleh di-uncomment kalau mau debugging
+                // 'error'   => $e->getMessage(), // boleh di-uncomment untuk debugging
             ], 500);
         }
     }
