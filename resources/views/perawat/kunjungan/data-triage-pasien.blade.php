@@ -1,48 +1,119 @@
-<!-- Header -->
-<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-    <h2 class="text-2xl font-bold text-gray-700">Daftar Siap Triage</h2>
-</div>
+<section class="space-y-5">
 
-<!-- Table Wrapper -->
-<div class="overflow-hidden rounded-lg shadow-md">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 border-b border-gray-200">
-        <div>
-            <select id="triage_pageLength"
-                class="border border-gray-300 text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block w-24 p-1">
-                <option value="10">10</option>
-                <option value="25">25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-            </select>
+    {{-- ============== HEADER ============== --}}
+    <div
+        class="flex flex-col md:flex-row md:items-center md:justify-between gap-3
+               bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700
+               rounded-2xl px-4 md:px-6 py-4 shadow-sm">
+
+        <div class="flex items-start gap-3">
+            <div
+                class="mt-1 flex h-10 w-10 items-center justify-center rounded-xl
+                       bg-gradient-to-br from-sky-500 to-teal-500 text-white shadow-md">
+                <i class="fa-solid fa-heart-pulse text-lg"></i>
+            </div>
+            <div>
+                <h2 class="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-50">
+                    Daftar Siap Triage
+                </h2>
+                <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    Monitoring pasien yang sudah <span class="font-semibold">engaged</span> dan siap dilakukan triage oleh perawat.
+                </p>
+            </div>
         </div>
-        <div class="relative">
-            <input type="text" id="triage_searchInput"
-                class="block w-60 p-2 pl-3 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-sky-500 focus:border-sky-500"
-                placeholder="Cari Data">
+
+        <div class="flex flex-wrap items-center gap-2 md:gap-3">
+            <div
+                class="inline-flex items-center gap-2 rounded-full bg-sky-50 text-sky-700 px-3 py-1
+                       dark:bg-sky-900/40 dark:text-sky-100 border border-sky-100 dark:border-sky-700">
+                <span class="h-2 w-2 rounded-full bg-emerald-500"></span>
+                <span class="text-xs font-semibold tracking-wide uppercase">Status: Engaged</span>
+            </div>
         </div>
     </div>
 
-    <div class="overflow-x-auto">
-        <table id="tabelTriage" class="w-full text-sm text-left text-gray-600">
-            <thead class="text-xs uppercase bg-sky-500 text-white">
-                <tr>
-                    <th class="px-6 py-3">No</th>
-                    <th class="px-6 py-3">No Antrian</th>
-                    <th class="px-6 py-3">Nama Pasien</th>
-                    <th class="px-6 py-3">Dokter</th>
-                    <th class="px-6 py-3">Poli</th>
-                    <th class="px-6 py-3">Keluhan</th>
-                    <th class="px-6 py-3">Aksi</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-    </div>
+    {{-- ============== CARD TABEL TRIAGE ============== --}}
+    <div
+        class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700
+               rounded-2xl shadow-sm overflow-hidden">
 
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between px-4 py-3 border-t border-gray-200 gap-3">
-        <div id="triage_customInfo" class="text-sm text-gray-700"></div>
-        <ul id="triage_customPagination" class="inline-flex -space-x-px text-sm"></ul>
+        {{-- TOP TOOLBAR: page length + search --}}
+        <div
+            class="flex flex-col md:flex-row md:items-center md:justify-between gap-3
+                   px-4 md:px-6 py-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/40">
+
+            {{-- Left: page length --}}
+            <div class="flex items-center gap-2">
+                <span class="text-xs md:text-sm text-slate-600 dark:text-slate-300">
+                    Tampilkan
+                </span>
+                <select id="triage_pageLength"
+                    class="border border-slate-300 dark:border-slate-600 text-xs md:text-sm rounded-xl
+                           focus:ring-sky-500 focus:border-sky-500 bg-white dark:bg-slate-800
+                           px-2 py-1.5 w-24">
+                    <option value="10">10 data</option>
+                    <option value="25">25 data</option>
+                    <option value="50">50 data</option>
+                    <option value="100">100 data</option>
+                </select>
+                <span class="text-xs md:text-sm text-slate-600 dark:text-slate-300 hidden md:inline">
+                    per halaman
+                </span>
+            </div>
+
+            {{-- Right: search --}}
+            <div class="w-full md:w-auto">
+                <div class="relative">
+                    <span
+                        class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none text-slate-400">
+                        <i class="fa-solid fa-magnifying-glass text-xs"></i>
+                    </span>
+                    <input type="text" id="triage_searchInput"
+                        class="block w-full md:w-64 lg:w-72 pl-8 pr-3 py-2 text-sm
+                               rounded-xl border border-slate-300 dark:border-slate-600
+                               bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-50
+                               placeholder:text-slate-400 dark:placeholder:text-slate-500
+                               focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
+                        placeholder="Cari nama pasien, dokter, poli, atau keluhan...">
+                </div>
+            </div>
+        </div>
+
+        {{-- TABLE --}}
+        <div class="overflow-x-auto">
+            <table id="tabelTriage"
+                class="w-full text-sm text-left text-slate-700 dark:text-slate-100 min-w-[900px]">
+                <thead
+                    class="text-xs uppercase bg-gradient-to-r from-sky-500 to-teal-500 text-white">
+                    <tr>
+                        <th class="px-5 py-3 text-[11px] font-semibold tracking-wide">No</th>
+                        <th class="px-5 py-3 text-[11px] font-semibold tracking-wide">No Antrian</th>
+                        <th class="px-5 py-3 text-[11px] font-semibold tracking-wide">Nama Pasien</th>
+                        <th class="px-5 py-3 text-[11px] font-semibold tracking-wide">Dokter</th>
+                        <th class="px-5 py-3 text-[11px] font-semibold tracking-wide">Poli</th>
+                        <th class="px-5 py-3 text-[11px] font-semibold tracking-wide">Keluhan Utama</th>
+                        <th class="px-5 py-3 text-[11px] font-semibold tracking-wide text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700"></tbody>
+            </table>
+        </div>
+
+        {{-- FOOTER: info + pagination --}}
+        <div
+            class="flex flex-col md:flex-row md:items-center md:justify-between gap-3
+                   px-4 md:px-6 py-3 border-t border-slate-100 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/40">
+            <div id="triage_customInfo"
+                class="text-xs md:text-sm text-slate-600 dark:text-slate-300">
+                {{-- Diisi via JS --}}
+            </div>
+
+            <ul id="triage_customPagination"
+                class="inline-flex items-center gap-1 text-xs md:text-sm">
+                {{-- Diisi via JS --}}
+            </ul>
+        </div>
     </div>
-</div>
+</section>
 
 @vite(['resources/js/perawat/kunjungan/data-triage-pasien.js'])

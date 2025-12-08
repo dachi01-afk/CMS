@@ -20,6 +20,11 @@ class Perawat extends Model
         return $this->belongsToMany(DokterPoli::class, 'perawat_dokter_poli', 'perawat_id', 'dokter_poli_id');
     }
 
+    public function dokterPoli()
+    {
+        return $this->belongsToMany(DokterPoli::class, 'perawat_dokter_poli', 'perawat_id', 'dokter_poli_id');
+    }
+
     public function emr()
     {
         return $this->hasMany(Emr::class);

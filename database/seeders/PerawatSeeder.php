@@ -13,7 +13,6 @@ class PerawatSeeder extends Seeder
     public function run(): void
     {
         $faker = Faker::create('id_ID');
-        $fotoDefault = 'foto_perawat.jpg';
 
         // Ambil maksimal 5 user dengan role = Perawat
         $perawatUsers = User::where('role', 'Perawat')->take(5)->get();
@@ -23,7 +22,7 @@ class PerawatSeeder extends Seeder
             return;
         }
 
-        $fotoPerawat = 'perawat/foto_perawat.jpg';
+        $fotoPerawat = 'perawat/foto-profil.jpg';
 
         $jumlahPerawat = min(5, $perawatUsers->count());
 

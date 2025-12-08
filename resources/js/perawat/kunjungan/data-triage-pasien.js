@@ -46,9 +46,11 @@ $(function () {
         dom: "t",
         rowCallback: function (row) {
             $(row).addClass(
-                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                "bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
             );
-            $("td", row).addClass("px-6 py-4 text-gray-900 dark:text-white");
+            $("td", row).addClass(
+                "px-5 py-3 align-middle text-slate-700 dark:text-slate-50 text-sm"
+            );
         },
         order: [[1, "asc"]], // urut berdasar No Antrian
         language: {

@@ -17,14 +17,14 @@ class FarmasiSeeder extends Seeder
     {
         $roleFarmasi = User::where('role', 'Farmasi')->get();
         $faker = Faker::create('id_ID');
-        $foto = 'foto_dokter.jpg';
+        $fotoFarmasi = 'perawat/foto-profil.jpg';
 
         for ($i = 0; $i < $roleFarmasi->count(); $i++) {
             Farmasi::create([
                 'user_id' => $roleFarmasi[$i]->id,
                 'nama_farmasi' => $faker->name,
                 'no_hp_farmasi' => $faker->phoneNumber(),
-                'foto_farmasi' => $foto,
+                'foto_farmasi' => $fotoFarmasi,
             ]);
         }
     }

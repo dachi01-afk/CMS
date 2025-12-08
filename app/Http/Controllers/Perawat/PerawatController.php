@@ -5,10 +5,14 @@ namespace App\Http\Controllers\Perawat;
 use App\Http\Controllers\Controller;
 use App\Models\Dokter;
 use App\Models\DokterPoli;
+use App\Models\JadwalDokter;
+use App\Models\Kunjungan;
 use App\Models\Perawat;
 use App\Models\Poli;
 use App\Models\User;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
@@ -16,10 +20,170 @@ use Intervention\Image\Laravel\Facades\Image;
 
 class PerawatController extends Controller
 {
+
     public function dashboard()
     {
-        return view('perawat.dashboard');
+        $tz    = config('app.timezone', 'Asia/Jakarta');
+        $today = Carbon::today($tz)->toDateString();
+
+        // Ambil perawat yang sedang login
+        $perawat = Perawat::where('user_id', Auth::id())->first();
+
+        // Default nilai
+        $statMenungguTriage      = 0;
+        $statSedangKonsultasi    = 0;
+        $statTotalTriageHariIni  = 0;
+        $statSelesaiHariIni      = 0;
+        $persenTriageSelesai     = 0;
+        $listSiapTriage          = collect();
+        $listSedangKonsultasi    = collect();
+        $grafikTanggal           = [];
+        $grafikJumlah            = [];
+
+        if ($perawat) {
+            $perawatId = $perawat->id;
+
+            /* ============================================================
+         *  BASE QUERY: Semua kunjungan yang "milik" perawat ini
+         *  (sesuai tabel pivot perawat_dokter_poli dan dokter_poli)
+         * ============================================================ */
+            $baseQuery = Kunjungan::query()
+                ->whereDate('tanggal_kunjungan', $today)
+                ->whereExists(function ($q) use ($perawatId) {
+                    $q->select(DB::raw(1))
+                        ->from('perawat_dokter_poli as pdp')
+                        ->join('dokter_poli as dp', 'dp.id', '=', 'pdp.dokter_poli_id')
+                        // dokter & poli di kunjungan harus sama dengan pasangan di dokter_poli
+                        ->whereColumn('dp.dokter_id', 'kunjungan.dokter_id')
+                        ->whereColumn('dp.poli_id', 'kunjungan.poli_id')
+                        ->where('pdp.perawat_id', $perawatId);
+                });
+
+            /* ============================================================
+         *  1. Statistik Utama (berdasarkan baseQuery)
+         * ============================================================ */
+
+            // Pasien menunggu triage → status = "Waiting"
+            $statMenungguTriage = (clone $baseQuery)
+                ->where('status', 'Waiting')
+                ->count();
+
+            // Pasien sedang konsultasi → status = "Engaged"
+            $statSedangKonsultasi = (clone $baseQuery)
+                ->where('status', 'Engaged')
+                ->count();
+
+            // Total triage hari ini → misal status "Selesai Triage" & "Menunggu Dokter"
+            $statTotalTriageHariIni = (clone $baseQuery)
+                ->whereIn('status', ['Engaged'])
+                ->count();
+
+            // Selesai triage hari ini saja (opsional)
+            $statSelesaiHariIni = (clone $baseQuery)
+                ->where('status', 'Selesai Triage')
+                ->count();
+
+            // Dokter aktif hari ini (tidak perlu filter perawat)
+            $dayName        = strtolower(Carbon::today($tz)->locale('id')->dayName); // senin, selasa, ...
+            $statDokterAktif = JadwalDokter::where('hari', $dayName)->count();
+
+            /* ============================================================
+         *  2. Persentase Triage Selesai
+         * ============================================================ */
+            $totalKunjunganHariIni = (clone $baseQuery)->count();
+            $persenTriageSelesai   = $totalKunjunganHariIni > 0
+                ? round(($statTotalTriageHariIni / $totalKunjunganHariIni) * 100)
+                : 0;
+
+            /* ============================================================
+         *  3. Daftar Siap Triage (Limit 5)
+         *     (list yang muncul di menu Kunjungan → status "Waiting")
+         * ============================================================ */
+            $listSiapTriage = (clone $baseQuery)
+                ->with(['pasien', 'poli'])
+                ->where('status', 'Waiting')
+                ->orderByRaw('CAST(no_antrian AS UNSIGNED)')
+                ->limit(5)
+                ->get()
+                ->map(function ($row) {
+                    return (object) [
+                        'id'          => $row->id,
+                        'no_antrian'  => $row->no_antrian,
+                        'nama_pasien' => $row->pasien->nama_pasien ?? '-',
+                        'nama_poli'   => $row->poli->nama_poli ?? '-',
+                    ];
+                });
+
+            /* ============================================================
+         *  4. Daftar Pasien dalam Konsultasi
+         * ============================================================ */
+            $listSedangKonsultasi = (clone $baseQuery)
+                ->with(['pasien', 'poli', 'dokter'])
+                ->where('status', 'Sedang Konsultasi')
+                ->get()
+                ->map(function ($row) {
+                    return (object) [
+                        'nama_pasien' => $row->pasien->nama_pasien ?? '-',
+                        'nama_dokter' => $row->dokter->nama_dokter ?? '-',
+                        'nama_poli'   => $row->poli->nama_poli ?? '-',
+                    ];
+                });
+
+            /* ============================================================
+         *  5. Grafik Triage 7 Hari Terakhir (juga berdasarkan penugasan perawat)
+         * ============================================================ */
+            for ($i = 6; $i >= 0; $i--) {
+                $tanggal = Carbon::today($tz)->subDays($i)->toDateString();
+                $label   = Carbon::today($tz)->subDays($i)->translatedFormat('d M');
+
+                $jumlah = Kunjungan::whereDate('tanggal_kunjungan', $tanggal)
+                    ->whereExists(function ($q) use ($perawatId) {
+                        $q->select(DB::raw(1))
+                            ->from('perawat_dokter_poli as pdp')
+                            ->join('dokter_poli as dp', 'dp.id', '=', 'pdp.dokter_poli_id')
+                            ->whereColumn('dp.dokter_id', 'kunjungan.dokter_id')
+                            ->whereColumn('dp.poli_id', 'kunjungan.poli_id')
+                            ->where('pdp.perawat_id', $perawatId);
+                    })
+                    ->whereIn('status', ['Selesai Triage', 'Menunggu Dokter'])
+                    ->count();
+
+                $grafikTanggal[] = $label;
+                $grafikJumlah[]  = $jumlah;
+            }
+        } else {
+            // Kalau user belum terdaftar sebagai perawat → tetap isi label grafik dengan 0
+            for ($i = 6; $i >= 0; $i--) {
+                $grafikTanggal[] = Carbon::today($tz)->subDays($i)->translatedFormat('d M');
+                $grafikJumlah[]  = 0;
+            }
+
+            $dayName        = strtolower(Carbon::today($tz)->locale('id')->dayName);
+            $statDokterAktif = JadwalDokter::where('hari', $dayName)->count();
+        }
+
+        /* ============================================================
+     *  RETURN TO VIEW
+     * ============================================================ */
+        return view('perawat.dashboard', [
+            // statistik
+            'statMenungguTriage'      => $statMenungguTriage,
+            'statSedangKonsultasi'    => $statSedangKonsultasi,
+            'statTotalTriageHariIni'  => $statTotalTriageHariIni,
+            'statDokterAktif'         => $statDokterAktif,
+            'persenTriageSelesai'     => $persenTriageSelesai,
+            'statSelesaiHariIni'      => $statSelesaiHariIni,
+
+            // list
+            'listSiapTriage'          => $listSiapTriage,
+            'listSedangKonsultasi'    => $listSedangKonsultasi,
+
+            // grafik
+            'grafikTanggal'           => $grafikTanggal,
+            'grafikJumlah'            => $grafikJumlah,
+        ]);
     }
+
 
     public function createPerawat(Request $request)
     {

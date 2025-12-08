@@ -14,7 +14,7 @@ class PasienSeeder extends Seeder
         $rolePasien = User::where('role', 'Pasien')->get();
         $faker = Faker::create('id_ID');
         $jenisKelamin = ['Laki-laki', 'Perempuan'];
-        $foto = 'foto_dokter.jpg';
+        $fotoPasien = 'pasien/foto-profil.jpg';
 
         for ($i = 0; $i < $rolePasien->count(); $i++) {
 
@@ -31,7 +31,7 @@ class PasienSeeder extends Seeder
                 'alamat'         => $faker->address,
                 'tanggal_lahir'  => $faker->dateTimeBetween('-100 years', '-1 day'),
                 'jenis_kelamin'  => $faker->randomElement($jenisKelamin),
-                'foto_pasien'    => $foto,
+                'foto_pasien'    => $fotoPasien,
             ]);
         }
     }

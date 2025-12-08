@@ -20,7 +20,7 @@ class DokterSeeder extends Seeder
         $roleDokter = User::where('role', 'Dokter')->get();
         $faker = Faker::create('id_ID');
         $spesialis = JenisSpesialis::pluck('id')->toArray();
-        $foto = 'foto_dokter.jpg';
+        $fotoDokter = 'dokter/foto-profil.jpg';
 
         for ($i = 0; $i < $roleDokter->count(); $i++) {
             Dokter::create([
@@ -28,7 +28,7 @@ class DokterSeeder extends Seeder
                 'nama_dokter' => $faker->name,
                 'deskripsi_dokter' => $faker->paragraph(),
                 'jenis_spesialis_id' => $faker->randomElement($spesialis),
-                'foto_dokter' => $foto,
+                'foto_dokter' => $fotoDokter,
                 'pengalaman' => $faker->word(),
                 'no_hp' => $faker->phoneNumber(),
             ]);
