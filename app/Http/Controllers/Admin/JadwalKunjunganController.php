@@ -45,19 +45,7 @@ class JadwalKunjunganController extends Controller
             'minggu' => 'sunday',
         ];
 
-        // --- JADWAL HARI INI (yang masih berlangsung / belum lewat) ---
-        $jadwalHariIni = JadwalDokter::query()
-            ->with([
-                'dokter:id,nama_dokter,jenis_spesialis_id',
-                'dokter.jenisSpesialis:id,nama_spesialis',
-                'poli:id,nama_poli',
-            ])
-            ->where(function ($q) use ($hariId, $hariEn) {
-                $q->whereRaw('LOWER(TRIM(hari)) = ?', [$hariId])
-                    ->orWhereRaw('LOWER(TRIM(hari)) = ?', [$hariEn]);
-            })
-            ->orderBy('jam_awal')
-            ->get();
+        $jadwalHariIni = JadwalDokter::with(['dokter', 'dokter.jenisSpesialis', 'poli'])->aktifSekarang()->get();
 
         // --- SEMUA JADWAL + TANGGAL BERIKUTNYA (masih berupa Collection) ---
         $jadwalSemua = JadwalDokter::query()
