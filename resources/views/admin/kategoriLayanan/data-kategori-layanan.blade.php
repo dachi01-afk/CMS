@@ -13,17 +13,18 @@
                     Data Kategori Layanan
                 </h2>
                 <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    Atur kategori layanan untuk mengelompokkan tindakan medis, pemeriksaan, dan jasa lain di klinik /
-                    rumah sakit Anda.
+                    Kelola data kategori layanan.
                 </p>
             </div>
         </div>
 
         <div class="flex items-center gap-2 md:gap-3">
-            <button type="button"
+
+            <!-- Tombol Info -->
+            <button type="button" id="btnInfoKategoriLayanan"
                 class="hidden md:inline-flex items-center gap-2 px-3 py-2 text-xs md:text-sm rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-600">
-                <i class="fa-regular fa-circle-question text-sm"></i>
-                <span>Panduan Kategori</span>
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span>Penting</span>
             </button>
 
             <!-- Tombol Tambah -->
@@ -117,14 +118,26 @@
             class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700">
 
             <!-- HEADER -->
-            <div class="px-6 py-4 bg-gradient-to-r from-sky-500 via-teal-500 to-teal-600">
-                <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-layer-group"></i>
-                    Tambah Data Kategori Layanan
-                </h3>
-                <p class="text-xs text-sky-50/90 mt-1">
-                    Kategori membantu pengelompokan tarif dan laporan layanan di klinik.
-                </p>
+            <div
+                class="flex items-start justify-between gap-3 px-6 pt-5 pb-4 border-b border-slate-100 dark:border-slate-700 bg-gradient-to-r from-sky-500 to-teal-500 rounded-t-2xl">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 rounded-xl bg-sky-500 flex items-center justify-center shadow-md text-white">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base md:text-lg font-semibold text-slate-50">
+                            Tambah Data Kategori Layanan
+                        </h3>
+                        <p class="text-xs text-sky-50/90 mt-0.5">
+                            Kategori membantu pengelompokan tarif dan laporan layanan di klinik.
+                        </p>
+                    </div>
+                </div>
+
+                <button type="button" id="buttonCloseModalCreateKategoriLayanan"
+                    class="inline-flex items-center justify-center h-8 w-8 rounded-full text-slate-100 hover:text-white hover:bg-white/10 transition">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
             </div>
 
             <!-- FORM -->
@@ -143,7 +156,7 @@
                         <input type="text" id="nama_kategori_create" name="nama_kategori"
                             class="w-full pl-9 p-3 rounded-xl border border-slate-300 bg-slate-50 text-slate-800
                                        focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
-                            placeholder="Contoh: Layanan Dokter Umum, Laboratorium, Tindakan Medis">
+                            placeholder="Pemeriksaan Atau Non Pemeriksaan">
                     </div>
                     <div id="nama_kategori-error" class="text-red-600 text-xs mt-1"></div>
                 </div>
@@ -157,7 +170,7 @@
                     <textarea name="deskripsi_kategori" id="deskripsi_kategori_create" rows="3"
                         class="w-full p-3 rounded-xl border border-slate-300 bg-slate-50 text-slate-800
                                    focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
-                        placeholder="Tuliskan deskripsi singkat, contoh: berisi semua layanan konsultasi dokter umum dan spesialis."></textarea>
+                        placeholder="Tuliskan deskripsi singkat, contoh: Kategori layanan ini adalah kategori yang khusus untuk melakukan pemeriksaan pasien (anamnesis, pemeriksaan fisik, dan penegakan diagnosis)."></textarea>
                     <div id="deskripsi_kategori-error" class="text-red-600 text-xs mt-1"></div>
                 </div>
 
@@ -188,7 +201,7 @@
             <!-- FOOTER BUTTON -->
             <div
                 class="flex justify-end gap-3 px-6 py-4 bg-slate-50 dark:bg-slate-800/70 border-t border-slate-200 dark:border-slate-700">
-                <button id="buttonCloseModalCreateLayanan"
+                <button id="buttonCloseModalCreateKategoriLayanan_footer"
                     class="px-5 py-2.5 rounded-xl bg-slate-200 text-slate-800 text-sm font-medium hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100">
                     Batal
                 </button>
@@ -211,15 +224,28 @@
             class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700">
 
             <!-- HEADER -->
-            <div class="px-6 py-4 bg-gradient-to-r from-sky-500 via-teal-500 to-teal-600">
-                <h3 class="text-xl font-bold text-white flex items-center gap-2">
-                    <i class="fa-solid fa-pen-to-square"></i>
-                    Edit Data Kategori Layanan
-                </h3>
-                <p class="text-xs text-sky-50/90 mt-1">
-                    Pastikan perubahan sesuai dengan struktur layanan yang berjalan.
-                </p>
+            <div
+                class="flex items-start justify-between gap-3 px-6 pt-5 pb-4 border-b border-slate-100 dark:border-slate-700 bg-gradient-to-r from-sky-500 to-teal-500 rounded-t-2xl">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 rounded-xl bg-sky-500 flex items-center justify-center shadow-md text-white">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base md:text-lg font-semibold text-slate-50">
+                            Edit Data Kategori Layanan
+                        </h3>
+                        <p class="text-xs text-sky-50/90 mt-0.5">
+                            Pastikan perubahan sesuai dengan struktur layanan yang berjalan.
+                        </p>
+                    </div>
+                </div>
+
+                <button type="button" id="buttonCloseModalUpdateKategoriLayanan"
+                    class="inline-flex items-center justify-center h-8 w-8 rounded-full text-slate-100 hover:text-white hover:bg-white/10 transition">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
             </div>
+
 
             <!-- FORM -->
             <form id="formUpdateKategoriLayanan"

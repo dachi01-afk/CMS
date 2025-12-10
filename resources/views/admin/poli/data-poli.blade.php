@@ -13,20 +13,14 @@
                     Data Poli
                 </h2>
                 <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    Kelola daftar <span class="font-medium">Poli</span> yang digunakan pada modul
-                    <span class="font-medium">Jadwal Dokter</span>, <span class="font-medium">Kunjungan</span>, dan
-                    layanan lainnya.
+                    Kelola daftar <span class="font-medium">Poli</span> yang digunaka pada modul
+                    <span class="font-medium">Jadwal Dokter</span>, <span class="font-medium">Kunjungan</span>, dan modul
+                    lainnya.
                 </p>
             </div>
         </div>
 
         <div class="flex items-center gap-2 md:gap-3">
-            <button type="button"
-                class="hidden md:inline-flex items-center gap-2 px-3 py-2 text-xs md:text-sm rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-600">
-                <i class="fa-regular fa-circle-question text-sm"></i>
-                <span>Panduan Poli</span>
-            </button>
-
             <!-- Tombol Tambah -->
             <button id="buttonModalCreatePoli" type="button"
                 class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl shadow-md
@@ -139,8 +133,8 @@
             </div>
 
             <!-- FORM -->
-            <form id="formCreatePoli" class="px-6 pb-4 space-y-5"
-                data-url="{{ route('poli.create.data') }}" method="POST">
+            <form id="formCreatePoli" class="px-6 pb-4 space-y-5" data-url="{{ route('poli.create.data') }}"
+                method="POST">
                 @csrf
 
                 {{-- Nama Poli --}}
@@ -204,8 +198,8 @@
             </div>
 
             <!-- FORM -->
-            <form id="formUpdatePoli" class="px-6 pb-4 space-y-5"
-                data-url="{{ route('poli.update.data') }}" method="POST">
+            <form id="formUpdatePoli" class="px-6 pb-4 space-y-5" data-url="{{ route('poli.update.data') }}"
+                method="POST">
                 @csrf
                 <input type="hidden" id="id_update" name="id">
 

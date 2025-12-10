@@ -35,14 +35,15 @@ class MetodePembayaranController extends Controller
             ->make(true);
     }
 
-    public function getDataMetodePembayaramById($id)
+    public function getDataMetodePembayaranById($id)
     {
         $dataMetodePembayaran = MetodePembayaran::findOrFail($id);
 
         return response()->json([
-            'data' => $dataMetodePembayaran
+            'data' => $dataMetodePembayaran,
         ]);
     }
+
 
     public function createData(Request $request)
     {

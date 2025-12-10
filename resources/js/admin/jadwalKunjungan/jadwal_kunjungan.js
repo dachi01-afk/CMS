@@ -16,6 +16,7 @@ function resetModalForm() {
     document.getElementById("nama_pasien").textContent = "";
     document.getElementById("alamat_pasien").textContent = "";
     document.getElementById("jk_pasien").textContent = "";
+    document.getElementById("no_emr_pasien").textContent = "";
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -126,6 +127,8 @@ document.addEventListener("DOMContentLoaded", () => {
                 item.className =
                     "px-4 py-2 hover:bg-indigo-100 cursor-pointer text-sm";
                 item.textContent = pasien.nama_pasien;
+                // item.textContent = pasien.no_emr;
+                // item.textContent = pasien.nik;
                 item.onclick = () => {
                     document.getElementById("pasien_id").value = pasien.id;
                     document.getElementById("nama_pasien").textContent =
@@ -134,6 +137,8 @@ document.addEventListener("DOMContentLoaded", () => {
                         pasien.alamat ?? "-";
                     document.getElementById("jk_pasien").textContent =
                         pasien.jenis_kelamin ?? "-";
+                    document.getElementById("no_emr_pasien").textContent =
+                        pasien.no_emr ?? "-";
                     pasienDataDiv.classList.remove("hidden");
                     resultsDiv.classList.add("hidden");
                     searchInput.value = pasien.nama_pasien;

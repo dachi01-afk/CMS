@@ -34,31 +34,6 @@
                         Laporan Kunjungan
                     </button>
                 </li>
-
-                <li class="me-2" role="presentation">
-                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="laporan-keuangan-tab"
-                        data-tabs-target="#data-laporan-keuangan" type="button" role="tab"
-                        aria-controls="data-laporan-keuangan" aria-selected="false">
-                        Laporan Keuangan
-                    </button>
-                </li>
-
-                {{--
-                <li class="me-2" role="presentation">
-                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="laporan-resep-dan-apotek-tab"
-                        data-tabs-target="#data-laporan-resep-dan-apotek" type="button" role="tab"
-                        aria-controls="data-laporan-resep-dan-apotek" aria-selected="false">
-                        Laporan Resep & Transaksi Apotek
-                    </button>
-                </li>
-
-                <li role="presentation">
-                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="laporan-administrasi-tab"
-                        data-tabs-target="#data-laporan-administrasi" type="button" role="tab"
-                        aria-controls="data-laporan-administrasi" aria-selected="false">
-                        Laporan Administrasi
-                    </button>
-                </li> --}}
             </ul>
         </div>
 
@@ -71,22 +46,6 @@
                     role="tabpanel" aria-labelledby="laporan-kunjungan-tab">
                     @include('admin.laporan.laporan_kunjungan')
                 </div>
-
-                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-laporan-keuangan"
-                    role="tabpanel" aria-labelledby="laporan-keuangan-tab">
-                    @include('admin.laporan.laporan_keuangan')
-                </div>
-
-                {{-- 
-                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-laporan-resep-dan-apotek"
-                    role="tabpanel" aria-labelledby="laporan-resep-dan-apotek-tab">
-                    @include('admin.laporan.laporan_resep_dan_apotek')
-                </div>
-
-                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-laporan-administrasi"
-                    role="tabpanel" aria-labelledby="laporan-administrasi-tab">
-                    @include('admin.laporan.laporan_administrasi')
-                </div> --}}
             </div>
 
         </div>

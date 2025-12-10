@@ -57,24 +57,11 @@
 
             {{-- DATA AKUN (USER) --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {{-- Nama User (dari tabel users) --}}
-                <div class="md:col-span-2">
-                    <x-input-label for="name" value="Nama Akun (User)" />
-                    <x-text-input id="name" name="name" type="text" class="mt-1 block w-full"
-                        :value="old('name', $user->name)" required autofocus autocomplete="name" />
-                    <x-input-error class="mt-2" :messages="$errors->get('name')" />
-                </div>
-
                 {{-- Username (read only, kalau ada) --}}
                 @if (isset($user->username))
                     <div>
                         <x-input-label for="username" value="Username" />
-                        <x-text-input id="username" type="text"
-                            class="mt-1 block w-full bg-slate-100 border-slate-200 text-slate-700" :value="$user->username"
-                            disabled />
-                        <p class="mt-1 text-[11px] text-slate-400">
-                            Username tidak dapat diubah dari halaman ini.
-                        </p>
+                        <x-text-input id="username" type="text" class="mt-1 block w-full text-slate-700" :value="$user->username" />
                     </div>
                 @endif
 
@@ -97,7 +84,7 @@
 
                     @if ($user instanceof \Illuminate\Contracts\Auth\MustVerifyEmail && !$user->hasVerifiedEmail())
                         <div class="mt-2">
-                            <p class="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
+                            <p class="text- xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
                                 Alamat email Anda belum terverifikasi.
                                 <button form="send-verification"
                                     class="ml-1 underline text-xs font-semibold text-amber-800 hover:text-amber-900">

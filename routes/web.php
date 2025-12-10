@@ -179,8 +179,8 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::get('/data_perawat', [ManajemenPenggunaController::class, 'dataPerawat'])->name('data_perawat');
         Route::post('/add_perawat', [PerawatController::class, 'createPerawat'])->name('add_perawat');
         Route::get('/get_perawat_by_id/{id}', [PerawatController::class, 'getPerawatById'])->name('get_perawat_by_id');
-        Route::get('/list_dokter', [PerawatController::class, 'listDokter']);
-        Route::get('/dokter/{dokterId}/polis', [PerawatController::class, 'listPoliByDokter']);
+        Route::get('/list_poli', [PerawatController::class, 'listPoli']);
+        Route::get('/poli/{poliId}/dokter', [PerawatController::class, 'listDokterByPoli']);
         Route::put('/update_perawat/{id}', [PerawatController::class, 'updatePerawat'])->name('update_perawat');
         Route::delete('/delete_perawat/{id}', [PerawatController::class, 'deletePerawat'])->name('delete_perawat');
 
@@ -243,12 +243,6 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::get('/detail-emr/pasien/{noEMR}', [DataMedisPasienController::class, 'detailEMRPasien'])->name('detail.emr.pasien');
     });
 
-    // Route::prefix('pengambilan_obat')->group(function () {
-    //     Route::get('/', [PengambilanObatController::class, 'index'])->name('pengambilan.obat');
-    //     Route::get('/get-data', [PengambilanObatController::class, 'getDataResepObat'])->name('get.data.resep.obat');
-    //     Route::post('/update-status-resep-obat', [PengambilanObatController::class, 'updateStatusResepObat'])->name('update.status.resep.obat');
-    // });
-
     Route::prefix('settings')->name('settings.')->group(function () {
         Route::get('/', [SettingsController::class, 'index'])->name('index');
     });
@@ -258,11 +252,14 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::post('/create', [JadwalKunjunganController::class, 'store'])->name('create');
         Route::get('/search', [JadwalKunjunganController::class, 'search'])->name('pasien');
 
+        Route::get('/listDokter', [JadwalKunjunganController::class, 'listDokter'])->name('list.dokter');
+        Route::get('/listPoliByDokter/{dokterId}/poli', [JadwalKunjunganController::class, 'listPoliByDokter'])->name('list.dokter.poli');
+
         Route::get('/waiting', [JadwalKunjunganController::class, 'waiting'])->name('waiting');
         Route::post('/updateKunjungan/{id}', [JadwalKunjunganController::class, 'updateDataKunjungan'])->name('update.kunjungan');
-        Route::post('/update-status/{id}', [JadwalKunjunganController::class, 'updateStatus'])->name('update_status');
+        Route::post('/update-status/{id}', [JadwalKunjunganController::class, 'updateStatusKunjunganToWaiting'])->name('update_status');
 
-        Route::get('/masa-depan', [JadwalKunjunganController::class, 'masaDepan'])->name('masa.depan');
+        Route::get('/masa-depan', [JadwalKunjunganController::class, 'getDataKunjunganYangAkanDatang'])->name('masa.depan');
 
         Route::get('/get-data-KYAD/{id}', [JadwalKunjunganController::class, 'getDataKYAD']);
 
@@ -276,9 +273,9 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::get('/get-data-pasien', [OrderLayananController::class, 'searchPasien'])->name('order.layanan.get.data.pasien');
         Route::get('/get-data-jadwal-dokter-hari-ini', [OrderLayananController::class, 'getJadwalDokterHariIni'])->name('order.layanan.get.data.jadwal.dokter.hari.ini');
         Route::post('/create-data-order-layanan', [OrderLayananController::class, 'createDataOrderLayanan'])->name('order.layanan.create.data.order.layanan');
-        Route::get('/get-data-order-layanan/{id}', [OrderLayananController::class, 'getDataOrderLayananById'])->name('order.layanan.get.data.order.layanan.by.id');
+        Route::get('/get-data-order-layanan/{kodeTransaksi}', [OrderLayananController::class, 'getDataOrderLayananById'])->name('order.layanan.get.data.order.layanan.by.id');
         Route::post('/update-data-order-layanan', [OrderLayananController::class, 'updateDataOrderLayanan'])->name('order.layanan.update.data.order.layanan');
-        Route::post('/delete-data-order-layanan/{id}', [OrderLayananController::class, 'deleteDataOrderLayanan'])->name('order.layanan.delete.data.order.layanan');
+        Route::post('/delete-data-order-layanan/{kodeTransaksi}', [OrderLayananController::class, 'deleteDataOrderLayanan'])->name('order.layanan.delete.data.order.layanan');
     });
 });
 
@@ -343,6 +340,7 @@ Route::middleware(['auth', 'role:Kasir'])->group(function () {
         Route::post('/delete-metode-pembayaran/{id}', [MetodePembayaranController::class, 'deleteData'])->name('kasir.delete.data.metode.pembayaran');
         Route::get('/get-data-metode-pembayaran/{id}', [MetodePembayaranController::class, 'getDataMetodePembayaranById'])->name('get.data.metode.pembayaran.by.id');
 
+        // Transaksi Obat
         Route::get('/get-data-transaksi-obat', [TransaksiObatController::class, 'getDataTransaksiObat'])->name('get.data.transaksi.obat');
         Route::get('/transaksi-obat/{kodeTransaksi}', [TransaksiObatController::class, 'transaksiObat'])->name('kasir.transaksi.obat');
 
@@ -351,6 +349,7 @@ Route::middleware(['auth', 'role:Kasir'])->group(function () {
 
         // Route Untuk Riwayat Transaksi Obat
         Route::get('/get-data-riwayat-transaksi-obat', [PenjualanObatController::class, 'getDataRiwayatTransaksiObat'])->name('get.data.riwayat.transaksi.obat');
+        Route::get('/');
 
         // Riwayat Transaksi
         Route::get('/riwayat-transaksi', [RiwayatTransaksiController::class, 'index'])->name('kasir.riwayat.transaksi');
@@ -360,7 +359,7 @@ Route::middleware(['auth', 'role:Kasir'])->group(function () {
         // Transaksi Layanan
         Route::get(
             '/get-data-transaksi-layanan',
-            [KasirController::class, 'getDataTransaksiLayanan']
+            [TransaksiLayananController::class, 'getDataTransaksiLayanan']
         )->name('kasir.get.data.transaksi.layanan');
 
         Route::get('/show-detail-transaksi-layanan/{kodeTransaksi}', [TransaksiLayananController::class, 'showDetailTransaksiLayanan'])->name('kasir.show.detail.transaksi.layanan');
@@ -389,13 +388,7 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
     });
 });
 
-Route::get('/halo', function () {
-    $nama = 'David Sebastian';
-
-    return view('testing', compact('nama'));
-});
-
 Route::get('/login-dokter', [AuthController::class, 'login'])->name('login.dokter');
 Route::post('/proses-login-dokter', [AuthController::class, 'prosesLogin'])->name('proses.login.dokter');
 
-require __DIR__.'/auth.php';
+require __DIR__ . '/auth.php';

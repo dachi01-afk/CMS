@@ -1,4 +1,4 @@
-<x-layout-kasir>
+<x-mycomponents.layout>
 
     {{-- main --}}
     <div>
@@ -76,4 +76,4 @@
 
     </div>
 
-</x-layout-kasir>
+</x-mycomponents.layout>

@@ -166,7 +166,7 @@
 {{-- Ganti default data-paper di sini: a5 | a6 | dl | 80mm | 58mm --}}
 
 <body class="min-h-screen grid items-start justify-center p-6 font-sans" data-paper="a5">
-
+    {{-- Panel atas (pilih ukuran kertas & tombol cetak) --}}
     <div class="w-full print:hidden mb-4">
         <div class="bg-white border rounded-xl p-4 shadow flex flex-col gap-3">
             <div class="flex flex-wrap items-center gap-3">
@@ -191,183 +191,92 @@
         </div>
     </div>
 
-    @if ($dataTransaksiLayanan->kategoriLayanan->nama_kategori === 'Non Pemeriksaan')
-        <div class="receipt bg-white shadow-2xl rounded-2xl w-full p-8 border border-gray-200 relative shrink">
-            <!-- Header -->
-            <div class="text-center border-b pb-5 mb-4">
-                <h1 class="text-3xl md:text-4xl font-extrabold text-blue-700 tracking-wide">Kwitansi Transaksi Layanan</h1>
-                <p class="text-gray-500 text-sm mt-1">
-                    Kode Transaksi:
-                    <span class="font-semibold text-gray-800">{{ $kodeTransaksi }}</span>
-                </p>
-            </div>
+    @php
+        $isNonPemeriksaan = $summary->kategori_utama === 'Non Pemeriksaan';
+    @endphp
 
-            <!-- Data Pembayaran -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700 mb-6">
-                <div>
-                    <p class="mt-2">
-                        <span class="font-medium">Nama Pembayar:</span><br>
-                        {{ optional($dataTransaksiLayanan->pasien)->nama_pasien ?? '-' }}
-                    </p>
-                </div>
-                <div>
-                    <p class="mt-2">
-                        <span class="font-medium">Metode Pembayaran:</span><br>
-                        {{ optional($dataTransaksiLayanan->metodePembayaran)->nama_metode ?? 'Tunai' }}
-                    </p>
-                </div>
-            </div>
-
-            <!-- Detail Item Pembayaran -->
-            <div class="mt-6">
-                <h2 class="text-lg font-bold text-blue-700 mb-2 border-b pb-1">Rincian Pembayaran</h2>
-                <table class="border border-gray-300 rounded-xl overflow-hidden shadow-sm w-full">
-                    <thead class="bg-blue-100 text-blue-700">
-                        <tr>
-                            <th class="text-left px-3 py-2">No</th>
-                            <th class="text-left px-3 py-2">Nama Layanan</th>
-                            <th class="text-left px-3 py-2">Kategori Layanan</th>
-                            <th class="text-center px-3 py-2">Jumlah Layanan</th>
-                            <th class="text-right px-3 py-2">Harga (Rp)</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
-                        @php
-                            $no = 1;
-                            $qty = (int) ($dataTransaksiLayanan->jumlah ?? 1);
-                            $harga = (float) ($dataTransaksiLayanan->layanan->harga_layanan ?? 0);
-                            // kalau total_tagihan sudah di-set (misal ada diskon), pakai itu
-                            $subtotal = (float) ($dataTransaksiLayanan->total_tagihan ?? $qty * $harga);
-                            $total = $subtotal;
-                        @endphp
-
-                        {{-- 1 baris layanan --}}
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-3 py-2">{{ $no }}</td>
-                            <td class="px-3 py-2">
-                                {{ $dataTransaksiLayanan->layanan->nama_layanan ?? 'Layanan' }}
-                            </td>
-                            <td class="px-3 py-2">
-                                {{ $dataTransaksiLayanan->kategoriLayanan->nama_kategori ?? '-' }}
-                            </td>
-                            <td class="px-3 py-2 text-center">
-                                {{ $qty }}
-                            </td>
-                            <td class="px-3 py-2 text-right">
-                                {{ number_format($subtotal, 0, ',', '.') }}
-                            </td>
-                        </tr>
-
-                        {{-- Total --}}
-                        <tr class="bg-blue-50 font-semibold text-gray-800">
-                            <td colspan="4" class="text-right px-3 py-2">Total</td>
-                            <td class="text-right text-blue-700 px-3 py-2">
-                                {{ number_format($total, 0, ',', '.') }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-
-
-            {{-- Terbilang (angka) --}}
-            @php $grandTotal = $total; @endphp
-            <div class="mt-4 text-gray-700 italic text-sm">
-                <p>Terbilang:
-                    <span class="font-semibold text-blue-700">
-                        Rp {{ number_format($grandTotal, 0, ',', '.') }}
-                    </span>
-                </p>
-            </div>
-
-            <!-- Total Bayar & Tanggal -->
-            <div class="border-t border-gray-300 mt-6 pt-4 text-right">
-                <h2 class="text-xl font-bold text-gray-900">
-                    Total Bayar:
-                    <span class="text-blue-700">Rp {{ number_format($total, 0, ',', '.') }}</span>
-                </h2>
-                <p class="text-sm text-gray-500 mt-1">
-                    Tanggal Pembayaran:
-                    {{ $dataTransaksiLayanan->tanggal_transaksi
-                        ? \Carbon\Carbon::parse($dataTransaksiLayanan->tanggal_transaksi)->translatedFormat('d F Y')
-                        : '-' }}
-                </p>
-            </div>
-
-            <!-- Footer -->
-            <div class="border-t mt-6 pt-4 text-center text-gray-600 text-sm">
-                <p class="italic mb-1 hide-thermal">Terima kasih atas kepercayaan Anda.</p>
-                <p class="font-semibold text-gray-800 text-base">{{ $namaPT }}</p>
-            </div>
+    {{-- ==== KWITANSI ==== --}}
+    <div class="receipt bg-white shadow-2xl rounded-2xl w-full p-8 border border-gray-200 relative shrink">
+        <!-- Header -->
+        <div class="text-center border-b pb-5 mb-4">
+            <h1 class="text-3xl md:text-4xl font-extrabold text-blue-700 tracking-wide">
+                Kwitansi Pembayaran
+            </h1>
+            <p class="text-gray-500 text-sm mt-1">
+                Kode Transaksi:
+                <span class="font-semibold text-gray-800">{{ $summary->kode_transaksi }}</span>
+            </p>
         </div>
-    @else
-        <div class="receipt bg-white shadow-2xl rounded-2xl w-full p-8 border border-gray-200 relative shrink">
-            <!-- Header -->
-            <div class="text-center border-b pb-5 mb-4">
-                <h1 class="text-3xl md:text-4xl font-extrabold text-blue-700 tracking-wide">Kwitansi Pembayaran</h1>
-                <p class="text-gray-500 text-sm mt-1">
-                    Kode Transaksi:
-                    <span class="font-semibold text-gray-800">{{ $kodeTransaksi }}</span>
-                </p>
-            </div>
 
-            <!-- Data Pembayaran -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700 mb-6">
-                <div>
+        <!-- Data Pembayaran -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700 mb-6">
+            <div>
+                @unless ($isNonPemeriksaan)
                     <p>
                         <span class="font-medium">Tanggal Kunjungan:</span><br>
-                        {{ optional($dataTransaksiLayanan->kunjungan)->tanggal_kunjungan
-                            ? \Carbon\Carbon::parse($dataTransaksiLayanan->tanggal_kunjungan)->translatedFormat('d F Y')
+                        {{ optional($summary->kunjungan)->tanggal_kunjungan
+                            ? \Carbon\Carbon::parse($summary->kunjungan->tanggal_kunjungan)->translatedFormat('d F Y')
                             : '-' }}
                     </p>
-                    <p class="mt-2">
-                        <span class="font-medium">Nama Pembayar:</span><br>
-                        {{ optional($dataTransaksiLayanan->pasien)->nama_pasien ?? '-' }}
-                    </p>
-                </div>
-                <div>
+                @endunless
+
+                <p class="mt-2">
+                    <span class="font-medium">Nama Pembayar:</span><br>
+                    {{ optional($summary->pasien)->nama_pasien ?? '-' }}
+                </p>
+            </div>
+            <div>
+                @unless ($isNonPemeriksaan)
                     <p>
                         <span class="font-medium">Nomor Antrian:</span><br>
-                        {{ optional($dataTransaksiLayanan->kunjungan)->no_antrian ?? '-' }}
+                        {{ optional($summary->kunjungan)->no_antrian ?? (optional($summary->kunjungan)->nomor_antrian ?? '-') }}
                     </p>
-                    <p class="mt-2">
-                        <span class="font-medium">Metode Pembayaran:</span><br>
-                        {{ optional($dataTransaksiLayanan->metodePembayaran)->nama_metode ?? 'Tunai' }}
-                    </p>
-                </div>
+                @endunless
+                <p class="mt-2">
+                    <span class="font-medium">Metode Pembayaran:</span><br>
+                    {{ $summary->metode_pembayaran ?? 'Tunai' }}
+                </p>
             </div>
+        </div>
 
-            <!-- Detail Item Pembayaran -->
-            <div class="mt-6">
-                <h2 class="text-lg font-bold text-blue-700 mb-2 border-b pb-1">Rincian Pembayaran</h2>
-                <table class="border border-gray-300 rounded-xl overflow-hidden shadow-sm w-full">
-                    <thead class="bg-blue-100 text-blue-700">
-                        <tr>
-                            <th class="text-left px-3 py-2">No</th>
-                            <th class="text-left px-3 py-2">Nama Layanan</th>
-                            <th class="text-left px-3 py-2">Kategori Layanan</th>
-                            <th class="text-center px-3 py-2">Jumlah Layanan</th>
-                            <th class="text-right px-3 py-2">Harga (Rp)</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-200">
+        <!-- Detail Item Pembayaran (semua layanan dalam transaksi ini) -->
+        <div class="mt-6">
+            <h2 class="text-lg font-bold text-blue-700 mb-2 border-b pb-1">Rincian Pembayaran</h2>
+            <table class="border border-gray-300 rounded-xl overflow-hidden shadow-sm w-full">
+                <thead class="bg-blue-100 text-blue-700">
+                    <tr>
+                        <th class="text-left px-3 py-2">No</th>
+                        <th class="text-left px-3 py-2">Nama Layanan</th>
+                        <th class="text-left px-3 py-2">Kategori Layanan</th>
+                        <th class="text-center px-3 py-2">Jumlah Layanan</th>
+                        <th class="text-right px-3 py-2">Subtotal (Rp)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    @php
+                        $no = 1;
+                        $totalSebelum = 0;
+                    @endphp
+
+                    @foreach ($items as $item)
                         @php
-                            $no = 1;
-                            $qty = (int) ($dataTransaksiLayanan->jumlah ?? 1);
-                            $harga = (float) ($dataTransaksiLayanan->layanan->harga_layanan ?? 0);
-                            // kalau total_tagihan sudah di-set (misal ada diskon), pakai itu
-                            $subtotal = (float) ($dataTransaksiLayanan->total_tagihan ?? $qty * $harga);
-                            $total = $subtotal;
-                        @endphp
+                            $qty = (int) ($item->jumlah ?? 1);
+                            $hargaSatuan = (float) (optional($item->layanan)->harga_layanan ?? 0);
+                            // subtotal per baris (sebelum diskon)
+                            $subtotal = $hargaSatuan * $qty;
+                            $totalSebelum += $subtotal;
 
-                        {{-- 1 baris layanan --}}
+                            $kategori =
+                                optional($item->kategoriLayanan)->nama_kategori ??
+                                (optional(optional($item->layanan)->kategoriLayanan)->nama_kategori ?? '-');
+                        @endphp
                         <tr class="hover:bg-gray-50">
-                            <td class="px-3 py-2">{{ $no }}</td>
+                            <td class="px-3 py-2">{{ $no++ }}</td>
                             <td class="px-3 py-2">
-                                {{ $dataTransaksiLayanan->layanan->nama_layanan ?? 'Layanan' }}
+                                {{ optional($item->layanan)->nama_layanan ?? 'Layanan' }}
                             </td>
                             <td class="px-3 py-2">
-                                {{ $dataTransaksiLayanan->kategoriLayanan->nama_kategori ?? '-' }}
+                                {{ $kategori }}
                             </td>
                             <td class="px-3 py-2 text-center">
                                 {{ $qty }}
@@ -376,50 +285,77 @@
                                 {{ number_format($subtotal, 0, ',', '.') }}
                             </td>
                         </tr>
+                    @endforeach
 
-                        {{-- Total --}}
-                        <tr class="bg-blue-50 font-semibold text-gray-800">
-                            <td colspan="4" class="text-right px-3 py-2">Total</td>
-                            <td class="text-right text-blue-700 px-3 py-2">
-                                {{ number_format($total, 0, ',', '.') }}
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
+                    {{-- Ringkasan total + diskon + total akhir --}}
+                    <tr class="bg-blue-50 font-medium text-gray-800">
+                        <td colspan="4" class="text-right px-3 py-2">Total Sebelum Diskon</td>
+                        <td class="text-right px-3 py-2">
+                            {{ number_format($summary->total_sebelum_diskon, 0, ',', '.') }}
+                        </td>
+                    </tr>
 
+                    <tr class="bg-blue-50 font-medium text-gray-800">
+                        <td colspan="4" class="text-right px-3 py-2">Diskon</td>
+                        <td class="text-right px-3 py-2">
+                            - {{ number_format($summary->diskon_nominal, 0, ',', '.') }}
+                        </td>
+                    </tr>
 
-            {{-- Terbilang (angka) --}}
-            @php $grandTotal = $total; @endphp
-            <div class="mt-4 text-gray-700 italic text-sm">
-                <p>Terbilang:
-                    <span class="font-semibold text-blue-700">
-                        Rp {{ number_format($grandTotal, 0, ',', '.') }}
-                    </span>
-                </p>
-            </div>
-
-            <!-- Total Bayar & Tanggal -->
-            <div class="border-t border-gray-300 mt-6 pt-4 text-right">
-                <h2 class="text-xl font-bold text-gray-900">
-                    Total Bayar:
-                    <span class="text-blue-700">Rp {{ number_format($total, 0, ',', '.') }}</span>
-                </h2>
-                <p class="text-sm text-gray-500 mt-1">
-                    Tanggal Pembayaran:
-                    {{ $dataTransaksiLayanan->tanggal_transaksi
-                        ? \Carbon\Carbon::parse($dataTransaksiLayanan->tanggal_transaksi)->translatedFormat('d F Y')
-                        : '-' }}
-                </p>
-            </div>
-
-            <!-- Footer -->
-            <div class="border-t mt-6 pt-4 text-center text-gray-600 text-sm">
-                <p class="italic mb-1 hide-thermal">Terima kasih atas kepercayaan Anda.</p>
-                <p class="font-semibold text-gray-800 text-base">{{ $namaPT }}</p>
-            </div>
+                    <tr class="bg-blue-100 font-semibold text-gray-900">
+                        <td colspan="4" class="text-right px-3 py-2">Total Setelah Diskon</td>
+                        <td class="text-right text-blue-700 px-3 py-2">
+                            {{ number_format($summary->total_setelah_diskon, 0, ',', '.') }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
-    @endif
+
+        {{-- Terbilang (angka) – sementara pakai angka saja --}}
+        @php $grandTotal = $summary->total_setelah_diskon; @endphp
+        <div class="mt-4 text-gray-700 italic text-sm">
+            <p>Terbilang:
+                <span class="font-semibold text-blue-700">
+                    Rp {{ number_format($grandTotal, 0, ',', '.') }}
+                </span>
+            </p>
+        </div>
+
+        <!-- Total Bayar, Uang Diterima, Kembalian & Tanggal -->
+        <div class="border-t border-gray-300 mt-6 pt-4 text-right space-y-1">
+            <h2 class="text-xl font-bold text-gray-900">
+                Total Bayar:
+                <span class="text-blue-700">
+                    Rp {{ number_format($summary->total_setelah_diskon, 0, ',', '.') }}
+                </span>
+            </h2>
+            <p class="text-sm text-gray-600">
+                Uang Diterima:
+                <span class="font-medium">
+                    Rp {{ number_format($summary->uang_yang_diterima, 0, ',', '.') }}
+                </span>
+            </p>
+            <p class="text-sm text-gray-600">
+                Kembalian:
+                <span class="font-medium">
+                    Rp {{ number_format($summary->kembalian, 0, ',', '.') }}
+                </span>
+            </p>
+            <p class="text-sm text-gray-500 mt-1">
+                Tanggal Pembayaran:
+                {{ $summary->tanggal_transaksi
+                    ? \Carbon\Carbon::parse($summary->tanggal_transaksi)->translatedFormat('d F Y')
+                    : '-' }}
+            </p>
+        </div>
+
+        <!-- Footer -->
+        <div class="border-t mt-6 pt-4 text-center text-gray-600 text-sm">
+            <p class="italic mb-1 hide-thermal">Terima kasih atas kepercayaan Anda.</p>
+            <p class="font-semibold text-gray-800 text-base">{{ $namaPT }}</p>
+        </div>
+    </div>
 
     <script>
         (function() {
@@ -439,7 +375,6 @@
 
             if (btn) {
                 btn.addEventListener('click', function() {
-                    // Pastikan atribut sudah terpasang sebelum print
                     applyPaper();
                     window.print();
                 });

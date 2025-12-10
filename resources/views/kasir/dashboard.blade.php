@@ -1,4 +1,4 @@
-<x-layout-kasir>
+<x-mycomponents.layout>
     {{-- main --}}
     <div>
 
@@ -112,4 +112,4 @@
     </div>
 
     @vite(['resources/js/kasir/dashboard.js'])
-</x-layout-kasir>
+</x-mycomponents.layout>

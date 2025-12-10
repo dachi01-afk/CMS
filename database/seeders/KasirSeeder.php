@@ -17,14 +17,14 @@ class KasirSeeder extends Seeder
     {
         $roleKasir = User::where('role', 'Kasir')->get();
         $faker = Faker::create('id_ID');
-        $foto = 'foto_dokter.jpg';
+        $fotoKasir = 'kasir/foto-profil.jpg';
 
         for ($i = 0; $i < $roleKasir->count(); $i++) {
             Kasir::create([
                 'user_id' => $roleKasir[$i]->id,
                 'nama_kasir' => $faker->name,
                 'no_hp_kasir' => $faker->phoneNumber(),
-                'foto_kasir' => $foto,
+                'foto_kasir' => $fotoKasir,
             ]);
         }
     }

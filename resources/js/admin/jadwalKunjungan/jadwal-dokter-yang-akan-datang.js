@@ -1,36 +1,68 @@
 import { Modal } from "flowbite";
 
-const modalEl = document.getElementById("modalCreateKYAD");
-const modal = new Modal(modalEl);
-
-const form = modalEl.querySelector("form");
-const pasienDataDiv = document.getElementById("pasien_data-kyad");
-const searchInput = document.getElementById("search_pasien-kyad");
-const resultsDiv = document.getElementById("search_results-kyad");
-
-// Reset modal
-function resetModalForm() {
-    form.reset();
-    pasienDataDiv.classList.add("hidden");
-    resultsDiv.classList.add("hidden");
-    searchInput.value = "";
-
-    document.getElementById("nama_pasien-kyad").textContent = "";
-    document.getElementById("alamat_pasien-kyad").textContent = "";
-    document.getElementById("jk_pasien-kyad").textContent = "";
-
-    document.getElementById("dokter_id-kyad").value = "";
-    document.getElementById("dokter_nama-kyad").value = "";
-    document.getElementById("poli_id-kyad").value = "";
-    document.getElementById("nama_poli-kyad").value = "";
-    document.getElementById("tanggal-kunjungan-kyad").value = "";
-    const pasienId = document.getElementById("pasien_id-kyad");
-    if (pasienId) pasienId.value = "";
-    const jadwalId = document.getElementById("jadwal_id-kyad");
-    if (jadwalId) jadwalId.value = "";
-}
-
 document.addEventListener("DOMContentLoaded", () => {
+    const modalEl = document.getElementById("modalCreateKYAD");
+    if (!modalEl) return;
+
+    // Modal TIDAK bisa ditutup oleh klik luar / ESC
+    const modal = new Modal(modalEl, {
+        backdrop: "dynamic", // boleh dynamic, tapi...
+        closable: false, // ...klik luar & ESC TIDAK akan menutup modal
+    });
+
+    const form = modalEl.querySelector("form");
+    const pasienDataDiv = document.getElementById("pasien_data-kyad");
+    const searchInput = document.getElementById("search_pasien-kyad");
+    const resultsDiv = document.getElementById("search_results-kyad");
+
+    // =========================
+    // RESET MODAL
+    // =========================
+    function resetModalForm() {
+        if (form) form.reset();
+
+        if (pasienDataDiv) pasienDataDiv.classList.add("hidden");
+        if (resultsDiv) resultsDiv.classList.add("hidden");
+        if (searchInput) searchInput.value = "";
+
+        // Bersihkan data pasien
+        const namaPasien = document.getElementById("nama_pasien-kyad");
+        const alamatPasien = document.getElementById("alamat_pasien-kyad");
+        const jkPasien = document.getElementById("jk_pasien-kyad");
+
+        if (namaPasien) namaPasien.textContent = "";
+        if (alamatPasien) alamatPasien.textContent = "";
+        if (jkPasien) jkPasien.textContent = "";
+
+        // Hidden input
+        const dokterId = document.getElementById("dokter_id-kyad");
+        const poliId = document.getElementById("poli_id-kyad");
+        const tanggalKunjungan = document.getElementById(
+            "tanggal-kunjungan-kyad"
+        );
+        const pasienId = document.getElementById("pasien_id-kyad");
+        const jadwalId = document.getElementById("jadwal_id-kyad");
+
+        if (dokterId) dokterId.value = "";
+        if (poliId) poliId.value = "";
+        if (tanggalKunjungan) tanggalKunjungan.value = "";
+        if (pasienId) pasienId.value = "";
+        if (jadwalId) jadwalId.value = "";
+
+        // Section "Jadwal Praktik"
+        const dokterNama = document.getElementById("dokter_nama-kyad");
+        const namaPoli = document.getElementById("nama_poli-kyad");
+        const tanggalDisplay = document.getElementById("tanggal_display-kyad");
+        const spesialisDisplay = document.getElementById(
+            "spesialis_display-kyad"
+        );
+
+        if (dokterNama) dokterNama.textContent = "";
+        if (namaPoli) namaPoli.textContent = "";
+        if (tanggalDisplay) tanggalDisplay.textContent = "";
+        if (spesialisDisplay) spesialisDisplay.textContent = "";
+    }
+
     // =========================
     // SEARCH TABEL "JADWAL DOKTER YANG AKAN DATANG"
     // =========================
@@ -42,10 +74,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (jadwalKyadSearchInput && jadwalKyadTable) {
         const tbody = jadwalKyadTable.querySelector("tbody");
         if (tbody) {
-            // Simpan semua baris data awal
             const dataRows = Array.from(tbody.querySelectorAll("tr"));
 
-            // Buat row khusus untuk pesan "data tidak ada"
             const noResultRow = document.createElement("tr");
             noResultRow.id = "jadwal_kyad_no_result_row";
             noResultRow.className = "bg-amber-50";
@@ -65,7 +95,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     const rowText = row.textContent.toLowerCase();
 
                     if (query === "") {
-                        // Jika input kosong: tampilkan semua row data
                         row.style.display = "";
                         hasVisible = true;
                     } else {
@@ -75,7 +104,6 @@ document.addEventListener("DOMContentLoaded", () => {
                     }
                 });
 
-                // Tampilkan / sembunyikan row "data tidak ada"
                 if (query !== "" && !hasVisible) {
                     noResultRow.style.display = "";
                 } else {
@@ -85,156 +113,221 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
+    function formatTanggalIndo(dateString) {
+        if (!dateString) return "-";
+
+        const bulanIndo = [
+            "Januari",
+            "Februari",
+            "Maret",
+            "April",
+            "Mei",
+            "Juni",
+            "Juli",
+            "Agustus",
+            "September",
+            "Oktober",
+            "November",
+            "Desember",
+        ];
+
+        const date = new Date(dateString + "T00:00:00");
+        const hari = date.getDate();
+        const bulan = bulanIndo[date.getMonth()];
+        const tahun = date.getFullYear();
+
+        return `${hari} ${bulan} ${tahun}`;
+    }
+
     // =========================
-    // Buka modal dari tombol "Buat Kunjungan"
+    // BUKA MODAL DARI TOMBOL "BUAT KUNJUNGAN"
     // =========================
     document.querySelectorAll(".pilih-kyad-btn").forEach((btn) => {
         btn.addEventListener("click", () => {
-            document.getElementById("dokter_id-kyad").value =
-                btn.dataset.dokterId;
-            document.getElementById(
-                "dokter_nama-kyad"
-            ).value = `${btn.dataset.dokterNama} (${btn.dataset.spesialis})`;
+            // Hidden input
+            const dokterId = document.getElementById("dokter_id-kyad");
+            const poliId = document.getElementById("poli_id-kyad");
+            const tanggalKunjungan = document.getElementById(
+                "tanggal-kunjungan-kyad"
+            );
+            const jadwalId = document.getElementById("jadwal_id-kyad");
 
-            document.getElementById("nama_poli-kyad").value =
-                btn.dataset.namaPoli;
-            document.getElementById("poli_id-kyad").value = btn.dataset.poliId;
-
-            document.getElementById("tanggal-kunjungan-kyad").value =
-                btn.dataset.tanggal;
-            document.getElementById("jadwal_id-kyad").value =
-                btn.dataset.jadwalId || "";
+            if (dokterId) dokterId.value = btn.dataset.dokterId || "";
+            if (poliId) poliId.value = btn.dataset.poliId || "";
+            if (tanggalKunjungan)
+                tanggalKunjungan.value = btn.dataset.tanggal || "";
+            if (jadwalId) jadwalId.value = btn.dataset.jadwalId || "";
 
             // Tampilkan info di section "Jadwal Praktik"
+            const dokterNama = document.getElementById("dokter_nama-kyad");
+            const namaPoli = document.getElementById("nama_poli-kyad");
             const tanggalDisplay = document.getElementById(
                 "tanggal_display-kyad"
             );
             const spesialisDisplay = document.getElementById(
                 "spesialis_display-kyad"
             );
-            if (tanggalDisplay)
-                tanggalDisplay.textContent = btn.dataset.tanggal || "-";
-            if (spesialisDisplay)
+
+            if (dokterNama) {
+                dokterNama.textContent = `${btn.dataset.dokterNama} (${btn.dataset.spesialis})`;
+            }
+            if (namaPoli) {
+                namaPoli.textContent = btn.dataset.namaPoli || "-";
+            }
+            if (tanggalDisplay) {
+                tanggalDisplay.textContent = formatTanggalIndo(
+                    btn.dataset.tanggal || "-"
+                );
+            }
+            if (spesialisDisplay) {
                 spesialisDisplay.textContent = btn.dataset.spesialis || "-";
+            }
 
             modal.show();
         });
     });
 
     // =========================
-    // Tutup modal
+    // TUTUP MODAL (TOMBOL X & BATAL)
     // =========================
-    document.getElementById("closeModalBtn").addEventListener("click", () => {
-        modal.hide();
-        resetModalForm();
-    });
-    const cancelBtn = document.getElementById("closeModalBtn2");
+    const closeBtn = document.getElementById("buttonCloseModalCreateKYAD");
+    if (closeBtn) {
+        closeBtn.addEventListener("click", () => {
+            modal.hide();
+            resetModalForm();
+        });
+    }
+
+    const cancelBtn = document.getElementById(
+        "buttonCloseModalCreateKYAD_footer"
+    );
     if (cancelBtn) {
         cancelBtn.addEventListener("click", () => {
             modal.hide();
             resetModalForm();
         });
     }
+
+    // Kalau suatu saat modal di-hide via JS lain, tetap reset
     modalEl.addEventListener("hidden.tw.modal", resetModalForm);
 
     // =========================
-    // Live search pasien di modal KYAD
+    // LIVE SEARCH PASIEN DI MODAL KYAD
     // =========================
-    searchInput.addEventListener("keyup", async () => {
-        const query = searchInput.value.trim();
-        if (query.length < 2) {
-            resultsDiv.classList.add("hidden");
-            return;
-        }
+    if (searchInput) {
+        searchInput.addEventListener("keyup", async () => {
+            const query = searchInput.value.trim();
+            if (query.length < 2) {
+                resultsDiv.classList.add("hidden");
+                return;
+            }
 
-        const response = await fetch(
-            `/jadwal_kunjungan/search?query=${encodeURIComponent(query)}`
-        );
-        const data = await response.json();
+            const response = await fetch(
+                `/jadwal_kunjungan/search?query=${encodeURIComponent(query)}`
+            );
+            const data = await response.json();
 
-        resultsDiv.innerHTML = "";
-        if (Array.isArray(data) && data.length > 0) {
-            resultsDiv.classList.remove("hidden");
-            data.forEach((pasien) => {
-                const item = document.createElement("div");
-                item.className =
-                    "px-4 py-2 hover:bg-indigo-100 cursor-pointer text-sm";
-                item.textContent = pasien.nama_pasien;
-                item.onclick = () => {
-                    document.getElementById("pasien_id-kyad").value = pasien.id;
-                    document.getElementById("nama_pasien-kyad").textContent =
-                        pasien.nama_pasien;
-                    document.getElementById("alamat_pasien-kyad").textContent =
-                        pasien.alamat ?? "-";
-                    document.getElementById("jk_pasien-kyad").textContent =
-                        pasien.jenis_kelamin ?? "-";
+            resultsDiv.innerHTML = "";
+            if (Array.isArray(data) && data.length > 0) {
+                resultsDiv.classList.remove("hidden");
+                data.forEach((pasien) => {
+                    const item = document.createElement("div");
+                    item.className =
+                        "px-4 py-2 hover:bg-indigo-100 cursor-pointer text-sm";
+                    item.textContent = pasien.nama_pasien;
+                    item.onclick = () => {
+                        const pasienId =
+                            document.getElementById("pasien_id-kyad");
+                        const namaPasien =
+                            document.getElementById("nama_pasien-kyad");
+                        const alamatPasien =
+                            document.getElementById("alamat_pasien-kyad");
+                        const jkPasien =
+                            document.getElementById("jk_pasien-kyad");
+                        const noEmrPasien =
+                            document.getElementById("no_emr_pasien-kyad");
 
-                    pasienDataDiv.classList.remove("hidden");
-                    resultsDiv.classList.add("hidden");
-                    searchInput.value = pasien.nama_pasien;
-                };
-                resultsDiv.appendChild(item);
-            });
-        } else {
-            resultsDiv.classList.remove("hidden");
-            resultsDiv.innerHTML = `<div class="px-4 py-2 text-gray-500 text-sm">Tidak ditemukan</div>`;
-        }
-    });
+                        if (pasienId) pasienId.value = pasien.id;
+                        if (namaPasien)
+                            namaPasien.textContent = pasien.nama_pasien;
+                        if (alamatPasien)
+                            alamatPasien.textContent = pasien.alamat ?? "-";
+                        if (jkPasien)
+                            jkPasien.textContent = pasien.jenis_kelamin ?? "-";
+                        if (noEmrPasien)
+                            noEmrPasien.textContent = pasien.no_emr ?? "-";
 
-    // =========================
-    // Submit form via AJAX
-    // =========================
-    form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-
-        const formData = new FormData(form);
-
-        try {
-            const response = await fetch(`/jadwal_kunjungan/create`, {
-                method: "POST",
-                headers: {
-                    "X-CSRF-TOKEN": document.querySelector(
-                        'meta[name="csrf-token"]'
-                    ).content,
-                    Accept: "application/json",
-                },
-                body: formData,
-            });
-
-            const result = await response.json();
-
-            if (result.success) {
-                Swal.fire({
-                    icon: "success",
-                    title: "Berhasil!",
-                    text: `Kunjungan berhasil dibuat.\nNomor Antrian: ${result.data.no_antrian}`,
-                    showConfirmButton: false,
-                    timer: 2000,
-                }).then(() => {
-                    modal.hide();
-                    resetModalForm();
-                    if (typeof loadWaitingList === "function") {
-                        loadWaitingList();
-                    } else {
-                        window.location.reload();
-                    }
+                        if (pasienDataDiv)
+                            pasienDataDiv.classList.remove("hidden");
+                        resultsDiv.classList.add("hidden");
+                        searchInput.value = pasien.nama_pasien;
+                    };
+                    resultsDiv.appendChild(item);
                 });
             } else {
+                resultsDiv.classList.remove("hidden");
+                resultsDiv.innerHTML = `<div class="px-4 py-2 text-gray-500 text-sm">Tidak ditemukan</div>`;
+            }
+        });
+    }
+
+    // =========================
+    // SUBMIT FORM VIA AJAX
+    // =========================
+    if (form) {
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            const formData = new FormData(form);
+
+            try {
+                const response = await fetch(`/jadwal_kunjungan/create`, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRF-TOKEN": document.querySelector(
+                            'meta[name="csrf-token"]'
+                        ).content,
+                        Accept: "application/json",
+                    },
+                    body: formData,
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    Swal.fire({
+                        icon: "success",
+                        title: "Berhasil!",
+                        text: `Kunjungan berhasil dibuat.\nNomor Antrian: ${result.data.no_antrian}`,
+                        showConfirmButton: false,
+                        timer: 2000,
+                    }).then(() => {
+                        modal.hide();
+                        resetModalForm();
+                        if (typeof loadWaitingList === "function") {
+                            loadWaitingList();
+                        } else {
+                            window.location.reload();
+                        }
+                    });
+                } else {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Gagal!",
+                        text:
+                            result.message || "Gagal menyimpan data kunjungan.",
+                        confirmButtonText: "OK",
+                    });
+                }
+            } catch (error) {
+                console.error("Error:", error);
                 Swal.fire({
                     icon: "error",
-                    title: "Gagal!",
-                    text: result.message || "Gagal menyimpan data kunjungan.",
+                    title: "Terjadi Kesalahan!",
+                    text: "Tidak dapat menghubungi server. Periksa koneksi atau log backend.",
                     confirmButtonText: "OK",
                 });
             }
-        } catch (error) {
-            console.error("Error:", error);
-            Swal.fire({
-                icon: "error",
-                title: "Terjadi Kesalahan!",
-                text: "Tidak dapat menghubungi server. Periksa koneksi atau log backend.",
-                confirmButtonText: "OK",
-            });
-        }
-    });
+        });
+    }
 });

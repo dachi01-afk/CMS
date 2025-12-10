@@ -1,16 +1,16 @@
 import $ from "jquery";
 import axios from "axios";
-import { initFlowbite } from "flowbite";
+import { Modal } from "flowbite";
 
-// data metode pembayaran
+// ================== DATATABLE + PAGINATION CUSTOM ==================
 $(function () {
-    var table = $("#metodePembayaran").DataTable({
+    const table = $("#metodePembayaran").DataTable({
         processing: true,
         serverSide: true,
         searching: true,
         ordering: true,
-        pageLength: true,
-        lengthChange: true,
+        pageLength: 10,
+        lengthChange: false,
         info: false,
         ajax: "/kasir/get-data-metode-pembayaran",
         columns: [
@@ -32,7 +32,7 @@ $(function () {
             },
         ],
         dom: "t",
-        rowCallback: function (row, data) {
+        rowCallback: function (row) {
             $(row).addClass(
                 "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
             );
@@ -52,7 +52,7 @@ $(function () {
     function updatePagination() {
         const info = table.page.info();
         const currentPage = info.page + 1;
-        const totalPages = info.pages;
+        const totalPages = info.pages || 1;
 
         $info.text(
             `Menampilkan ${info.start + 1}–${info.end} dari ${
@@ -109,7 +109,7 @@ $(function () {
     updatePagination();
 });
 
-// add data metode pembayaran
+// ================== CREATE METODE PEMBAYARAN ==================
 $(function () {
     const addModalEl = document.getElementById("modalCreateMetodePembayaran");
     const addModal = addModalEl ? new Modal(addModalEl) : null;
@@ -118,9 +118,7 @@ $(function () {
     function resetAddForm() {
         $formAdd[0].reset();
         $formAdd.find(".is-invalid").removeClass("is-invalid");
-        $formAdd.find(".text-red-600").empty();
-        $("#dokter_data_create").addClass("hidden");
-        $("#search_results_create").addClass("hidden");
+        $("#nama_metode-error").empty();
     }
 
     $("#buttonOpenModalCreateMetodePembayaran").on("click", function () {
@@ -128,7 +126,9 @@ $(function () {
         addModal?.show();
     });
 
-    $("#buttonCloseModalCreateMetodePembayaran").on("click", function () {
+    $(
+        "#buttonCloseModalCreateMetodePembayaran, #buttonCloseModalCreateMetodePembayaranHeader"
+    ).on("click", function () {
         addModal?.hide();
         resetAddForm();
     });
@@ -156,11 +156,15 @@ $(function () {
             })
             .catch((error) => {
                 if (error.response?.status === 422) {
-                    const errors = error.response.data.errors;
-                    for (const field in errors) {
-                        $(`#${field}`).addClass("is-invalid");
-                        $(`#${field}-error`).html(errors[field][0]);
+                    const errors = error.response.data.errors || {};
+                    $("#nama_metode_create").removeClass("is-invalid");
+                    $("#nama_metode-error").empty();
+
+                    if (errors.nama_metode) {
+                        $("#nama_metode_create").addClass("is-invalid");
+                        $("#nama_metode-error").html(errors.nama_metode[0]);
                     }
+
                     Swal.fire({
                         icon: "error",
                         title: "Validasi Gagal!",
@@ -177,41 +181,36 @@ $(function () {
     });
 });
 
-// edit jadwal dokter
+// ================== UPDATE + DELETE METODE PEMBAYARAN ==================
 $(function () {
     const editModalEl = document.getElementById("modalUpdateMetodePembayaran");
     const editModal = editModalEl ? new Modal(editModalEl) : null;
     const $formEdit = $("#formUpdateMetodePembayaran");
 
-    // 🔁 Reset form edit setiap kali modal ditutup
     function resetEditForm() {
         $formEdit[0].reset();
         $formEdit.find(".is-invalid").removeClass("is-invalid");
-        $formEdit.find(".text-red-600").empty();
+        $("#nama_metode_update-error").empty();
     }
 
     // ✏️ Klik tombol Edit
     $("body").on("click", ".btn-update-metode-pembayaran", function () {
         resetEditForm();
         const id = $(this).data("id");
+        if (!id) return;
 
         axios
             .get(`/kasir/get-data-metode-pembayaran/${id}`)
             .then((response) => {
                 const metodePembayaran = response.data.data;
 
-                // Set action URL
-                const baseUrl = $formEdit
-                    .data("url")
-                    .replace("/0", "/" + metodePembayaran.id);
-                $formEdit.data("url", baseUrl);
-
-                // Isi form dengan data dari backend
                 $("#id_update").val(metodePembayaran.id);
                 $("#nama_metode_update").val(metodePembayaran.nama_metode);
+
                 editModal?.show();
             })
-            .catch(() => {
+            .catch((error) => {
+                console.error(error);
                 Swal.fire({
                     icon: "error",
                     title: "Gagal!",
@@ -246,11 +245,17 @@ $(function () {
             })
             .catch((error) => {
                 if (error.response?.status === 422) {
-                    const errors = error.response.data.errors;
-                    for (const field in errors) {
-                        $(`#${field}_edit`).addClass("is-invalid");
-                        $(`#${field}_edit-error`).html(errors[field][0]);
+                    const errors = error.response.data.errors || {};
+                    $("#nama_metode_update").removeClass("is-invalid");
+                    $("#nama_metode_update-error").empty();
+
+                    if (errors.nama_metode) {
+                        $("#nama_metode_update").addClass("is-invalid");
+                        $("#nama_metode_update-error").html(
+                            errors.nama_metode[0]
+                        );
                     }
+
                     Swal.fire({
                         icon: "error",
                         title: "Validasi Gagal!",
@@ -266,14 +271,15 @@ $(function () {
             });
     });
 
-    // ❌ Tutup modal
-    $("#buttonCloseModalUpdateMetodePembayaran").on("click", function () {
+    // ❌ Tutup modal edit
+    $(
+        "#buttonCloseModalUpdateMetodePembayaran, #buttonCloseModalUpdateMetodePembayaranHeader"
+    ).on("click", function () {
         editModal?.hide();
         resetEditForm();
     });
-});
 
-$(function () {
+    // 🗑 Delete
     $("body").on("click", ".btn-delete-metode-pembayaran", function () {
         const id = $(this).data("id");
         if (!id) return;

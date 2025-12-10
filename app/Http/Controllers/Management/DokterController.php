@@ -23,14 +23,14 @@ class DokterController extends Controller
     {
         try {
             $validated = $request->validate([
-                'username_dokter'    => 'required|string|max:255|unique:user,username',
+                'username_dokter'    => 'required|string|max:255',
                 'poli_id'           => ['required', 'array', 'min:1'],
                 'poli_id.*'         => ['integer', 'distinct', 'exists:poli,id'],
                 'nama_dokter'        => 'required|string|max:255',
-                'email_akun_dokter'  => 'required|email|max:255|unique:user,email',
+                'email_akun_dokter'  => 'required|email|max:255',
                 'spesialis_dokter'   => 'required|integer|exists:jenis_spesialis,id',
                 'password_dokter'    => 'required|string|min:8|confirmed',
-                'foto_dokter'        => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
+                'foto_dokter'        => 'required|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
                 'deskripsi_dokter'   => 'nullable|string',
                 'pengalaman_dokter'  => 'nullable|string|max:255',
                 'no_hp_dokter'       => 'nullable|string|max:20',
@@ -104,15 +104,11 @@ class DokterController extends Controller
             ], 500);
         }
     }
-
-
     public function getDokterById($id)
     {
         $data = Dokter::with('user', 'poli')->findOrFail($id);
         return response()->json(['data' => $data]);
     }
-
-
     public function updateDokter(Request $request)
     {
         try {
@@ -125,13 +121,11 @@ class DokterController extends Controller
                     'required',
                     'string',
                     'max:255',
-                    Rule::unique('user', 'username')->ignore($user->id)
                 ],
                 'edit_email_akun_dokter'  => [
                     'required',
                     'email',
                     'max:255',
-                    Rule::unique('user', 'email')->ignore($user->id)
                 ],
                 'edit_nama_dokter'        => 'required|string|max:255',
                 'edit_spesialis_dokter'   => 'required|integer|exists:jenis_spesialis,id',
@@ -213,7 +207,6 @@ class DokterController extends Controller
             ], 500);
         }
     }
-
 
     public function deleteDokter($id)
     {

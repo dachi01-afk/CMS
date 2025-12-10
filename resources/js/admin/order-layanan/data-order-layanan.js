@@ -119,7 +119,7 @@ $(function () {
 });
 
 /* ============================================================
- *  MODAL CREATE ORDER LAYANAN
+ *  MODAL CREATE ORDER LAYANAN (POLI PAKAI TOM SELECT)
  * ============================================================ */
 $(function () {
     const addModalEl = document.getElementById("modalCreateOrderLayanan");
@@ -134,6 +134,76 @@ $(function () {
     const $pasienNamaInfo = $("#pasien_nama_info_create");
     const $pasienEmrInfo = $("#pasien_no_emr_info_create");
     const $pasienJkInfo = $("#pasien_jk_info_create");
+
+    // --- elemen list layanan ---
+    const $itemsWrapper = $("#orderItemsWrapper");
+    const $itemTemplate = $("#orderItemTemplate");
+
+    // --- POLI: Tom Select ---
+    const $poliSelect = $("#poli_id_select_create");
+    let poliTom = null;
+
+    if ($poliSelect.length && typeof TomSelect !== "undefined") {
+        poliTom = new TomSelect("#poli_id_select_create", {
+            placeholder: "-- Pilih Poli --",
+            allowEmptyOption: true,
+            maxItems: 1,
+            create: false,
+            sortField: { field: "text", direction: "asc" },
+        });
+    }
+
+    // Tambah baris layanan
+    function addItemRow() {
+        const $row = $itemTemplate.clone();
+        $row.removeAttr("id"); // supaya tidak duplikat ID
+        $row.removeClass("hidden"); // kalau kamu mau template diset hidden, bisa di-aktifkan di HTML
+        $itemsWrapper.append($row);
+        recalcGrandTotal();
+        togglePoliSection();
+    }
+
+    // Hitung ulang grand total dari semua subtotal
+    function recalcGrandTotal() {
+        let grand = 0;
+        $itemsWrapper.find(".order-item").each(function () {
+            const sub = cleanRupiah($(this).find(".subtotal-input").val());
+            grand += sub;
+        });
+        $("#total_tagihan_create").val(toRupiah(grand));
+    }
+
+    // Tampilkan/hilangkan section poli & jadwal
+    function togglePoliSection() {
+        const $sectionPoliJadwal = $("#section_poli_jadwal_create");
+
+        const hasPemeriksaan =
+            $itemsWrapper.find(".kategori-nama-input").filter(function () {
+                return $(this).val() === "Pemeriksaan";
+            }).length > 0;
+
+        if (hasPemeriksaan) {
+            $sectionPoliJadwal.removeClass("hidden");
+        } else {
+            $sectionPoliJadwal.addClass("hidden");
+
+            // reset poli (Tom Select kalau ada)
+            if (poliTom) {
+                poliTom.clear();
+            } else {
+                $("#poli_id_select_create").val("");
+            }
+            $("#poli_id_create-error").text("").css("opacity", 0);
+
+            $("#jadwal_dokter_id_create")
+                .empty()
+                .append('<option value="">-- Pilih Jadwal Dokter --</option>')
+                .prop("disabled", true);
+            $("#jadwal_dokter_id_create-error").text("").css("opacity", 0);
+            $("#dokter_id_create").val("");
+            $("#info_jadwal_dokter_create").addClass("hidden").text("");
+        }
+    }
 
     // Helper: format rupiah
     function toRupiah(value) {
@@ -165,16 +235,19 @@ $(function () {
         $pasienJkInfo.text("-");
 
         // Layanan / kategori / total
-        $("#kategori_layanan_nama_create").val("");
-        $("#kategori_layanan_id_create").val("");
-        $("#jumlah_create").val(1);
+        $itemsWrapper.empty();
+        addItemRow(); // selalu mulai dengan 1 baris kosong
         $("#total_tagihan_create").val("");
 
         // Poli & jadwal
         const $sectionPoliJadwal = $("#section_poli_jadwal_create");
         $sectionPoliJadwal.addClass("hidden");
 
-        $("#poli_id_select_create").val("");
+        if (poliTom) {
+            poliTom.clear();
+        } else {
+            $("#poli_id_select_create").val("");
+        }
         $("#poli_id_create-error").text("").css("opacity", 0);
 
         $("#jadwal_dokter_id_create")
@@ -185,6 +258,12 @@ $(function () {
         $("#dokter_id_create").val("");
         $("#info_jadwal_dokter_create").addClass("hidden").text("");
     }
+
+    // Tambah baris layanan
+    $("#btnAddLayananRow").on("click", function (e) {
+        e.preventDefault();
+        addItemRow();
+    });
 
     $("#buttonOpenModalCreateOrderLayanan").on("click", function () {
         resetAddForm();
@@ -199,6 +278,27 @@ $(function () {
     $("#buttonCancaleModalCreateOrderLayanan").on("click", function () {
         addModal?.hide();
         resetAddForm();
+    });
+
+    // Hapus baris layanan
+    $formAdd.on("click", ".btn-remove-item", function (e) {
+        e.preventDefault();
+        const $row = $(this).closest(".order-item");
+        const count = $itemsWrapper.find(".order-item").length;
+
+        if (count <= 1) {
+            // minimal 1 baris: cuma clear isinya
+            $row.find(".layanan-select").val("");
+            $row.find(".kategori-nama-input").val("");
+            $row.find(".kategori-id-input").val("");
+            $row.find(".jumlah-input").val(1);
+            $row.find(".subtotal-input").val("");
+        } else {
+            $row.remove();
+        }
+
+        recalcGrandTotal();
+        togglePoliSection();
     });
 
     /* =========================
@@ -302,56 +402,40 @@ $(function () {
     });
 
     /* =========================
-     *  LAYANAN → KATEGORI + HARGA + SHOW/HIDE POLI/JADWAL
+     *  LAYANAN → KATEGORI + SUBTOTAL
      * ========================= */
-    $("#layanan_id_create").on("change", function () {
+    $formAdd.on("change", ".layanan-select", function () {
+        const $row = $(this).closest(".order-item");
         const selected = $(this).find("option:selected");
 
         const kategoriId = selected.data("kategori-id") || "";
         const kategoriNama = selected.data("kategori-nama") || "";
         const harga = parseFloat(selected.data("harga") || 0);
 
-        $("#kategori_layanan_id_create").val(kategoriId);
-        $("#kategori_layanan_nama_create").val(kategoriNama);
+        $row.find(".kategori-id-input").val(kategoriId);
+        $row.find(".kategori-nama-input").val(kategoriNama);
 
-        const qty = $("#jumlah_create").val() || 1;
-        const total = harga * qty;
-        $("#total_tagihan_create").val(toRupiah(total));
+        const qty = parseInt($row.find(".jumlah-input").val() || 1, 10);
+        const subtotal = harga * qty;
+        $row.find(".subtotal-input").val(toRupiah(subtotal));
 
-        const $sectionPoliJadwal = $("#section_poli_jadwal_create");
-
-        if (kategoriNama === "Pemeriksaan") {
-            $sectionPoliJadwal.removeClass("hidden");
-
-            $("#poli_id_select_create").val("");
-            $("#jadwal_dokter_id_create")
-                .empty()
-                .append('<option value="">-- Pilih Jadwal Dokter --</option>')
-                .prop("disabled", true);
-            $("#dokter_id_create").val("");
-            $("#info_jadwal_dokter_create").addClass("hidden").text("");
-        } else {
-            $sectionPoliJadwal.addClass("hidden");
-            $("#poli_id_select_create").val("");
-            $("#jadwal_dokter_id_create")
-                .empty()
-                .append('<option value="">-- Pilih Jadwal Dokter --</option>')
-                .prop("disabled", true);
-            $("#dokter_id_create").val("");
-            $("#info_jadwal_dokter_create").addClass("hidden").text("");
-        }
+        recalcGrandTotal();
+        togglePoliSection();
     });
 
     /* =========================
-     *  JUMLAH → UPDATE TOTAL
+     *  JUMLAH → UPDATE SUBTOTAL
      * ========================= */
-    $("#jumlah_create").on("input", function () {
-        const qty = parseInt($(this).val() || 1, 10);
-        const selected = $("#layanan_id_create").find("option:selected");
+    $formAdd.on("input", ".jumlah-input", function () {
+        const $row = $(this).closest(".order-item");
+        const selected = $row.find(".layanan-select option:selected");
         const harga = parseFloat(selected.data("harga") || 0);
+        const qty = parseInt($(this).val() || 1, 10);
 
-        const total = harga * qty;
-        $("#total_tagihan_create").val(toRupiah(total));
+        const subtotal = harga * qty;
+        $row.find(".subtotal-input").val(toRupiah(subtotal));
+
+        recalcGrandTotal();
     });
 
     /* =========================
@@ -441,18 +525,39 @@ $(function () {
         e.preventDefault();
         const url = $formAdd.data("url");
 
-        const kategoriNama = $("#kategori_layanan_nama_create").val();
+        // Kumpulkan item layanan
+        const items = [];
+        $itemsWrapper.find(".order-item").each(function () {
+            const $row = $(this);
+
+            const layananId = $row.find(".layanan-select").val();
+            if (!layananId) return; // skip baris kosong
+
+            const kategoriId = $row.find(".kategori-id-input").val();
+            const kategoriNama = $row.find(".kategori-nama-input").val();
+            const qty = $row.find(".jumlah-input").val() || 1;
+            const subtotal = cleanRupiah($row.find(".subtotal-input").val());
+
+            items.push({
+                layanan_id: layananId,
+                kategori_layanan_id: kategoriId,
+                kategori_layanan_nama: kategoriNama,
+                jumlah: qty,
+                total_tagihan: subtotal,
+            });
+        });
+
+        const hasPemeriksaan = items.some(
+            (item) => item.kategori_layanan_nama === "Pemeriksaan"
+        );
 
         const formData = {
             pasien_id: $("#pasien_id_create").val(),
-            layanan_id: $("#layanan_id_create").val(),
-            kategori_layanan_id: $("#kategori_layanan_id_create").val(),
-            jumlah: $("#jumlah_create").val(),
-            // kirim angka murni ke backend
+            items: items, // <--- kirim array layanan
             total_tagihan: cleanRupiah($("#total_tagihan_create").val()),
         };
 
-        if (kategoriNama === "Pemeriksaan") {
+        if (hasPemeriksaan) {
             formData.poli_id = $("#poli_id_select_create").val();
             formData.jadwal_dokter_id = $("#jadwal_dokter_id_create").val();
         }
@@ -475,10 +580,13 @@ $(function () {
             })
             .catch((error) => {
                 if (error.response?.status === 422) {
+                    // validasi lama: pasien/poli/jadwal masih bisa dipakai
                     const errors = error.response.data.errors || {};
 
                     $formAdd.find(".is-invalid").removeClass("is-invalid");
                     $formAdd.find(".text-red-600").empty().css("opacity", 0);
+
+                    let hasItemError = false;
 
                     for (const field in errors) {
                         const msg = errors[field][0];
@@ -487,7 +595,13 @@ $(function () {
                             $pasienSearch.addClass("is-invalid");
                             $pasienError.text(msg).css("opacity", 1);
                         } else if (field === "poli_id") {
-                            $("#poli_id_select_create").addClass("is-invalid");
+                            if (poliTom) {
+                                $(poliTom.control).addClass("is-invalid");
+                            } else {
+                                $("#poli_id_select_create").addClass(
+                                    "is-invalid"
+                                );
+                            }
                             $("#poli_id_create-error")
                                 .text(msg)
                                 .css("opacity", 1);
@@ -498,12 +612,17 @@ $(function () {
                             $("#jadwal_dokter_id_create-error")
                                 .text(msg)
                                 .css("opacity", 1);
-                        } else {
-                            const fieldId = `#${field}_create`;
-                            const errId = `#${field}_create-error`;
-                            $(fieldId).addClass("is-invalid");
-                            $(errId).text(msg).css("opacity", 1);
+                        } else if (field.startsWith("items")) {
+                            hasItemError = true;
                         }
+                    }
+
+                    if (hasItemError) {
+                        Swal.fire({
+                            icon: "error",
+                            title: "Validasi Layanan",
+                            text: "Periksa kembali data layanan (layanan, jumlah, dll).",
+                        });
                     }
                 } else {
                     Swal.fire({
@@ -517,155 +636,313 @@ $(function () {
 });
 
 /* ============================================================
- *  MODAL UPDATE ORDER LAYANAN
+ *  MODAL UPDATE ORDER LAYANAN (POLI PAKAI TOM SELECT)
  * ============================================================ */
 $(function () {
     const editModalEl = document.getElementById("modalUpdateOrderLayanan");
     const editModal = editModalEl ? new Modal(editModalEl) : null;
     const $formEdit = $("#formUpdateOrderLayanan");
 
-    const $sectionPoliJadwal = $("#section_poli_jadwal_update");
-    const $poliSelect = $("#poli_id_select_update");
-    const $jadwalSelect = $("#jadwal_dokter_id_update");
-    const $infoJadwal = $("#info_jadwal_dokter_update");
+    const $pasienSearch = $("#pasien_search_update");
+    const $pasienId = $("#pasien_id_update");
+    const $pasienResults = $("#pasien_search_results_update");
+    const $pasienError = $("#pasien_id_update-error");
+    const $pasienInfoCard = $("#pasien_info_update");
+    const $pasienNamaInfo = $("#pasien_nama_info_update");
+    const $pasienEmrInfo = $("#pasien_no_emr_info_update");
+    const $pasienJkInfo = $("#pasien_jk_info_update");
 
+    // --- elemen list layanan ---
+    const $itemsWrapper = $("#orderItemsWrapperUpdate");
+    const $itemTemplate = $("#orderItemTemplateUpdate");
+
+    // --- POLI: Tom Select ---
+    const $poliSelect = $("#poli_id_select_update");
+    let poliTomUpdate = null;
+
+    if ($poliSelect.length && typeof TomSelect !== "undefined") {
+        poliTomUpdate = new TomSelect("#poli_id_select_update", {
+            placeholder: "-- Pilih Poli --",
+            allowEmptyOption: true,
+            maxItems: 1,
+            create: false,
+            sortField: { field: "text", direction: "asc" },
+        });
+    }
+
+    // ========================
     // Helper: format rupiah
+    // ========================
     function toRupiah(value) {
         const number = Number(value || 0);
         return "Rp " + number.toLocaleString("id-ID");
     }
 
-    // Helper: bersihkan rupiah → angka murni
+    // Helper: bersihkan string rupiah → angka murni
     function cleanRupiah(value) {
         if (!value) return 0;
         const angkaBersih = String(value).replace(/[^0-9]/g, "");
         return Number(angkaBersih) || 0;
     }
 
+    // Tambah baris layanan (UPDATE)
+    function addItemRowUpdate() {
+        const $row = $itemTemplate.clone();
+        $row.removeAttr("id"); // supaya tidak duplikat ID
+        $row.removeClass("hidden"); // pastikan tampil
+        $itemsWrapper.append($row);
+        recalcGrandTotalUpdate();
+        togglePoliSectionUpdate();
+        return $row;
+    }
+
+    // 🔹 tombol "Tambah Layanan" di modal UPDATE
+    $("#btnAddLayananRowUpdate").on("click", function (e) {
+        e.preventDefault();
+        addItemRowUpdate();
+    });
+
+    // Hitung ulang grand total dari semua subtotal (UPDATE)
+    function recalcGrandTotalUpdate() {
+        let grand = 0;
+        $itemsWrapper.find(".order-item").each(function () {
+            const sub = cleanRupiah($(this).find(".subtotal-input").val());
+            grand += sub;
+        });
+        $("#total_tagihan_update").val(toRupiah(grand));
+    }
+
+    // Tampilkan/hilangkan section poli & jadwal (UPDATE)
+    function togglePoliSectionUpdate() {
+        const $sectionPoliJadwal = $("#section_poli_jadwal_update");
+
+        const hasPemeriksaan =
+            $itemsWrapper.find(".kategori-nama-input").filter(function () {
+                return $(this).val() === "Pemeriksaan";
+            }).length > 0;
+
+        if (hasPemeriksaan) {
+            $sectionPoliJadwal.removeClass("hidden");
+        } else {
+            $sectionPoliJadwal.addClass("hidden");
+
+            // reset poli (Tom Select kalau ada)
+            if (poliTomUpdate) {
+                poliTomUpdate.clear();
+            } else {
+                $("#poli_id_select_update").val("");
+            }
+            $("#poli_id_update-error").text("").css("opacity", 0);
+
+            $("#jadwal_dokter_id_update")
+                .empty()
+                .append('<option value="">-- Pilih Jadwal Dokter --</option>')
+                .prop("disabled", true);
+            $("#jadwal_dokter_id_update-error").text("").css("opacity", 0);
+            $("#dokter_id_update").val("");
+            $("#info_jadwal_dokter_update").addClass("hidden").text("");
+        }
+    }
+
     function resetEditForm() {
         if ($formEdit[0]) {
             $formEdit[0].reset();
         }
-
         $formEdit.find(".is-invalid").removeClass("is-invalid");
-        $formEdit
-            .find(".text-red-600")
-            .empty()
-            .removeClass("opacity-100")
-            .addClass("opacity-0");
+        $formEdit.find(".text-red-600").empty().css("opacity", 0);
 
-        $("#pasien_nama_info_update").text("-");
-        $("#pasien_no_emr_info_update").text("-");
-        $("#pasien_jk_info_update").text("-");
-        $("#pasien_info_update").addClass("hidden");
+        // ID order
+        $("#order_layanan_id_update").val("");
 
-        // poli/jadwal
+        // Pasien
+        $pasienSearch.val("");
+        $pasienId.val("");
+        $pasienResults.empty().addClass("hidden");
+        $pasienInfoCard.addClass("hidden");
+        $pasienNamaInfo.text("-");
+        $pasienEmrInfo.text("-");
+        $pasienJkInfo.text("-");
+
+        // Layanan / kategori / total
+        $itemsWrapper.empty();
+        addItemRowUpdate(); // minimal 1 baris
+        $("#total_tagihan_update").val("");
+
+        // Poli & jadwal
+        const $sectionPoliJadwal = $("#section_poli_jadwal_update");
         $sectionPoliJadwal.addClass("hidden");
-        $poliSelect.val("");
-        $jadwalSelect
+
+        if (poliTomUpdate) {
+            poliTomUpdate.clear();
+        } else {
+            $("#poli_id_select_update").val("");
+        }
+        $("#poli_id_update-error").text("").css("opacity", 0);
+
+        $("#jadwal_dokter_id_update")
             .empty()
             .append('<option value="">-- Pilih Jadwal Dokter --</option>')
             .prop("disabled", true);
+        $("#jadwal_dokter_id_update-error").text("").css("opacity", 0);
         $("#dokter_id_update").val("");
-        $infoJadwal.addClass("hidden").text("");
+        $("#info_jadwal_dokter_update").addClass("hidden").text("");
     }
 
-    // ========= BUKA MODAL EDIT =========
-    $("body").on("click", ".btn-update-order-layanan", function () {
+    // ========================
+    //  OPEN MODAL EDIT
+    // ========================
+    // tombol edit di tabel: <button class="btn-update-order-layanan" data-kode-transaksi="...">
+    $(document).on("click", ".btn-update-order-layanan", function () {
+        // pakai data-kode-transaksi dari tombol
+        // Saran HTML: data-kode-transaksi="XXX"
+        const kodeTransaksi =
+            $(this).data("kodeTransaksi") || $(this).data("kode-transaksi");
+        if (!kodeTransaksi) return;
+
         resetEditForm();
 
-        const id = $(this).data("id");
+        const detailUrl = `/order-layanan/get-data-order-layanan/${kodeTransaksi}`;
 
         axios
-            .get(`/order-layanan/get-data-order-layanan/${id}`)
+            .get(detailUrl)
             .then((response) => {
-                const order = response.data.data;
+                const data = response.data.data || {};
 
-                $("#id_update").val(order.id);
+                // ===========================
+                // PERSIAPAN DATA HEADER & PASIEN
+                // ===========================
+                const pasienObj = data.pasien || {};
 
-                // --- PASIEN ---
-                const $pasienSelect = $("#pasien_id_update");
-                $pasienSelect.empty();
-                if (order.pasien_id) {
-                    $pasienSelect.append(
-                        `<option value="${order.pasien_id}">
-                            ${order.nama_pasien || "-"}
-                        </option>`
-                    );
+                const pasienNama =
+                    pasienObj.nama_pasien || data.nama_pasien || "";
+                const pasienEmr = pasienObj.no_emr || data.pasien_no_emr || "-";
+                const pasienJk =
+                    pasienObj.jenis_kelamin || data.pasien_jenis_kelamin || "-";
+                const pasienId = pasienObj.id || data.pasien_id || "";
+
+                // ===========================
+                // PERSIAPAN ITEMS + ANCHOR order_layanan_id
+                // ===========================
+                let items = Array.isArray(data.items) ? data.items : [];
+
+                // fallback kalau backend masih kirim single layanan di root
+                if (!items.length && data.layanan_id) {
+                    items = [
+                        {
+                            id: data.id,
+                            layanan_id: data.layanan_id,
+                            nama_layanan: data.nama_layanan || "",
+                            kategori_layanan_id: data.kategori_layanan_id,
+                            kategori_layanan_nama: data.kategori_layanan,
+                            jumlah: data.jumlah,
+                            total_tagihan: data.total_tagihan,
+                        },
+                    ];
                 }
-                $pasienSelect.val(order.pasien_id);
 
-                $("#pasien_nama_info_update").text(order.nama_pasien || "-");
-                $("#pasien_no_emr_info_update").text(
-                    order.pasien_no_emr || "-"
-                );
-                $("#pasien_jk_info_update").text(
-                    order.pasien_jenis_kelamin || "-"
-                );
-                $("#pasien_info_update").removeClass("hidden");
-
-                // --- LAYANAN & KATEGORI ---
-                const $layananSelect = $("#layanan_id_update");
-                if (
-                    order.layanan_id &&
-                    $layananSelect.find(`option[value="${order.layanan_id}"]`)
-                        .length === 0
-                ) {
-                    // fallback kalau option belum ada
-                    $layananSelect.prepend(
-                        `<option value="${order.layanan_id}">
-                            ${order.nama_layanan || "-"}
-                        </option>`
-                    );
+                // SET order_layanan_id (anchor satu baris)
+                let anchorOrderId = null;
+                if (data.order_layanan_id) {
+                    anchorOrderId = data.order_layanan_id;
+                } else if (items.length) {
+                    anchorOrderId = items[0].id || null;
                 }
-                $layananSelect.val(order.layanan_id);
+                $("#order_layanan_id_update").val(anchorOrderId || "");
 
-                $("#kategori_layanan_id_update").val(order.kategori_layanan_id);
-                $("#kategori_layanan_nama_update").val(
-                    order.kategori_layanan || ""
+                // SET INPUT PASIEN + KARTU INFO
+                $pasienId.val(pasienId);
+                $pasienSearch.val(pasienNama);
+
+                $pasienNamaInfo.text(pasienNama || "-");
+                $pasienEmrInfo.text(pasienEmr || "-");
+                $pasienJkInfo.text(pasienJk || "-");
+                $pasienInfoCard.removeClass("hidden");
+
+                // ===========================
+                // BANGUN BARIS LAYANAN SESUAI JUMLAH ITEMS
+                // ===========================
+                $itemsWrapper.empty();
+
+                if (items.length) {
+                    items.forEach((item) => {
+                        const $row = addItemRowUpdate();
+
+                        // pilih layanan di dropdown
+                        $row.find(".layanan-select")
+                            .val(item.layanan_id || "")
+                            .trigger("change"); // otomatis set kategori & harga dari option data-*
+
+                        // override kategori dari backend kalau ada
+                        if (item.kategori_layanan_id) {
+                            $row.find(".kategori-id-input").val(
+                                item.kategori_layanan_id
+                            );
+                        }
+                        if (item.kategori_layanan_nama) {
+                            $row.find(".kategori-nama-input").val(
+                                item.kategori_layanan_nama
+                            );
+                        }
+
+                        // jumlah
+                        $row.find(".jumlah-input").val(item.jumlah || 1);
+
+                        // subtotal
+                        const sub = item.total_tagihan || 0;
+                        $row.find(".subtotal-input").val(toRupiah(sub));
+                    });
+                } else {
+                    addItemRowUpdate();
+                }
+
+                // ===========================
+                // TOTAL TAGIHAN
+                // ===========================
+                if (typeof data.total_tagihan !== "undefined") {
+                    $("#total_tagihan_update").val(
+                        toRupiah(data.total_tagihan || 0)
+                    );
+                } else {
+                    recalcGrandTotalUpdate();
+                }
+
+                // ===========================
+                // POLI & JADWAL (KALAU ADA PEMERIKSAAN)
+                // ===========================
+                const hasPemeriksaan = items.some(
+                    (it) =>
+                        (it.kategori_layanan_nama || "").toLowerCase() ===
+                        "pemeriksaan"
                 );
 
-                // --- JUMLAH & TOTAL ---
-                const qty = Number(order.jumlah || 1);
-                $("#jumlah_update").val(qty);
+                if (hasPemeriksaan) {
+                    $("#section_poli_jadwal_update").removeClass("hidden");
 
-                // ambil harga dari option terpilih
-                const $selectedOpt = $layananSelect.find(
-                    `option[value="${order.layanan_id}"]`
-                );
-                const harga = Number($selectedOpt.data("harga") || 0);
+                    // kalau backend sudah kirim poli_id & jadwal_dokter_id, bisa auto-set di sini
+                    if (data.poli_id) {
+                        if (poliTomUpdate) {
+                            poliTomUpdate.setValue(String(data.poli_id));
+                        } else {
+                            $("#poli_id_select_update")
+                                .val(data.poli_id)
+                                .trigger("change");
+                        }
 
-                // kalau total_tagihan di DB > 0 pakai itu,
-                // kalau 0/null hitung dari harga * qty
-                const totalFromDb = Number(order.total_tagihan || 0);
-                const total = totalFromDb > 0 ? totalFromDb : harga * qty;
-
-                // tampilkan dalam format Rupiah
-                $("#total_tagihan_update").val(toRupiah(total));
-
-                // --- POLI & JADWAL kalau Pemeriksaan ---
-                const isPemeriksaan =
-                    (order.kategori_layanan || "") === "Pemeriksaan";
-
-                if (isPemeriksaan) {
-                    $sectionPoliJadwal.removeClass("hidden");
-
-                    const poliIdFromOrder =
-                        order.poli_id || order.kunjungan_poli_id || "";
-                    const jadwalIdFromOrder = order.jadwal_dokter_id || "";
-
-                    if (poliIdFromOrder) {
-                        $poliSelect.val(poliIdFromOrder);
-
+                        // load jadwal dokter untuk poli tsb (opsional)
                         axios
                             .get(
                                 "/order-layanan/get-data-jadwal-dokter-hari-ini",
-                                {
-                                    params: { poli_id: poliIdFromOrder },
-                                }
+                                { params: { poli_id: data.poli_id } }
                             )
-                            .then((res) => {
-                                const list = res.data.data || [];
+                            .then((resJadwal) => {
+                                const list = resJadwal.data.data || [];
+                                const $jadwalSelect = $(
+                                    "#jadwal_dokter_id_update"
+                                );
+                                const $infoJadwal = $(
+                                    "#info_jadwal_dokter_update"
+                                );
+
                                 $jadwalSelect
                                     .empty()
                                     .append(
@@ -696,97 +973,214 @@ $(function () {
 
                                 $jadwalSelect.prop("disabled", false);
 
-                                if (jadwalIdFromOrder) {
-                                    $jadwalSelect.val(jadwalIdFromOrder);
-                                    const opt =
-                                        $jadwalSelect.find("option:selected");
-                                    const dokterId =
-                                        opt.data("dokter-id") || "";
-                                    const namaDokter =
-                                        opt.data("nama-dokter") || "";
-                                    const jamAwal = opt.data("jam-awal") || "";
-                                    const jamSelesai =
-                                        opt.data("jam-selesai") || "";
-
-                                    $("#dokter_id_update").val(dokterId);
-                                    if (dokterId) {
-                                        $infoJadwal
-                                            .removeClass("hidden")
-                                            .text(
-                                                `Dokter: ${namaDokter} (${jamAwal} - ${jamSelesai})`
-                                            );
-                                    }
+                                if (data.jadwal_dokter_id) {
+                                    $jadwalSelect
+                                        .val(data.jadwal_dokter_id)
+                                        .trigger("change");
                                 }
                             })
-                            .catch((err) => {
-                                console.error(
-                                    "Error load jadwal (update):",
-                                    err
-                                );
+                            .catch((errJadwal) => {
+                                console.error("Error load jadwal:", errJadwal);
                             });
                     }
                 } else {
-                    $sectionPoliJadwal.addClass("hidden");
+                    togglePoliSectionUpdate();
                 }
 
+                // ===========================
+                // TAMPILKAN MODAL
+                // ===========================
                 editModal?.show();
             })
             .catch((error) => {
-                console.error(error);
+                console.error("Error ambil detail order:", error);
                 Swal.fire({
                     icon: "error",
-                    title: "Gagal Memuat Data!",
+                    title: "Gagal",
+                    text: "Tidak dapat memuat data order layanan.",
                 });
             });
     });
 
-    // ========= JUMLAH → UPDATE TOTAL =========
-    $("#jumlah_update").on("input", function () {
-        const qty = parseInt($(this).val(), 10) || 1;
-        const $selected = $("#layanan_id_update").find("option:selected");
-        const harga = Number($selected.data("harga") || 0);
-        const total = harga * qty;
-        $("#total_tagihan_update").val(toRupiah(total));
+    // ========================
+    //  BUTTON CLOSE / CANCEL
+    // ========================
+    $("#buttonCloseModalUpdateOrderLayanan").on("click", function () {
+        editModal?.hide();
+        resetEditForm();
     });
 
-    // ========= LAYANAN → KATEGORI + TOTAL + SHOW/HIDE POLI/JADWAL =========
-    $("#layanan_id_update").on("change", function () {
-        const $selected = $(this).find("option:selected");
+    $("#buttonCancaleModalUpdateOrderLayanan").on("click", function () {
+        editModal?.hide();
+        resetEditForm();
+    });
 
-        const kategoriId = $selected.data("kategori-id") || "";
-        const kategoriNama = $selected.data("kategori-nama") || "";
-        const harga = Number($selected.data("harga") || 0);
-        const qty = parseInt($("#jumlah_update").val(), 10) || 1;
+    // ========================
+    //  HAPUS BARIS LAYANAN
+    // ========================
+    $formEdit.on("click", ".btn-remove-item", function (e) {
+        e.preventDefault();
+        const $row = $(this).closest(".order-item");
+        const count = $itemsWrapper.find(".order-item").length;
 
-        $("#kategori_layanan_id_update").val(kategoriId);
-        $("#kategori_layanan_nama_update").val(kategoriNama);
-        $("#total_tagihan_update").val(toRupiah(harga * qty));
-
-        if (kategoriNama === "Pemeriksaan") {
-            $sectionPoliJadwal.removeClass("hidden");
-
-            $poliSelect.val("");
-            $jadwalSelect
-                .empty()
-                .append('<option value="">-- Pilih Jadwal Dokter --</option>')
-                .prop("disabled", true);
-            $("#dokter_id_update").val("");
-            $infoJadwal.addClass("hidden").text("");
+        if (count <= 1) {
+            // minimal 1 baris: clear isi
+            $row.find(".layanan-select").val("");
+            $row.find(".kategori-nama-input").val("");
+            $row.find(".kategori-id-input").val("");
+            $row.find(".jumlah-input").val(1);
+            $row.find(".subtotal-input").val("");
         } else {
-            $sectionPoliJadwal.addClass("hidden");
-            $poliSelect.val("");
-            $jadwalSelect
-                .empty()
-                .append('<option value="">-- Pilih Jadwal Dokter --</option>')
-                .prop("disabled", true);
-            $("#dokter_id_update").val("");
-            $infoJadwal.addClass("hidden").text("");
+            $row.remove();
+        }
+
+        recalcGrandTotalUpdate();
+        togglePoliSectionUpdate();
+    });
+
+    /* =========================
+     *  SEARCH PASIEN (AJAX) - UPDATE
+     * ========================= */
+    let pasienSearchTimeoutUpdate = null;
+
+    $pasienSearch.on("keyup", function () {
+        const keyword = $(this).val().trim();
+
+        if (keyword.length < 2) {
+            $pasienResults.empty().addClass("hidden");
+            // jangan kosongkan pasien_id kalau cuma edit
+            return;
+        }
+
+        clearTimeout(pasienSearchTimeoutUpdate);
+        pasienSearchTimeoutUpdate = setTimeout(() => {
+            axios
+                .get("/order-layanan/get-data-pasien", {
+                    params: { q: keyword },
+                })
+                .then((response) => {
+                    const list = response.data.data || [];
+
+                    $pasienResults.empty();
+
+                    if (!list.length) {
+                        $pasienResults
+                            .append(
+                                `<div class="px-3 py-2 text-xs text-gray-500 dark:text-gray-300">Tidak ada pasien ditemukan.</div>`
+                            )
+                            .removeClass("hidden");
+                        return;
+                    }
+
+                    list.forEach((pasien) => {
+                        const infoTambahan = pasien.no_rm
+                            ? `No RM: ${pasien.no_rm}`
+                            : pasien.nik
+                            ? `NIK: ${pasien.nik}`
+                            : "";
+
+                        $pasienResults.append(`
+                            <button type="button"
+                                class="pasien-item-update w-full text-left px-3 py-2 text-sm hover:bg-blue-50 dark:hover:bg-gray-600 flex flex-col border-b border-gray-100 dark:border-gray-600"
+                                data-id="${pasien.id}"
+                                data-nama="${pasien.nama_pasien}"
+                                data-no-emr="${pasien.no_emr || ""}"
+                                data-jk="${pasien.jenis_kelamin || "-"}">
+                                <span class="font-semibold text-gray-800 dark:text-gray-100">${
+                                    pasien.nama_pasien
+                                }</span>
+                                <span class="text-xs text-gray-500 dark:text-gray-300">${infoTambahan}</span>
+                            </button>
+                        `);
+                    });
+
+                    $pasienResults.removeClass("hidden");
+                })
+                .catch((error) => {
+                    console.error("Error search pasien:", error);
+                    $pasienResults
+                        .empty()
+                        .append(
+                            `<div class="px-3 py-2 text-xs text-red-500">Terjadi kesalahan saat mencari pasien.</div>`
+                        )
+                        .removeClass("hidden");
+                });
+        }, 300);
+    });
+
+    $pasienResults.on("click", ".pasien-item-update", function () {
+        const $item = $(this);
+        const id = $item.data("id");
+        const nama = $item.data("nama");
+        const noEmr = $item.data("no-emr") || "-";
+        const jk = $item.data("jk") || "-";
+
+        $pasienId.val(id);
+        $pasienSearch.val(nama);
+        $pasienResults.empty().addClass("hidden");
+
+        $pasienNamaInfo.text(nama);
+        $pasienEmrInfo.text(noEmr);
+        $pasienJkInfo.text(jk);
+        $pasienInfoCard.removeClass("hidden");
+
+        $pasienSearch.removeClass("is-invalid");
+        $pasienError.text("");
+    });
+
+    $(document).on("click", function (e) {
+        if (
+            !$(e.target).closest("#pasien_search_update").length &&
+            !$(e.target).closest("#pasien_search_results_update").length
+        ) {
+            $pasienResults.addClass("hidden");
         }
     });
 
-    // ========= POLI → LOAD JADWAL DOKTER =========
-    $poliSelect.on("change", function () {
+    /* =========================
+     *  LAYANAN → KATEGORI + SUBTOTAL (UPDATE)
+     * ========================= */
+    $formEdit.on("change", ".layanan-select", function () {
+        const $row = $(this).closest(".order-item");
+        const selected = $(this).find("option:selected");
+
+        const kategoriId = selected.data("kategori-id") || "";
+        const kategoriNama = selected.data("kategori-nama") || "";
+        const harga = parseFloat(selected.data("harga") || 0);
+
+        $row.find(".kategori-id-input").val(kategoriId);
+        $row.find(".kategori-nama-input").val(kategoriNama);
+
+        const qty = parseInt($row.find(".jumlah-input").val() || 1, 10);
+        const subtotal = harga * qty;
+        $row.find(".subtotal-input").val(toRupiah(subtotal));
+
+        recalcGrandTotalUpdate();
+        togglePoliSectionUpdate();
+    });
+
+    /* =========================
+     *  JUMLAH → UPDATE SUBTOTAL (UPDATE)
+     * ========================= */
+    $formEdit.on("input", ".jumlah-input", function () {
+        const $row = $(this).closest(".order-item");
+        const selected = $row.find(".layanan-select option:selected");
+        const harga = parseFloat(selected.data("harga") || 0);
+        const qty = parseInt($(this).val() || 1, 10);
+
+        const subtotal = harga * qty;
+        $row.find(".subtotal-input").val(toRupiah(subtotal));
+
+        recalcGrandTotalUpdate();
+    });
+
+    /* =========================
+     *  POLI → LOAD JADWAL DOKTER (UPDATE)
+     * ========================= */
+    $("#poli_id_select_update").on("change", function () {
         const poliId = $(this).val();
+        const $jadwalSelect = $("#jadwal_dokter_id_update");
+        const $infoJadwal = $("#info_jadwal_dokter_update");
 
         $jadwalSelect
             .empty()
@@ -803,8 +1197,8 @@ $(function () {
             .get("/order-layanan/get-data-jadwal-dokter-hari-ini", {
                 params: { poli_id: poliId },
             })
-            .then((res) => {
-                const list = res.data.data || [];
+            .then((response) => {
+                const list = response.data.data || [];
 
                 if (!list.length) {
                     $jadwalSelect.prop("disabled", true);
@@ -830,8 +1224,8 @@ $(function () {
 
                 $jadwalSelect.prop("disabled", false);
             })
-            .catch((err) => {
-                console.error("Error load jadwal (update):", err);
+            .catch((error) => {
+                console.error("Error load jadwal (update):", error);
                 $jadwalSelect.prop("disabled", true);
                 $infoJadwal
                     .removeClass("hidden")
@@ -839,8 +1233,10 @@ $(function () {
             });
     });
 
-    // ========= PILIH JADWAL → SET DOKTER_ID =========
-    $jadwalSelect.on("change", function () {
+    /* =========================
+     *  PILIH JADWAL → SET DOKTER_ID (UPDATE)
+     * ========================= */
+    $("#jadwal_dokter_id_update").on("change", function () {
         const opt = $(this).find("option:selected");
         const dokterId = opt.data("dokter-id") || "";
         const namaDokter = opt.data("nama-dokter") || "";
@@ -850,33 +1246,64 @@ $(function () {
         $("#dokter_id_update").val(dokterId);
 
         if (dokterId) {
-            $infoJadwal
+            $("#info_jadwal_dokter_update")
                 .removeClass("hidden")
                 .text(`Dokter: ${namaDokter} (${jamAwal} - ${jamSelesai})`);
         } else {
-            $infoJadwal.addClass("hidden").text("");
+            $("#info_jadwal_dokter_update").addClass("hidden").text("");
         }
     });
 
-    // ========= SUBMIT UPDATE =========
+    /* =========================
+     *  SUBMIT FORM UPDATE
+     * ========================= */
     $formEdit.on("submit", function (e) {
         e.preventDefault();
-
         const url = $formEdit.data("url");
-        const kategoriNama = $("#kategori_layanan_nama_update").val();
+
+        // Kumpulkan item layanan
+        const items = [];
+        $itemsWrapper.find(".order-item").each(function () {
+            const $row = $(this);
+
+            const layananId = $row.find(".layanan-select").val();
+            if (!layananId) return; // skip baris kosong
+
+            const kategoriId = $row.find(".kategori-id-input").val();
+            const kategoriNama = $row.find(".kategori-nama-input").val();
+            const qty = $row.find(".jumlah-input").val() || 1;
+            const subtotal = cleanRupiah($row.find(".subtotal-input").val());
+
+            items.push({
+                layanan_id: layananId,
+                kategori_layanan_id: kategoriId,
+                kategori_layanan_nama: kategoriNama,
+                jumlah: qty,
+                total_tagihan: subtotal,
+            });
+        });
+
+        const hasPemeriksaan = items.some(
+            (item) => item.kategori_layanan_nama === "Pemeriksaan"
+        );
+
+        const anchorItem = items.length ? items[0] : null;
 
         const formData = {
-            id: $("#id_update").val(),
+            order_layanan_id: $("#order_layanan_id_update").val(),
             pasien_id: $("#pasien_id_update").val(),
-            layanan_id: $("#layanan_id_update").val(),
-            kategori_layanan_id: $("#kategori_layanan_id_update").val(),
-            jumlah: $("#jumlah_update").val(),
-            // kirim angka murni
+            items: items,
             total_tagihan: cleanRupiah($("#total_tagihan_update").val()),
-            _method: "POST",
         };
 
-        if (kategoriNama === "Pemeriksaan") {
+        // Biar kompatibel dengan backend yang masih pakai field tunggal
+        if (anchorItem) {
+            formData.layanan_id = anchorItem.layanan_id;
+            formData.kategori_layanan_id = anchorItem.kategori_layanan_id;
+            formData.jumlah = anchorItem.jumlah;
+        }
+
+        if (hasPemeriksaan) {
             formData.poli_id = $("#poli_id_select_update").val();
             formData.jadwal_dokter_id = $("#jadwal_dokter_id_update").val();
         }
@@ -891,6 +1318,7 @@ $(function () {
                     timer: 2000,
                     showConfirmButton: false,
                 });
+
                 editModal?.hide();
                 if ($("#orderLayanan").length) {
                     $("#orderLayanan").DataTable().ajax.reload(null, false);
@@ -901,56 +1329,57 @@ $(function () {
                     const errors = error.response.data.errors || {};
 
                     $formEdit.find(".is-invalid").removeClass("is-invalid");
-                    $formEdit
-                        .find(".text-red-600")
-                        .empty()
-                        .removeClass("opacity-100")
-                        .addClass("opacity-0");
+                    $formEdit.find(".text-red-600").empty().css("opacity", 0);
+
+                    let hasItemError = false;
 
                     for (const field in errors) {
-                        if (field === "poli_id") {
-                            $("#poli_id_select_update").addClass("is-invalid");
+                        const msg = errors[field][0];
+
+                        if (field === "pasien_id") {
+                            $pasienSearch.addClass("is-invalid");
+                            $pasienError.text(msg).css("opacity", 1);
+                        } else if (field === "poli_id") {
+                            if (poliTomUpdate) {
+                                $(poliTomUpdate.control).addClass("is-invalid");
+                            } else {
+                                $("#poli_id_select_update").addClass(
+                                    "is-invalid"
+                                );
+                            }
                             $("#poli_id_update-error")
-                                .html(errors[field][0])
-                                .removeClass("opacity-0")
-                                .addClass("opacity-100");
+                                .text(msg)
+                                .css("opacity", 1);
                         } else if (field === "jadwal_dokter_id") {
                             $("#jadwal_dokter_id_update").addClass(
                                 "is-invalid"
                             );
                             $("#jadwal_dokter_id_update-error")
-                                .html(errors[field][0])
-                                .removeClass("opacity-0")
-                                .addClass("opacity-100");
-                        } else {
-                            const fieldId = `#${field}_update`;
-                            const errorId = `#${field}_update-error`;
-                            $(fieldId).addClass("is-invalid");
-                            $(errorId)
-                                .html(errors[field][0])
-                                .removeClass("opacity-0")
-                                .addClass("opacity-100");
+                                .text(msg)
+                                .css("opacity", 1);
+                        } else if (field.startsWith("items")) {
+                            hasItemError = true;
+                        } else if (field === "order_layanan_id") {
+                            // kalau masih error id, highlight saja (kalau mau ditambahin elemen error)
+                            console.warn("Validasi order_layanan_id:", msg);
                         }
                     }
+
+                    if (hasItemError) {
+                        Swal.fire({
+                            icon: "error",
+                            title: "Validasi Layanan",
+                            text: "Periksa kembali data layanan (layanan, jumlah, dll).",
+                        });
+                    }
                 } else {
-                    console.error(error);
                     Swal.fire({
                         icon: "error",
-                        title: "Gagal Update!",
+                        title: "Server Error",
+                        text: "Terjadi kesalahan saat mengupdate data.",
                     });
                 }
             });
-    });
-
-    // ========= TUTUP MODAL =========
-    $("#buttonCloseModalUpdateOrderLayanan").on("click", function () {
-        editModal?.hide();
-        resetEditForm();
-    });
-
-    $("#buttonCancleModalUpdateOrderLayanan").on("click", function () {
-        editModal?.hide();
-        resetEditForm();
     });
 });
 
@@ -959,7 +1388,7 @@ $(function () {
  * ============================================================ */
 $(function () {
     $("body").on("click", ".btn-delete-order-layanan", function () {
-        const id = $(this).data("id");
+        const kodeTransaksi = $(this).data("kode-transaksi");
 
         Swal.fire({
             title: "Apakah Anda yakin?",
@@ -973,7 +1402,9 @@ $(function () {
         }).then((result) => {
             if (result.isConfirmed) {
                 axios
-                    .post(`/order-layanan/delete-data-order-layanan/${id}`)
+                    .post(
+                        `/order-layanan/delete-data-order-layanan/${kodeTransaksi}`
+                    )
                     .then((response) => {
                         Swal.fire({
                             icon: "success",

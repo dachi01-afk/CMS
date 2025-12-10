@@ -3,21 +3,22 @@
 namespace App\Http\Controllers\Admin;
 
 use Carbon\Carbon;
+use App\Models\Dokter;
 use App\Models\Pasien;
 use App\Models\Kunjungan;
+use App\Models\DokterPoli;
+use Carbon\CarbonImmutable;
+use Illuminate\Support\Str;
 use App\Models\JadwalDokter;
 use Illuminate\Http\Request;
-use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
-use App\Models\Dokter;
-use Carbon\CarbonImmutable;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 
 class JadwalKunjunganController extends Controller
@@ -44,19 +45,7 @@ class JadwalKunjunganController extends Controller
             'minggu' => 'sunday',
         ];
 
-        // --- JADWAL HARI INI (yang masih berlangsung / belum lewat) ---
-        $jadwalHariIni = JadwalDokter::query()
-            ->with([
-                'dokter:id,nama_dokter,jenis_spesialis_id',
-                'dokter.jenisSpesialis:id,nama_spesialis',
-                'poli:id,nama_poli',
-            ])
-            ->where(function ($q) use ($hariId, $hariEn) {
-                $q->whereRaw('LOWER(TRIM(hari)) = ?', [$hariId])
-                    ->orWhereRaw('LOWER(TRIM(hari)) = ?', [$hariEn]);
-            })
-            ->orderBy('jam_awal')
-            ->get();
+        $jadwalHariIni = JadwalDokter::with(['dokter', 'dokter.jenisSpesialis', 'poli'])->aktifSekarang()->get();
 
         // --- SEMUA JADWAL + TANGGAL BERIKUTNYA (masih berupa Collection) ---
         $jadwalSemua = JadwalDokter::query()
@@ -141,11 +130,10 @@ class JadwalKunjunganController extends Controller
         ));
     }
 
-
     public function search(Request $request)
     {
         $query = $request->get('query');
-        $pasien = Pasien::where('nama_pasien', 'LIKE', "%{$query}%")->get(['id', 'nama_pasien', 'alamat', 'jenis_kelamin']);
+        $pasien = Pasien::where('nama_pasien', 'LIKE', "%{$query}%")->orWhere('no_emr', 'LIKE', "%{$query}%")->get(['id', 'nama_pasien', 'alamat', 'jenis_kelamin', 'no_emr']);
         return response()->json($pasien);
     }
 
@@ -329,7 +317,6 @@ class JadwalKunjunganController extends Controller
             'data' => $kunjungan,
         ]);
     }
-
     public function updateDataKunjungan(Request $request, $id)
     {
         // === VALIDASI ===
@@ -372,8 +359,7 @@ class JadwalKunjunganController extends Controller
         ]);
     }
 
-
-    public function updateStatus($id)
+    public function updateStatusKunjunganToWaiting($id)
     {
         // Cari data kunjungan
         $kunjungan = Kunjungan::findOrFail($id);
@@ -404,8 +390,7 @@ class JadwalKunjunganController extends Controller
         ]);
     }
 
-
-    public function masaDepan()
+    public function getDataKunjunganYangAkanDatang()
     {
         $besok = Carbon::tomorrow()->toDateString();
 
@@ -424,10 +409,9 @@ class JadwalKunjunganController extends Controller
         return response()->json($kunjunganMasaDepan);
     }
 
-
     public function getDataKYAD($id)
     {
-        $dataKYAD = Kunjungan::with('pasien', 'poli.dokter')->where('id', $id)->firstOrFail();
+        $dataKYAD = Kunjungan::with('pasien', 'poli', 'dokter')->where('id', $id)->firstOrFail();
 
         return response()->json([
             'data' => $dataKYAD
@@ -453,5 +437,52 @@ class JadwalKunjunganController extends Controller
             'success' => true,
             'message' => 'Berhasil Membatalkan Kunjungan'
         ]);
+    }
+
+    public function listDokter(Request $request)
+    {
+        $q = $request->input('q', '');
+
+        $data = Dokter::select('id', 'nama_dokter')
+            ->when($q, fn($w) => $w->where('nama_dokter', 'like', "%{$q}%"))
+            ->orderBy('nama_dokter')
+            ->get();
+
+        return response()->json(['data' => $data]);
+    }
+
+    /**
+     * List POLI berdasarkan DOKTER (ambil dari tabel dokter_poli)
+     * URL (sesuai JS mu):
+     * GET /jadwal_kunjungan/listPoliByDokter/{dokterId}/poli?q=...
+     */
+    public function listPoliByDokter(Request $request, $dokterId)
+    {
+        $q = $request->input('q', '');
+
+        $dokterPolis = DokterPoli::with(['poli:id,nama_poli'])
+            ->where('dokter_id', $dokterId)
+            ->when($q, function ($w) use ($q) {
+                $w->whereHas('poli', function ($qq) use ($q) {
+                    $qq->where('nama_poli', 'like', "%{$q}%");
+                });
+            })
+            ->get()
+            ->sortBy('poli.nama_poli')
+            ->values();
+
+        $data = $dokterPolis->map(function ($dp) {
+            return [
+                // INI yang dibaca TomSelect POLI (valueField = "id")
+                'id'           => $dp->poli_id,
+                'nama_poli'    => $dp->poli->nama_poli ?? 'Tanpa Nama',
+
+                // tambahan info kalau nanti mau dipakai
+                'dokter_poli_id' => $dp->id,
+                'dokter_id'      => $dp->dokter_id,
+            ];
+        });
+
+        return response()->json(['data' => $data]);
     }
 }

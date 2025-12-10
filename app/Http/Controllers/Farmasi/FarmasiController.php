@@ -240,10 +240,10 @@ class FarmasiController extends Controller
         try {
             // 🧩 Validasi input
             $request->validate([
-                'foto_apoteker'     => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
-                'username_apoteker' => 'required|string|max:255|unique:user,username',
+                'foto_apoteker'     => 'required|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
+                'username_apoteker' => 'required|string|max:255',
                 'nama_apoteker'     => 'required|string|max:255',
-                'email_apoteker'    => 'required|email|unique:user,email',
+                'email_apoteker'    => 'required|email',
                 'no_hp_apoteker'    => 'nullable|string|max:20',
                 'password_apoteker' => 'required|string|min:8|confirmed',
             ]);
@@ -309,7 +309,6 @@ class FarmasiController extends Controller
         }
     }
 
-
     public function getFarmasiById($id)
     {
         $data = Farmasi::with('user')->findOrFail($id);
@@ -323,9 +322,9 @@ class FarmasiController extends Controller
             $user = $apoteker->user;
 
             $request->validate([
-                'edit_username_apoteker'    => 'required|string|max:255|unique:user,username,' . $user->id,
+                'edit_username_apoteker'    => 'required|string|max:255',
                 'edit_nama_apoteker'        => 'required|string|max:255',
-                'edit_email_apoteker'       => 'required|email|unique:user,email,' . $user->id,
+                'edit_email_apoteker'       => 'required|email',
                 'edit_foto_apoteker'        => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
                 'edit_no_hp_apoteker'       => 'nullable|string|max:20',
                 'edit_password_apoteker'    => 'nullable|string|min:8|confirmed',
@@ -404,7 +403,6 @@ class FarmasiController extends Controller
             ], 500);
         }
     }
-
 
     public function deleteFarmasi($id)
     {

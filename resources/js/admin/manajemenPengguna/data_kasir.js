@@ -122,7 +122,12 @@ $(function () {
 // add data apoteker
 $(function () {
     const addModalElement = document.getElementById("addKasirModal");
-    const addModal = addModalElement ? new Modal(addModalElement) : null;
+    const addModal = addModalElement
+        ? new Modal(addModalElement, {
+              backdrop: "static",
+              closable: false,
+          })
+        : null;
     const $formAdd = $("#formAddKasir");
 
     function resetAddForm() {
@@ -143,10 +148,13 @@ $(function () {
         if (addModal) addModal.show();
     });
 
-    $("#closeAddKasirModal").on("click", function () {
-        resetAddForm();
-        if (addModal) addModal.hide();
-    });
+    $("#closeAddKasirModal_header, #closeAddKasirModal_footer").on(
+        "click",
+        function () {
+            resetAddForm();
+            if (addModal) addModal.hide();
+        }
+    );
 
     // === Preview foto kasir ===
     $("#foto_kasir").on("change", function () {
@@ -267,7 +275,12 @@ $(function () {
 // edit data kasir
 $(function () {
     const editModalElement = document.getElementById("editKasirModal");
-    const editModal = editModalElement ? new Modal(editModalElement) : null;
+    const editModal = editModalElement
+        ? new Modal(editModalElement, {
+              backdrop: "static",
+              closable: false,
+          })
+        : null;
     const $formEdit = $("#formEditKasir");
     const initialEditUrl = $formEdit.data("url");
 
@@ -394,10 +407,13 @@ $(function () {
             });
     });
 
-    $("#closeEditKasirrModal").on("click", function () {
-        resetEditForm();
-        if (editModal) editModal.hide();
-    });
+    $("#closeEditKasirModal_header ,#closeEditKasirrModal_footer").on(
+        "click",
+        function () {
+            resetEditForm();
+            if (editModal) editModal.hide();
+        }
+    );
 });
 
 // delete data dokter

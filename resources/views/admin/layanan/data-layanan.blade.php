@@ -14,17 +14,18 @@
                 </h2>
                 <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
                     Kelola daftar <span class="font-medium">layanan medis</span>, <span class="font-medium">tarif</span>,
-                    dan <span class="font-medium">kategori layanan</span> yang digunakan di pendaftaran, kasir, dan
+                    dan <span class="font-medium">kategori layanan</span> yang akan digunakan di pendaftaran, kasir, dan
                     laporan keuangan.
                 </p>
             </div>
         </div>
 
         <div class="flex items-center gap-2 md:gap-3">
-            <button type="button"
+            <!-- Tombol Info -->
+            <button type="button" id="btnInfoLayanan"
                 class="hidden md:inline-flex items-center gap-2 px-3 py-2 text-xs md:text-sm rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-600">
-                <i class="fa-regular fa-circle-question text-sm"></i>
-                <span>Panduan Tarif</span>
+                <i class="fa-solid fa-circle-exclamation"></i>
+                <span>Penting</span>
             </button>
 
             <!-- Tombol Tambah -->
@@ -118,20 +119,26 @@
             class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700">
 
             <!-- HEADER -->
-            <div class="px-6 py-4 bg-gradient-to-r from-sky-500 via-cyan-500 to-teal-500">
+            <div
+                class="flex items-start justify-between gap-3 px-6 pt-5 pb-4 border-b border-slate-100 dark:border-slate-700 bg-gradient-to-r from-sky-500 to-teal-500 rounded-t-2xl">
                 <div class="flex items-center gap-3">
-                    <div class="h-10 w-10 rounded-2xl bg-white/15 flex items-center justify-center">
+                    <div class="h-10 w-10 rounded-xl bg-sky-500 flex items-center justify-center shadow-md text-white">
                         <i class="fa-solid fa-heart-pulse text-white text-lg"></i>
                     </div>
                     <div>
-                        <h3 class="text-xl font-bold text-white">
+                        <h3 class="text-base md:text-lg font-semibold text-slate-50">
                             Tambah Data Layanan Klinik
                         </h3>
-                        <p class="text-xs text-sky-50/90">
+                        <p class="text-xs text-sky-50/90 mt-0.5">
                             Lengkapi informasi layanan medis dan tarifnya dengan benar.
                         </p>
                     </div>
                 </div>
+
+                <button type="button" id="buttonCloseModalCreateLayanan"
+                    class="inline-flex items-center justify-center h-8 w-8 rounded-full text-slate-100 hover:text-white hover:bg-white/10 transition">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
             </div>
 
             <!-- FORM -->
@@ -218,7 +225,7 @@
 
                 {{-- FOOTER --}}
                 <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                    <button type="button" id="buttonCloseModalCreateLayanan"
+                    <button type="button" id="buttonCloseModalCreateLayanan_footer"
                         class="px-5 py-2.5 text-sm font-medium rounded-lg
                                    bg-slate-200 text-slate-800 hover:bg-slate-300
                                    dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">
@@ -247,20 +254,26 @@
             class="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-100 dark:border-slate-700">
 
             <!-- HEADER -->
-            <div class="px-6 py-4 bg-gradient-to-r from-sky-500 via-cyan-500 to-teal-500">
+            <div
+                class="flex items-start justify-between gap-3 px-6 pt-5 pb-4 border-b border-slate-100 dark:border-slate-700 bg-gradient-to-r from-sky-500 to-teal-500 rounded-t-2xl">
                 <div class="flex items-center gap-3">
-                    <div class="h-10 w-10 rounded-2xl bg-white/15 flex items-center justify-center">
+                    <div class="h-10 w-10 rounded-xl bg-sky-500 flex items-center justify-center shadow-md text-white">
                         <i class="fa-solid fa-pen-to-square text-white text-lg"></i>
                     </div>
                     <div>
-                        <h3 class="text-xl font-bold text-white">
+                        <h3 class="text-base md:text-lg font-semibold text-slate-50">
                             Edit Data Layanan Klinik
                         </h3>
-                        <p class="text-xs text-sky-50/90">
+                        <p class="text-xs text-sky-50/90 mt-0.5">
                             Perbarui informasi layanan dengan benar.
                         </p>
                     </div>
                 </div>
+
+                <button type="button" id="buttonCloseModalUpdateLayanan"
+                    class="inline-flex items-center justify-center h-8 w-8 rounded-full text-slate-100 hover:text-white hover:bg-white/10 transition">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
             </div>
 
             <!-- FORM -->
@@ -336,7 +349,7 @@
                 </div>
 
                 <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                    <button type="button" id="buttonCloseModalUpdateLayanan"
+                    <button type="button" id="buttonCloseModalUpdateLayanan_footer"
                         class="px-5 py-2.5 text-sm font-medium rounded-lg
                                bg-slate-200 text-slate-800 hover:bg-slate-300
                                dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">

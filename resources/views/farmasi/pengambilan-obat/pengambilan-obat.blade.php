@@ -1,4 +1,4 @@
-<x-layout-farmasi>
+<x-mycomponents.layout>
 
     {{-- main --}}
     <div>
@@ -53,4 +53,4 @@
 
     </div>
 
-</x-layout-farmasi>
+</x-mycomponents.layout>

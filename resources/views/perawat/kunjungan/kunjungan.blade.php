@@ -1,4 +1,4 @@
-<x-layout-perawat>
+<x-mycomponents.layout>
     {{-- main --}}
     <div>
 
@@ -65,5 +65,4 @@
 
     </div>
 
-    
-</x-layout-perawat>
+</x-mycomponents.layout>

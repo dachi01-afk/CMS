@@ -207,67 +207,161 @@ class ManajemenPenggunaController extends Controller
 
     public function dataPerawat()
     {
-        $query = Perawat::with(['user', 'poli', 'dokter'])
+        $query = Perawat::with([
+            'user',
+            'perawatDokterPoli.dokter',
+            'perawatDokterPoli.poli',
+        ])
             ->select('perawat.*')
-            ->latest()
-            ->get();
+            ->latest();
 
-        // helper untuk teks fallback (single value)
+        // helper fallback teks
         $fallback = function (string $rel, $value) {
             return ($value !== null && $value !== '')
                 ? e($value)
-                : '<span class="text-gray-400 italic">Tidak ada Data ' . ucfirst($rel) . '</span>';
+                : '<span class="text-gray-400 italic text-xs">Tidak ada data ' . ucfirst($rel) . '</span>';
         };
 
         return DataTables::of($query)
             ->addIndexColumn()
 
-            // Foto
-            ->addColumn('foto', function ($row) {
+            // ================= FOTO =================
+            ->addColumn('foto', function (Perawat $row) {
                 if (!empty($row->foto_perawat)) {
                     $url = asset('storage/' . $row->foto_perawat);
-                    return '<img src="' . $url . '" alt="Foto Perawat" class="w-12 h-12 rounded-lg object-cover mx-auto shadow">';
+                    return '
+                    <div class="flex items-center justify-center">
+                        <img src="' . $url . '" alt="Foto Perawat"
+                             class="w-10 h-10 md:w-12 md:h-12 rounded-xl object-cover shadow" />
+                    </div>
+                ';
                 }
-                return '<span class="text-gray-400 italic">Tidak ada</span>';
+
+                return '<span class="text-gray-400 italic text-xs">Tidak ada</span>';
             })
 
-            // === Kolom dari relasi USER ===
-            ->addColumn('username', function ($row) use ($fallback) {
-                return $fallback('User', optional($row->user)->username);
-            })
-            ->addColumn('email_user', function ($row) use ($fallback) {
-                return $fallback('User', optional($row->user)->email);
-            })
-            ->addColumn('role', function ($row) use ($fallback) {
-                return $fallback('User', optional($row->user)->role);
+            // ================= USER =================
+            ->addColumn('username', function (Perawat $row) use ($fallback) {
+                return $fallback('user', optional($row->user)->username);
             })
 
-            // === Kolom dari relasi POLI (opsional, kalau mau ditampilkan) ===
-            ->addColumn('nama_poli', function ($row) use ($fallback) {
-                // ganti 'nama_poli' sesuai field di tabel poli kamu
-                return $fallback('poli', optional($row->poli)->nama_poli);
+            ->addColumn('email_user', function (Perawat $row) use ($fallback) {
+                return $fallback('user', optional($row->user)->email);
             })
 
-            // === Kolom dari relasi DOKTER (opsional) ===
-            ->addColumn('nama_dokter', function ($row) use ($fallback) {
-                // ganti 'nama_dokter' sesuai field di tabel dokter kamu
-                return $fallback('dokter', optional($row->dokter)->nama_dokter);
+            ->addColumn('role', function (Perawat $row) use ($fallback) {
+                return $fallback('user', optional($row->user)->role);
             })
 
-            // Action
-            ->addColumn('action', function ($perawat) {
+            // ================= POLI (chip + nomor urut) =================
+            ->addColumn('nama_poli', function (Perawat $row) {
+                $items = $row->perawatDokterPoli
+                    ->filter(function ($rel) {
+                        return !empty($rel->poli?->nama_poli);
+                    })
+                    ->values();
+
+                if ($items->isEmpty()) {
+                    return '<span class="text-gray-400 italic text-xs">Belum ada penugasan</span>';
+                }
+
+                $html = $items->map(function ($rel, $idx) {
+                    $nama = $rel->poli->nama_poli ?? 'Tanpa nama poli';
+
+                    return '
+                    <div class="flex items-start gap-1 mb-0.5">
+                        <span class="text-[11px] text-slate-400">' . ($idx + 1) . '.</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full
+                                     bg-sky-50 text-[11px] font-medium text-sky-700
+                                     dark:bg-sky-900/40 dark:text-sky-200">
+                            ' . e($nama) . '
+                        </span>
+                    </div>
+                ';
+                })->implode('');
+
+                return $html;
+            })
+
+            // ================= DOKTER (chip + nomor urut) =================
+            ->addColumn('nama_dokter', function (Perawat $row) {
+                $items = $row->perawatDokterPoli
+                    ->filter(function ($rel) {
+                        return !empty($rel->dokter?->nama_dokter);
+                    })
+                    ->values();
+
+                if ($items->isEmpty()) {
+                    return '<span class="text-gray-400 italic text-xs">Belum ada penugasan</span>';
+                }
+
+                $html = $items->map(function ($rel, $idx) {
+                    $nama = $rel->dokter->nama_dokter ?? 'Tanpa nama dokter';
+
+                    return '
+                    <div class="flex items-start gap-1 mb-0.5">
+                        <span class="text-[11px] text-slate-400">' . ($idx + 1) . '.</span>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full
+                                     bg-emerald-50 text-[11px] font-medium text-emerald-700
+                                     dark:bg-emerald-900/30 dark:text-emerald-200">
+                            ' . e($nama) . '
+                        </span>
+                    </div>
+                ';
+                })->implode('');
+
+                return $html;
+            })
+
+            ->filter(function ($query) {
+                $search = request('search.value');
+
+                if ($search) {
+                    $query->where(function ($q) use ($search) {
+                        // 🔍 cari di NAMA PERAWAT (kolom di tabel perawat)
+                        $q->where('nama_perawat', 'like', '%' . $search . '%')
+
+                            // 🔍 cari di POLI
+                            ->orWhereHas('perawatDokterPoli.poli', function ($qq) use ($search) {
+                                $qq->where('nama_poli', 'like', '%' . $search . '%');
+                            })
+
+                            // 🔍 cari di DOKTER
+                            ->orWhereHas('perawatDokterPoli.dokter', function ($qq) use ($search) {
+                                $qq->where('nama_dokter', 'like', '%' . $search . '%');
+                            });
+                    });
+                }
+            })
+
+
+            // ================= ACTION =================
+            ->addColumn('action', function (Perawat $perawat) {
                 return '
-                <button class="btn-edit-perawat text-blue-600 hover:text-blue-800 mr-2" data-id="' . $perawat->id . '" title="Edit">
-                    <i class="fa-regular fa-pen-to-square text-lg"></i>
-                </button>
-                <button class="btn-delete-perawat text-red-600 hover:text-red-800" data-id="' . $perawat->id . '" title="Hapus">
-                    <i class="fa-regular fa-trash-can text-lg"></i>
-                </button>
+                <div class="flex items-center justify-center gap-2">
+                    <button class="btn-edit-perawat text-sky-600 hover:text-sky-800"
+                            data-id="' . $perawat->id . '" title="Edit">
+                        <i class="fa-regular fa-pen-to-square text-lg"></i>
+                    </button>
+                    <button class="btn-delete-perawat text-red-600 hover:text-red-800"
+                            data-id="' . $perawat->id . '" title="Hapus">
+                        <i class="fa-regular fa-trash-can text-lg"></i>
+                    </button>
+                </div>
             ';
             })
 
-            // Kolom yang mengandung HTML
-            ->rawColumns(['foto', 'username', 'email_user', 'role', 'nama_poli', 'nama_dokter', 'action'])
+            // kolom yang berisi HTML
+            ->rawColumns([
+                'foto',
+                'username',
+                'email_user',
+                'role',
+                'nama_poli',
+                'nama_dokter',
+                'action',
+            ])
+
             ->make(true);
     }
 

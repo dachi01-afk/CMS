@@ -208,7 +208,7 @@
                             <label class="block mb-1 text-xs font-medium text-slate-700 dark:text-slate-200">Cari
                                 Pasien</label>
                             <input type="text" id="search_pasien" name="search_pasien"
-                                placeholder="Ketik nama / NIK / No. EMR pasien..."
+                                placeholder="Ketik Nama Pasien "
                                 class="bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-50 text-sm rounded-lg w-full p-2.5">
                             <div id="search_results"
                                 class="mt-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow max-h-40 overflow-y-auto hidden text-sm">
@@ -219,6 +219,7 @@
                             class="hidden space-y-1 text-sm text-slate-700 dark:text-slate-200 rounded-lg bg-slate-50 dark:bg-slate-800/70 px-3 py-2 border border-slate-200 dark:border-slate-700">
                             <input type="hidden" name="pasien_id" id="pasien_id">
                             <p><span class="font-semibold">Nama:</span> <span id="nama_pasien"></span></p>
+                            <p><span class="font-semibold">No EMR Pasien:</span> <span id="no_emr_pasien"></span></p>
                             <p><span class="font-semibold">Alamat:</span> <span id="alamat_pasien"></span></p>
                             <p><span class="font-semibold">Jenis Kelamin:</span> <span id="jk_pasien"></span></p>
                         </div>

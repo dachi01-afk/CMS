@@ -11,7 +11,7 @@ class Pasien extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'tanggal_lahir' => 'date', // atau 'datetime'
+        'tanggal_lahir' => 'date:Y-m-d', // atau 'datetime'
     ];
 
     public function user()

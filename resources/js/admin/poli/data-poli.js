@@ -112,7 +112,12 @@ $(function () {
 // create data poli
 $(function () {
     const addModalEl = document.getElementById("modalCreatePoli");
-    const addModal = addModalEl ? new Modal(addModalEl) : null;
+    const addModal = addModalEl
+        ? new Modal(addModalEl, {
+              backdrop: "static",
+              closable: false,
+          })
+        : null;
     const $formAdd = $("#formCreatePoli");
 
     function resetAddForm() {
@@ -181,7 +186,12 @@ $(function () {
 // update data poli
 $(function () {
     const editModalEl = document.getElementById("modalUpdatePoli");
-    const editModal = editModalEl ? new Modal(editModalEl) : null;
+    const editModal = editModalEl
+        ? new Modal(editModalEl, {
+              backdrop: "static",
+              closable: false,
+          })
+        : null;
     const $formEdit = $("#formUpdatePoli");
 
     function resetEditForm() {

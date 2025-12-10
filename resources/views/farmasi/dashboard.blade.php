@@ -1,4 +1,4 @@
-<x-layout-farmasi>
+<x-mycomponents.layout>
     {{-- main --}}
     <div>
 
@@ -114,4 +114,4 @@
     </div>
 
     @vite(['resources/js/farmasi/dashboard.js'])
-</x-layout-farmasi>
+</x-mycomponents.layout>

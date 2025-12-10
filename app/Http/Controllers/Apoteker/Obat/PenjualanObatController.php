@@ -128,7 +128,23 @@ class PenjualanObatController extends Controller
                 'status'            => $first->status ?? '-',
                 'tanggal_transaksi' => $tanggalISO,
                 'bukti_pembayaran'  => $buktiPembayaran,
-                'action'            => '-',
+                'action' => '
+    <div class="flex items-center justify-center gap-2">
+        <button
+            class="bayarSekarang inline-flex items-center px-3 py-1.5 text-xs font-semibold
+                   text-white bg-sky-600 rounded-lg hover:bg-sky-700 focus:outline-none"
+            data-url="' . route('kasir.transaksi.obat', $first->kode_transaksi) . '">
+            <i class="fa-solid fa-eye text-[11px] mr-1"></i> Detail
+        </button>
+
+        <a href="' . route('kasir.transaksi.obat', $first->kode_transaksi) . '"
+           class="inline-flex items-center px-3 py-1.5 text-xs font-semibold
+                  text-sky-700 bg-sky-50 border border-sky-200 rounded-lg
+                  hover:bg-sky-100">
+            <i class="fa-solid fa-print text-[11px] mr-1"></i> Kwitansi
+        </a>
+    </div>
+',
             ];
         })->values();
 
@@ -137,11 +153,6 @@ class PenjualanObatController extends Controller
             ->rawColumns(['bukti_pembayaran', 'action']) // penting agar HTML tampil
             ->make(true);
     }
-
-
-
-
-
 
     public function search(Request $request)
     {
@@ -158,53 +169,6 @@ class PenjualanObatController extends Controller
 
         return response()->json($obat);
     }
-
-    // public function pesanObat(Request $request)
-    // {
-    //     $request->validate([
-    //         'pasien_id'   => 'required|exists:pasien,id',
-    //         'obat_id'     => 'required|array',
-    //         'obat_id.*'   => 'exists:obat,id',
-    //         'jumlah'      => 'required|array',
-    //         'jumlah.*'    => 'integer|min:1',
-    //     ]);
-
-    //     // Generate kode transaksi unik
-    //     $kodeTransaksi = 'TRX-' . strtoupper(uniqid());
-
-    //     // Loop untuk setiap obat yang dibeli
-    //     foreach ($request->obat_id as $index => $obatId) {
-    //         $jumlah = $request->jumlah[$index];
-
-    //         $obat = DB::table('obat')->where('id', $obatId)->first();
-
-    //         if (!$obat) continue;
-
-    //         // Hitung subtotal (jika harga ada di tabel obat)
-    //         $subTotal = property_exists($obat, 'total_harga') ? $jumlah * $obat->total_harga : 0;
-
-    //         // Simpan ke tabel penjualan_obat
-    //         DB::table('penjualan_obat')->insert([
-    //             'pasien_id'          => $request->pasien_id,
-    //             'obat_id'            => $obatId,
-    //             'kode_transaksi'     => $kodeTransaksi,
-    //             'jumlah'             => $jumlah,
-    //             'sub_total'          => $subTotal,
-    //             'tanggal_transaksi'  => now(),
-    //             'created_at'         => now(),
-    //             'updated_at'         => now(),
-    //         ]);
-
-    //         // Kurangi stok obat
-    //         DB::table('obat')->where('id', $obatId)->decrement('jumlah', $jumlah);
-    //     }
-
-    //     return response()->json([
-    //         'status'  => 'success',
-    //         'message' => 'Transaksi penjualan obat berhasil disimpan.',
-    //         'kode_transaksi' => $kodeTransaksi
-    //     ]);
-    // }
 
     public function pesanObat(Request $request)
     {
@@ -298,9 +262,6 @@ class PenjualanObatController extends Controller
             ], 500);
         }
     }
-
-
-
 
     private function getOrCreateResepIdForPasien(int $pasienId): int
     {

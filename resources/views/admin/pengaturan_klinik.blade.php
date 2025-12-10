@@ -71,11 +71,12 @@
                     role="tabpanel" aria-labelledby="jadwal-dokter-tab">
                     @include('admin.pengaturanKlinik.jadwal_dokter')
                 </div>
-{{-- 
-                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-daftar-obat"
+
+                {{-- <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-daftar-obat"
                     role="tabpanel" aria-labelledby="daftar-obat-tab">
                     @include('admin.pengaturanKlinik.daftar_obat')
                 </div> --}}
+
                 {{-- 
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-daftar-layanan"
                     role="tabpanel" aria-labelledby="daftar-layanan-tab">
