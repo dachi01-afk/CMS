@@ -35,13 +35,13 @@
                     </button>
                 </li>
 
-                <li class="me-2" role="presentation">
+                {{-- <li class="me-2" role="presentation">
                     <button class="inline-block p-4 border-b-2 rounded-t-lg" id="daftar-obat-tab"
                         data-tabs-target="#data-daftar-obat" type="button" role="tab"
                         aria-controls="data-daftar-obat" aria-selected="false">
                         Daftar Obat
                     </button>
-                </li>
+                </li> --}}
 
 
                 {{-- <li class="me-2" role="presentation">
@@ -71,11 +71,11 @@
                     role="tabpanel" aria-labelledby="jadwal-dokter-tab">
                     @include('admin.pengaturanKlinik.jadwal_dokter')
                 </div>
-
+{{-- 
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-daftar-obat"
                     role="tabpanel" aria-labelledby="daftar-obat-tab">
                     @include('admin.pengaturanKlinik.daftar_obat')
-                </div>
+                </div> --}}
                 {{-- 
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-daftar-layanan"
                     role="tabpanel" aria-labelledby="daftar-layanan-tab">

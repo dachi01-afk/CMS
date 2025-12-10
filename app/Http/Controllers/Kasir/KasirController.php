@@ -8,7 +8,7 @@ use App\Models\MetodePembayaran;
 use App\Models\Pembayaran;
 use App\Models\User;
 use Carbon\Carbon;
-use Carbon\CarbonPeriod;
+use Carbon\CarbonPeriod;    
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -413,16 +413,10 @@ public function getDataTransaksiLayanan(Request $request)
                 return $output;
             })
 
-<<<<<<< HEAD
             ->addColumn('total_tagihan', fn($p) => 'Rp ' .  number_format($p->total_tagihan, 0, ',', '.')  ?? '-')
             ->addColumn('metode_pembayaran', fn($p) => $p->metodePembayaran->nama_metode ?? '-')
             ->addColumn('kode_transaksi', fn($p) => $p->kode_transaksi ?? '-')
             ->addColumn('status', fn($p) => $p->status ?? '-')
-=======
-            ->addColumn('total_tagihan', fn ($p) => 'Rp '.number_format($p->total_tagihan, 0, ',', '.') ?? '-')
-            ->addColumn('metode_pembayaran', fn ($p) => $p->metodePembayaran->nama_metode ?? '-')
-            ->addColumn('status', fn ($p) => $p->status ?? '-')
->>>>>>> e194ad7242bc1c6fffbe208ac52ba51bbbed9b67
 
             // kolom action
             ->addColumn('action', function ($p) {
@@ -711,33 +705,6 @@ HTML;
         ]);
     }
 
-<<<<<<< HEAD
-=======
-    /**
-     * Kurangi stok obat berdasarkan detail resep pada sebuah pembayaran.
-     * Aman terhadap duplikasi pemanggilan (karena dibungkus transaction + lock).
-     */
-    private function reduceObatFromPembayaran(Pembayaran $pembayaran): void
-    {
-        $resep = optional($pembayaran->emr)->resep;
-        if (! $resep) {
-            return;
-        }
-
-        // relasi belongsToMany -> koleksi model Obat, qty di pivot
-        $obatItems = $resep->obat; // Collection<App\Models\Obat>
-        foreach ($obatItems as $obat) {
-            $obatId = (int) $obat->getKey();                 // id obat dari model Obat
-            $qty = (int) ($obat->pivot->jumlah ?? 0);     // qty dari pivot
-
-            // (opsional) lewati item batal/retur jika Anda pakai status di pivot
-            // if (in_array($obat->pivot->status, ['batal','retur'])) continue;
-
-            $this->safeDecreaseObat($obatId, $qty);
-        }
-    }
-
->>>>>>> e194ad7242bc1c6fffbe208ac52ba51bbbed9b67
     public function transaksiTransfer(Request $request)
     {
         // normalize diskon_tipe '' -> null
@@ -862,17 +829,10 @@ HTML;
         ])->where('kode_transaksi', $kodeTransaksi)->firstOrFail();
 
         /*
-<<<<<<< HEAD
     |--------------------------------------------------------------------------
     | Hitung Total Obat (handle kalau tidak ada resep / tidak ada obat)
     |--------------------------------------------------------------------------
     */
-=======
-        |--------------------------------------------------------------------------
-        | Hitung Total Obat (handle kalau tidak ada resep / tidak ada obat)
-        |--------------------------------------------------------------------------
-        */
->>>>>>> e194ad7242bc1c6fffbe208ac52ba51bbbed9b67
 
         $resep = optional($dataPembayaran->emr)->resep;
 
@@ -892,27 +852,16 @@ HTML;
 
         $totalObat = $obatCollection->sum(function ($obat) {
             $jumlah = $obat->pivot->jumlah ?? 0;
-<<<<<<< HEAD
             $harga  = $obat->total_harga ?? 0;
-=======
-            $harga = $obat->total_harga ?? 0;
->>>>>>> e194ad7242bc1c6fffbe208ac52ba51bbbed9b67
 
             return $jumlah * $harga;
         });
 
         /*
-<<<<<<< HEAD
     |--------------------------------------------------------------------------
     | Hitung Total Layanan (juga dibikin aman)
     |--------------------------------------------------------------------------
     */
-=======
-        |--------------------------------------------------------------------------
-        | Hitung Total Layanan (juga dibikin aman)
-        |--------------------------------------------------------------------------
-        */
->>>>>>> e194ad7242bc1c6fffbe208ac52ba51bbbed9b67
 
         $layananCollection = optional(optional($dataPembayaran->emr)->kunjungan)->layanan ?? collect();
 
@@ -925,11 +874,7 @@ HTML;
 
         $totalLayanan = $layananCollection->sum(function ($layanan) {
             $jumlah = $layanan->pivot->jumlah ?? 0;
-<<<<<<< HEAD
             $harga  = $layanan->harga_layanan ?? 0;
-=======
-            $harga = $layanan->harga_layanan ?? 0;
->>>>>>> e194ad7242bc1c6fffbe208ac52ba51bbbed9b67
 
             return $jumlah * $harga;
         });
@@ -943,11 +888,7 @@ HTML;
             'totalObat',
             'totalLayanan',
             'grandTotal',
-<<<<<<< HEAD
             'namaPT'
-=======
-            'namaPT',
->>>>>>> e194ad7242bc1c6fffbe208ac52ba51bbbed9b67
         ));
     }
 

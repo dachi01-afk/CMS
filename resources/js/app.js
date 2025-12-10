@@ -25,3 +25,4 @@ window.$ = window.jQuery = $;
 
 // ✅ Export agar DataTable bisa diakses dari file JS lain
 export { DataTable };
+``
