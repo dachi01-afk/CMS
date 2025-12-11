@@ -39,7 +39,7 @@ class PenggunaanObatController extends Controller
             ->leftJoin('resep', 'resep_obat.resep_id', '=', 'resep.id')
             ->leftJoin('kunjungan', 'resep.kunjungan_id', '=', 'kunjungan.id') // boleh tetap, sekadar info
             ->leftJoin('satuan_obat', 'obat.satuan_obat_id', '=', 'satuan_obat.id')
-            ->leftJoin('depot', 'obat.depot_id', '=', 'depot.id')
+            // ->leftJoin('depot', 'obat.depot_id', '=', 'depot.id')
             ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
                 // 🔁 SEKARANG: filter pakai tanggal resep diambil
                 $q->whereBetween(DB::raw('DATE(resep_obat.updated_at)'), [$startDate, $endDate]);
@@ -54,7 +54,7 @@ class PenggunaanObatController extends Controller
                 'obat.jumlah as sisa_obat',
                 'obat.harga_jual_obat',
                 'satuan_obat.nama_satuan_obat as satuan',
-                'depot.nama_depot as depot_nama',
+                // 'depot.nama_depot as depot_nama',
 
                 DB::raw('COALESCE(SUM(resep_obat.jumlah), 0) as penggunaan_umum'),
                 DB::raw('COALESCE(SUM(resep_obat.jumlah * obat.harga_jual_obat), 0) as nominal_umum'),
@@ -69,7 +69,7 @@ class PenggunaanObatController extends Controller
                 'obat.jumlah',
                 'obat.harga_jual_obat',
                 'satuan_obat.nama_satuan_obat',
-                'depot.nama_depot'
+                // 'depot.nama_depot'
             );
 
         return $query;
