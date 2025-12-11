@@ -4,14 +4,14 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class SatuanObat extends Model
+class JenisObat extends Model
 {
-    protected $table = 'satuan_obat';
+    protected $table = 'jenis_obat';
 
     protected $guarded = [];
 
     public function obat()
     {
-        return $this->hasMany(Obat::class);
+        return $this->hasMany(Obat::class, 'jenis_obat_id');
     }
 }

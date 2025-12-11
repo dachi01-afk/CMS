@@ -73,7 +73,7 @@ export default defineConfig({
                 // Riwyat Transaksi Obat
                 "resources/js/kasir/pembayaran/riwayat-transaksi-obat.js",
 
-                // Riwayat Transaksi Layanan 
+                // Riwayat Transaksi Layanan
                 "resources/js/kasir/riwayat-transaksi/data-riwayat-transaksi-layanan.js",
 
                 // End Role Kasir
@@ -87,6 +87,10 @@ export default defineConfig({
                 // Role Farmasi
                 "resources/js/farmasi/dashboard.js",
                 "resources/js/farmasi/pengambilan-obat/data-pengambilan-obat.js",
+                "resources/js/farmasi/kategori-obat/data-kategori-obat.js",
+                "resources/js/farmasi/penggunaan-obat/data-penggunaan-obat.js",
+                "resources/js/farmasi/kadaluarsa-obat/data-kadaluarsa-obat.js",
+                "resources/js/farmasi/bahan-habis-pakai/data-bahan-habis-pakai.js",
             ],
             refresh: true,
         }),

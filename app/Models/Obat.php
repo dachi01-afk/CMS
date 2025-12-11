@@ -22,4 +22,34 @@ class Obat extends Model
             ->withPivot('kode_transaksi', 'jumlah', 'sub_total', 'tanggal_transaksi')
             ->withTimestamps();
     }
+
+    public function brandFarmasi()
+    {
+        return $this->belongsTo(BrandFarmasi::class);
+    }
+
+    public function kategoriObat()
+    {
+        return $this->belongsTo(KategoriObat::class);
+    }
+
+    public function jenisObat()
+    {
+        return $this->belongsTo(JenisObat::class);
+    }
+
+    public function satuanObat()
+    {
+        return $this->belongsTo(SatuanObat::class);
+    }
+
+    public function depot()
+    {
+        return $this->belongsTo(Depot::class);
+    }
+
+    public function depotObat()
+    {
+        return $this->belongsToMany(Depot::class, 'depot_obat', 'obat_id', 'depot_id');
+    }
 }

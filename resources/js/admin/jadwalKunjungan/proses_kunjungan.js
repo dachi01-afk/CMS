@@ -125,7 +125,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         callback(
                             arr.map((d) => ({
                                 id: d.id,
-                                nama: d.nama_dokter || d.nama || `Dokter #${d.id}`,
+                                nama:
+                                    d.nama_dokter ||
+                                    d.nama ||
+                                    `Dokter #${d.id}`,
                             }))
                         );
                     })
@@ -274,63 +277,55 @@ document.addEventListener("DOMContentLoaded", () => {
                             <td class="px-6 py-3 text-gray-800 text-center">${namaPoli}</td>
                             <td class="px-6 py-3 text-gray-800 text-center">${keluhan}</td>
                             <td class="px-6 py-3 text-gray-800 text-center">${status}</td>
-                           <td class="px-6 py-3 text-right align-top overflow-visible relative">
+<td class="px-6 py-3 align-top">
 
-    <div class="aksi-dropdown-wrapper relative inline-block text-left">
+    <div class="flex flex-col gap-2 w-[160px]">
 
-        <!-- Tombol Toggle -->
-        <button type="button"
-                class="aksiDropdownToggle inline-flex items-center justify-center h-8 w-8 rounded-full
-                       text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition">
-            <i class="fa-solid fa-ellipsis-vertical text-sm"></i>
+        <!-- Mulai Konsultasi (Teal Klinis) -->
+        <button data-id="${item.id}"
+                class="ubahStatusBtn flex items-center gap-2 px-3 py-1.5 rounded-md
+                       text-[11px] font-medium 
+                       bg-teal-50 text-teal-700 border border-teal-200
+                       hover:bg-teal-100 hover:border-teal-300 transition">
+            <i class="fa-solid fa-stethoscope text-[10px]"></i>
+            <span>Mulai Konsultasi</span>
         </button>
 
-        <!-- MENU FLOAT / MELAYANG -->
-        <div
-            class="aksiDropdownMenu hidden absolute right-0 top-9 z-50 bg-white dark:bg-slate-800
-                   border border-gray-100 dark:border-slate-700 w-44 rounded-xl shadow-xl
-                   py-1 text-sm transition-all">
+        <!-- Batalkan (Merah Medis) -->
+        <button data-id="${item.id}"
+                class="batalkanKunjunganBtn flex items-center gap-2 px-3 py-1.5 rounded-md
+                       text-[11px] font-medium 
+                       bg-red-50 text-red-700 border border-red-200
+                       hover:bg-red-100 hover:border-red-300 transition">
+            <i class="fa-solid fa-circle-xmark text-[10px]"></i>
+            <span>Batalkan</span>
+        </button>
 
-            <!-- Mulai Konsultasi -->
-            <button data-id="${item.id}"
-                    class="ubahStatusBtn w-full px-4 py-2 flex items-center gap-2 text-xs
-                           text-indigo-700 hover:bg-indigo-50 dark:hover:bg-slate-700">
-                <i class="fa-solid fa-play text-[11px]"></i>
-                <span>Mulai Konsultasi</span>
-            </button>
+        <!-- Edit Kunjungan (Abu-Biru Klinis) -->
+        <button
+            data-id="${item.id}"
+            data-no_antrian="${noAntrian}"
+            data-nama_pasien="${namaPasien}"
+            data-nama_dokter="${namaDokter}"
+            data-nama_poli="${namaPoli}"
+            data-dokter_id="${dokterId}"
+            data-poli_id="${poliId}"
+            data-keluhan="${keluhan}"
+            data-status-kunjungan="${status}"
+            data-update-url="/jadwal_kunjungan/updateKunjungan/${item.id}"
+            class="editKunjunganBtn flex items-center gap-2 px-3 py-1.5 rounded-md
+                   text-[11px] font-medium
+                   bg-sky-50 text-sky-700 border border-sky-200
+                   hover:bg-sky-100 hover:border-sky-300 transition">
+            <i class="fa-solid fa-pen-to-square text-[10px]"></i>
+            <span>Edit</span>
+        </button>
 
-            <!-- Batalkan -->
-            <button data-id="${item.id}"
-                    class="batalkanKunjunganBtn w-full px-4 py-2 flex items-center gap-2 text-xs
-                           text-red-600 hover:bg-red-50 dark:hover:bg-slate-700/40">
-                <i class="fa-solid fa-xmark text-[11px]"></i>
-                <span>Batalkan Kunjungan</span>
-            </button>
-
-            <div class="border-t border-gray-200 dark:border-slate-600 my-1"></div>
-
-            <!-- Edit -->
-            <button
-                data-id="${item.id}"
-                data-no_antrian="${noAntrian}"
-                data-nama_pasien="${namaPasien}"
-                data-nama_dokter="${namaDokter}"
-                data-nama_poli="${namaPoli}"
-                data-dokter_id="${dokterId}"
-                data-poli_id="${poliId}"
-                data-keluhan="${keluhan}"
-                data-status-kunjungan="${status}"
-                data-update-url="/jadwal_kunjungan/updateKunjungan/${item.id}"
-                class="editKunjunganBtn w-full px-4 py-2 flex items-center gap-2 text-xs
-                       text-gray-700 hover:bg-gray-50 dark:hover:bg-slate-700">
-                <i class="fa-solid fa-pen-to-square text-[11px]"></i>
-                <span>Edit Kunjungan</span>
-            </button>
-
-        </div>
     </div>
 
 </td>
+
+
 
                         </tr>`;
                 })
@@ -390,7 +385,7 @@ document.addEventListener("DOMContentLoaded", () => {
             const konfirmasi = await Swal.fire({
                 icon: "question",
                 title: "Mulai konsultasi?",
-                text: 'Status akan diubah menjadi "Waiting".',
+                text: 'Status akan diubah menjadi "Engaged".',
                 showCancelButton: true,
                 confirmButtonText: "Ya, ubah",
                 cancelButtonText: "Batal",
@@ -418,8 +413,6 @@ document.addEventListener("DOMContentLoaded", () => {
                         icon: "success",
                         title: "Berhasil!",
                         text: result.message ?? "Status diubah.",
-                        timer: 1500,
-                        showConfirmButton: false,
                     });
                     loadWaitingList();
                 } else {

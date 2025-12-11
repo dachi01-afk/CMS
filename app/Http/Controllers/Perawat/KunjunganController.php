@@ -44,7 +44,7 @@ class KunjunganController extends Controller
         $rows = Kunjungan::query()
             ->with(['pasien', 'dokter', 'poli'])
             ->whereDate('tanggal_kunjungan', $today)
-            ->where('status', 'Waiting')
+            ->where('status', 'Engaged')
             // cek kunjungan ini terhubung ke perawat melalui dokter_poli & perawat_dokter_poli
             ->whereExists(function ($q) use ($perawatId) {
                 $q->select(DB::raw(1))
@@ -148,32 +148,41 @@ class KunjunganController extends Controller
     {
         $userId = Auth::id();
 
-        // Ambil perawat berdasarkan user yg login
         $perawat = Perawat::where('user_id', $userId)->first();
 
-        // Kalau tidak ada perawat → balikin DT kosong (tidak 404)
         if (!$perawat) {
             return DataTables::of(collect())->make(true);
         }
 
         $perawatId = $perawat->id;
 
-        // Ambil EMR yg:
-        //  - perawat_id = perawat login
-        //  - kunjungan.status = 'Engaged'
-        //  - kunjungan (dokter_id, poli_id) memang terhubung ke perawat via pivot
         $dataKunjunganEngaged = EMR::with(['pasien', 'dokter', 'poli', 'perawat', 'kunjungan'])
-            ->where('perawat_id', $perawatId)
-            ->whereHas('kunjungan', function ($q) use ($perawatId) {
-                $q->where('status', 'Engaged')
-                    ->whereExists(function ($qq) use ($perawatId) {
-                        $qq->select(DB::raw(1))
-                            ->from('perawat_dokter_poli as pdp')
-                            ->join('dokter_poli as dp', 'dp.id', '=', 'pdp.dokter_poli_id')
-                            // pasangan dokter & poli di kunjungan harus sama dengan di dokter_poli
-                            ->whereColumn('dp.dokter_id', 'kunjungan.dokter_id')
-                            ->whereColumn('dp.poli_id', 'kunjungan.poli_id')
-                            ->where('pdp.perawat_id', $perawatId);
+            // status kunjungan harus Engaged
+            ->whereHas('kunjungan', function ($q) {
+                $q->where('status', 'Engaged');
+            })
+            // filter hak akses berdasarkan perawat
+            ->where(function ($q) use ($perawatId) {
+
+                // 🔹 CASE A: EMR belum dipegang siapa pun (perawat_id NULL)
+                //   → boleh dilihat perawat ini jika dokter_id & poli_id
+                //     masuk ke mapping perawat_dokter_poli
+                $q->where(function ($sub) use ($perawatId) {
+                    $sub->whereNull('perawat_id')
+                        ->whereExists(function ($qq) use ($perawatId) {
+                            $qq->select(DB::raw(1))
+                                ->from('perawat_dokter_poli as pdp')
+                                ->join('dokter_poli as dp', 'dp.id', '=', 'pdp.dokter_poli_id')
+                                ->where('pdp.perawat_id', $perawatId)
+                                // pasangan dokter & poli di dokter_poli harus sama dengan di EMR
+                                ->whereColumn('dp.dokter_id', 'emr.dokter_id')
+                                ->whereColumn('dp.poli_id', 'emr.poli_id');
+                        });
+                })
+
+                    // 🔹 CASE B: EMR sudah ada perawat_id → hanya perawat itu yang boleh lihat
+                    ->orWhere(function ($sub) use ($perawatId) {
+                        $sub->where('perawat_id', $perawatId);
                     });
             })
             ->orderBy('id', 'desc')
@@ -192,15 +201,17 @@ class KunjunganController extends Controller
 
                     return '
                     <a href="' . $url . '"
-                       class="inline-flex items-center px-3 py-1 rounded-lg bg-indigo-600 text-white hover:bg-indigo-700">
+                       class="inline-flex items-center px-3 py-1 rounded-lg
+                              bg-indigo-600 text-white text-xs font-medium
+                              hover:bg-indigo-700 transition">
                        Proses
                     </a>
                 ';
                 }
 
-                // fallback kalau EMR belum ada (harusnya jarang kepakai di endpoint ini)
                 return '
-                <span class="inline-flex items-center px-3 py-1 rounded-lg bg-gray-300 text-gray-600 cursor-not-allowed"
+                <span class="inline-flex items-center px-3 py-1 rounded-lg
+                             bg-gray-300 text-gray-600 text-xs cursor-not-allowed"
                       title="EMR belum dibuat">
                       EMR belum ada
                 </span>

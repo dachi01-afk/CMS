@@ -15,6 +15,8 @@ use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
+use App\Models\EMR;
+use App\Models\PerawatDokterPoli;
 use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
@@ -55,38 +57,32 @@ class JadwalKunjunganController extends Controller
                 'poli:id,nama_poli',
             ])
             ->get();
-
+            
         $jadwalYangAkanDatangCollection = $jadwalSemua
             ->map(function ($jd) use ($now, $mapHari) {
-                $hariIndo = Str::of($jd->hari ?? '')->trim()->lower()->toString();
+                // Ambil nilai hari mentah dari DB
+                $hariRaw = Str::of($jd->hari ?? '')->trim()->lower()->toString();
 
-                // Normalisasi: kalau DB pakai English, konversi dulu ke Indo (atau biarkan kalau sudah EN)
-                $hariEng = $mapHari[$hariIndo] ?? $hariIndo;
+                // Normalisasi: kalau DB pakai bahasa Indonesia → konversi ke English,
+                // kalau sudah English (monday, tuesday, ...) → pakai apa adanya.
+                if (array_key_exists($hariRaw, $mapHari)) {
+                    $hariEng = $mapHari[$hariRaw];      // Indo -> English
+                } else {
+                    $hariEng = $hariRaw;                // asumsikan sudah English
+                }
 
-                if (!$hariEng) {
+                if (empty($hariEng)) {
                     $jd->setAttribute('tanggal_berikutnya', null);
                     return $jd;
                 }
 
-                // target hari di minggu ini berdasarkan timezone
-                $target = CarbonImmutable::parse("this {$hariEng}", $now->timezone);
-
-                // Jika target < awal hari ini => geser ke minggu depan
-                if ($target->lt($now->startOfDay())) {
-                    $target = $target->addWeek();
-                }
-
-                // Jika target sama dengan hari ini, tapi jam selesai sudah lewat => minggu depan
-                if ($target->isSameDay($now)) {
-                    try {
-                        $jamSelesai = CarbonImmutable::createFromFormat('H:i:s', (string) $jd->jam_selesai, $now->timezone);
-                        $jamNow     = CarbonImmutable::createFromFormat('H:i:s', $now->format('H:i:s'), $now->timezone);
-                        if ($jamSelesai->lte($jamNow)) {
-                            $target = $target->addWeek();
-                        }
-                    } catch (\Exception $e) {
-                        // jika format jam tidak valid, fallback: tetap pakai target minggu ini
-                    }
+                try {
+                    // PENTING: pakai "next" supaya SELALU tanggal di masa depan
+                    // ➜ Hari ini TIDAK PERNAH terpilih
+                    $target = CarbonImmutable::parse("next {$hariEng}", $now->timezone);
+                } catch (\Exception $e) {
+                    $jd->setAttribute('tanggal_berikutnya', null);
+                    return $jd;
                 }
 
                 $jd->setAttribute('tanggal_berikutnya', $target->toDateString());
@@ -359,12 +355,12 @@ class JadwalKunjunganController extends Controller
         ]);
     }
 
-    public function updateStatusKunjunganToWaiting($id)
+    public function updateStatusKunjunganToEngaged($id)
     {
         // Cari data kunjungan
         $kunjungan = Kunjungan::findOrFail($id);
 
-        // Validasi hanya bisa ubah dari Pending ke Waiting
+        // Validasi hanya bisa ubah dari Pending ke Engaged
         if ($kunjungan->status !== 'Pending') {
             return response()->json([
                 'success' => false,
@@ -372,23 +368,55 @@ class JadwalKunjunganController extends Controller
             ], 422);
         }
 
-        // Lakukan update atomik dalam transaksi
         DB::transaction(function () use ($kunjungan) {
+
+            // 1️⃣ Update status kunjungan → Engaged
             $kunjungan->update([
-                'status' => 'Waiting',
-                'updated_at' => now(), // pastikan update timestamp juga
+                'status'     => 'Engaged',
+                'updated_at' => now(),
             ]);
+
+            // 2️⃣ Buat EMR (perawat_id dikosongkan dulu)
+            Emr::firstOrCreate(
+                [
+                    // kunci unik EMR per kunjungan
+                    'kunjungan_id' => $kunjungan->id,
+                ],
+                [
+                    'pasien_id'     => $kunjungan->pasien_id,
+                    'dokter_id'     => $kunjungan->dokter_id,
+                    'poli_id'       => $kunjungan->poli_id,
+                    'perawat_id'    => null, // karena yang klik admin, belum perawat
+
+                    'resep_id'      => null,
+
+                    // samakan dengan keluhan_awal
+                    'keluhan_utama' => $kunjungan->keluhan_awal,
+
+                    // sisanya dibiarkan null dulu, akan diisi di form EMR
+                    'riwayat_penyakit_dahulu'  => null,
+                    'riwayat_penyakit_keluarga' => null,
+                    'tekanan_darah'          => null,
+                    'suhu_tubuh'             => null,
+                    'nadi'                   => null,
+                    'pernapasan'            => null,
+                    'saturasi_oksigen'      => null,
+                    'diagnosis'             => null,
+                ]
+            );
         });
 
         return response()->json([
             'success' => true,
-            'message' => 'Status kunjungan berhasil diperbarui menjadi Waiting.',
+            'message' => 'Status kunjungan berhasil diperbarui menjadi Engaged dan EMR dibuat.',
             'data'    => [
-                'id' => $kunjungan->id,
-                'status' => 'Waiting'
+                'id'     => $kunjungan->id,
+                'status' => 'Engaged',
             ],
         ]);
     }
+
+
 
     public function getDataKunjunganYangAkanDatang()
     {

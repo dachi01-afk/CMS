@@ -284,10 +284,9 @@
 
     {{-- SweetAlert2 --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-    {{-- JS khusus halaman ini --}}
-    @vite(['resources/js/perawat/kunjungan/form-pengisian-vital-sign-pasien.js'])
-
+    
 </body>
+{{-- JS khusus halaman ini --}}
+@vite(['resources/js/perawat/kunjungan/form-pengisian-vital-sign-pasien.js'])
 
 </html>

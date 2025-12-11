@@ -213,12 +213,42 @@
                                 <ul class="space-y-1">
                                     <x-mycomponents.sidebar_link href="farmasi.dashboard" class="fa-solid fa-house"
                                         :active="Request::routeIs('farmasi.dashboard')">
-                                        Dashboard Farmasi
+                                        Dashboard
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="kategori.obat.index" class="fa-solid fa-capsules"
+                                        :active="Request::routeIs('kategori.obat.index')">
+                                        Kategori Obat
                                     </x-mycomponents.sidebar_link>
 
                                     <x-mycomponents.sidebar_link href="obat.index" class="fa-solid fa-pills"
                                         :active="Request::routeIs('obat.index')">
                                         Obat
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="penggunaan.obat"
+                                        class="fa-solid fa-prescription-bottle-alt" :active="Request::routeIs('penggunaan.obat')">
+                                        Penggunaan Obat
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="kadaluarsa.obat" class="fa-solid fa-calendar-xmark"
+                                        :active="Request::routeIs('kadaluarsa.obat')">
+                                        Kadaluarsa Obat
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="bahan.habis.pakai" class="fa-solid fa-boxes"
+                                        :active="Request::routeIs('bahan.habis.pakai')">
+                                        Bahan Habis Pakai
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="penggunaan.bhp"
+                                        class="fa-solid fa-hand-holding-medical" :active="Request::routeIs('penggunaan.bhp')">
+                                        Penggunaan BHP
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="kadaluarsa.bhp" class="fa-solid fa-calendar-xmark"
+                                        :active="Request::routeIs('kadaluarsa.bhp')">
+                                        Kadaluarsa BHP
                                     </x-mycomponents.sidebar_link>
 
                                     <x-mycomponents.sidebar_link href="pengambilan.obat"
@@ -487,9 +517,39 @@
                                         Dashboard
                                     </x-mycomponents.sidebar_link>
 
+                                    <x-mycomponents.sidebar_link href="kategori.obat.index" class="fa-solid fa-capsules"
+                                        :active="Request::routeIs('kategori.obat.index')">
+                                        Kategori Obat
+                                    </x-mycomponents.sidebar_link>
+
                                     <x-mycomponents.sidebar_link href="obat.index" class="fa-solid fa-pills"
                                         :active="Request::routeIs('obat.index')">
                                         Obat
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="penggunaan.obat"
+                                        class="fa-solid fa-prescription-bottle-alt" :active="Request::routeIs('penggunaan.obat')">
+                                        Penggunaan Obat
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="kadaluarsa.obat" class="fa-solid fa-calendar-xmark"
+                                        :active="Request::routeIs('kadaluarsa.obat')">
+                                        Kadaluarsa Obat
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="bahan.habis.pakai" class="fa-solid fa-boxes"
+                                        :active="Request::routeIs('bahan.habis.pakai')">
+                                        Bahan Habis Pakai
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="penggunaan.bhp"
+                                        class="fa-solid fa-hand-holding-medical" :active="Request::routeIs('penggunaan.bhp')">
+                                        Penggunaan BHP
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="kadaluarsa.bhp" class="fa-solid fa-calendar-xmark"
+                                        :active="Request::routeIs('kadaluarsa.bhp')">
+                                        Kadaluarsa BHP
                                     </x-mycomponents.sidebar_link>
 
                                     <x-mycomponents.sidebar_link href="pengambilan.obat"

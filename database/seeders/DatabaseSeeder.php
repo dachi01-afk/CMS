@@ -22,6 +22,7 @@ class DatabaseSeeder extends Seeder
             SuperAdminSeeder::class,
             PoliSeeder::class,
             KategoriLayananSeeder::class,
+            KategoriObatSeeder::class,
             LayananSeeder::class,
             JenisSpesialisSeeder::class,
             AdminSeeder::class,
@@ -44,6 +45,8 @@ class DatabaseSeeder extends Seeder
             // TesLabSeeder::class,
             // PembayaranSeeder::class,
             // AdministrasiSeeder::class,
+            TipeDepotSeeder::class,
+            
         ]);
     }
 }

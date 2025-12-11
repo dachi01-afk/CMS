@@ -1,44 +1,55 @@
 <?php
 
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\QrCodeController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\Admin\PoliController;
+use App\Http\Controllers\Api\APIWebController;
+use App\Http\Controllers\Dokter\AuthController;
+use App\Http\Controllers\Kasir\KasirController;
+use App\Http\Controllers\Farmasi\ObatController;
+use App\Http\Controllers\Admin\LaporanController;
+use App\Http\Controllers\Admin\LayananController;
+use App\Http\Controllers\Farmasi\DepotController;
+use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\JenisSpesialisController;
+use App\Http\Controllers\Management\EMRController;
 use App\Http\Controllers\Admin\DashboardController;
+use App\Http\Controllers\Farmasi\FarmasiController;
+use App\Http\Controllers\Management\UserController;
+use App\Http\Controllers\Perawat\PerawatController;
+use App\Http\Controllers\Testing\TestingController;
+use App\Http\Controllers\Farmasi\JenisObatController;
+use App\Http\Controllers\Farmasi\OrderObatController;
+use App\Http\Controllers\Farmasi\TipeDepotController;
+use App\Http\Controllers\Management\DokterController;
+use App\Http\Controllers\Management\PasienController;
+use App\Http\Controllers\Perawat\KunjunganController;
+use App\Http\Controllers\Admin\OrderLayananController;
+use App\Http\Controllers\Farmasi\SatuanObatController;
+use App\Http\Controllers\Kasir\TransaksiObatController;
+use App\Http\Controllers\Management\ApotekerController;
+use App\Http\Controllers\Farmasi\BrandFarmasiController;
+use App\Http\Controllers\Farmasi\KategoriObatController;
+use App\Http\Controllers\Testing\TestingChartController;
 use App\Http\Controllers\Admin\DataMedisPasienController;
 use App\Http\Controllers\Admin\JadwalKunjunganController;
 use App\Http\Controllers\Admin\KategoriLayananController;
-use App\Http\Controllers\Admin\LaporanController;
-use App\Http\Controllers\Admin\LayananController;
-use App\Http\Controllers\Admin\ManajemenPenggunaController;
-use App\Http\Controllers\Admin\OrderLayananController;
 use App\Http\Controllers\Admin\PengambilanObatController;
+use App\Http\Controllers\Farmasi\KadaluarsaBHPController;
+use App\Http\Controllers\Farmasi\PenggunaanBHPController;
 use App\Http\Controllers\Admin\PengaturanKlinikController;
-use App\Http\Controllers\Admin\PoliController;
-use App\Http\Controllers\Admin\SettingsController;
-use App\Http\Controllers\Api\APIWebController;
-use App\Http\Controllers\Apoteker\Obat\PenjualanObatController;
-use App\Http\Controllers\Dokter\AuthController;
-use App\Http\Controllers\Dokter\DokterController as DokterDokterController;
-use App\Http\Controllers\Farmasi\FarmasiController;
-use App\Http\Controllers\Farmasi\ObatController;
-use App\Http\Controllers\Farmasi\OrderObatController;
-use App\Http\Controllers\Farmasi\PengambilanObatController as FarmasiPengambilanObatController;
-use App\Http\Controllers\JenisSpesialisController;
-use App\Http\Controllers\Kasir\KasirController;
+use App\Http\Controllers\Farmasi\KadaluarsaObatController;
+use App\Http\Controllers\Farmasi\PenggunaanObatController;
 use App\Http\Controllers\Kasir\MetodePembayaranController;
 use App\Http\Controllers\Kasir\RiwayatTransaksiController;
 use App\Http\Controllers\Kasir\TransaksiLayananController;
-use App\Http\Controllers\Kasir\TransaksiObatController;
-use App\Http\Controllers\Management\ApotekerController;
-use App\Http\Controllers\Management\DokterController;
-use App\Http\Controllers\Management\EMRController;
+use App\Http\Controllers\Admin\ManajemenPenggunaController;
+use App\Http\Controllers\Farmasi\BahanHabisPakaiController;
 use App\Http\Controllers\Management\JadwalDokterController;
-use App\Http\Controllers\Management\PasienController;
-use App\Http\Controllers\Management\UserController;
-use App\Http\Controllers\Perawat\KunjunganController;
-use App\Http\Controllers\Perawat\PerawatController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\QrCodeController;
-use App\Http\Controllers\Testing\TestingChartController;
-use App\Http\Controllers\Testing\TestingController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Apoteker\Obat\PenjualanObatController;
+use App\Http\Controllers\Dokter\DokterController as DokterDokterController;
+use App\Http\Controllers\Farmasi\PengambilanObatController as FarmasiPengambilanObatController;
 
 // Rest of your web routes remain the same...
 Route::get('/')->middleware('checkAuth');
@@ -205,13 +216,6 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::prefix('pengaturan_klinik')->name('pengaturan_klinik.')->group(function () {
         Route::get('/', [PengaturanKlinikController::class, 'index'])->name('index');
 
-        // crud obat
-        Route::get('/data_obat', [PengaturanKlinikController::class, 'dataObat'])->name('data_obat');
-        Route::post('/add_obat', [ObatController::class, 'createObat'])->name('add_obat');
-        Route::get('/get_obat_by_id/{id}', [ObatController::class, 'getObatById'])->name('get_obat_by_id');
-        Route::put('/update_obat/{id}', [ObatController::class, 'updateObat'])->name('update_obat');
-        Route::delete('/delete_obat/{id}', [ObatController::class, 'deleteObat'])->name('delete_obat');
-
         // jadwal dokter
         Route::get('/jadwal_dokter', [PengaturanKlinikController::class, 'dataJadwalDokter'])->name('jadwal_dokter');
         Route::post('/add_jadwal_dokter', [JadwalDokterController::class, 'createJadwalDokter'])->name('add_jadwal_dokter');
@@ -257,7 +261,7 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
 
         Route::get('/waiting', [JadwalKunjunganController::class, 'waiting'])->name('waiting');
         Route::post('/updateKunjungan/{id}', [JadwalKunjunganController::class, 'updateDataKunjungan'])->name('update.kunjungan');
-        Route::post('/update-status/{id}', [JadwalKunjunganController::class, 'updateStatusKunjunganToWaiting'])->name('update_status');
+        Route::post('/update-status/{id}', [JadwalKunjunganController::class, 'updateStatusKunjunganToEngaged'])->name('update_status');
 
         Route::get('/masa-depan', [JadwalKunjunganController::class, 'getDataKunjunganYangAkanDatang'])->name('masa.depan');
 
@@ -289,12 +293,23 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
         Route::get('/get-jumlah-penjualan-obat-hari-ini', [FarmasiController::class, 'getJumlahPenjualanObatHariIni'])->name('get.jumlah.penjualan.obat.hari.ini');
         Route::get('/get-jumlah-keseluruhan-penjualan-obat', [FarmasiController::class, 'getJumlahKeseluruhanTransaksiObat'])->name('get.jumlah.keseluruhan.penjualan.obat');
 
+        // Route Kategori Obat
+        Route::prefix('kategori-obat')->group(function () {
+            Route::get('/', [KategoriObatController::class, 'index'])->name('kategori.obat.index');
+            Route::get('/get-data-kategori-obat', [KategoriObatController::class, 'getDataKategoriObat'])->name('kategori.obat.get.data.kategori.obat');
+            Route::post('/create-data-kategori-obat', [KategoriObatController::class, 'createDataKategoriObat'])->name('kategori.obat.create.data.kategori.obat');
+            Route::get('/get-data-kategori-obat-by-id/{id}', [KategoriObatController::class, 'getDataKategoriObatById'])->name('kategori.obat.get.data.kategori.obat.by.id');
+            Route::post('/update-data-kategori-obat', [KategoriObatController::class, 'updateDataKategoriObat'])->name('kategori.obat.update.data.kategori.obat');
+            Route::post('/delete-data-kategori-obat', [KategoriObatController::class, 'deleteDataKategoriObat'])->name('kategori.obat.delete.data.kategori.obat');
+        });
+
         Route::prefix('obat')->group(function () {
             Route::get('/', [ObatController::class, 'index'])->name('obat.index');
             Route::get('/get-data-obat', [ObatController::class, 'getDataObat'])->name('obat.get.data.obat');
+            Route::get('/get-data-kategori-obat', [ObatController::class, 'getDataKategoriObat'])->name('obat.get.data.kategori.obat');
             Route::post('/create-data-obat', [ObatController::class, 'createObat'])->name('obat.create');
             Route::get('/get-data-obat-by/{id}', [ObatController::class, 'getObatById'])->name('obat.get.data.by.id');
-            Route::post('update-data-obat/{id}', [ObatController::class, 'updateObat'])->name('obat.update');
+            Route::post('/update-data-obat/{id}', [ObatController::class, 'updateObat'])->name('obat.update');
             Route::delete('/delete-data-obat/{id}', [ObatController::class, 'deleteObat'])->name('obat.delete');
             // Route::get('jual-obat', [ApotekerController::class, 'index'])->name('obat.jual.obat');
 
@@ -304,6 +319,62 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::post('/pesan-obat', [OrderObatController::class, 'pesanObat'])->name('obat.pesan.obat');
             Route::get('/resep-aktif', [OrderObatController::class, 'ajaxResepAktif'])->name('resep.aktif');
         });
+
+        // Route Penggunaan Obat
+        Route::prefix('penggunaan-obat')->group(function () {
+            Route::get('/', [PenggunaanObatController::class, 'index'])->name('penggunaan.obat');
+            Route::get('/get-data-penggunaan-obat', [PenggunaanObatController::class, 'getDataPenggunanObat'])->name('get.data.penggunaan.obat');
+            Route::get('/export-data-penggunaan-obat', [PenggunaanObatController::class, 'export'])->name('export.data.penggunaan.obat');
+            Route::get('/print-data-penggunaan-obat', [PenggunaanObatController::class, 'print'])->name('print.data.penggunaan.obat');
+        });
+
+        // Route Kadaluarsa Obat
+        Route::prefix('kadaluarsa-obat')->group(function () {
+            Route::get('/', [KadaluarsaObatController::class, 'index'])->name('kadaluarsa.obat');
+            Route::get('/get-data-kadaluarsa-obat', [KadaluarsaObatController::class, 'getDataKadaluarsaObat'])->name('get.data.kadaluarsa.obat');
+            Route::get('/get-data-warning-kadaluarsa-obat', [KadaluarsaObatController::class, 'getWarningKadaluarsa'])->name('get.data.warning.kadaluarsa.obat');
+        });
+
+        // Route Bahan Habis Pakai 
+        Route::prefix('bahan-habis-pakai')->group(function () {
+            Route::get('/', [BahanHabisPakaiController::class, 'index'])->name('bahan.habis.pakai');
+        });
+
+        // Route Penggunaan BHP 
+        Route::prefix('penggunaan-bhp')->group(function () {
+            Route::get('/', [PenggunaanBHPController::class, 'index'])->name('penggunaan.bhp');
+        });
+
+        // Route Kadaluarsa BHP 
+        Route::prefix('kadaluarsa-bhp')->group(function () {
+            Route::get('/', [KadaluarsaBHPController::class, 'index'])->name('kadaluarsa.bhp');
+        });
+
+
+        // Route Brand Farmasi
+        Route::get('/get-data-brand-farmasi', [BrandFarmasiController::class, 'getDataBrandFarmasi'])->name('get.data.brand.farmasi');
+        Route::post('/create-data-brand-farmasi', [BrandFarmasiController::class, 'createDataBrandFarmasi'])->name('create.data.brand.farmasi');
+        Route::post('/delete-data-brand-farmasi', [BrandFarmasiController::class, 'deleteDataBrandFarmasi'])->name('delete.data.brand.farmasi');
+
+        // Route Jenis Obat
+        Route::get('/get-data-jenis-obat', [JenisObatController::class, 'getDataJenisObat'])->name('get.data.jenis.obat');
+        Route::post('/create-data-jenis-obat', [JenisObatController::class, 'createDataJenisObat'])->name('create.data.jenis.obat');
+        Route::post('/delete-data-jenis-obat', [JenisObatController::class, 'deleteDataJenisObat'])->name('delete.data.jenis.obat');
+
+        // Route Satuan Obat
+        Route::get('/get-data-satuan-obat', [SatuanObatController::class, 'getDataSatuanObat'])->name('get.data.satuan.obat');
+        Route::post('/create-data-satuan-obat', [SatuanObatController::class, 'createDataSatuanObat'])->name('create.data.satuan.obat');
+        Route::post('/delete-data-satuan-obat', [SatuanObatController::class, 'deleteDataSatuanObat'])->name('delete.data.satuan.obat');
+
+        // Route Tipe Depot 
+        Route::get('/get-data-tipe-depot', [TipeDepotController::class, 'getDataTipeDepot'])->name('get.data.tipe.depot');
+        Route::post('/create-data-tipe-depot', [TipeDepotController::class, 'createDataTipeDepot'])->name('create.data.tipe.depot');
+        Route::post('/delete-data-tipe-depot', [TipeDepotController::class, 'deleteDataTipeDepot'])->name('delete.data.tipe.depot');
+
+        // Route Depot 
+        Route::get('/get-data-depot', [DepotController::class, 'getDataDepot'])->name('get.data.depot');
+        Route::post('/create-data-depot', [DepotController::class, 'createDataDepot'])->name('create.data.depot');
+        Route::post('/delete-data-depot', [DepotController::class, 'deleteDataDepot'])->name('delete.data.depot');
 
         Route::prefix('pengambilan-obat')->group(function () {
             Route::get('/', [FarmasiPengambilanObatController::class, 'index'])->name('pengambilan.obat');
