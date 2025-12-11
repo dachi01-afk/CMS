@@ -101,9 +101,9 @@
                                 value="{{ old('tekanan_darah', $dataEMR->tekanan_darah) }}" placeholder="120/80"
                                 required
                                 class="peer bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
-                                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
-                                          placeholder:text-slate-400
-                                          @error('tekanan_darah') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
+                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
+                          placeholder:text-slate-400
+                          @error('tekanan_darah') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
                         </div>
                         @error('tekanan_darah')
                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
@@ -124,15 +124,86 @@
                                 max="45" value="{{ old('suhu_tubuh', $dataEMR->suhu_tubuh) }}" placeholder="36.7"
                                 required
                                 class="peer bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
-                                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
-                                          placeholder:text-slate-400
-                                          @error('suhu_tubuh') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
+                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
+                          placeholder:text-slate-400
+                          @error('suhu_tubuh') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
                         </div>
                         @error('suhu_tubuh')
                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
                         @enderror
                         <p class="mt-1 text-[11px] text-slate-400">
                             Rentang normal sekitar <span class="font-mono">36–37.5°C</span>.
+                        </p>
+                    </div>
+
+                    {{-- 🔹 Tinggi Badan --}}
+                    <div>
+                        <label for="tinggi_badan"
+                            class="block mb-1.5 text-xs font-semibold tracking-wide text-slate-700 uppercase">
+                            Tinggi Badan <span class="text-[11px] font-normal text-slate-400">(cm)</span>
+                        </label>
+                        <div class="relative">
+                            <input id="tinggi_badan" name="tinggi_badan" type="number" step="0.1" min="50"
+                                max="250" value="{{ old('tinggi_badan', $dataEMR->tinggi_badan) }}"
+                                placeholder="170" required
+                                class="peer bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
+                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
+                          placeholder:text-slate-400
+                          @error('tinggi_badan') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
+                        </div>
+                        @error('tinggi_badan')
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
+                        <p class="mt-1 text-[11px] text-slate-400">
+                            Isi dalam satuan <span class="font-mono">cm</span>, contoh: <span
+                                class="font-mono">170</span>.
+                        </p>
+                    </div>
+
+                    {{-- 🔹 Berat Badan --}}
+                    <div>
+                        <label for="berat_badan"
+                            class="block mb-1.5 text-xs font-semibold tracking-wide text-slate-700 uppercase">
+                            Berat Badan <span class="text-[11px] font-normal text-slate-400">(kg)</span>
+                        </label>
+                        <div class="relative">
+                            <input id="berat_badan" name="berat_badan" type="number" step="0.1" min="2"
+                                max="300" value="{{ old('berat_badan', $dataEMR->berat_badan) }}" placeholder="65"
+                                required
+                                class="peer bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
+                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
+                          placeholder:text-slate-400
+                          @error('berat_badan') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
+                        </div>
+                        @error('berat_badan')
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
+                        <p class="mt-1 text-[11px] text-slate-400">
+                            Isi dalam satuan <span class="font-mono">kg</span>, contoh: <span
+                                class="font-mono">65</span>.
+                        </p>
+                    </div>
+
+                    {{-- 🔹 IMT --}}
+                    <div>
+                        <label for="imt"
+                            class="block mb-1.5 text-xs font-semibold tracking-wide text-slate-700 uppercase">
+                            Indeks Massa Tubuh (IMT) <span
+                                class="text-[11px] font-normal text-slate-400">(kg/m²)</span>
+                        </label>
+                        <div class="relative">
+                            <input id="imt" name="imt" type="number" step="0.1" min="5"
+                                max="80" value="{{ old('imt', $dataEMR->imt) }}" placeholder="22.5" required
+                                class="peer bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
+                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
+                          placeholder:text-slate-400
+                          @error('imt') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
+                        </div>
+                        @error('imt')
+                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
+                        @enderror
+                        <p class="mt-1 text-[11px] text-slate-400">
+                            Contoh nilai normal sekitar <span class="font-mono">18.5–24.9</span>.
                         </p>
                     </div>
 
@@ -146,9 +217,9 @@
                             <input id="nadi" name="nadi" type="number" min="30" max="220"
                                 value="{{ old('nadi', $dataEMR->nadi) }}" placeholder="80" required
                                 class="peer bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
-                                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
-                                          placeholder:text-slate-400
-                                          @error('nadi') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
+                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
+                          placeholder:text-slate-400
+                          @error('nadi') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
                         </div>
                         @error('nadi')
                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
@@ -168,9 +239,9 @@
                             <input id="pernapasan" name="pernapasan" type="number" min="5" max="60"
                                 value="{{ old('pernapasan', $dataEMR->pernapasan) }}" placeholder="18" required
                                 class="peer bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
-                                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
-                                          placeholder:text-slate-400
-                                          @error('pernapasan') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
+                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
+                          placeholder:text-slate-400
+                          @error('pernapasan') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
                         </div>
                         @error('pernapasan')
                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
@@ -191,9 +262,9 @@
                                 max="100" value="{{ old('saturasi_oksigen', $dataEMR->saturasi_oksigen) }}"
                                 placeholder="98" required
                                 class="peer bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
-                                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
-                                          placeholder:text-slate-400
-                                          @error('saturasi_oksigen') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
+                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
+                          placeholder:text-slate-400
+                          @error('saturasi_oksigen') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
                         </div>
                         @error('saturasi_oksigen')
                             <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
@@ -203,6 +274,7 @@
                         </p>
                     </div>
                 </div>
+
 
 
                 {{-- RIWAYAT KESEHATAN --}}
@@ -284,7 +356,7 @@
 
     {{-- SweetAlert2 --}}
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
+
 </body>
 {{-- JS khusus halaman ini --}}
 @vite(['resources/js/perawat/kunjungan/form-pengisian-vital-sign-pasien.js'])

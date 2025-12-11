@@ -253,8 +253,13 @@ class KunjunganController extends Controller
                 'pernapasan'               => ['required', 'integer', 'between:5,60'],
                 'saturasi_oksigen'         => ['required', 'integer', 'between:50,100'],
 
-                // 🔹 field baru, opsional
-                'riwayat_penyakit_dahulu'  => ['nullable', 'string', 'max:1000'],
+                // 🔹 field baru, wajib
+                'tinggi_badan'             => ['required', 'numeric', 'between:50,250'],
+                'berat_badan'              => ['required', 'numeric', 'between:2,300'],
+                'imt'                      => ['required', 'numeric', 'between:5,80'],
+
+                // 🔹 field riwayat, opsional
+                'riwayat_penyakit_dahulu'   => ['nullable', 'string', 'max:1000'],
                 'riwayat_penyakit_keluarga' => ['nullable', 'string', 'max:1000'],
             ], [
                 'required' => ':attribute wajib diisi.',
@@ -265,14 +270,18 @@ class KunjunganController extends Controller
                 'string'   => ':attribute harus berupa teks.',
                 'max'      => ':attribute maksimal :max karakter.',
             ], [
-                'tekanan_darah'            => 'Tekanan darah',
-                'suhu_tubuh'               => 'Suhu tubuh',
-                'nadi'                     => 'Nadi',
-                'pernapasan'               => 'Pernapasan',
-                'saturasi_oksigen'         => 'Saturasi oksigen',
-                'riwayat_penyakit_dahulu'  => 'Riwayat penyakit dahulu',
+                'tekanan_darah'             => 'Tekanan darah',
+                'suhu_tubuh'                => 'Suhu tubuh',
+                'nadi'                      => 'Nadi',
+                'pernapasan'                => 'Pernapasan',
+                'saturasi_oksigen'          => 'Saturasi oksigen',
+                'tinggi_badan'              => 'Tinggi badan',      // 🔹 baru
+                'berat_badan'               => 'Berat badan',       // 🔹 baru
+                'imt'                       => 'IMT',               // 🔹 baru
+                'riwayat_penyakit_dahulu'   => 'Riwayat penyakit dahulu',
                 'riwayat_penyakit_keluarga' => 'Riwayat penyakit keluarga',
             ]);
+
 
             // 2. AMBIL PERAWAT YANG LOGIN
             $perawat = Perawat::where('user_id', Auth::id())->firstOrFail();

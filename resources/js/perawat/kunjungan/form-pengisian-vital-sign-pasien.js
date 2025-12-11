@@ -6,6 +6,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const numericFields = [
         { id: "suhu_tubuh", label: "Suhu Tubuh", min: 30, max: 45 },
+        { id: "tinggi_badan", label: "Tinggi Badan", min: 50, max: 250 }, // 🔹 baru
+        { id: "berat_badan", label: "Berat Badan", min: 2, max: 300 }, // 🔹 baru
+        { id: "imt", label: "IMT", min: 5, max: 80 }, // 🔹 baru
         { id: "nadi", label: "Nadi", min: 30, max: 220 },
         { id: "pernapasan", label: "Pernapasan", min: 5, max: 60 },
         {
