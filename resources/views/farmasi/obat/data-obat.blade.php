@@ -34,39 +34,44 @@
                 {{-- Tambah Data Obat --}}
                 <button type="button" id="btn-open-modal-create-obat"
                     class="inline-flex items-center justify-center px-3 md:px-4 py-2 rounded-xl text-[11px] md:text-xs 
-                           font-semibold bg-emerald-600 text-white shadow-sm hover:bg-emerald-700">
+               font-semibold bg-emerald-600 text-white shadow-sm hover:bg-emerald-700">
                     <i class="fa-solid fa-plus mr-1.5 text-[10px]"></i>
                     Tambah Data Obat
                 </button>
 
-                {{-- Export dropdown (DataTables di JS) --}}
-                <div class="relative" id="exportObatWrapper">
-                    <button type="button" id="btn-export-trigger"
-                        class="inline-flex items-center justify-center px-3 md:px-4 py-2 rounded-xl border text-[11px] md:text-xs
-                               font-medium bg-white text-gray-700 border-gray-200 hover:bg-gray-50
-                               dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700">
-                        <i class="fa-solid fa-file-export mr-1.5 text-[10px]"></i>
-                        Export
-                        <i class="fa-solid fa-chevron-down ml-1 text-[8px]"></i>
-                    </button>
-                </div>
+                {{-- Export CSV --}}
+                <button type="button" id="btn-export-csv"
+                    class="inline-flex items-center justify-center px-3 md:px-4 py-2 rounded-xl border text-[11px] md:text-xs
+               font-medium bg-white text-gray-700 border-gray-200 hover:bg-gray-50
+               dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700">
+                    <i class="fa-solid fa-file-csv mr-1.5 text-[10px]"></i>
+                    Export CSV
+                </button>
+
+                {{-- Print --}}
+                <button type="button" id="btn-print-obat"
+                    class="inline-flex items-center justify-center px-3 md:px-4 py-2 rounded-xl border text-[11px] md:text-xs
+               font-medium bg-white text-gray-700 border-gray-200 hover:bg-gray-50
+               dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700">
+                    <i class="fa-solid fa-print mr-1.5 text-[10px]"></i>
+                    Print
+                </button>
 
                 {{-- Import --}}
-                {{-- action="{{ route('farmasi.obat.import') }}" method="POST" --}}
-                <form id="form-import-obat" 
-                    enctype="multipart/form-data" class="hidden">
+                <form id="form-import-obat" enctype="multipart/form-data" class="hidden">
                     @csrf
                     <input type="file" name="file" id="input-file-import-obat" accept=".xlsx,.xls,.csv">
                 </form>
 
                 <button type="button" id="btn-import-obat"
                     class="inline-flex items-center justify-center px-3 md:px-4 py-2 rounded-xl text-[11px] md:text-xs 
-                           font-medium bg-white text-emerald-700 border border-emerald-500 hover:bg-emerald-50
-                           dark:bg-gray-900 dark:border-emerald-500 dark:text-emerald-300">
+               font-medium bg-white text-emerald-700 border border-emerald-500 hover:bg-emerald-50
+               dark:bg-gray-900 dark:border-emerald-500 dark:text-emerald-300">
                     <i class="fa-solid fa-upload mr-1.5 text-[10px]"></i>
                     Import
                 </button>
             </div>
+
         </div>
     </div>
 
