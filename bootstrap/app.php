@@ -15,12 +15,13 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->append([
-            HandleCors::class, // aktifkan CORS di seluruh request
-        ]);
 
+        // ✅ AKTIFKAN CORS GLOBAL (TANPA ARRAY)
+        $middleware->append(HandleCors::class);
+
+        // ✅ ALIAS MIDDLEWARE KUSTOM
         $middleware->alias([
-            'role' => RoleMiddleware::class,
+            'role'      => RoleMiddleware::class,
             'checkAuth' => RedirectIfAuthenticatedWithRole::class,
         ]);
     })

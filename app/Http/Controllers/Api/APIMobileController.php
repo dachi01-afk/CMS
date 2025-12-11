@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Dokter;
 use App\Models\EMR;
+use App\Models\JadwalDokter;
 use App\Models\Kunjungan;
 use App\Models\KunjunganLayanan;
 use App\Models\Layanan;
@@ -135,18 +136,18 @@ class APIMobileController extends Controller
 
         try {
             return DB::transaction(function () use ($request) {
-                // ✅ GENERATE NO_EMR DENGAN PREFIX RMB (Mobile)
-                $lastPasien = Pasien::where('no_emr', 'LIKE', 'RMB-%')
+                // ✅ GENERATE NO_EMR DENGAN PREFIX RM (Mobile)
+                $lastPasien = Pasien::where('no_emr', 'LIKE', 'RM-%')
                     ->orderBy('id', 'desc')
                     ->first();
 
                 $lastNumber = 0;
-                if ($lastPasien && preg_match('/RMB-(\d+)/', $lastPasien->no_emr, $matches)) {
+                if ($lastPasien && preg_match('/RM-(\d+)/', $lastPasien->no_emr, $matches)) {
                     $lastNumber = (int) $matches[1];
                 }
 
                 $nextNumber = $lastNumber + 1;
-                $no_emr = 'RMB-'.str_pad($nextNumber, 8, '0', STR_PAD_LEFT);
+                $no_emr = 'RM-'.str_pad($nextNumber, 8, '0', STR_PAD_LEFT);
 
                 Log::info('Generating EMR for mobile registration:', [
                     'no_emr' => $no_emr,
@@ -334,17 +335,17 @@ class APIMobileController extends Controller
 
             // ✅ AUTO-GENERATE NO_EMR JIKA BELUM ADA (untuk pasien mobile lama)
             if (empty($pasien->no_emr)) {
-                $lastPasien = Pasien::where('no_emr', 'LIKE', 'RMB-%')
+                $lastPasien = Pasien::where('no_emr', 'LIKE', 'RM-%')
                     ->orderBy('id', 'desc')
                     ->first();
 
                 $lastNumber = 0;
-                if ($lastPasien && preg_match('/RMB-(\d+)/', $lastPasien->no_emr, $matches)) {
+                if ($lastPasien && preg_match('/RM-(\d+)/', $lastPasien->no_emr, $matches)) {
                     $lastNumber = (int) $matches[1];
                 }
 
                 $nextNumber = $lastNumber + 1;
-                $pasien->no_emr = 'RMB-'.str_pad($nextNumber, 8, '0', STR_PAD_LEFT);
+                $pasien->no_emr = 'RM-'.str_pad($nextNumber, 8, '0', STR_PAD_LEFT);
 
                 Log::info('Auto-generated EMR for existing mobile user:', [
                     'pasien_id' => $pasien->id,
@@ -936,9 +937,13 @@ class APIMobileController extends Controller
                 'poli_id' => ['required', 'exists:poli,id'],
                 'tanggal_kunjungan' => ['required', 'date'],
                 'keluhan_awal' => ['required', 'string'],
+                'dokter_id' => ['required', 'exists:dokter,id'],
+                'jadwal_dokter_id' => ['nullable', 'exists:jadwal_dokter,id'],
             ]);
 
             $pasienId = $request->pasien_id;
+            $tanggalKunjungan = $request->tanggal_kunjungan;
+            $poliId = $request->poli_id;
 
             // VALIDASI PROFIL LENGKAP
             if (! $this->isProfileComplete($pasienId)) {
@@ -949,13 +954,9 @@ class APIMobileController extends Controller
                 ], 422);
             }
 
-            $tanggalKunjungan = $request->tanggal_kunjungan;
-            $poliId = $request->poli_id;
-            $pasienId = $request->pasien_id;
-
             Log::info("🎯 Processing booking for pasien_id: $pasienId, poli_id: $poliId, tanggal: $tanggalKunjungan");
 
-            // ENHANCED: Cek existing booking dengan status yang tidak boleh duplikasi
+            // CEK BOOKING AKTIF YANG TIDAK BOLEH DUPLIKAT
             $activeStatuses = ['Pending', 'Confirmed', 'Waiting', 'Engaged'];
             $existingActiveBooking = Kunjungan::where('pasien_id', $pasienId)
                 ->where('poli_id', $poliId)
@@ -966,7 +967,6 @@ class APIMobileController extends Controller
             if ($existingActiveBooking) {
                 Log::info("❌ Active booking found for pasien_id: $pasienId, poli_id: $poliId, tanggal: $tanggalKunjungan, status: {$existingActiveBooking->status}");
 
-                // Pesan yang lebih spesifik berdasarkan status
                 $statusMessages = [
                     'Pending' => 'Anda sudah memiliki janji yang menunggu konfirmasi dengan poli ini pada tanggal yang sama.',
                     'Confirmed' => 'Anda sudah memiliki janji yang telah dikonfirmasi dengan poli ini pada tanggal yang sama.',
@@ -976,7 +976,6 @@ class APIMobileController extends Controller
 
                 $message = $statusMessages[$existingActiveBooking->status] ??
                     'Anda sudah memiliki jadwal dengan poli ini pada tanggal yang sama.';
-
                 $message .= ' Silakan pilih tanggal lain atau batalkan janji yang sudah ada.';
 
                 return response()->json([
@@ -992,8 +991,7 @@ class APIMobileController extends Controller
                 ], 422);
             }
 
-            // OPTIONAL: Cek apakah ada booking dengan status Cancelled atau Success pada hari yang sama
-            // Ini untuk memberikan informasi tambahan, tapi tidak menghalangi booking baru
+            // INFO BOOKING SEBELUMNYA (CANCELLED / SUCCESS / COMPLETED)
             $previousBookings = Kunjungan::where('pasien_id', $pasienId)
                 ->where('poli_id', $poliId)
                 ->where('tanggal_kunjungan', $tanggalKunjungan)
@@ -1005,7 +1003,10 @@ class APIMobileController extends Controller
             }
 
             $result = DB::transaction(function () use ($tanggalKunjungan, $poliId, $pasienId, $request) {
-                // GANTI query untuk mencari kunjungan terakhir berdasarkan poli
+
+                // =========================
+                // HITUNG NOMOR ANTRIAN
+                // =========================
                 $lastKunjungan = Kunjungan::where('tanggal_kunjungan', $tanggalKunjungan)
                     ->where('poli_id', $poliId)
                     ->orderByDesc('no_antrian')
@@ -1025,14 +1026,56 @@ class APIMobileController extends Controller
                 $formattedNumber = str_pad($nextNumber, 3, '0', STR_PAD_LEFT);
                 Log::info("🎫 Formatted number: $formattedNumber");
 
-                // Create new booking
+                // =========================
+                // TENTUKAN JADWAL_DOKTER_ID
+                // =========================
+                $jadwalDokterId = $request->jadwal_dokter_id;
+
+                if (! $jadwalDokterId) {
+                    // Ambil hari dari tanggal_kunjungan (English → Indo)
+                    $hariCarbon = Carbon::parse($tanggalKunjungan)->format('l');
+
+                    $mapHari = [
+                        'Monday' => 'Senin',
+                        'Tuesday' => 'Selasa',
+                        'Wednesday' => 'Rabu',
+                        'Thursday' => 'Kamis',
+                        'Friday' => 'Jumat',
+                        'Saturday' => 'Sabtu',
+                        'Sunday' => 'Minggu',
+                    ];
+
+                    $hari = $mapHari[$hariCarbon] ?? $hariCarbon;
+                    Log::info("🕒 Hari kunjungan: $hari");
+                    $jadwal = JadwalDokter::where('poli_id', $poliId)
+                        ->where('dokter_id', $request->dokter_id)
+                        ->where('hari', $hari)
+                        ->orderBy('id')        // atau bisa dihapus juga, cuma .first()
+                        ->first();
+
+                    if ($jadwal) {
+                        $jadwalDokterId = $jadwal->id;
+                        Log::info("📌 Jadwal ditemukan: {$jadwal->id} untuk dokter {$request->dokter_id} ($hari)");
+                    } else {
+                        Log::warning("⚠️ Tidak ada jadwal ditemukan untuk dokter {$request->dokter_id} hari $hari!");
+                    }
+                } else {
+                    Log::info("📌 jadwal_dokter_id diterima dari FE: $jadwalDokterId");
+                }
+
+                // =========================
+                // CREATE BOOKING
+                // =========================
                 $kunjungan = new Kunjungan;
                 $kunjungan->pasien_id = $pasienId;
                 $kunjungan->poli_id = $poliId;
+                $kunjungan->dokter_id = $request->dokter_id;
+                $kunjungan->jadwal_dokter_id = $jadwalDokterId;
                 $kunjungan->tanggal_kunjungan = $tanggalKunjungan;
                 $kunjungan->no_antrian = $formattedNumber;
                 $kunjungan->keluhan_awal = $request->keluhan_awal;
                 $kunjungan->status = 'Pending';
+
                 $kunjungan->save();
 
                 Log::info('✅ Kunjungan created: ', $kunjungan->toArray());
@@ -1045,7 +1088,6 @@ class APIMobileController extends Controller
 
             $responseMessage = 'Kunjungan berhasil dibuat';
 
-            // Tambahkan informasi jika ada booking sebelumnya yang dibatalkan/selesai
             if (isset($previousBookings) && $previousBookings->count() > 0) {
                 $responseMessage .= '. Catatan: Anda pernah memiliki janji dengan poli ini pada tanggal yang sama yang telah selesai/dibatalkan.';
             }
@@ -1065,6 +1107,111 @@ class APIMobileController extends Controller
             ], 500);
         }
     }
+
+    /**
+ * Mengambil data vital sign terbaru untuk pasien yang sedang login (role: Pasien).
+ * Endpoint: GET /api/pasien/vital-terbaru
+ */
+public function getLatestVitalPasien(\Illuminate\Http\Request $request)
+{
+    $user = $request->user();
+
+    // Pastikan user punya data pasien
+    if (! $user->pasien) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Akun ini tidak memiliki data pasien.',
+        ], 403);
+    }
+
+    $pasienId = $user->pasien->id;
+
+    // Cari EMR terakhir berdasarkan kunjungan yang dimiliki pasien ini
+    $latestEmr = Emr::query()
+        ->whereHas('kunjungan', function ($q) use ($pasienId) {
+            $q->where('pasien_id', $pasienId);
+        })
+        ->latest('created_at')
+        ->first();
+
+    if (! $latestEmr) {
+        return response()->json([
+            'success' => true,
+            'message' => 'Belum ada data EMR / vital sign untuk pasien ini.',
+            'data'    => null,
+        ]);
+    }
+
+    // Bungkus data agar rapi dan aman
+    $data = [
+        'emr_id'          => $latestEmr->id,
+        'kunjungan_id'    => $latestEmr->kunjungan_id,
+        'resep_id'        => $latestEmr->resep_id,
+        'tekanan_darah'   => $latestEmr->tekanan_darah,         // string ex: "120/80"
+        'suhu_tubuh'      => $latestEmr->suhu_tubuh,            // decimal
+        'nadi'            => $latestEmr->nadi,                  // int
+        'pernapasan'      => $latestEmr->pernapasan,            // int
+        'saturasi_oksigen'=> $latestEmr->saturasi_oksigen,      // int
+        'diagnosis'       => $latestEmr->diagnosis,             // text
+        'tanggal'         => optional($latestEmr->created_at)->toDateString(),
+        'waktu'           => optional($latestEmr->created_at)->format('H:i'),
+        'created_at'      => $latestEmr->created_at,
+        'updated_at'      => $latestEmr->updated_at,
+    ];
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Data vital sign terbaru berhasil diambil.',
+        'data'    => $data,
+    ]);
+}
+
+/**
+ * History vital sign beberapa kunjungan terakhir
+ * Endpoint: GET /api/pasien/vital-history
+ */
+public function getVitalHistoryPasien(\Illuminate\Http\Request $request)
+{
+    $user = $request->user();
+
+    if (! $user->pasien) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Akun ini tidak memiliki data pasien.',
+        ], 403);
+    }
+
+    $pasienId = $user->pasien->id;
+
+    $emrs = Emr::query()
+        ->whereHas('kunjungan', function ($q) use ($pasienId) {
+            $q->where('pasien_id', $pasienId);
+        })
+        ->orderByDesc('created_at')
+        ->take(10) // misal 10 kunjungan terakhir
+        ->get()
+        ->map(function (Emr $emr) {
+            return [
+                'emr_id'          => $emr->id,
+                'kunjungan_id'    => $emr->kunjungan_id,
+                'tanggal'         => optional($emr->created_at)->toDateString(),
+                'tekanan_darah'   => $emr->tekanan_darah,
+                'suhu_tubuh'      => $emr->suhu_tubuh,
+                'nadi'            => $emr->nadi,
+                'pernapasan'      => $emr->pernapasan,
+                'saturasi_oksigen'=> $emr->saturasi_oksigen,
+                'diagnosis'       => $emr->diagnosis,
+            ];
+        });
+
+    return response()->json([
+        'success' => true,
+        'message' => 'Riwayat vital sign berhasil diambil.',
+        'data'    => $emrs,
+    ]);
+}
+
+
 
     // Di APIMobileController.php - Ganti method getRiwayatKunjungan
 
@@ -1546,6 +1693,89 @@ class APIMobileController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan sistem',
+            ], 500);
+        }
+    }
+
+    /**
+     * ✅ Get jadwal dokter yang sedang login (untuk sidebar calendar)
+     * Endpoint: GET /api/dokter/jadwal
+     * Auth: Dokter only
+     */
+    public function getJadwalDokterSaya(Request $request)
+    {
+        try {
+            // Ambil dokter yang sedang login
+            $user = $request->user();
+
+            if (! $user || ! $user->dokter) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data dokter tidak ditemukan',
+                ], 404);
+            }
+
+            $dokterId = $user->dokter->id;
+
+            // Ambil semua jadwal dokter ini
+            $jadwal = \App\Models\JadwalDokter::where('dokter_id', $dokterId)
+                ->orderBy('hari')
+                ->get();
+
+            if ($jadwal->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [],
+                    'message' => 'Tidak ada jadwal praktik',
+                ]);
+            }
+
+            $hariMapping = [
+                'Senin' => 1,
+                'Selasa' => 2,
+                'Rabu' => 3,
+                'Kamis' => 4,
+                'Jumat' => 5,
+                'Sabtu' => 6,
+                'Minggu' => 0,
+            ];
+
+            $tz = config('app.timezone') ?: 'Asia/Jakarta';
+            $now = Carbon::now($tz);
+
+            $result = [];
+
+            foreach ($jadwal as $item) {
+                $hariStr = $item->hari;
+                $hariNumber = $hariMapping[$hariStr] ?? null;
+
+                if ($hariNumber !== null) {
+                    // Konversi hari ke tanggal terdekat bulan ini
+                    $tanggalTerdekat = $this->getNextDateByDay($hariNumber, $now->copy()->startOfMonth());
+
+                    $result[] = [
+                        'id' => $item->id,
+                        'dokter_id' => $dokterId,
+                        'hari' => $hariStr,
+                        'jam_mulai' => $item->jam_mulai,
+                        'jam_selesai' => $item->jam_selesai,
+                        'tanggal_terdekat' => $tanggalTerdekat->format('Y-m-d'),
+                    ];
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => $result,
+                'dokter_id' => $dokterId,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error getting jadwal dokter saya: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -5402,35 +5632,43 @@ class APIMobileController extends Controller
     public function getAllDokter()
     {
         try {
-            // Ambil semua dokter dengan relasi poli dan jadwal
             $dokterList = Dokter::with(['poli', 'jadwalDokter'])->get();
+
+            $data = $dokterList->map(function ($dokter) {
+                // kalau relasi "poli" berupa collection (hasMany/belongsToMany)
+                $poliRel = $dokter->poli;
+
+                if ($poliRel instanceof \Illuminate\Support\Collection) {
+                    $poli = $poliRel->first();   // ambil satu yang pertama
+                } else {
+                    $poli = $poliRel;            // kalau memang single model
+                }
+
+                return [
+                    'id_dokter' => $dokter->id,
+                    'nama_dokter' => $dokter->nama_dokter,
+                    'foto_dokter' => $dokter->foto_dokter,
+                    'no_hp' => $dokter->no_hp,
+                    'poli' => [
+                        'id' => optional($poli)->id,
+                        'nama_poli' => optional($poli)->nama_poli ?? '-',
+                    ],
+                    'jadwal' => $dokter->jadwalDokter->map(function ($item) {
+                        return [
+                            'hari' => $item->hari,
+                            'jam_awal' => $item->jam_awal,
+                            'jam_selesai' => $item->jam_selesai,
+                        ];
+                    })->values(),
+                ];
+            })->values();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Data seluruh dokter berhasil diambil',
-                'data' => $dokterList->map(function ($dokter) {
-                    return [
-                        'id_dokter' => $dokter->id,
-                        'nama_dokter' => $dokter->nama_dokter,
-                        'foto_dokter' => $dokter->foto_dokter,
-                        'no_hp' => $dokter->no_hp,
-                        'poli' => [
-                            'id' => $dokter->poli->id ?? null,
-                            'nama_poli' => $dokter->poli->nama_poli ?? '-',
-                        ],
-                        'jadwal' => $dokter->jadwalDokter->map(function ($item) {
-                            return [
-                                'hari' => $item->hari,
-                                'jam_awal' => $item->jam_awal,      // Pastikan ini ada
-                                'jam_selesai' => $item->jam_selesai, // Pastikan ini ada
-                            ];
-                        }),
-                    ];
-                }),
+                'data' => $data,
             ]);
-        } catch (\Exception $e) {
-            Log::error('Error getting all dokter: '.$e->getMessage());
-
+        } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan: '.$e->getMessage(),

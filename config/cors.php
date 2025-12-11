@@ -2,32 +2,71 @@
 
 return [
 
-    // Pastikan semua route API kamu masuk di sini
-    'paths' => ['api/*', 'sanctum/csrf-cookie'],
+    /*
+    |--------------------------------------------------------------------------
+    | CORS Paths
+    |--------------------------------------------------------------------------
+    */
+    'paths' => [
+        'api/*',
+        'sanctum/csrf-cookie',
+    ],
 
-    // Boleh semua method (GET, POST, PUT, DELETE, dll)
+    /*
+    |--------------------------------------------------------------------------
+    | Allowed Methods
+    |--------------------------------------------------------------------------
+    */
     'allowed_methods' => ['*'],
 
-
-    // 🔥 DEV MODE (boleh semua origin) – hanya untuk pengembangan
-    // 'allowed_origins' => ['*'],
-
-    // 🔐 PRODUKSI – lebih aman: sebutkan satu per satu
-    // 'allowed_origins' => [
-    //     'http://localhost:5173',      // misal frontend web (Vite)
-    //     'http://localhost:19006',     // misal React Native dev server
-    //     'capacitor://localhost',      // kalau pakai Capacitor
-    //     'ionic://localhost',          // kalau pakai Ionic
-    //     'https://website-mu.com',     // domain web
-    //     'https://mobile-mu.com',      // kalau nanti pakai domain sendiri
-    // ],
-
+    /*
+    |--------------------------------------------------------------------------
+    | Allowed Origins
+    |--------------------------------------------------------------------------
+    |
+    | Flutter Web selalu pakai port variabel (contoh 60517, 51342, dsb),
+    | jadi kita izinkan semua origin.
+    |
+    */
     'allowed_origins' => ['*'],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Allowed Origins Patterns
+    |--------------------------------------------------------------------------
+    */
+    'allowed_origins_patterns' => [],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Allowed Headers
+    |--------------------------------------------------------------------------
+    */
     'allowed_headers' => ['*'],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Exposed Headers
+    |--------------------------------------------------------------------------
+    */
     'exposed_headers' => [],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Max Age
+    |--------------------------------------------------------------------------
+    */
     'max_age' => 0,
 
-    // Kalau kamu pakai cookie / Sanctum / Auth
-    'supports_credentials' => true,
+    /*
+    |--------------------------------------------------------------------------
+    | Supports Credentials
+    |--------------------------------------------------------------------------
+    |
+    | Karena kamu pakai Bearer Token, TIDAK perlu credentials.
+    | Harus false agar origins = ['*'] tidak error.
+    |
+    */
+    'supports_credentials' => false,
+
 ];
