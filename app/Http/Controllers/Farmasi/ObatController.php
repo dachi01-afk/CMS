@@ -41,7 +41,7 @@ class ObatController extends Controller
             'satuanObat:id,nama_satuan_obat',
             'brandFarmasi:id,nama_brand',
             'jenisObat:id,nama_jenis_obat',
-        ])->latest();
+        ])->latest()->get();
 
         return DataTables::eloquent($query)
             ->addIndexColumn()

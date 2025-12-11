@@ -204,16 +204,16 @@
                                 </ul>
                             </div>
 
-                            {{-- FARMASI --}}
+                            {{-- Apotek --}}
                             <div>
                                 <p
                                     class="px-3 mb-2 text-[11px] font-semibold tracking-wide text-slate-400 dark:text-slate-500 uppercase">
-                                    Farmasi
+                                    Apotek
                                 </p>
                                 <ul class="space-y-1">
                                     <x-mycomponents.sidebar_link href="farmasi.dashboard" class="fa-solid fa-house"
                                         :active="Request::routeIs('farmasi.dashboard')">
-                                        Dashboard
+                                        Dashboard Apotek
                                     </x-mycomponents.sidebar_link>
 
                                     <x-mycomponents.sidebar_link href="kategori.obat.index" class="fa-solid fa-capsules"
