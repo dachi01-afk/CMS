@@ -199,7 +199,7 @@ class KunjunganController extends Controller
                 if (!empty($row->id)) {
                     $url = route('perawat.form.pengisian.vital.sign', $row->id);
 
-                    return '
+                    return '    
                     <a href="' . $url . '"
                        class="inline-flex items-center px-3 py-1 rounded-lg
                               bg-indigo-600 text-white text-xs font-medium
@@ -238,7 +238,7 @@ class KunjunganController extends Controller
             'dataPoliPasien',
             'dataDokterPasien',
             'dataIdEMR',
-            'urlBack'
+            'urlBack',
         ));
     }
 
@@ -247,6 +247,7 @@ class KunjunganController extends Controller
         try {
             // 1. VALIDASI INPUT
             $validated = $request->validate([
+                'perawat_id'               => ['nullable'],
                 'tekanan_darah'            => ['required', 'regex:/^\d{2,3}\/\d{2,3}$/'],
                 'suhu_tubuh'               => ['required', 'numeric', 'between:30,45'],
                 'nadi'                     => ['required', 'integer', 'between:30,220'],
@@ -284,7 +285,10 @@ class KunjunganController extends Controller
 
 
             // 2. AMBIL PERAWAT YANG LOGIN
-            $perawat = Perawat::where('user_id', Auth::id())->firstOrFail();
+            $login = Auth::id();
+            $perawat = Perawat::with('user')->where('user_id', $login)->first();
+            $idPerawat = $perawat->id;
+            // $perawat = Perawat::where('user_id', Auth::id())->firstOrFail();
 
             // 3. AMBIL EMR + KUNJUNGAN
             $emr = EMR::with('kunjungan')->findOrFail($id);
@@ -311,6 +315,7 @@ class KunjunganController extends Controller
             }
 
             // 5. SIMPAN DATA VITAL SIGN + RIWAYAT
+            $validated['perawat_id'] = $idPerawat;
             $emr->update($validated);
 
             // 🔹 Kalau request AJAX → balas JSON (untuk Swal success + redirect manual)

@@ -216,6 +216,11 @@
                                         Dashboard Apotek
                                     </x-mycomponents.sidebar_link>
 
+                                    <x-mycomponents.sidebar_link href="pengambilan.obat" class="fas fa-list-ol"
+                                        :active="Request::routeIs('pengambilan.obat')">
+                                        Antrian Hari Ini
+                                    </x-mycomponents.sidebar_link>
+
                                     <x-mycomponents.sidebar_link href="kategori.obat.index" class="fa-solid fa-capsules"
                                         :active="Request::routeIs('kategori.obat.index')">
                                         Kategori Obat
@@ -249,11 +254,6 @@
                                     <x-mycomponents.sidebar_link href="kadaluarsa.bhp" class="fa-solid fa-calendar-xmark"
                                         :active="Request::routeIs('kadaluarsa.bhp')">
                                         Kadaluarsa BHP
-                                    </x-mycomponents.sidebar_link>
-
-                                    <x-mycomponents.sidebar_link href="pengambilan.obat"
-                                        class="fa-solid fa-prescription-bottle-medical" :active="Request::routeIs('pengambilan.obat')">
-                                        Pengambilan Obat
                                     </x-mycomponents.sidebar_link>
                                 </ul>
                             </div>

@@ -27,13 +27,20 @@
             <ul class="flex flex-wrap -mb-px text-sm font-medium text-center whitespace-nowrap" id="default-tab"
                 data-tabs-toggle="#tab-content" role="tablist">
                 <li class="me-2" role="presentation">
-                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="tab-pengambilan-obat"
-                        data-tabs-target="#pengambilan-obat" type="button" role="tab"
-                        aria-controls="pengambilan-obat" aria-selected="false">
-                        Data Pengambilan Obat
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="tab-belum-selesai"
+                        data-tabs-target="#belum-selesai" type="button" role="tab" aria-controls="belum-selesai"
+                        aria-selected="false">
+                        Belum Selesai
                     </button>
                 </li>
 
+                <li class="me-2" role="presentation">
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="tab-sudah-selesai"
+                        data-tabs-target="#sudah-selesai" type="button" role="tab" aria-controls="sudah-selesai"
+                        aria-selected="false">
+                        Sudah Selesai
+                    </button>
+                </li>
             </ul>
         </div>
 
@@ -42,11 +49,15 @@
 
             {{-- Tabs Content --}}
             <div id="tab-content">
-                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="pengambilan-obat"
-                    role="tabpanel" aria-labelledby="tab-pengambilan-obat">
+                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="belum-selesai" role="tabpanel"
+                    aria-labelledby="tab-belum-selesai">
                     @include('farmasi.pengambilan-obat.data-pengambilan-obat')
                 </div>
 
+                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="sudah-selesai" role="tabpanel"
+                    aria-labelledby="tab-sudah-selesai">
+                    @include('farmasi.pengambilan-obat.data-pengambilan-obat')
+                </div>
             </div>
 
         </div>

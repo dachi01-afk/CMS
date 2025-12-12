@@ -87,9 +87,10 @@
                 method="POST" class="p-5 space-y-6">
                 @csrf
 
+                {{-- <input type="hidden" name="perawat_id" value="{{ $idPerawat }}"> --}}
+
                 {{-- GRID INPUT --}}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-
                     {{-- Tekanan darah --}}
                     <div>
                         <label for="tekanan_darah"
