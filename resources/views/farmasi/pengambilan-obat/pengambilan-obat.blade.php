@@ -8,10 +8,10 @@
             <div class="flex items-center justify-between">
 
                 <div class="flex items-center space-x-3">
-                    <i class="fa-solid fa-notes-medical fa-2xl text-blue-600"></i>
+                    <i class="fas fa-list-ol fa-2xl text-blue-600"></i>
 
                     <h1 class="text-3xl font-extrabold text-gray-900 leading-tight">
-                        Data Pengambilan Obat
+                        Data Antrian Hari Ini
                     </h1>
                 </div>
             </div>

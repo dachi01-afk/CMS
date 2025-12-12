@@ -13,9 +13,8 @@ class PembayaranSeeder extends Seeder
 {
     public function run(): void
     {
-        $this->command->info('🚀 Mulai membuat data pembayaran berdasarkan data EMR yang ada...');
+        $this->command?->info('🚀 Membuat data pembayaran berdasarkan EMR...');
 
-        // Ambil semua data EMR beserta relasi pentingnya
         $dataEMRList = EMR::with([
             'kunjungan.pasien',
             'kunjungan.layanan',
@@ -23,71 +22,92 @@ class PembayaranSeeder extends Seeder
         ])->get();
 
         if ($dataEMRList->isEmpty()) {
-            $this->command->warn('⚠️ Tidak ada data EMR yang ditemukan!');
+            $this->command?->warn('⚠️ Tidak ada data EMR.');
             return;
         }
 
-        // Ambil metode pembayaran pertama (default)
         $metode = MetodePembayaran::first();
-        if (!$metode) {
-            $this->command->warn('⚠️ Tidak ada data Metode Pembayaran!');
+        if (! $metode) {
+            $this->command?->warn('⚠️ Metode pembayaran belum ada.');
             return;
         }
 
-        $jumlahDibuat = 0;
         $faker = Faker::create('id_ID');
+        $jumlahDibuat = 0;
 
-        // Loop setiap EMR dan buat data pembayaran
         foreach ($dataEMRList as $emr) {
+
+            // Skip kalau pembayaran sudah ada
+            if (Pembayaran::where('emr_id', $emr->id)->exists()) {
+                continue;
+            }
+
             $kunjungan = $emr->kunjungan;
-            $pasien = $kunjungan?->pasien?->nama_pasien ?? 'Pasien Tidak Dikenal';
-            $layananList = $kunjungan?->layanan ?? collect();
+            $pasien    = $kunjungan?->pasien?->nama_pasien ?? 'Pasien Tidak Dikenal';
 
-            $obatList = $emr->resep?->obat ?? collect();
-
-            // Hitung total layanan
-            $totalLayanan = $layananList->sum(function ($layanan) {
-                $harga = $layanan->harga_layanan ?? 0;
-                $jumlah = $layanan->pivot->jumlah ?? 1;
+            // ==========================
+            // 1️⃣ HITUNG TOTAL LAYANAN
+            // ==========================
+            $totalLayanan = ($kunjungan?->layanan ?? collect())->sum(function ($layanan) {
+                $harga  = (float) ($layanan->harga_layanan ?? 0);
+                $jumlah = (int) ($layanan->pivot->jumlah ?? 1);
                 return $harga * $jumlah;
             });
 
-
-            // Hitung total obat
-            $totalObat = $obatList->sum(function ($obat) {
-                $harga = $obat->total_harga ?? 0;
-                $jumlah = $obat->pivot->jumlah ?? 1;
+            // ==========================
+            // 2️⃣ HITUNG TOTAL OBAT
+            // ==========================
+            $totalObat = ($emr->resep?->obat ?? collect())->sum(function ($obat) {
+                $harga  = (float) (
+                    $obat->harga_jual
+                    ?? $obat->harga
+                    ?? 0
+                );
+                $jumlah = (int) ($obat->pivot->jumlah ?? 1);
                 return $harga * $jumlah;
             });
 
             $totalTagihan = $totalLayanan + $totalObat;
 
-            // Cek apakah sudah ada pembayaran untuk EMR ini
-            $sudahAda = Pembayaran::where('emr_id', $emr->id)->exists();
-            if ($sudahAda) {
-                $this->command->warn("⏭️ Pembayaran untuk EMR ID {$emr->id} sudah ada, dilewati.");
+            if ($totalTagihan <= 0) {
+                $this->command?->warn("⏭️ EMR ID {$emr->id} total 0, dilewati.");
                 continue;
             }
 
-            // 🎯 Buat tanggal acak sepanjang tahun ini (2025)
-            // $tanggalAcak = Carbon::create(2025, rand(1, 12), rand(1, 28), rand(7, 20), rand(0, 59), 0);
+            // ==========================
+            // 3️⃣ STATUS PEMBAYARAN
+            // ==========================
+            // 70% Sudah Bayar → supaya antrian apotek bisa jalan
+            $statusBayar = $faker->boolean(70) ? 'Sudah Bayar' : 'Belum Bayar';
 
-            // Buat data pembayaran
+            // ==========================
+            // 4️⃣ TANGGAL PEMBAYARAN
+            // ==========================
+            $tanggalBayar = $statusBayar === 'Sudah Bayar'
+                ? Carbon::now()->subDays(rand(0, 5))
+                : null;
+
+            // ==========================
+            // 5️⃣ SIMPAN PEMBAYARAN
+            // ==========================
             Pembayaran::create([
-                'emr_id' => $emr->id,
-                'total_tagihan' => $totalTagihan,
-                'kembalian' => 0,
+                'emr_id'               => $emr->id,
+                'total_tagihan'        => $totalTagihan,
+                'kembalian'            => 0,
                 'metode_pembayaran_id' => $metode->id,
-                'kode_transaksi' => strtoupper(uniqid('TRX_')),
-                'tanggal_pembayaran' => $faker->dateTimeBetween('-100 years', '-1 day'),
-                'status' => 'Belum Bayar',
-                'catatan' => "Tagihan untuk {$pasien}",
+                'kode_transaksi'       => strtoupper(uniqid('TRX_')),
+                'tanggal_pembayaran'   => $tanggalBayar,
+                'status'               => $statusBayar,
+                'catatan'              => "Tagihan medis untuk {$pasien}",
             ]);
 
             $jumlahDibuat++;
-            $this->command->info("✅ Pembayaran untuk {$pasien} (EMR ID: {$emr->id}) berhasil dibuat. Total: Rp" . number_format($totalTagihan, 0, ',', '.'));
+            $this->command?->info(
+                "✅ Pembayaran {$statusBayar} | EMR {$emr->id} | Rp" .
+                    number_format($totalTagihan, 0, ',', '.')
+            );
         }
 
-        $this->command->info("🎉 Selesai! Total pembayaran baru yang dibuat: {$jumlahDibuat}");
+        $this->command?->info("🎉 Selesai. Total pembayaran dibuat: {$jumlahDibuat}");
     }
 }

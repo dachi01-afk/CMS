@@ -241,7 +241,7 @@ $(function () {
             if (!result.isConfirmed) return;
 
             axios
-                .post(`/farmasi/pengambilan-obat/update-status-resep-obat`, {
+                .post(`/farmasi/pengambilan-obat/update-status-resep`, {
                     resep_id: resepId,
                     obat_list: obatData, // [{id, jumlah}, ...]
                 })

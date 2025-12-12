@@ -27,18 +27,21 @@ class ResepObatSeeder extends Seeder
 
         foreach ($resepIds as $rId) {
             foreach (collect($obatIds)->random(min(2, $obatIds->count())) as $oId) {
-                ResepObat::firstOrCreate([
-                    'resep_id' => $rId,
-                    'obat_id'  => $oId,
-                ], [
-                    'jumlah'     => rand(1, 2),
-                    'dosis'      => 250.00,
-                    'keterangan' => '3 kali sehari',
-                    'status'     => 'Belum Diambil',
-                ]);
+                // ✅ status sudah bukan di resep_obat
+                ResepObat::updateOrCreate(
+                    [
+                        'resep_id' => $rId,
+                        'obat_id'  => $oId,
+                    ],
+                    [
+                        'jumlah'     => rand(1, 2),
+                        'dosis'      => 250.00,
+                        'keterangan' => '3 kali sehari',
+                    ]
+                );
             }
         }
 
-        $this->command?->info('ResepObatSeeder: item obat per resep dibuat.');
+        $this->command?->info('ResepObatSeeder: item obat per resep dibuat (tanpa status).');
     }
 }

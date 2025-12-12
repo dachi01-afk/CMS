@@ -154,7 +154,7 @@
                 {{-- Form --}}
                 <form id="formBayarSekarang"
                     class="px-5 md:px-6 pb-5 pt-4 flex flex-col gap-5 bg-slate-50/60 dark:bg-slate-800" method="POST"
-                    action="{{ route('update.status.resep.obat') }}">
+                    action="{{ route('update.status.resep') }}">
                     @csrf
 
                     <input type="hidden" name="resep_id" id="resep_id">
@@ -204,7 +204,6 @@
             </div>
         </div>
     </div>
-
-    @vite(['resources/js/kasir/pembayaran/transaksi-menunggu.js'])
-
 </section>
+
+@vite(['resources/js/kasir/pembayaran/transaksi-menunggu.js'])

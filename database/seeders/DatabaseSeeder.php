@@ -34,19 +34,19 @@ class DatabaseSeeder extends Seeder
             PasienSeeder::class,
             ObatSeeder::class,
             JadwalDokterSeeder::class,
-            // KunjunganSeeder::class,
-            // KunjunganLayananSeeder::class,
-            // TestimoniSeeder::class,
-            // ResepSeeder::class,
-            // ResepObatSeeder::class,
-            // EMRSeeder::class,
+            KunjunganSeeder::class,
+            KunjunganLayananSeeder::class,
+            ResepSeeder::class,
+            ResepObatSeeder::class,
+            EMRSeeder::class,
             MetodePembayaranSeeder::class,
             PerawatDokterPoliSeeder::class,
+            PembayaranSeeder::class,
             // TesLabSeeder::class,
-            // PembayaranSeeder::class,
             // AdministrasiSeeder::class,
+            // TestimoniSeeder::class,
             TipeDepotSeeder::class,
-            
+
         ]);
     }
 }

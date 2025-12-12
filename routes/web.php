@@ -379,7 +379,7 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
         Route::prefix('pengambilan-obat')->group(function () {
             Route::get('/', [FarmasiPengambilanObatController::class, 'index'])->name('pengambilan.obat');
             Route::get('/get-data', [FarmasiPengambilanObatController::class, 'getDataResepObat'])->name('get.data.resep.obat');
-            Route::post('/update-status-resep-obat', [FarmasiPengambilanObatController::class, 'updateStatusResepObat'])->name('update.status.resep.obat');
+            Route::post('/update-status-resep', [FarmasiPengambilanObatController::class, 'updateStatusResep'])->name('update.status.resep');
             Route::get('/cetak-stiker-obat/{id}', [FarmasiPengambilanObatController::class, 'cetakStikerObat']);
         });
     });

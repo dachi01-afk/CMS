@@ -18,9 +18,13 @@ class ResepSeeder extends Seeder
         }
 
         foreach ($kunjunganIds as $kId) {
-            Resep::firstOrCreate(['kunjungan_id' => $kId]);
+            // ✅ sekarang status ada di tabel resep
+            Resep::updateOrCreate(
+                ['kunjungan_id' => $kId],
+                ['status' => 'waiting'] // waiting | preparing | done
+            );
         }
 
-        $this->command?->info('ResepSeeder: 1 resep per kunjungan dibuat.');
+        $this->command?->info('ResepSeeder: 1 resep per kunjungan dibuat + status=waiting.');
     }
 }
