@@ -356,7 +356,6 @@ class ObatController extends Controller
 
         // ==============================
         // Parse harga
-        // (front-end sudah kirim angka bersih, tapi kita amanin lagi)
         // ==============================
         $hargaBeli = $parseNumber($request->input('harga_beli_satuan'));
         $hargaJual = $parseNumber($request->input('harga_jual_umum'));
@@ -369,7 +368,6 @@ class ObatController extends Controller
 
         // ==============================
         // VALIDASI
-        // (disamakan dengan createObat)
         // ==============================
         $validated = $request->validate([
             'barcode'          => ['nullable', 'string', 'max:255'],
@@ -387,7 +385,6 @@ class ObatController extends Controller
 
             'stok_obat'        => ['required', 'integer', 'min:0'],
 
-            // harga – sama seperti create: cukup nullable, parsing di server
             'harga_beli_satuan' => ['nullable'],
             'harga_jual_umum'   => ['nullable'],
             'harga_otc'         => ['nullable'],
@@ -403,9 +400,12 @@ class ObatController extends Controller
             'tipe_depot.*'      => ['nullable', 'exists:tipe_depot,id'],
         ]);
 
-        $depotIds  = $request->input('depot_id', []);
-        $tipeDepot = $request->input('tipe_depot', []);
-        $stokDepot = $request->input('stok_depot', []);
+        $depotIds  = (array) $request->input('depot_id', []);
+        $tipeDepot = (array) $request->input('tipe_depot', []);
+        $stokDepot = (array) $request->input('stok_depot', []);
+
+        // filter depot yg bener2 ada isi id (buat sync pivot)
+        $validDepotIds = array_values(array_filter($depotIds, fn($id) => !empty($id)));
 
         DB::beginTransaction();
 
@@ -435,26 +435,28 @@ class ObatController extends Controller
             ]);
 
             // ==============================
-            // SYNC PIVOT depot_obat (FIX: update tipe_depot_id)
+            // UPDATE TIPE DEPOT DI TABEL DEPOT
+            // (berdasarkan pasangan depot_id[] & tipe_depot[] yang sejajar index)
             // ==============================
-            // NOTE:
-            // - Ini mengisi pivot: [depot_id => ['tipe_depot_id' => ...]]
-            // - Index tipe_depot[] diasumsikan sejajar dengan depot_id[]
-            $pivotData = [];
-
             foreach ($depotIds as $index => $depotId) {
                 if (empty($depotId)) continue;
 
-                $pivotData[$depotId] = [
-                    'tipe_depot_id' => !empty($tipeDepot[$index]) ? (int) $tipeDepot[$index] : null,
-                ];
+                $tipeId = $tipeDepot[$index] ?? null;
 
-                // kalau suatu saat kamu punya kolom stok di pivot, tinggal aktifkan ini:
-                // 'stok' => (int) ($stokDepot[$index] ?? 0),
+                // kalau user tidak pilih tipe, skip (jangan overwrite jadi null)
+                if (empty($tipeId)) continue;
+
+                // ✅ update depot.tipe_depot_id
+                DB::table('depot')
+                    ->where('id', (int) $depotId)
+                    ->update(['tipe_depot_id' => (int) $tipeId]);
             }
 
-            if (!empty($pivotData)) {
-                $obat->depotObat()->sync($pivotData);
+            // ==============================
+            // SYNC PIVOT depot_obat (tetap seperti semula)
+            // ==============================
+            if (!empty($validDepotIds)) {
+                $obat->depotObat()->sync($validDepotIds);
             } else {
                 $obat->depotObat()->detach();
             }
@@ -482,6 +484,7 @@ class ObatController extends Controller
             ], 500);
         }
     }
+
 
 
 
