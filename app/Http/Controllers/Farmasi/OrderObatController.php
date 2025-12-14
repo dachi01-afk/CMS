@@ -137,11 +137,6 @@ class OrderObatController extends Controller
             ->make(true);
     }
 
-
-
-
-
-
     public function search(Request $request)
     {
         $query = $request->get('query');
@@ -297,9 +292,6 @@ class OrderObatController extends Controller
             ], 500);
         }
     }
-
-
-
 
     private function getOrCreateResepIdForPasien(int $pasienId): int
     {

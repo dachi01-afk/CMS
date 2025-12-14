@@ -142,9 +142,6 @@ class ObatController extends Controller
 
     public function createObat(Request $request)
     {
-        // ==============================
-        // Helper parse angka rupiah/number
-        // ==============================
         $parseNumber = function ($value) {
             if ($value === null || $value === '') {
                 return 0;
@@ -157,9 +154,6 @@ class ObatController extends Controller
             return (float) $value;
         };
 
-        // ==============================
-        // Hitung total stok dari semua depot
-        // ==============================
         $stokDepotCollection = collect($request->input('stok_depot', []))
             ->map(fn($v) => (int) $v)
             ->filter(fn($v) => $v > 0);
@@ -398,8 +392,6 @@ class ObatController extends Controller
             'harga_jual_umum'   => ['nullable'],
             'harga_otc'         => ['nullable'],
 
-            // 'kunci_harga_obat'  => ['required', 'boolean'],
-
             // array depot
             'depot_id'          => ['required', 'array', 'min:1'],
             'depot_id.*'        => ['nullable', 'exists:depot,id'],
@@ -412,13 +404,8 @@ class ObatController extends Controller
         ]);
 
         $depotIds  = $request->input('depot_id', []);
-        $tipeDepot = $request->input('tipe_depot', []);   // masih buat validasi saja
+        $tipeDepot = $request->input('tipe_depot', []);
         $stokDepot = $request->input('stok_depot', []);
-
-        // filter depot yg bener2 ada isi id
-        $validDepotIds = array_filter($depotIds, function ($id) {
-            return !empty($id);
-        });
 
         DB::beginTransaction();
 
@@ -433,9 +420,6 @@ class ObatController extends Controller
                 'jenis_obat_id'           => $request->input('jenis'),
                 'satuan_obat_id'          => $request->input('satuan'),
 
-                // kalau masih ada kolom depot_id di tabel obat dan mau isi depot utama:
-                // 'depot_id'                => $depotIds[0] ?? $obat->depot_id,
-
                 'nama_obat'               => $request->input('nama_obat'),
                 'kandungan_obat'          => $request->input('kandungan'),
 
@@ -448,34 +432,30 @@ class ObatController extends Controller
                 'total_harga'             => $hargaBeli,
                 'harga_jual_obat'         => $hargaJual,
                 'harga_otc_obat'          => $hargaOtc,
-
-                // 'kunci_harga_obat'        => $request->boolean('kunci_harga_obat'),
             ]);
 
             // ==============================
-            // SYNC PIVOT depot_obat
+            // SYNC PIVOT depot_obat (FIX: update tipe_depot_id)
             // ==============================
-            // pastikan di model Obat sudah ada:
-            // public function depots() {
-            //     return $this->belongsToMany(Depot::class, 'depot_obat', 'obat_id', 'depot_id')
-            //                 ->withTimestamps();
-            // }
-
-            if (!empty($validDepotIds)) {
-                // kalau pivot cuma simpan obat_id & depot_id
-                $obat->depotObat()->sync($validDepotIds);
-
-                // === OPSIONAL: kalau di pivot ada kolom stok, bisa pakai:
-                /*
+            // NOTE:
+            // - Ini mengisi pivot: [depot_id => ['tipe_depot_id' => ...]]
+            // - Index tipe_depot[] diasumsikan sejajar dengan depot_id[]
             $pivotData = [];
-            foreach ($validDepotIds as $index => $depotId) {
-                $stok = (int) ($stokDepot[$index] ?? 0);
-                $pivotData[$depotId] = ['stok' => $stok];
+
+            foreach ($depotIds as $index => $depotId) {
+                if (empty($depotId)) continue;
+
+                $pivotData[$depotId] = [
+                    'tipe_depot_id' => !empty($tipeDepot[$index]) ? (int) $tipeDepot[$index] : null,
+                ];
+
+                // kalau suatu saat kamu punya kolom stok di pivot, tinggal aktifkan ini:
+                // 'stok' => (int) ($stokDepot[$index] ?? 0),
             }
-            $obat->depots()->sync($pivotData);
-            */
+
+            if (!empty($pivotData)) {
+                $obat->depotObat()->sync($pivotData);
             } else {
-                // kalau semua depot dikosongkan, detach semua
                 $obat->depotObat()->detach();
             }
 
@@ -488,7 +468,6 @@ class ObatController extends Controller
                     'kategoriObat',
                     'jenisObat',
                     'satuanObat',
-                    // kalau butuh list semua depot:
                     'depot',
                 ]),
                 'message' => 'Berhasil Mengupdate Data Obat!',
@@ -503,6 +482,7 @@ class ObatController extends Controller
             ], 500);
         }
     }
+
 
 
     public function deleteObat($id)

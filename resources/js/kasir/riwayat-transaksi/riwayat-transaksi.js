@@ -10,7 +10,7 @@ $(function () {
         ordering: true,
         pageLength: 10,
         lengthChange: false,
-        info: false,
+        info: false,    
         ajax: "/kasir/get-data-riwayat-pembayaran",
         columns: [
             {

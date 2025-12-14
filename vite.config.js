@@ -91,6 +91,7 @@ export default defineConfig({
                 "resources/js/farmasi/penggunaan-obat/data-penggunaan-obat.js",
                 "resources/js/farmasi/kadaluarsa-obat/data-kadaluarsa-obat.js",
                 "resources/js/farmasi/bahan-habis-pakai/data-bahan-habis-pakai.js",
+                "resources/js/farmasi/bahan-habis-pakai/data-pengambilan-obat-sudah-selesai.js",
             ],
             refresh: true,
         }),

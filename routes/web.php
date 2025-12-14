@@ -379,8 +379,18 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
         Route::prefix('pengambilan-obat')->group(function () {
             Route::get('/', [FarmasiPengambilanObatController::class, 'index'])->name('pengambilan.obat');
             Route::get('/get-data', [FarmasiPengambilanObatController::class, 'getDataResepObat'])->name('get.data.resep.obat');
+            Route::get('/get-data-pasien', [FarmasiPengambilanObatController::class, 'searchPasien'])->name('pengambilan.obat.get.data.pasien');
+            Route::get('/get-data-dokter', [FarmasiPengambilanObatController::class, 'searchDokter'])->name('pengambilan.obat.get.data.dokter');
+            Route::get('/get-data-obat', [FarmasiPengambilanObatController::class, 'searchObat'])->name('pengambilan.obat.get.data.obat');
+            Route::get('/get-data-depot-by-obat-id', [FarmasiPengambilanObatController::class, 'getDataDepotByObat'])->name('pengambilan.obat.get.data.depot.by.obat.id');
+            Route::post('/create-data-resep-obat', [FarmasiPengambilanObatController::class, 'createDataResepObat'])->name('pengambilan.obat.create.data.resep.obat');
             Route::post('/update-status-resep', [FarmasiPengambilanObatController::class, 'updateStatusResep'])->name('update.status.resep');
             Route::get('/cetak-stiker-obat/{id}', [FarmasiPengambilanObatController::class, 'cetakStikerObat']);
+            Route::get('/get-data-resep-obat-id/{id}', [FarmasiPengambilanObatController::class, 'getDataResepObatById'])->name('pengambilan.obat.get.data.resep.obat.by.id');
+            Route::post('/update-data-resep-obat/{id}', [FarmasiPengambilanObatController::class, 'updateResepObat'])->name('pengambilan.obat.update.data.resep.obat');
+
+            // Route Antrian Hari Ini Yang Sudah Selesai 
+            Route::get('/get-data-resep-obat-selesai', [FarmasiPengambilanObatController::class, 'getDataResepObatYangSudahSelesai'])->name('pengambilan.obat.get.data.resep.obat.selesai');
         });
     });
 });

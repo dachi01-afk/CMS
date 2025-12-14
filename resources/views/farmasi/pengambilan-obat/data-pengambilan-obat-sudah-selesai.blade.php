@@ -78,7 +78,7 @@
                             <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs"></i>
                         </span>
 
-                        <input type="text" id="obat_searchInput"
+                        <input type="text" id="resep_obat_searchInput"
                             class="block w-full md:w-80 pl-9 pr-3 py-2 text-sm
                                    text-slate-800 dark:text-slate-100
                                    border border-slate-300 dark:border-slate-600 rounded-lg
@@ -97,7 +97,7 @@
 
         {{-- Tabel --}}
         <div class="overflow-x-auto">
-            <table id="pengambilanResepObat"
+            <table id="pengambilanResepObatSudahSelesai"
                 class="w-full text-sm text-left text-slate-700 dark:text-slate-100
                        border-t border-slate-100 dark:border-slate-700 whitespace-nowrap">
                 <thead
@@ -115,14 +115,6 @@
                         <th class="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap">Jumlah Obat</th>
                         <th class="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap">Keterangan</th>
                         <th class="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap">Status</th>
-
-                        {{-- Sticky Action --}}
-                        <th
-                            class="px-3 sm:px-4 md:px-6 py-3 text-center whitespace-nowrap
-                                   sticky right-0 z-10
-                                   bg-gradient-to-r from-sky-500 via-teal-500 to-teal-600">
-                            Action
-                        </th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700"></tbody>
@@ -294,7 +286,8 @@
                    border border-slate-100 dark:border-slate-700 overflow-hidden flex flex-col max-h-[92vh]">
 
             {{-- Header --}}
-            <div class="bg-gradient-to-r from-sky-500 to-teal-600 px-4 sm:px-5 md:px-6 py-4
+            <div
+                class="bg-gradient-to-r from-sky-500 to-teal-600 px-4 sm:px-5 md:px-6 py-4
                         flex items-start justify-between gap-3">
                 <div class="flex items-center gap-3">
                     <div class="h-10 w-10 rounded-xl bg-white/15 flex items-center justify-center text-white">
@@ -318,7 +311,7 @@
             {{-- Body --}}
             <form id="formUpdateResep" class="px-4 sm:px-5 md:px-6 py-5 overflow-y-auto">
                 @csrf
-                
+
 
                 <input type="hidden" id="update_resep_id" name="resep_id" value="">
 
@@ -373,7 +366,8 @@
 
                 <div id="obatRowsUpdate" class="mt-4 space-y-3"></div>
 
-                <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700
+                <div
+                    class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700
                             flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
                     <button type="button" id="btnCloseModalUpdateResepBottom"
                         class="w-full sm:w-auto px-5 py-2.5 text-sm font-medium
@@ -395,4 +389,4 @@
     </div>
 </div>
 
-@vite(['resources/js/farmasi/pengambilan-obat/data-pengambilan-obat.js'])
+@vite(['resources/js/farmasi/pengambilan-obat/data-pengambilan-obat-sudah-selesai.js'])

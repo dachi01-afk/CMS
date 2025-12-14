@@ -3,7 +3,7 @@
     <!-- HEADER ATAS + CTA -->
     <div
         class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 md:px-6 py-4 shadow-sm">
-        <div class="flex items-start gap-3">
+        <div class="flex items-start gap-3 md:flex-1">
             <div
                 class="mt-1 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-sky-500 to-teal-500 text-white shadow-md">
                 <i class="fa-solid fa-hospital text-lg"></i>

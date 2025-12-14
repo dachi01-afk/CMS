@@ -56,7 +56,7 @@
 
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="sudah-selesai" role="tabpanel"
                     aria-labelledby="tab-sudah-selesai">
-                    @include('farmasi.pengambilan-obat.data-pengambilan-obat')
+                    @include('farmasi.pengambilan-obat.data-pengambilan-obat-sudah-selesai')
                 </div>
             </div>
 
