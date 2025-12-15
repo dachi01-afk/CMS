@@ -323,7 +323,7 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
         // Route Penggunaan Obat
         Route::prefix('penggunaan-obat')->group(function () {
             Route::get('/', [PenggunaanObatController::class, 'index'])->name('penggunaan.obat');
-            Route::get('/get-data-penggunaan-obat', [PenggunaanObatController::class, 'getDataPenggunanObat'])->name('get.data.penggunaan.obat');
+            Route::get('/get-data-penggunaan-obat', [PenggunaanObatController::class, 'getDataPenggunaanObat'])->name('get.data.penggunaan.obat');
             Route::get('/export-data-penggunaan-obat', [PenggunaanObatController::class, 'export'])->name('export.data.penggunaan.obat');
             Route::get('/print-data-penggunaan-obat', [PenggunaanObatController::class, 'print'])->name('print.data.penggunaan.obat');
         });

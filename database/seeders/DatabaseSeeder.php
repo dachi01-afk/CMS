@@ -32,6 +32,9 @@ class DatabaseSeeder extends Seeder
             FarmasiSeeder::class,
             KasirSeeder::class,
             PasienSeeder::class,
+            BrandFarmasiSeeder::class,
+            JenisObatSeeder::class,
+            SatuanObatSeeder::class,
             ObatSeeder::class,
             JadwalDokterSeeder::class,
             KunjunganSeeder::class,
@@ -46,7 +49,8 @@ class DatabaseSeeder extends Seeder
             // AdministrasiSeeder::class,
             // TestimoniSeeder::class,
             TipeDepotSeeder::class,
-
+            DepotSeeder::class,
+            DepotObatSeeder::class,
         ]);
     }
 }

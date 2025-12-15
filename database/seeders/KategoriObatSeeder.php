@@ -2,24 +2,30 @@
 
 namespace Database\Seeders;
 
-use App\Models\KategoriObat;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Faker\Factory;
+use App\Models\KategoriObat;
+use Illuminate\Support\Carbon;
 
 class KategoriObatSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        $faker = Factory::create('id_ID');
+        $now = Carbon::now();
 
-        for ($i = 0; $i < 10; $i++) {
-            KategoriObat::create([
-                'nama_kategori_obat' => $faker->word(),
-            ]);
+        $items = [
+            'Analgesik & Antipiretik',
+            'Antibiotik',
+            'Vitamin & Suplemen',
+            'Anti Inflamasi',
+            'Sirup',
+            'Obat Bebas',
+        ];
+
+        foreach ($items as $nama) {
+            KategoriObat::updateOrCreate(
+                ['nama_kategori_obat' => $nama],
+                ['created_at' => $now, 'updated_at' => $now]
+            );
         }
     }
 }

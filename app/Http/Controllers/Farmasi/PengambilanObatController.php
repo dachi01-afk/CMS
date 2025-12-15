@@ -39,12 +39,11 @@ class PengambilanObatController extends Controller
             'kunjungan.poli.dokter',
         ])
             ->where('status', 'waiting')
-            ->where(function ($q) use ($hariIni) {
-                $q->whereHas('kunjungan', function ($kunjungan) use ($hariIni) {
-                    $kunjungan->whereDate('tanggal_kunjungan', $hariIni);
-                })
-                    ->orWhereDate('created_at', $hariIni);
-            })
+            // ->where(function ($q) use ($hariIni) {
+            //     $q->whereHas('kunjungan', function ($kunjungan) use ($hariIni) {
+            //         $kunjungan->whereDate('tanggal_kunjungan', $hariIni);
+            //     });
+            // })
             ->latest()
             ->get(); // ✅ PENTING: GET
 
@@ -916,17 +915,27 @@ class PengambilanObatController extends Controller
                 return $row->kunjungan->tanggal_kunjungan
                     ?? $row->created_at->format('Y-m-d');
             })
-            // 🔹 Nama Obat (jadi baris)
+
             ->addColumn('nama_obat', function ($row) {
                 if ($row->obat->isEmpty()) {
                     return '<span class="text-gray-400 italic">Tidak ada</span>';
                 }
 
-                $html = '<div class="flex flex-col gap-1">';
-                foreach ($row->obat as $obat) {
+                $html = '<div class="space-y-1.5">';
+                foreach ($row->obat as $i => $obat) {
+                    $no = $i + 1;
+
                     $html .= '
-            <div class="px-2 py-1 rounded-md border border-slate-200 bg-slate-50 text-xs text-slate-700">
-                ' . e($obat->nama_obat) . '
+            <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg
+                        border border-slate-200 bg-white
+                        shadow-sm hover:bg-slate-50 transition">
+                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full
+                             bg-sky-100 text-sky-700 text-[11px] font-bold">
+                    ' . $no . '
+                </span>
+                <span class="text-xs font-semibold text-slate-700 leading-tight">
+                    ' . e($obat->nama_obat) . '
+                </span>
             </div>
         ';
                 }
@@ -935,16 +944,30 @@ class PengambilanObatController extends Controller
                 return $html;
             })
 
-            // 🔹 Jumlah Obat (jadi baris)
             ->addColumn('jumlah', function ($row) {
                 if ($row->obat->isEmpty()) return '<span class="text-gray-400 italic">-</span>';
 
-                $html = '<div class="flex flex-col gap-1">';
-                foreach ($row->obat as $obat) {
-                    $val = $obat->pivot->jumlah ?? '-';
+                $html = '<div class="space-y-1.5">';
+                foreach ($row->obat as $i => $obat) {
+                    $no     = $i + 1;
+                    $jumlah = $obat->pivot->jumlah ?? '-';
+                    $satuan = optional($obat->satuanObat)->nama_satuan_obat ?? '';
+
+                    $label = trim($jumlah . ' ' . $satuan);
+
                     $html .= '
-            <div class="px-2 py-1 rounded-md border border-slate-200 bg-white text-xs text-slate-700 text-center">
-                ' . e($val) . '
+            <div class="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg
+                        border border-slate-200 bg-white shadow-sm">
+                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full
+                             bg-slate-100 text-slate-600 text-[11px] font-bold">
+                    ' . $no . '
+                </span>
+
+                <span class="ml-auto inline-flex items-center justify-center
+                             px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700
+                             text-xs font-bold border border-emerald-200">
+                    ' . e($label) . '
+                </span>
             </div>
         ';
                 }
@@ -953,16 +976,25 @@ class PengambilanObatController extends Controller
                 return $html;
             })
 
-            // 🔹 Keterangan Obat (jadi baris)
             ->addColumn('keterangan', function ($row) {
                 if ($row->obat->isEmpty()) return '<span class="text-gray-400 italic">-</span>';
 
-                $html = '<div class="flex flex-col gap-1">';
-                foreach ($row->obat as $obat) {
+                $html = '<div class="space-y-1.5">';
+                foreach ($row->obat as $i => $obat) {
+                    $no  = $i + 1;
                     $val = $obat->pivot->keterangan ?? '-';
+
                     $html .= '
-            <div class="px-2 py-1 rounded-md border border-slate-200 bg-white text-xs text-slate-700">
-                ' . e($val) . '
+            <div class="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white shadow-sm">
+                <div class="flex items-start gap-2">
+                    <span class="mt-[1px] inline-flex items-center justify-center w-5 h-5 rounded-full
+                                 bg-amber-100 text-amber-700 text-[11px] font-bold">
+                        ' . $no . '
+                    </span>
+                    <span class="text-xs text-slate-700 leading-snug">
+                        ' . e($val) . '
+                    </span>
+                </div>
             </div>
         ';
                 }
@@ -970,7 +1002,6 @@ class PengambilanObatController extends Controller
 
                 return $html;
             })
-
 
             // 🔹 Status
             ->addColumn('status', function ($row) {

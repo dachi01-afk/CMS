@@ -76,14 +76,18 @@ $(function () {
                     const stokLabel = (item.jumlah ?? 0) + " Unit";
 
                     let badge = "";
-                    if (sisa <= 0) {
+                    if (sisa < 0) {
                         badge = `<span class="ml-1 inline-flex items-center rounded-full bg-red-50 text-red-600 border border-red-200 px-1.5 py-0.5 text-[10px]">
-                                    expired
-                                </span>`;
+                expired
+            </span>`;
+                    } else if (sisa === 0) {
+                        badge = `<span class="ml-1 inline-flex items-center rounded-full bg-rose-50 text-rose-700 border border-rose-200 px-1.5 py-0.5 text-[10px]">
+                hari ini
+            </span>`;
                     } else {
                         badge = `<span class="ml-1 inline-flex items-center rounded-full bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 text-[10px]">
-                                    ${sisa} hari lagi
-                                </span>`;
+                ${sisa} hari lagi
+            </span>`;
                     }
 
                     $tbody.append(`

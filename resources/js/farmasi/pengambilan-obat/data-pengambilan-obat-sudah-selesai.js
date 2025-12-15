@@ -4,6 +4,19 @@ import $ from "jquery";
 
 // data tabel Dokter
 $(function () {
+    const formatTanggalID = (data) => {
+        if (!data) return "-";
+        const date = new Date(data);
+        return date.toLocaleDateString("id-ID", {
+            timeZone: "Asia/Jakarta",
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
+        });
+    };
+
     // Inisialisasi DataTable
     var table = $("#pengambilanResepObatSudahSelesai").DataTable({
         processing: true,
@@ -14,7 +27,7 @@ $(function () {
         pageLength: 10,
         lengthChange: false,
         info: false,
-        ajax: "farmasi/pengambilan-obat/get-data-resep-obat-selesai",
+        ajax: "/farmasi/pengambilan-obat/get-data-resep-obat-selesai",
         columns: [
             {
                 data: "DT_RowIndex",
@@ -22,10 +35,15 @@ $(function () {
                 orderable: false,
                 searchable: false,
             },
-            { data: "nama_dokter", name: "nama_dokter" },
             { data: "nama_pasien", name: "nama_pasien" },
             { data: "nama_poli", name: "nama_poli" },
-            { data: "tanggal_kunjungan", name: "tanggal_kunjungan" },
+            { data: "nama_dokter", name: "nama_dokter" },
+            { data: "no_antrian", name: "no_antrian" },
+            {
+                data: "tanggal_kunjungan",
+                name: "tanggal_kunjungan",
+                render: (data) => formatTanggalID(data),
+            },
             { data: "nama_obat", name: "nama_obat" },
             { data: "jumlah", name: "jumlah" },
             { data: "keterangan", name: "keterangan" },
@@ -45,9 +63,9 @@ $(function () {
         table.search(this.value).draw();
     });
 
-    const $info = $("#dokter_customInfo");
-    const $pagination = $("#dokter_customPagination");
-    const $perPage = $("#dokter_pageLength");
+    const $info = $("#sudah_selesai_customInfo");
+    const $pagination = $("#sudah_selesai_customPagination");
+    const $perPage = $("#suda_selesai_pageLength");
 
     // 🔁 Update Pagination Dinamis
     function updatePagination() {
@@ -130,4 +148,17 @@ $(function () {
 
     // Jalankan pertama kali
     updatePagination();
+
+    // ===========================
+    // ✅ RELOAD SAAT TAB DIKLIK
+    // ===========================
+    $("#tab-sudah-selesai").on("click", function () {
+        // reload data realtime (tanpa reset halaman)
+        table.ajax.reload(null, false);
+
+        // karena tabel awalnya hidden, ini bantu kolomnya rapi
+        setTimeout(() => {
+            table.columns.adjust().draw(false);
+        }, 50);
+    });
 });

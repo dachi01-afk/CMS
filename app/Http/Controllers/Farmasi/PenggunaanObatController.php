@@ -19,31 +19,40 @@ class PenggunaanObatController extends Controller
      * Base query rekap penggunaan obat per obat.
      *
      * Catatan:
-     * - Semua resep_obat yang status-nya "Sudah Diambil" dianggap sebagai obat yang sudah dipakai.
-     *   Kalau enum-mu beda (misal: 'Diambil', 'Selesai'), SESUAIKAN di where().
-     * - Umum / BPJS di sini sementara disatukan ke "Umum" saja.
-     *   Kalau nanti kamu punya field penjamin, bisa dipisah di sini.
+     * - Status "Sudah Diambil" sekarang ada di tabel resep (resep.status).
+     *   SESUAIKAN nilai enum/teksnya di $statusDiambil jika perlu.
+     * - Filter tanggal menggunakan resep_obat.updated_at (tanggal item resep berubah/diambil).
      */
     protected function buildBaseQuery(Request $request)
     {
-        $startDate = $request->input('start_date');  // format: Y-m-d
-        $endDate   = $request->input('end_date');
+        $startDate = $request->input('start_date'); // Y-m-d
+        $endDate   = $request->input('end_date');   // Y-m-d
         $namaObat  = $request->input('nama_obat');
+
+        // ✅ status ada di tabel resep
+        $statusDiambil = 'Sudah Diambil'; // SESUAIKAN bila enum kamu beda: 'diambil', 'done', dll.
 
         $query = Obat::query()
             ->from('obat')
             ->leftJoin('resep_obat', function ($join) {
-                $join->on('obat.id', '=', 'resep_obat.obat_id')
-                    ->where('resep_obat.status', '=', 'Sudah Diambil'); // SESUAIKAN ENUM
+                $join->on('obat.id', '=', 'resep_obat.obat_id');
+                // ⛔ jangan filter status di sini lagi, karena status bukan di resep_obat
             })
-            ->leftJoin('resep', 'resep_obat.resep_id', '=', 'resep.id')
-            ->leftJoin('kunjungan', 'resep.kunjungan_id', '=', 'kunjungan.id') // boleh tetap, sekadar info
+            ->leftJoin('resep', function ($join) use ($statusDiambil) {
+                $join->on('resep_obat.resep_id', '=', 'resep.id')
+                    ->where('resep.status', '=', $statusDiambil); // ✅ pindah ke sini
+            })
+            ->leftJoin('kunjungan', 'resep.kunjungan_id', '=', 'kunjungan.id')
             ->leftJoin('satuan_obat', 'obat.satuan_obat_id', '=', 'satuan_obat.id')
-            // ->leftJoin('depot', 'obat.depot_id', '=', 'depot.id')
             ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
-                // 🔁 SEKARANG: filter pakai tanggal resep diambil
-                $q->whereBetween(DB::raw('DATE(resep_obat.updated_at)'), [$startDate, $endDate]);
+                // 🔁 filter range tanggal berdasarkan tanggal item resep (pivot) terakhir berubah
+                // ✅ TAMBAHAN LOGIC: tetap tampilkan obat yang belum pernah terjual (resep_obat NULL)
+                $q->where(function ($w) use ($startDate, $endDate) {
+                    $w->whereBetween(DB::raw('DATE(resep_obat.updated_at)'), [$startDate, $endDate])
+                        ->orWhereNull('resep_obat.id'); // atau orWhereNull('resep_obat.updated_at')
+                });
             })
+
             ->when($namaObat, function ($q) use ($namaObat) {
                 $q->where('obat.nama_obat', 'like', '%' . $namaObat . '%');
             })
@@ -54,8 +63,8 @@ class PenggunaanObatController extends Controller
                 'obat.jumlah as sisa_obat',
                 'obat.harga_jual_obat',
                 'satuan_obat.nama_satuan_obat as satuan',
-                // 'depot.nama_depot as depot_nama',
 
+                // ✅ karena join resep sudah di-filter statusnya, SUM hanya menghitung yang statusnya "Sudah Diambil"
                 DB::raw('COALESCE(SUM(resep_obat.jumlah), 0) as penggunaan_umum'),
                 DB::raw('COALESCE(SUM(resep_obat.jumlah * obat.harga_jual_obat), 0) as nominal_umum'),
 
@@ -68,36 +77,28 @@ class PenggunaanObatController extends Controller
                 'obat.kandungan_obat',
                 'obat.jumlah',
                 'obat.harga_jual_obat',
-                'satuan_obat.nama_satuan_obat',
-                // 'depot.nama_depot'
+                'satuan_obat.nama_satuan_obat'
             );
 
         return $query;
     }
 
-
     /**
      * #1 – Datatable Ajax
-     *
      * route: farmasi.penggunaan-obat.datatable
      */
-    public function getDataPenggunanObat(Request $request)
+    public function getDataPenggunaanObat(Request $request)
     {
         $query = $this->buildBaseQuery($request);
 
         return DataTables::of($query)
-            ->editColumn('nominal_umum', function ($row) {
-                return (int) $row->nominal_umum;
-            })
-            ->editColumn('nominal_bpjs', function ($row) {
-                return (int) $row->nominal_bpjs;
-            })
+            ->editColumn('nominal_umum', fn($row) => (int) $row->nominal_umum)
+            ->editColumn('nominal_bpjs', fn($row) => (int) $row->nominal_bpjs)
             ->make(true);
     }
 
     /**
-     * #2 – Export (CSV sederhana, bisa dibuka di Excel)
-     *
+     * #2 – Export CSV
      * route: farmasi.penggunaan-obat.export
      */
     public function export(Request $request)
@@ -107,18 +108,19 @@ class PenggunaanObatController extends Controller
         $fileName = 'penggunaan-obat-' . now()->format('Ymd_His') . '.csv';
 
         $headers = [
-            'Content-Type'        => 'text/csv',
+            'Content-Type'        => 'text/csv; charset=UTF-8',
             'Content-Disposition' => "attachment; filename=\"$fileName\"",
         ];
 
         $callback = function () use ($rows) {
             $handle = fopen('php://output', 'w');
 
-            // Header CSV
+            // (opsional) BOM biar Excel enak baca UTF-8
+            fprintf($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
+
             fputcsv($handle, [
                 'Nama Obat',
                 'Kandungan',
-                'Depot',
                 'Satuan',
                 'Penggunaan Umum',
                 'Nominal Umum',
@@ -131,7 +133,6 @@ class PenggunaanObatController extends Controller
                 fputcsv($handle, [
                     $row->nama_obat,
                     $row->kandungan_obat,
-                    $row->depot_nama,
                     $row->satuan,
                     $row->penggunaan_umum,
                     $row->nominal_umum,
@@ -148,11 +149,8 @@ class PenggunaanObatController extends Controller
     }
 
     /**
-     * #3 – Print (tampilan HTML siap di-print)
-     *
+     * #3 – Print
      * route: farmasi.penggunaan-obat.print
-     *
-     * Kamu bisa buat view: resources/views/farmasi/penggunaan-obat/print.blade.php
      */
     public function print(Request $request)
     {
@@ -161,11 +159,6 @@ class PenggunaanObatController extends Controller
         $endDate   = $request->input('end_date');
         $namaObat  = $request->input('nama_obat');
 
-        return view('farmasi.penggunaan-obat.print', [
-            'rows'      => $rows,
-            'startDate' => $startDate,
-            'endDate'   => $endDate,
-            'namaObat'  => $namaObat,
-        ]);
+        return view('farmasi.penggunaan-obat.print', compact('rows', 'startDate', 'endDate', 'namaObat'));
     }
 }

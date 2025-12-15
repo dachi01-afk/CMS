@@ -485,9 +485,6 @@ class ObatController extends Controller
         }
     }
 
-
-
-
     public function deleteObat($id)
     {
         $dataObat = Obat::findOrFail($id);

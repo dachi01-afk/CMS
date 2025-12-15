@@ -1402,6 +1402,37 @@ $(function () {
     const DEFAULT_MARGIN_PERCENT = 30;
 
     // =====================================
+    // ✅ [BARU] HELPER HITUNG TOTAL STOK DEPOT -> STOK OBAT
+    // =====================================
+    function toIntSafe(val) {
+        const n = parseInt((val ?? "").toString().replace(/[^\d-]/g, ""), 10);
+        return Number.isFinite(n) ? n : 0;
+    }
+
+    function hitungTotalStokDepotUpdate() {
+        let total = 0;
+
+        if ($depotContainerUpdate.length) {
+            $depotContainerUpdate.find(".input-stok-depot").each(function () {
+                const v = toIntSafe($(this).val());
+                total += v > 0 ? v : 0;
+            });
+        }
+
+        $("#edit_stok_obat").val(total);
+        return total;
+    }
+
+    // ✅ [BARU] realtime ketika stok depot diketik
+    $(document).on(
+        "input change",
+        "#depot-container-update .input-stok-depot",
+        function () {
+            hitungTotalStokDepotUpdate();
+        }
+    );
+
+    // =====================================
     // HELPER KHUSUS UPDATE
     // =====================================
     function initRupiahFormatterUpdate(selector) {
@@ -2027,6 +2058,9 @@ $(function () {
         $row.find(".btn-clear-tipe-depot").addClass("hidden");
 
         $row.find(".input-stok-depot").val(0);
+
+        // ✅ [BARU] setelah reset depot, hitung ulang stok global
+        hitungTotalStokDepotUpdate();
     }
 
     // ==========================
@@ -2054,6 +2088,9 @@ $(function () {
         $("#btn-clear-kategori-update").addClass("hidden");
         $("#btn-clear-jenis-update").addClass("hidden");
         $("#btn-clear-satuan-update").addClass("hidden");
+
+        // ✅ [BARU] pastikan stok global 0 setelah reset
+        hitungTotalStokDepotUpdate();
     }
 
     // ==========================
@@ -2138,7 +2175,10 @@ $(function () {
                 $("#edit_nama_obat").val(data.nama_obat || "");
                 $("#edit_kandungan").val(data.kandungan_obat || "");
                 $("#edit_dosis").val(data.dosis || "");
+
+                // ❗ tetap isi dulu dari data lama, tapi nanti akan ditimpa hasil sum depot
                 $("#edit_stok_obat").val(data.jumlah || 0);
+
                 $("#edit_expired_date").val(data.tanggal_kadaluarsa_obat || "");
                 $("#edit_nomor_batch").val(data.nomor_batch_obat || "");
 
@@ -2245,6 +2285,9 @@ $(function () {
                             .first();
                         initNamaDepotSelectUpdate($row);
                         initTipeDepotSelectUpdate($row);
+
+                        // ✅ [BARU] stok global jadi 0
+                        hitungTotalStokDepotUpdate();
                     } else {
                         depots.forEach((depotItem, index) => {
                             let $row;
@@ -2299,7 +2342,6 @@ $(function () {
                             }
 
                             // ========== TIPE DEPOT ==========
-                            // Prioritas: objek relasi "tipe_depot" (sesuai JSON: depotItem.tipe_depot)
                             if (tipeSelect && tipeSelect.tomselect) {
                                 const tsTipe = tipeSelect.tomselect;
                                 tsTipe.clearOptions();
@@ -2315,8 +2357,6 @@ $(function () {
                                         String(depotItem.tipe_depot.id)
                                     );
                                 }
-                                // kalau nanti kamu simpan tipe_depot_id di pivot, bisa tambah fallback di sini
-                                // else if (depotItem.pivot && depotItem.pivot.tipe_depot_id) { ... }
                             } else if (depotItem.tipe_depot) {
                                 $row.find(".select-tipe-depot").val(
                                     depotItem.tipe_depot.id ?? ""
@@ -2326,7 +2366,6 @@ $(function () {
                             // ========== STOK DEPOT ==========
                             let stok = 0;
 
-                            // kalau stok disimpan di kolom jumlah_stok_depot (sesuai JSON kamu sekarang)
                             if (
                                 depotItem.jumlah_stok_depot !== null &&
                                 depotItem.jumlah_stok_depot !== undefined
@@ -2334,13 +2373,11 @@ $(function () {
                                 stok = depotItem.jumlah_stok_depot;
                             }
 
-                            // kalau nanti kamu simpan di pivot, tinggal tambahkan:
-                            // if (depotItem.pivot && depotItem.pivot.stok != null) {
-                            //     stok = depotItem.pivot.stok;
-                            // }
-
                             $row.find(".input-stok-depot").val(stok);
                         });
+
+                        // ✅ [BARU] setelah semua row depot di-set, hitung totalnya
+                        hitungTotalStokDepotUpdate();
                     }
                 }
 
@@ -2384,6 +2421,9 @@ $(function () {
 
         initNamaDepotSelectUpdate($newRow);
         initTipeDepotSelectUpdate($newRow);
+
+        // ✅ [BARU] update stok global
+        hitungTotalStokDepotUpdate();
     });
 
     // Hapus depot row UPDATE
@@ -2398,6 +2438,9 @@ $(function () {
         }
 
         $(this).closest(".depot-row").remove();
+
+        // ✅ [BARU] update stok global setelah remove row
+        hitungTotalStokDepotUpdate();
     });
 
     // ==========================
@@ -2443,6 +2486,9 @@ $(function () {
             });
         }
 
+        // ✅ [BARU] pastikan stok_obat yg dikirim = SUM stok depot
+        const totalStok = hitungTotalStokDepotUpdate();
+
         const formData = {
             barcode: $("#edit_barcode").val(),
             nama_obat: $("#edit_nama_obat").val(),
@@ -2451,7 +2497,10 @@ $(function () {
             jenis: $("#edit_jenis_id").val(),
             satuan: $("#edit_satuan_id").val(),
             dosis: $("#edit_dosis").val(),
-            stok_obat: $("#edit_stok_obat").val(),
+
+            // ✅ [REVISI] kirim total sum depot, bukan nilai manual
+            stok_obat: totalStok,
+
             expired_date: $("#edit_expired_date").val(),
             nomor_batch: $("#edit_nomor_batch").val(),
 
@@ -2535,6 +2584,7 @@ $(function () {
             });
     });
 });
+
 
 // ==========================
 // MODAL DELETE OBAT
