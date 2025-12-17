@@ -331,8 +331,8 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
         // Route Kadaluarsa Obat
         Route::prefix('kadaluarsa-obat')->group(function () {
             Route::get('/', [KadaluarsaObatController::class, 'index'])->name('kadaluarsa.obat');
-            Route::get('/get-data-kadaluarsa-obat', [KadaluarsaObatController::class, 'getDataKadaluarsaObat'])->name('get.data.kadaluarsa.obat');
             Route::get('/get-data-warning-kadaluarsa-obat', [KadaluarsaObatController::class, 'getWarningKadaluarsa'])->name('get.data.warning.kadaluarsa.obat');
+            Route::get('/get-data-kadaluarsa-obat', [KadaluarsaObatController::class, 'getDataKadaluarsaObat'])->name('get.data.kadaluarsa.obat');
         });
 
         // Route Bahan Habis Pakai 
@@ -353,6 +353,8 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
         // Route Kadaluarsa BHP 
         Route::prefix('kadaluarsa-bhp')->group(function () {
             Route::get('/', [KadaluarsaBHPController::class, 'index'])->name('kadaluarsa.bhp');
+            Route::get('/get-data-warning-kadaluarsa-bhp', [KadaluarsaBHPController::class, 'getWarningKadaluarsa'])->name('get.data.warning.kadaluarsa.bhp');
+            Route::get('/get-data-kadaluarsa-bhp', [KadaluarsaBHPController::class, 'getDataKadaluarsaBHP'])->name('get.data.kadaluarsa.bhp');
         });
 
 
