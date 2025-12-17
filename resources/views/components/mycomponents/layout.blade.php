@@ -255,6 +255,11 @@
                                         :active="Request::routeIs('kadaluarsa.bhp')">
                                         Kadaluarsa BHP
                                     </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="cetak.resep.obat" class="fa-solid fa-print"
+                                        :active="Request::routeIs('cetak.resep.obat')">
+                                        Cetak Resep Obat
+                                    </x-mycomponents.sidebar_link>
                                 </ul>
                             </div>
 
@@ -514,7 +519,12 @@
 
                                     <x-mycomponents.sidebar_link href="farmasi.dashboard" class="fa-solid fa-house"
                                         :active="Request::routeIs('farmasi.dashboard')">
-                                        Dashboard
+                                        Dashboard Apotek
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="pengambilan.obat" class="fas fa-list-ol"
+                                        :active="Request::routeIs('pengambilan.obat')">
+                                        Antrian Hari Ini
                                     </x-mycomponents.sidebar_link>
 
                                     <x-mycomponents.sidebar_link href="kategori.obat.index" class="fa-solid fa-capsules"
@@ -552,17 +562,7 @@
                                         Kadaluarsa BHP
                                     </x-mycomponents.sidebar_link>
 
-                                    <x-mycomponents.sidebar_link href="pengambilan.obat"
-                                        class="fa-solid fa-prescription-bottle-medical" :active="Request::routeIs('pengambilan.obat')">
-                                        Pengambilan Obat
-                                    </x-mycomponents.sidebar_link>
-
                                     <hr class="my-3 border-slate-200 dark:border-slate-700">
-
-                                    <p
-                                        class="px-2 text-[11px] font-semibold tracking-wide text-slate-400 dark:text-slate-500 uppercase">
-                                        Pengaturan
-                                    </p>
 
                                     <x-mycomponents.sidebar_link href="settings.index" class="fa-solid fa-gear"
                                         :active="Request::routeIs('settings.index')">

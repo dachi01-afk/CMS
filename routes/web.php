@@ -39,6 +39,7 @@ use App\Http\Controllers\Admin\PengambilanObatController;
 use App\Http\Controllers\Farmasi\KadaluarsaBHPController;
 use App\Http\Controllers\Farmasi\PenggunaanBHPController;
 use App\Http\Controllers\Admin\PengaturanKlinikController;
+use App\Http\Controllers\Farmasi\CetakResepObatController;
 use App\Http\Controllers\Farmasi\KadaluarsaObatController;
 use App\Http\Controllers\Farmasi\PenggunaanObatController;
 use App\Http\Controllers\Kasir\MetodePembayaranController;
@@ -355,6 +356,15 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('/', [KadaluarsaBHPController::class, 'index'])->name('kadaluarsa.bhp');
             Route::get('/get-data-warning-kadaluarsa-bhp', [KadaluarsaBHPController::class, 'getWarningKadaluarsa'])->name('get.data.warning.kadaluarsa.bhp');
             Route::get('/get-data-kadaluarsa-bhp', [KadaluarsaBHPController::class, 'getDataKadaluarsaBHP'])->name('get.data.kadaluarsa.bhp');
+        });
+
+        // Route Cetak Resep Obat
+        Route::prefix('cetak-resep-obat')->group(function () {
+            Route::get('/', [CetakResepObatController::class, 'index'])->name('cetak.resep.obat');
+            Route::get('/search-data-pasien', [CetakResepObatController::class, 'searchDataPasien'])->name('cetak.resep.obat.search.data.pasien');
+            Route::get('/search-data-dokter', [CetakResepObatController::class, 'searchDataDokter'])->name('cetak.resep.obat.search.data.dokter');
+            Route::get('/search-data-obat', [CetakResepObatController::class, 'searchDataObat'])->name('cetak.resep.obat.search.data.obat');
+            Route::post('/print-preview', [CetakResepObatController::class, 'printPreview'])->name('cetak.resep.obat.print.preview');
         });
 
 
