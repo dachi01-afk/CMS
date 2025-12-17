@@ -11,7 +11,7 @@
                     <i class="fa-solid fa-boxes fa-2xl text-blue-600"></i>
 
                     <h1 class="text-3xl font-extrabold text-gray-900 leading-tight">
-                        Bahan Habis Pakai
+                        Data Stok Bahan Habis Pakai
                     </h1>
                 </div>
             </div>
@@ -28,10 +28,10 @@
                 data-tabs-toggle="#tab-content" role="tablist">
 
                 <li class="me-2" role="presentation">
-                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="data-bahan-habis-pakai-tab"
-                        data-tabs-target="#data-bahan-habis-pakai" type="button" role="tab"
-                        aria-controls="data-bahan-habis-pakai" aria-selected="true">
-                        Data Bahan Habis Pakai
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="data-obat-tab"
+                        data-tabs-target="#data-data-obat" type="button" role="tab" aria-controls="data-data-obat"
+                        aria-selected="true">
+                        Data Stok Bahan Habis Pakai
                     </button>
                 </li>
             </ul>
@@ -42,12 +42,13 @@
 
             {{-- Tabs Content --}}
             <div id="tab-content">
-                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-bahan-habis-pakai"
-                    role="tabpanel" aria-labelledby="data-bahan-habis-pakai-tab">
+                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-data-obat" role="tabpanel"
+                    aria-labelledby="data-obat-tab">
                     @include('farmasi.bahan-habis-pakai.data-bahan-habis-pakai')
                 </div>
             </div>
-        </div>
-    </div>
 
+        </div>
+
+    </div>
 </x-mycomponents.layout>

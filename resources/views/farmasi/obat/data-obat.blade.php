@@ -620,7 +620,7 @@
 
 {{-- Modal Update Obat --}}
 <div id="modalUpdateObat" aria-hidden="true"
-    class="hidden fixed inset-0 z-50 flex items-center justify-center w-full h-full bg-black/40 px-4">
+    class="hidden fixed inset-0 z-50 flex items-center justify-center w-full h-full px-4 bg-black/40">
     <div class="relative w-full max-w-4xl">
         <!-- Card -->
         <div

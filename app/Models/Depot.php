@@ -15,6 +15,11 @@ class Depot extends Model
         return $this->hasMany(Obat::class);
     }
 
+    public function bph()
+    {
+        return $this->hasMany(BahanHabisPakai::class);
+    }
+
     public function tipeDepot()
     {
         return $this->belongsTo(TipeDepot::class);
@@ -23,5 +28,10 @@ class Depot extends Model
     public function depotObat()
     {
         return $this->belongsToMany(Obat::class, 'depot_obat', 'depot_id', 'obat_id');
+    }
+
+    public function depotBHP()
+    {
+        return $this->belongsToMany(BahanHabisPakai::class, 'depot_bhp', 'depot_id', 'bahan_habis_pakai_id')->withPivot('stok');
     }
 }

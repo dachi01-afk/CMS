@@ -338,6 +338,11 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
         // Route Bahan Habis Pakai 
         Route::prefix('bahan-habis-pakai')->group(function () {
             Route::get('/', [BahanHabisPakaiController::class, 'index'])->name('bahan.habis.pakai');
+            Route::get('/get-data-bhp', [BahanHabisPakaiController::class, 'getDataBahanHabisPakai'])->name('get.data.bahan.habis.pakai');
+            Route::post('/create-data-bhp', [BahanHabisPakaiController::class, 'createDataBahanHabisPakai'])->name('create.data.bahan.habis.pakai');
+            Route::get('/get-data-bhp-by-id/{id}', [BahanHabisPakaiController::class, 'getDataBahanHabisPakaiById'])->name('get.data.bahan.habis.pakai.by.id');
+            Route::post('/update-data-bhp/{id}', [BahanHabisPakaiController::class, 'updateDataBahanHabisPakai'])->name('update.data.bahan.habis.pakai');
+            Route::post('/delete-data-bhp/{id}', [BahanHabisPakaiController::class, 'deleteDataBahanHabisPakai'])->name('delete.data.bahan.habis.pakai');
         });
 
         // Route Penggunaan BHP 

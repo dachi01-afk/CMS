@@ -14,4 +14,9 @@ class JenisObat extends Model
     {
         return $this->hasMany(Obat::class, 'jenis_obat_id');
     }
+
+    public function bhp()
+    {
+        return $this->hasMany(BahanHabisPakai::class, 'jenis_id');
+    }
 }

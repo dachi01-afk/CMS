@@ -14,4 +14,9 @@ class BrandFarmasi extends Model
     {
         return $this->hasMany(Obat::class);
     }
+
+    public function bhp()
+    {
+        return $this->hasMany(BahanHabisPakai::class);
+    }
 }
