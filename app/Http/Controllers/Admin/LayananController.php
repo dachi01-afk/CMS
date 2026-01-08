@@ -8,7 +8,10 @@ use App\Models\Layanan;
 use App\Models\Poli;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Yajra\DataTables\DataTables;
 
 class LayananController extends Controller
@@ -26,7 +29,39 @@ class LayananController extends Controller
         return DataTables::of($dataLayanan)
             ->addIndexColumn()
             ->addColumn('nama_layanan', fn($row) => $row->nama_layanan ?? '-')
-            ->addColumn('harga_layanan', fn($row) => $row->harga_layanan ?? '-')
+            ->addColumn('harga_layanan', function ($row) {
+
+                $hargaAwal  = number_format($row->harga_sebelum_diskon, 0, ',', '.');
+                $hargaAkhir = number_format($row->harga_setelah_diskon, 0, ',', '.');
+
+                if ($row->diskon > 0) {
+
+                    // 🔑 LOGIC UTAMA: TENTUKAN FORMAT DISKON
+                    if ($row->diskon >= 1 && $row->diskon <= 100) {
+                        // Persen
+                        $labelDiskon = rtrim(rtrim($row->diskon, '0'), '.') . '%';
+                    } else {
+                        // Nominal Rupiah
+                        $labelDiskon = 'Rp' . number_format($row->diskon, 0, ',', '.');
+                    }
+
+                    return '
+            <div class="flex flex-col">
+                <span class="line-through text-xs text-gray-400">
+                    Rp' . $hargaAwal . '
+                </span>
+                <span class="font-semibold text-green-600">
+                    Rp' . $hargaAkhir . '
+                </span>
+                <span class="text-xs text-blue-500">
+                    Diskon ' . $labelDiskon . '
+                </span>
+            </div>
+        ';
+                }
+
+                return '<span class="font-medium">Rp' . $hargaAwal . '</span>';
+            })
             ->addColumn('nama_kategori', fn($row) => $row->kategoriLayanan->nama_kategori ?? '-')
             ->addColumn('action', function ($l) {
                 return '
@@ -42,55 +77,51 @@ class LayananController extends Controller
                 </button>
                 ';
             })
-            ->rawColumns(['action'])
+            ->rawColumns(['action', 'harga_layanan'])
             ->make(true);
     }
 
     public function createDataLayanan(Request $request)
     {
-        // Validasi semua field sesuai skema tabel, dengan pesan custom
         $validator = Validator::make($request->all(), [
-            'kategori_layanan_id' => 'required|exists:kategori_layanan,id',
-            'nama_layanan' => 'required|string|max:255',
-            'harga_layanan' => 'required|numeric|min:0|max:999999999.99',
+            'kategori_layanan_id'      => 'required|exists:kategori_layanan,id',
+            'nama_layanan'             => 'required|string|max:255',
+            'harga_sebelum_diskon'     => 'required|numeric|min:0',
+            'diskon'                   => 'nullable|numeric|min:0',
+            'harga_setelah_diskon'     => 'required|numeric|min:0',
         ], [
-            // Pesan custom untuk kategori_layanan_id
-            'kategori_layanan_id.required' => 'Kategori layanan wajib dipilih.', // Tambah pesan untuk required
-            'kategori_layanan_id.exists' => 'Kategori layanan yang dipilih tidak ditemukan di sistem.',
-            // Pesan custom untuk nama_layanan
+            'kategori_layanan_id.required' => 'Kategori layanan wajib dipilih.',
+            'kategori_layanan_id.exists'   => 'Kategori layanan tidak ditemukan.',
+
             'nama_layanan.required' => 'Nama layanan wajib diisi.',
-            'nama_layanan.string' => 'Nama layanan harus berupa teks.',
-            'nama_layanan.max' => 'Nama layanan maksimal 255 karakter.',
-            // Pesan custom untuk harga_layanan
-            'harga_layanan.required' => 'Harga layanan wajib diisi.',
-            'harga_layanan.numeric' => 'Harga layanan harus berupa angka.',
-            'harga_layanan.min' => 'Harga layanan tidak boleh negatif.',
-            'harga_layanan.max' => 'Harga layanan maksimal Rp 999.999.999,99.',
+
+            'harga_sebelum_diskon.required' => 'Harga sebelum diskon wajib diisi.',
+            'harga_setelah_diskon.required' => 'Harga setelah diskon wajib diisi.',
         ]);
-        // Jika validasi gagal, return errors dengan pesan custom
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validasi gagal. Periksa input Anda.',
-                'errors' => $validator->errors()
+                'message' => 'Validasi gagal.',
+                'errors'  => $validator->errors()
             ], 422);
         }
-        // Konversi harga dari format rupiah (mis: "500.000" -> 500000.00)
-        $hargaNumeric = floatval(str_replace(['.', ','], ['', '.'], $request->harga_layanan));
-        // Simpan data ke database
+
+        // dd($validator);
+
         try {
             Layanan::create([
-                'kategori_layanan_id' => $request->kategori_layanan_id,
-                'nama_layanan' => $request->nama_layanan,
-                'harga_layanan' => $hargaNumeric,
+                'kategori_layanan_id'      => $request->kategori_layanan_id,
+                'nama_layanan'             => $request->nama_layanan,
+                'harga_sebelum_diskon'     => $request->harga_sebelum_diskon,
+                'diskon'                   => $request->diskon ?? 0,
+                'harga_setelah_diskon'     => $request->harga_setelah_diskon,
             ]);
-            // Return sukses
+
             return response()->json([
                 'success' => true,
                 'message' => 'Berhasil menambahkan data layanan.'
             ], 201);
         } catch (Exception $e) {
-            // Handle error database
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menyimpan data.'
@@ -126,27 +157,42 @@ class LayananController extends Controller
 
     public function updateDataLayanan(Request $request)
     {
+        // helper: terima numeric murni atau string rupiah "150.000"
+        $toNumber = function ($value) {
+            if ($value === null || $value === '') return 0;
+            if (is_numeric($value)) return (float) $value;
 
-        // Validasi semua field sesuai skema tabel, dengan pesan custom
+            // ambil digit saja (rupiah tanpa desimal)
+            $digits = preg_replace('/\D+/', '', (string) $value);
+            return $digits === '' ? 0 : (float) $digits;
+        };
+
         $validator = Validator::make($request->all(), [
-            'kategori_layanan_id' => 'required|exists:kategori_layanan,id',
-            'nama_layanan' => 'required|string|max:255',
-            'harga_layanan' => 'required|numeric|min:0|max:999999999.99',
+            'id' => ['required', 'integer', 'exists:layanan,id'],
+
+            'kategori_layanan_id' => ['required', 'integer', 'exists:kategori_layanan,id'],
+            'nama_layanan' => ['required', 'string', 'max:255'],
+
+            // kita validasi minimal ada, nanti dicek numeriknya manual supaya bisa terima "150.000"
+            'harga_sebelum_diskon' => ['required'],
+            'diskon_tipe' => ['nullable', Rule::in(['nominal', 'persen'])],
+            'diskon' => ['nullable'],
+            'harga_setelah_diskon' => ['nullable'], // boleh dikirim FE, tapi server tetap hitung ulang
         ], [
-            // Pesan custom untuk kategori_layanan_id
-            'kategori_layanan_id.required' => 'Kategori layanan wajib dipilih.', // Tambah pesan untuk required
+            'id.required' => 'ID layanan wajib ada.',
+            'id.exists' => 'Data layanan tidak ditemukan.',
+
+            'kategori_layanan_id.required' => 'Kategori layanan wajib dipilih.',
             'kategori_layanan_id.exists' => 'Kategori layanan yang dipilih tidak ditemukan di sistem.',
-            // Pesan custom untuk nama_layanan
+
             'nama_layanan.required' => 'Nama layanan wajib diisi.',
-            'nama_layanan.string' => 'Nama layanan harus berupa teks.',
             'nama_layanan.max' => 'Nama layanan maksimal 255 karakter.',
-            // Pesan custom untuk harga_layanan
-            'harga_layanan.required' => 'Harga layanan wajib diisi.',
-            'harga_layanan.numeric' => 'Harga layanan harus berupa angka.',
-            'harga_layanan.min' => 'Harga layanan tidak boleh negatif.',
-            'harga_layanan.max' => 'Harga layanan maksimal Rp 999.999.999,99.',
+
+            'harga_sebelum_diskon.required' => 'Harga layanan wajib diisi.',
+
+            'diskon_tipe.in' => 'Jenis diskon tidak valid.',
         ]);
-        // Jika validasi gagal, return errors dengan pesan custom
+
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
@@ -154,30 +200,108 @@ class LayananController extends Controller
                 'errors' => $validator->errors()
             ], 422);
         }
-        // Konversi harga dari format rupiah (mis: "500.000" -> 500000.00)
-        $hargaNumeric = floatval(str_replace(['.', ','], ['', '.'], $request->harga_layanan));
-        // Simpan data ke database
+
         try {
-            $id = $request->id;
-            $dataLayanan = Layanan::findOrFail($id);
-            $dataLayanan->update([
-                'kategori_layanan_id' => $request->kategori_layanan_id,
-                'nama_layanan' => $request->nama_layanan,
-                'harga_layanan' => $hargaNumeric,
+            return DB::transaction(function () use ($request, $toNumber) {
+
+                $layanan = Layanan::lockForUpdate()->findOrFail((int) $request->id);
+
+                $hargaAwal = $toNumber($request->harga_sebelum_diskon);
+                $diskon = $toNumber($request->diskon);
+                $tipe = $request->diskon_tipe ?: 'nominal';
+
+                // VALIDASI SERVER-SIDE ANGKA
+                if ($hargaAwal < 0) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Validasi gagal.',
+                        'errors' => ['harga_sebelum_diskon' => ['Harga layanan tidak boleh negatif.']]
+                    ], 422);
+                }
+
+                if ($diskon < 0) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Validasi gagal.',
+                        'errors' => ['diskon' => ['Diskon tidak boleh negatif.']]
+                    ], 422);
+                }
+
+                // HITUNG POTONGAN
+                if ($tipe === 'persen') {
+                    if ($diskon > 100) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Validasi gagal.',
+                            'errors' => ['diskon' => ['Diskon persen harus 0 sampai 100.']]
+                        ], 422);
+                    }
+                    $potongan = ($diskon / 100) * $hargaAwal;
+                } else {
+                    // nominal (opsional: larang diskon > harga)
+                    if ($diskon > $hargaAwal) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Validasi gagal.',
+                            'errors' => ['diskon' => ['Diskon nominal tidak boleh melebihi harga.']]
+                        ], 422);
+                    }
+                    $potongan = $diskon;
+                }
+
+                $hargaAkhir = $hargaAwal - $potongan;
+                if ($hargaAkhir < 0) $hargaAkhir = 0;
+
+                // Payload update
+                $payload = [
+                    'kategori_layanan_id' => (int) $request->kategori_layanan_id,
+                    'nama_layanan' => $request->nama_layanan,
+                    'harga_sebelum_diskon' => $hargaAwal,
+                    'diskon' => $diskon,
+                    'harga_setelah_diskon' => round($hargaAkhir, 0),
+                ];
+
+                // Aman: hanya set diskon_tipe kalau kolomnya memang ada di DB
+                if (Schema::hasColumn('layanan', 'diskon_tipe')) {
+                    $payload['diskon_tipe'] = $tipe;
+                }
+
+                $layanan->update($payload);
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Data layanan berhasil diperbarui.',
+                    'data' => [
+                        'id' => $layanan->id,
+                        'kategori_layanan_id' => $layanan->kategori_layanan_id,
+                        'nama_layanan' => $layanan->nama_layanan,
+                        'harga_sebelum_diskon' => $layanan->harga_sebelum_diskon,
+                        'diskon' => $layanan->diskon,
+                        'harga_setelah_diskon' => $layanan->harga_setelah_diskon,
+                        'diskon_tipe' => Schema::hasColumn('layanan', 'diskon_tipe') ? $layanan->diskon_tipe : $tipe,
+                    ]
+                ], 200);
+            });
+        } catch (\Throwable $e) {
+
+            Log::error('updateDataLayanan error', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'request' => $request->all(),
             ]);
-            // Return sukses
-            return response()->json([
-                'success' => true,
-                'message' => 'Berhasil menambahkan data layanan.'
-            ], 201);
-        } catch (Exception $e) {
-            // Handle error database
+
+            // kalau APP_DEBUG=true, tampilkan detail biar cepat ketemu root cause
+            $debug = config('app.debug') ? $e->getMessage() : null;
+
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menyimpan data.'
+                'message' => 'Terjadi kesalahan saat menyimpan data.',
+                'debug' => $debug,
             ], 500);
         }
     }
+
 
     public function deleteDataLayanan(Request $request)
     {

@@ -109,10 +109,12 @@
 
 </section>
 
-<!-- Modal Create Layanan -->
+<!-- ===================== -->
+<!-- Modal Create Layanan  -->
+<!-- ===================== -->
 <div id="modalCreateLayanan" aria-hidden="true"
     class="hidden fixed inset-0 z-50 flex items-center justify-center p-4
-               bg-slate-900/60 backdrop-blur-sm overflow-y-auto overflow-x-hidden">
+           bg-slate-900/60 backdrop-blur-sm overflow-y-auto overflow-x-hidden">
 
     <div class="w-full max-w-2xl">
         <div
@@ -126,12 +128,9 @@
                         <i class="fa-solid fa-heart-pulse text-white text-lg"></i>
                     </div>
                     <div>
-                        <h3 class="text-base md:text-lg font-semibold text-slate-50">
-                            Tambah Data Layanan Klinik
-                        </h3>
-                        <p class="text-xs text-sky-50/90 mt-0.5">
-                            Lengkapi informasi layanan medis dan tarifnya dengan benar.
-                        </p>
+                        <h3 class="text-base md:text-lg font-semibold text-slate-50">Tambah Data Layanan Klinik</h3>
+                        <p class="text-xs text-sky-50/90 mt-0.5">Lengkapi informasi layanan medis dan tarifnya dengan
+                            benar.</p>
                     </div>
                 </div>
 
@@ -146,16 +145,14 @@
                 data-url="{{ route('layanan.create.data') }}" method="POST">
                 @csrf
 
-                <!-- Info strip -->
                 <div
-                    class="flex items-center gap-2 text-xs rounded-xl px-3 py-2
-                                bg-emerald-50 text-emerald-700 border border-emerald-100
-                                dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-800">
+                    class="flex items-center gap-2 text-xs rounded-xl px-3 py-2 bg-emerald-50 text-emerald-700 border border-emerald-100
+                            dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-800">
                     <i class="fa-solid fa-circle-info"></i>
                     <span>Pastikan nama layanan, kategori, dan tarif sesuai dengan aturan klinik.</span>
                 </div>
 
-                {{-- Kategori Layanan --}}
+                <!-- Kategori -->
                 <div class="space-y-1.5">
                     <label for="kategori_layanan_id_create"
                         class="block mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
@@ -165,22 +162,18 @@
                         <i
                             class="fa-solid fa-layer-group absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                         <select id="kategori_layanan_id_create" name="kategori_layanan_id"
-                            class="w-full pl-9 pr-3 py-2.5 rounded-lg border border-slate-300
-                                       bg-white text-slate-800 text-sm
-                                       focus:ring-teal-500 focus:border-teal-500
-                                       dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100">
+                            class="w-full pl-9 pr-3 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm
+                                   focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100">
                             <option value="">Pilih kategori layanan</option>
                             @foreach ($dataKategoriLayanan as $kategori)
-                                <option value="{{ $kategori->id }}">
-                                    {{ $kategori->nama_kategori }}
-                                </option>
+                                <option value="{{ $kategori->id }}">{{ $kategori->nama_kategori }}</option>
                             @endforeach
                         </select>
                     </div>
-                    <div id="kategori_layanan_id-error" class="text-red-600 text-sm mt-1"></div>
+                    <div id="kategori_layanan_id_create-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
-                {{-- Nama Layanan --}}
+                <!-- Nama -->
                 <div class="space-y-1.5">
                     <label for="nama_layanan_create"
                         class="block mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
@@ -190,52 +183,89 @@
                         <i
                             class="fa-solid fa-stethoscope absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                         <input type="text" name="nama_layanan" id="nama_layanan_create"
-                            class="w-full pl-9 pr-3 py-2.5 rounded-lg border border-slate-300
-                                      bg-white text-slate-800 text-sm
-                                      focus:ring-teal-500 focus:border-teal-500
-                                      dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
+                            class="w-full pl-9 pr-3 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm
+                                   focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
                             placeholder="Contoh: Konsultasi Dokter Umum">
                     </div>
-                    <div id="nama_layanan-error" class="text-red-600 text-sm mt-1"></div>
+                    <div id="nama_layanan_create-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
-                <!-- Harga Layanan -->
-                <div class="space-y-1.5">
-                    <label for="harga_layanan_create"
-                        class="block mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                        Harga Layanan
-                    </label>
-                    <div class="relative">
-                        <span
-                            class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 dark:text-slate-300 text-sm">
-                            Rp
-                        </span>
-                        <input type="text" name="harga_layanan" id="harga_layanan_create"
-                            class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-300
-                                      bg-white text-slate-800 text-sm
-                                      focus:ring-teal-500 focus:border-teal-500
-                                      dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
-                            placeholder="Contoh: 150.000">
+                <!-- Tarif & Diskon -->
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                        <!-- Harga sebelum diskon -->
+                        <div class="space-y-1.5">
+                            <label class="block text-sm font-semibold text-slate-800 dark:text-slate-100">Harga</label>
+                            <div class="relative">
+                                <span
+                                    class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 dark:text-slate-300 text-sm">Rp</span>
+                                <input type="text" name="harga_sebelum_diskon" id="harga_sebelum_diskon_create"
+                                    class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm
+                                           focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
+                                    placeholder="150.000">
+                            </div>
+                            <div id="harga_sebelum_diskon_create-error" class="text-red-600 text-sm mt-1"></div>
+                        </div>
+
+                        <!-- Jenis diskon -->
+                        <div class="space-y-1.5">
+                            <label class="block text-sm font-semibold text-slate-800 dark:text-slate-100">Jenis
+                                Diskon</label>
+                            <select name="diskon_tipe" id="diskon_tipe_create"
+                                class="w-full py-2.5 px-3 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm
+                                       focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100">
+                                <option value="nominal">Nominal (Rp)</option>
+                                <option value="persen">Persen (%)</option>
+                            </select>
+                        </div>
+
+                        <!-- Diskon -->
+                        <div class="space-y-1.5">
+                            <label
+                                class="block text-sm font-semibold text-slate-800 dark:text-slate-100">Diskon</label>
+                            <div class="relative">
+                                <span id="diskon_prefix_rp_create"
+                                    class="hidden absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 dark:text-slate-300 text-sm">Rp</span>
+
+                                <input type="text" name="diskon" id="diskon_create"
+                                    class="w-full pr-3 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm
+                                           focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
+                                    placeholder="0">
+                            </div>
+                            <p id="diskon_helper_create" class="text-[11px] text-slate-500">Isi 0 jika tidak ada
+                                diskon.</p>
+                            <div id="diskon_create-error" class="text-red-600 text-sm mt-1"></div>
+                        </div>
+
+                        <!-- Harga setelah diskon -->
+                        <div class="space-y-1.5">
+                            <label class="block text-sm font-semibold text-slate-800 dark:text-slate-100">Harga Setelah
+                                Diskon</label>
+                            <div class="relative">
+                                <span
+                                    class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 dark:text-slate-300 text-sm">Rp</span>
+                                <input type="text" name="harga_setelah_diskon" id="harga_setelah_diskon_create"
+                                    class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-300 bg-slate-100 text-slate-700 text-sm cursor-not-allowed
+                                           dark:bg-slate-600 dark:text-slate-200"
+                                    readonly>
+                            </div>
+                            <div id="harga_setelah_diskon_create-error" class="text-red-600 text-sm mt-1"></div>
+                        </div>
+
                     </div>
-                    <p class="text-[11px] text-slate-500 mt-1">
-                        Tulis angka saja, sistem akan mengonversi sesuai format rupiah.
-                    </p>
-                    <div id="harga_layanan-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
-                {{-- FOOTER --}}
+                <!-- FOOTER -->
                 <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                     <button type="button" id="buttonCloseModalCreateLayanan_footer"
-                        class="px-5 py-2.5 text-sm font-medium rounded-lg
-                                   bg-slate-200 text-slate-800 hover:bg-slate-300
-                                   dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">
+                        class="px-5 py-2.5 text-sm font-medium rounded-lg bg-slate-200 text-slate-800 hover:bg-slate-300
+                               dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">
                         Batal
                     </button>
-                    <button type="submit" id="saveJadwalButton"
-                        class="px-5 py-2.5 text-sm font-semibold rounded-lg
-                                   bg-teal-600 text-white shadow-md
-                                   hover:bg-teal-700 focus:ring-4 focus:ring-teal-200
-                                   dark:focus:ring-teal-800">
+                    <button type="submit"
+                        class="px-5 py-2.5 text-sm font-semibold rounded-lg bg-teal-600 text-white shadow-md hover:bg-teal-700
+                               focus:ring-4 focus:ring-teal-200 dark:focus:ring-teal-800">
                         Simpan Layanan
                     </button>
                 </div>
@@ -244,10 +274,13 @@
     </div>
 </div>
 
-<!-- Modal Update Layanan -->
+
+<!-- ===================== -->
+<!-- Modal Update Layanan  -->
+<!-- ===================== -->
 <div id="modalUpdateLayanan" aria-hidden="true"
     class="hidden fixed inset-0 z-50 flex items-center justify-center p-4
-               bg-slate-900/60 backdrop-blur-sm overflow-y-auto overflow-x-hidden">
+           bg-slate-900/60 backdrop-blur-sm overflow-y-auto overflow-x-hidden">
 
     <div class="w-full max-w-2xl">
         <div
@@ -261,12 +294,8 @@
                         <i class="fa-solid fa-pen-to-square text-white text-lg"></i>
                     </div>
                     <div>
-                        <h3 class="text-base md:text-lg font-semibold text-slate-50">
-                            Edit Data Layanan Klinik
-                        </h3>
-                        <p class="text-xs text-sky-50/90 mt-0.5">
-                            Perbarui informasi layanan dengan benar.
-                        </p>
+                        <h3 class="text-base md:text-lg font-semibold text-slate-50">Edit Data Layanan Klinik</h3>
+                        <p class="text-xs text-sky-50/90 mt-0.5">Perbarui informasi layanan dengan benar.</p>
                     </div>
                 </div>
 
@@ -282,91 +311,120 @@
                 @csrf
                 <input type="hidden" id="id_update" name="id">
 
-                <!-- Info strip -->
-                <div
-                    class="flex items-center gap-2 text-xs rounded-xl px-3 py-2
-                                bg-emerald-50 text-emerald-700 border border-emerald-100
-                                dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-800">
-                    <i class="fa-solid fa-circle-info"></i>
-                    <span>Pastikan perubahan tarif sudah disetujui oleh manajemen klinik.</span>
-                </div>
-
-                {{-- Kategori Layanan --}}
+                <!-- Kategori -->
                 <div class="space-y-1.5">
                     <label for="kategori_layanan_id_update"
-                        class="block mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                        Kategori Layanan
-                    </label>
+                        class="block mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">Kategori
+                        Layanan</label>
                     <div class="relative">
                         <i
                             class="fa-solid fa-layer-group absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                         <select id="kategori_layanan_id_update" name="kategori_layanan_id"
-                            class="w-full pl-9 pr-3 py-2.5 rounded-lg border border-slate-300
-                                   bg-white text-slate-800 text-sm
-                                   focus:ring-teal-500 focus:border-teal-500
-                                   dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100">
+                            class="w-full pl-9 pr-3 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm
+                                   focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100">
                             <option value="">Memuat kategori…</option>
                         </select>
                     </div>
-                    <div id="kategori_layanan_id-error" class="text-red-600 text-sm mt-1"></div>
+                    <div id="kategori_layanan_id_update-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
-                {{-- Nama Layanan --}}
+                <!-- Nama -->
                 <div class="space-y-1.5">
-                    <label class="block mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                        Nama Layanan
-                    </label>
+                    <label class="block mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">Nama
+                        Layanan</label>
                     <div class="relative">
                         <i
                             class="fa-solid fa-stethoscope absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                         <input type="text" id="nama_layanan_update" name="nama_layanan"
                             class="w-full pl-9 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800
-                                       focus:ring-teal-500 focus:border-teal-500
-                                       dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
+                                   focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
                             placeholder="Masukkan nama layanan">
                     </div>
-                    <div id="nama_layanan-error" class="text-red-600 text-sm mt-1"></div>
+                    <div id="nama_layanan_update-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
-                {{-- Harga --}}
-                <div class="space-y-1.5">
-                    <label class="block mb-1 text-sm font-semibold text-slate-800 dark:text-slate-100">
-                        Harga Layanan
-                    </label>
-                    <div class="relative">
-                        <span
-                            class="absolute inset-y-0 left-0 flex items-center pl-3 
-                                     text-slate-500 dark:text-slate-300 text-sm">
-                            Rp
-                        </span>
-                        <input type="text" id="harga_layanan_update" name="harga_layanan"
-                            class="w-full pl-10 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800
-                                      focus:ring-teal-500 focus:border-teal-500
-                                      dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
-                            placeholder="Contoh: 150.000">
+                <!-- Tarif & Diskon -->
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                        <!-- Harga sebelum diskon -->
+                        <div class="space-y-1.5">
+                            <label class="block text-sm font-semibold text-slate-800 dark:text-slate-100">Harga</label>
+                            <div class="relative">
+                                <span
+                                    class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 dark:text-slate-300 text-sm">Rp</span>
+                                <input type="text" name="harga_sebelum_diskon" id="harga_sebelum_diskon_update"
+                                    class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm
+                                           focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
+                                    placeholder="150.000">
+                            </div>
+                            <div id="harga_sebelum_diskon_update-error" class="text-red-600 text-sm mt-1"></div>
+                        </div>
+
+                        <!-- Jenis diskon -->
+                        <div class="space-y-1.5">
+                            <label class="block text-sm font-semibold text-slate-800 dark:text-slate-100">Jenis
+                                Diskon</label>
+                            <select name="diskon_tipe" id="diskon_tipe_update"
+                                class="w-full py-2.5 px-3 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm
+                                       focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100">
+                                <option value="nominal">Nominal (Rp)</option>
+                                <option value="persen">Persen (%)</option>
+                            </select>
+                        </div>
+
+                        <!-- Diskon -->
+                        <div class="space-y-1.5">
+                            <label
+                                class="block text-sm font-semibold text-slate-800 dark:text-slate-100">Diskon</label>
+                            <div class="relative">
+                                <span id="diskon_prefix_rp_update"
+                                    class="hidden absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 dark:text-slate-300 text-sm">Rp</span>
+
+                                <input type="text" name="diskon" id="diskon_update"
+                                    class="w-full pr-3 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm
+                                           focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
+                                    placeholder="0">
+                            </div>
+                            <p id="diskon_helper_update" class="text-[11px] text-slate-500">Isi 0 jika tidak ada
+                                diskon.</p>
+                            <div id="diskon_update-error" class="text-red-600 text-sm mt-1"></div>
+                        </div>
+
+                        <!-- Harga setelah diskon -->
+                        <div class="space-y-1.5">
+                            <label class="block text-sm font-semibold text-slate-800 dark:text-slate-100">Harga Setelah
+                                Diskon</label>
+                            <div class="relative">
+                                <span
+                                    class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 dark:text-slate-300 text-sm">Rp</span>
+                                <input type="text" name="harga_setelah_diskon" id="harga_setelah_diskon_update"
+                                    class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-300 bg-slate-100 text-slate-700 text-sm cursor-not-allowed
+                                           dark:bg-slate-600 dark:text-slate-200"
+                                    readonly>
+                            </div>
+                            <div id="harga_setelah_diskon_update-error" class="text-red-600 text-sm mt-1"></div>
+                        </div>
+
                     </div>
-                    <div id="harga_layanan-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
                 <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
                     <button type="button" id="buttonCloseModalUpdateLayanan_footer"
-                        class="px-5 py-2.5 text-sm font-medium rounded-lg
-                               bg-slate-200 text-slate-800 hover:bg-slate-300
+                        class="px-5 py-2.5 text-sm font-medium rounded-lg bg-slate-200 text-slate-800 hover:bg-slate-300
                                dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">
                         Batal
                     </button>
-
                     <button type="submit"
-                        class="px-5 py-2.5 text-sm font-semibold rounded-lg
-                               bg-teal-600 text-white hover:bg-teal-700 shadow-md
+                        class="px-5 py-2.5 text-sm font-semibold rounded-lg bg-teal-600 text-white hover:bg-teal-700 shadow-md
                                focus:ring-4 focus:ring-teal-200 dark:focus:ring-teal-800">
                         Simpan Perubahan
                     </button>
                 </div>
-
             </form>
         </div>
     </div>
 </div>
+
 
 @vite(['resources/js/admin/layanan/data-layanan.js'])

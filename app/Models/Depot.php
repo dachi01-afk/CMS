@@ -20,6 +20,11 @@ class Depot extends Model
         return $this->hasMany(BahanHabisPakai::class);
     }
 
+    public function stokTransaksiDetal()
+    {
+        return $this->hasMany(StokTransaksiDetail::class);
+    }
+
     public function tipeDepot()
     {
         return $this->belongsTo(TipeDepot::class);

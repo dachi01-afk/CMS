@@ -52,4 +52,9 @@ class Obat extends Model
     {
         return $this->belongsToMany(Depot::class, 'depot_obat', 'obat_id', 'depot_id');
     }
+
+    public function stokTransaksiDetail()
+    {
+        return $this->hasMany(StokTransaksiDetail::class);
+    }
 }

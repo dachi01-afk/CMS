@@ -94,6 +94,7 @@ export default defineConfig({
                 "resources/js/farmasi/kadaluarsa-bhp/data-kadaluarsa-bhp.js",
                 "resources/js/farmasi/pengambilan-obat/data-pengambilan-obat-sudah-selesai.js",
                 "resources/js/farmasi/cetak-resep-obat/data-cetak-resep-obat.js",
+                "resources/js/farmasi/restock-dan-return-obat-dan-bhp/data-restock-dan-return-obat-dan-bhp.js",
             ],
             refresh: true,
         }),

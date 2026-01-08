@@ -321,8 +321,70 @@ $(function () {
     table.on("draw", updatePagination);
     updatePagination();
 
-    // search custom (input di header)
-    $("#searchKadaluarsaObat").on("keyup", function () {
-        table.search(this.value).draw();
-    });
+    // =========================
+    // Search cepat - Kadaluarsa Obat
+    // =========================
+    const $searchKadaluarsaObat = $("#searchKadaluarsaObat");
+
+    let kdTimer = null;
+    let kdLastValue = "";
+    let kdXhr = null;
+
+    if ($searchKadaluarsaObat.length && table) {
+        // simpan jqXHR yang dipakai DataTables agar bisa di-abort
+        table.on("preXhr.dt", function (e, settings, data) {
+            if (settings.jqXHR) kdXhr = settings.jqXHR;
+        });
+
+        const runSearchKadaluarsa = (value) => {
+            if (value === kdLastValue) return;
+            kdLastValue = value;
+
+            // minimal 2 huruf (biar ga spam request)
+            if (value.length < 2) {
+                table.search("").draw();
+                return;
+            }
+
+            table.search(value).draw();
+        };
+
+        // realtime feel (lebih enak dari keyup)
+        $searchKadaluarsaObat.on("input", function () {
+            const value = $(this).val().trim();
+
+            // abort request sebelumnya biar gak balapan response
+            if (kdXhr && kdXhr.readyState !== 4) {
+                try {
+                    kdXhr.abort();
+                } catch (e) {}
+            }
+
+            // debounce adaptif
+            const delay =
+                value.length <= 2 ? 300 : value.length <= 5 ? 180 : 120;
+
+            clearTimeout(kdTimer);
+            kdTimer = setTimeout(() => runSearchKadaluarsa(value), delay);
+        });
+
+        // Enter = langsung cari
+        $searchKadaluarsaObat.on("keydown", function (e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                clearTimeout(kdTimer);
+                runSearchKadaluarsa($(this).val().trim());
+            }
+        });
+
+        // ESC = clear cepat
+        $searchKadaluarsaObat.on("keydown", function (e) {
+            if (e.key === "Escape") {
+                $(this).val("");
+                clearTimeout(kdTimer);
+                kdLastValue = "";
+                table.search("").draw();
+            }
+        });
+    }
 });

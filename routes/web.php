@@ -19,6 +19,7 @@ use App\Http\Controllers\Farmasi\FarmasiController;
 use App\Http\Controllers\Management\UserController;
 use App\Http\Controllers\Perawat\PerawatController;
 use App\Http\Controllers\Testing\TestingController;
+use App\Http\Controllers\Farmasi\SupplierController;
 use App\Http\Controllers\Farmasi\JenisObatController;
 use App\Http\Controllers\Farmasi\OrderObatController;
 use App\Http\Controllers\Farmasi\TipeDepotController;
@@ -48,6 +49,7 @@ use App\Http\Controllers\Kasir\TransaksiLayananController;
 use App\Http\Controllers\Admin\ManajemenPenggunaController;
 use App\Http\Controllers\Farmasi\BahanHabisPakaiController;
 use App\Http\Controllers\Management\JadwalDokterController;
+use App\Http\Controllers\Farmasi\RestockDanReturnController;
 use App\Http\Controllers\Apoteker\Obat\PenjualanObatController;
 use App\Http\Controllers\Dokter\DokterController as DokterDokterController;
 use App\Http\Controllers\Farmasi\PengambilanObatController as FarmasiPengambilanObatController;
@@ -312,7 +314,9 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('/get-data-obat-by/{id}', [ObatController::class, 'getObatById'])->name('obat.get.data.by.id');
             Route::post('/update-data-obat/{id}', [ObatController::class, 'updateObat'])->name('obat.update');
             Route::delete('/delete-data-obat/{id}', [ObatController::class, 'deleteObat'])->name('obat.delete');
-            // Route::get('jual-obat', [ApotekerController::class, 'index'])->name('obat.jual.obat');
+            Route::get('/export-data-obat', [ObatController::class, 'export'])->name('export.data.obat');
+            Route::post('/import-data-obat', [ObatController::class, 'importExcel'])->name('import.data.obat');
+            Route::get('/print-data-obat', [ObatController::class, 'printPDF'])->name('obat.printPDF');
 
             Route::get('/get-data-penjualan-obat', [OrderObatController::class, 'getDataPenjualanObat'])->name('obat.penjualan.obat');
             Route::get('/search-data-pasien', [OrderObatController::class, 'search'])->name('obat.search.data.pasien');
@@ -367,6 +371,12 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::post('/print-preview', [CetakResepObatController::class, 'printPreview'])->name('cetak.resep.obat.print.preview');
         });
 
+        // Route Restock Dan Return Obat Dan Barang 
+        Route::prefix('restock-return')->group(function () {
+            Route::get('/', [RestockDanReturnController::class, 'index'])->name('restock.return.obat.dan.barang');
+            Route::get('/get-data-restock-dan-return-barang-dan-obat', [RestockDanReturnController::class, 'getDataRestockDanReturnBarangDanObat'])->name('get.data.restock.dan.return.barang.dan.obat');
+        });
+
 
         // Route Brand Farmasi
         Route::get('/get-data-brand-farmasi', [BrandFarmasiController::class, 'getDataBrandFarmasi'])->name('get.data.brand.farmasi');
@@ -392,6 +402,14 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
         Route::get('/get-data-depot', [DepotController::class, 'getDataDepot'])->name('get.data.depot');
         Route::post('/create-data-depot', [DepotController::class, 'createDataDepot'])->name('create.data.depot');
         Route::post('/delete-data-depot', [DepotController::class, 'deleteDataDepot'])->name('delete.data.depot');
+
+        // Route Supplier 
+        Route::get('/get-data-supplier', [SupplierController::class, 'getDataSupplier'])->name('get.data.supplier');
+        Route::get('/get-data-supplier-by-id/{id}', [SupplierController::class, 'showDataSupplier'])->name('get.data.supplier.by.id');
+        Route::post('/create-data-supplier', [SupplierController::class, 'createDataSupplier'])->name('create.data.supplier');
+        Route::post('/delete-data-supplier', [SupplierController::class, 'deleteDataSupplier'])->name('delete.data.supplier');
+        Route::post('/update-data-supplier', [SupplierController::class, 'updateDataSupplier'])->name('update.data.supplier');
+
 
         Route::prefix('pengambilan-obat')->group(function () {
             Route::get('/', [FarmasiPengambilanObatController::class, 'index'])->name('pengambilan.obat');

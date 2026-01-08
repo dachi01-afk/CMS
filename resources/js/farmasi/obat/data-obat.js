@@ -24,6 +24,7 @@ $(function () {
         serverSide: true,
         paging: true,
         searching: true,
+        searchDelay: 250,
         ordering: true,
         pageLength: 10,
         lengthChange: false,
@@ -176,20 +177,64 @@ $(function () {
     // ==========================
     const $globalSearchObat = $("#globalSearchObat");
 
-    if ($globalSearchObat.length && table) {
-        let searchTimeout = null;
+    // wajib simpan instance datatable kamu ke variable `table`
+    let searchTimer = null;
+    let lastValue = "";
+    let inflightXhr = null;
 
-        $globalSearchObat.on("keyup", function () {
+    // kalau tabel kamu serverSide, aktifkan processing biar user paham lagi load
+    // (opsional) di inisialisasi DataTable:
+    // processing: true,
+    // serverSide: true,
+
+    if ($globalSearchObat.length && table) {
+        // tangkap XHR DataTables yg sedang jalan, biar bisa di-abort saat user ngetik lagi
+        table.on("preXhr.dt", function (e, settings, data) {
+            // jqXHR yg sedang dipakai DataTables tersimpan di settings.jqXHR
+            if (settings.jqXHR) inflightXhr = settings.jqXHR;
+        });
+
+        const runSearch = (value) => {
+            // hindari draw kalau inputnya sama
+            if (value === lastValue) return;
+            lastValue = value;
+
+            // minimal karakter untuk server-side biar gak spam request
+            if (value.length < 2) {
+                // kosongkan search
+                table.search("").draw();
+                return;
+            }
+
+            // tembak search
+            table.search(value).draw();
+        };
+
+        $globalSearchObat.on("input", function () {
             const value = $(this).val().trim();
 
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                if (value.length < 2) {
-                    table.search("").draw();
-                } else {
-                    table.search(value).draw();
-                }
-            }, 300);
+            // kalau masih ada request sebelumnya, abort dulu
+            if (inflightXhr && inflightXhr.readyState !== 4) {
+                try {
+                    inflightXhr.abort();
+                } catch (e) {}
+            }
+
+            // debounce adaptif: makin panjang input, makin cepat tembak
+            const delay =
+                value.length <= 2 ? 300 : value.length <= 5 ? 180 : 120;
+
+            clearTimeout(searchTimer);
+            searchTimer = setTimeout(() => runSearch(value), delay);
+        });
+
+        // Enter = langsung cari tanpa nunggu debounce
+        $globalSearchObat.on("keydown", function (e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                clearTimeout(searchTimer);
+                runSearch($(this).val().trim());
+            }
         });
     }
 
@@ -197,43 +242,52 @@ $(function () {
     // HELPER: AMBIL DATA UNTUK EXPORT
     // (header + baris dari halaman yang sedang tampil)
     // ==========================
+    function decodeHtml(html) {
+        var txt = document.createElement("textarea");
+        txt.innerHTML = html;
+        return txt.value;
+    }
+
     function getExportData() {
         const headers = [];
         const rows = [];
 
-        // ambil indeks kolom visible, KECUALI kolom terakhir (aksi)
         const colIndexes = table
             .columns(":visible")
             .indexes()
             .toArray()
             .filter((idx) => idx !== table.columns().count() - 1);
 
-        // header
-        colIndexes.forEach(function (idx) {
+        // Header
+        colIndexes.forEach((idx) => {
             const text = $(table.column(idx).header()).text().trim();
             headers.push(text);
         });
 
-        // data baris (yang sedang tampil & sudah ke-filter)
-        table.rows({ search: "applied", page: "current" }).every(function () {
+        // Semua baris hasil filter
+        table.rows({ search: "applied" }).every(function () {
             const rowIdx = this.index();
             const rowData = [];
 
-            colIndexes.forEach(function (colIdx) {
+            colIndexes.forEach((colIdx) => {
                 let cellData = table.cell(rowIdx, colIdx).data();
 
                 if (cellData === null || cellData === undefined) {
                     cellData = "";
+                } else if (typeof cellData === "object") {
+                    // ambil text dari object HTML
+                    cellData = $(cellData).text().trim();
                 } else {
-                    // buang HTML tag
+                    // hapus HTML tag
                     cellData = cellData
                         .toString()
                         .replace(/<[^>]*>/g, "")
-                        .replace(/\s+/g, " ")
                         .trim();
+                    // decode HTML entities
+                    cellData = decodeHtml(cellData);
                 }
 
-                // escape CSV (kalau ada koma / kutip)
+                // escape CSV
                 if (
                     cellData.includes('"') ||
                     cellData.includes(",") ||
@@ -262,7 +316,12 @@ $(function () {
         let csvContent = "";
         csvContent += headers.join(",") + "\n";
         rows.forEach((r) => {
-            csvContent += r.join(",") + "\n";
+            const escapedRow = r.map((cell) => {
+                if (cell == null) return ""; // ganti null/undefined jadi kosong
+                const str = String(cell).replace(/"/g, '""'); // escape tanda kutip
+                return `"${str}"`; // bungkus dengan tanda kutip
+            });
+            csvContent += escapedRow.join(",") + "\n";
         });
 
         const blob = new Blob([csvContent], {
@@ -288,88 +347,22 @@ $(function () {
     // PRINT (halaman yg sedang tampil)
     // ==========================
     $("#btn-print-obat").on("click", function () {
-        if (!table) return;
-
-        const { headers, rows } = getExportData();
-
-        let html = `
-            <html>
-            <head>
-                <title>Print Data Obat</title>
-                <style>
-                    body { font-family: Arial, sans-serif; font-size: 12px; }
-                    h3 { text-align: center; margin-bottom: 16px; }
-                    table { border-collapse: collapse; width: 100%; }
-                    th, td { border: 1px solid #333; padding: 4px 6px; text-align: left; }
-                    th { background: #f3f4f6; }
-                </style>
-            </head>
-            <body>
-                <h3>Data Obat</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            ${headers.map((h) => `<th>${h}</th>`).join("")}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${rows
-                            .map(
-                                (r) =>
-                                    `<tr>${r
-                                        .map((c) => `<td>${c}</td>`)
-                                        .join("")}</tr>`
-                            )
-                            .join("")}
-                    </tbody>
-                </table>
-                <script>
-                    window.onload = function() {
-                        window.print();
-                        window.onafterprint = function () { window.close(); };
-                    };
-                </script>
-            </body>
-            </html>
-        `;
-
-        const win = window.open("", "_blank");
-        win.document.open();
-        win.document.write(html);
-        win.document.close();
+        var url = $(this).data("url"); // ambil URL dari data-attribute
+        window.open(url, "_blank"); // buka PDF di tab baru
     });
 
     // ==========================
     // IMPORT (trigger input file)
     // ==========================
-    $("#btn-import-obat").on("click", function () {
-        $("#input-file-import-obat").trigger("click");
+    $("#btn-import").on("click", function () {
+        // Klik input file
+        $("#file-input").click();
     });
 
-    $("#input-file-import-obat").on("change", function () {
-        if (!this.files.length) return;
-
-        if (window.Swal) {
-            Swal.fire({
-                icon: "question",
-                title: "Import Data Obat?",
-                text: "Pastikan format file sudah sesuai template.",
-                showCancelButton: true,
-                confirmButtonText: "Ya, lanjutkan",
-                cancelButtonText: "Batal",
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    $("#form-import-obat").submit();
-                } else {
-                    $("#input-file-import-obat").val("");
-                }
-            });
-        } else {
-            if (confirm("Import data obat dari file ini?")) {
-                $("#form-import-obat").submit();
-            } else {
-                $("#input-file-import-obat").val("");
-            }
+    // Setelah file dipilih, submit form otomatis
+    $("#file-input").on("change", function () {
+        if ($(this).val()) {
+            $("#import-form").submit();
         }
     });
 
@@ -1172,10 +1165,6 @@ $(function () {
             return;
         }
 
-        if ($("#kunci_harga_obat").is(":checked")) {
-            return;
-        }
-
         const jualBaru = Math.round(beli * (1 + DEFAULT_MARGIN_PERCENT / 100));
         $jual.val(new Intl.NumberFormat("id-ID").format(jualBaru));
     });
@@ -1317,7 +1306,6 @@ $(function () {
             harga_jual_umum: parseRupiah($("#harga_jual_umum").val()),
             harga_otc: parseRupiah($("#harga_otc").val()),
 
-            kunci_harga_obat: $("#kunci_harga_obat").is(":checked") ? 1 : 0,
             kandungan: $("#kandungan").val(),
 
             depot_id: depot_id,
@@ -2120,10 +2108,6 @@ $(function () {
             return;
         }
 
-        if ($("#edit_kunci_harga_obat").is(":checked")) {
-            return;
-        }
-
         const jualBaru = Math.round(beli * (1 + DEFAULT_MARGIN_PERCENT / 100));
         $jual.val(new Intl.NumberFormat("id-ID").format(jualBaru));
     });
@@ -2171,6 +2155,7 @@ $(function () {
                 const data = response.data.data || response.data;
 
                 $("#edit_obat_id").val(data.id);
+                $("#kode_obat").text(data.kode_obat);
                 $("#edit_barcode").val(data.barcode || "");
                 $("#edit_nama_obat").val(data.nama_obat || "");
                 $("#edit_kandungan").val(data.kandungan_obat || "");
@@ -2181,11 +2166,6 @@ $(function () {
 
                 $("#edit_expired_date").val(data.tanggal_kadaluarsa_obat || "");
                 $("#edit_nomor_batch").val(data.nomor_batch_obat || "");
-
-                $("#edit_kunci_harga_obat").prop(
-                    "checked",
-                    data.kunci_harga_obat == 1
-                );
 
                 if (data.total_harga != null) {
                     $("#edit_harga_beli_satuan").val(
@@ -2584,7 +2564,6 @@ $(function () {
             });
     });
 });
-
 
 // ==========================
 // MODAL DELETE OBAT

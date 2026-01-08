@@ -260,6 +260,11 @@
                                         :active="Request::routeIs('cetak.resep.obat')">
                                         Cetak Resep Obat
                                     </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link  nents.sidebar_link href="restock.return.obat.dan.barang"
+                                        class="fa-solid fa-arrows-rotate" :active="Request::routeIs('restock.return.obat.dan.barang')">
+                                        Restock & Return Obat dan BHP
+                                    </x-mycomponents.sidebar_link>
                                 </ul>
                             </div>
 
@@ -560,6 +565,11 @@
                                     <x-mycomponents.sidebar_link href="kadaluarsa.bhp" class="fa-solid fa-calendar-xmark"
                                         :active="Request::routeIs('kadaluarsa.bhp')">
                                         Kadaluarsa BHP
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="cetak.resep.obat" class="fa-solid fa-print"
+                                        :active="Request::routeIs('cetak.resep.obat')">
+                                        Cetak Resep Obat
                                     </x-mycomponents.sidebar_link>
 
                                     <hr class="my-3 border-slate-200 dark:border-slate-700">

@@ -40,36 +40,29 @@
                 </button>
 
                 {{-- Export CSV --}}
-                <button type="button" id="btn-export-csv"
+                <a href="{{ route('export.data.obat') }}"
                     class="inline-flex items-center justify-center px-3 md:px-4 py-2 rounded-xl border text-[11px] md:text-xs
                font-medium bg-white text-gray-700 border-gray-200 hover:bg-gray-50
                dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700">
                     <i class="fa-solid fa-file-csv mr-1.5 text-[10px]"></i>
                     Export CSV
-                </button>
+                </a>
 
-                {{-- Print --}}
-                <button type="button" id="btn-print-obat"
-                    class="inline-flex items-center justify-center px-3 md:px-4 py-2 rounded-xl border text-[11px] md:text-xs
-               font-medium bg-white text-gray-700 border-gray-200 hover:bg-gray-50
-               dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700">
-                    <i class="fa-solid fa-print mr-1.5 text-[10px]"></i>
-                    Print
-                </button>
-
-                {{-- Import --}}
-                <form id="form-import-obat" enctype="multipart/form-data" class="hidden">
+                <!-- Import Excel -->
+                <form id="import-form" action="{{ route('import.data.obat') }}" method="POST"
+                    enctype="multipart/form-data">
                     @csrf
-                    <input type="file" name="file" id="input-file-import-obat" accept=".xlsx,.xls,.csv">
-                </form>
+                    <input type="file" name="file" id="file-input" accept=".xlsx,.xls,.csv" style="display: none;"
+                        required>
 
-                <button type="button" id="btn-import-obat"
-                    class="inline-flex items-center justify-center px-3 md:px-4 py-2 rounded-xl text-[11px] md:text-xs 
+                    <button type="button" id="btn-import"
+                        class="inline-flex items-center justify-center px-3 md:px-4 py-2 rounded-xl text-[11px] md:text-xs 
                font-medium bg-white text-emerald-700 border border-emerald-500 hover:bg-emerald-50
                dark:bg-gray-900 dark:border-emerald-500 dark:text-emerald-300">
-                    <i class="fa-solid fa-upload mr-1.5 text-[10px]"></i>
-                    Import
-                </button>
+                        <i class="fa-solid fa-upload mr-1.5 text-[10px]"></i>
+                        Import
+                    </button>
+                </form>
             </div>
 
         </div>
@@ -378,9 +371,9 @@
                             <label for="stok_obat" class="block text-xs font-medium text-gray-600 dark:text-gray-300">
                                 Stok Obat (global)
                             </label>
-                            <input type="number" name="stok_obat" id="stok_obat" value="0"
+                            <input name="stok_obat" id="stok_obat"
                                 class="mt-1 block w-full text-sm bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                                required>
+                                readonly>
                             <p class="text-[10px] text-gray-400 mt-1">
                                 Stok ini otomatis bertambah dari per depot.
                             </p>
@@ -431,15 +424,6 @@
                                     Atur harga beli dan jual untuk umum dan OTC.
                                 </p>
                             </div>
-                        </div>
-
-                        <div class="flex items-center mt-2">
-                            <input id="kunci_harga_obat" name="kunci_harga_obat" type="checkbox"
-                                class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                            <label for="kunci_harga_obat"
-                                class="ml-2 text-[11px] font-medium text-gray-700 dark:text-gray-300">
-                                Kunci harga obat (tidak dapat diubah saat transaksi)
-                            </label>
                         </div>
                     </div>
 
@@ -618,7 +602,7 @@
     </div>
 </div>
 
-{{-- Modal Update Obat --}}
+<!-- Modal Update Obat -->
 <div id="modalUpdateObat" aria-hidden="true"
     class="hidden fixed inset-0 z-50 flex items-center justify-center w-full h-full px-4 bg-black/40">
     <div class="relative w-full max-w-4xl">
@@ -650,17 +634,27 @@
 
                 <!-- Section: Identitas Obat -->
                 <div class="space-y-4">
-                    <div class="flex items-center gap-2">
-                        <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
-                            <i class="fa-solid fa-capsules text-xs"></i>
+                    <div class="flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <div
+                                class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                                <i class="fa-solid fa-capsules text-xs"></i>
+                            </div>
+                            <div>
+                                <h4
+                                    class="text-xs font-semibold tracking-wide text-gray-800 uppercase dark:text-gray-200">
+                                    Identitas Obat
+                                </h4>
+                                <p class="text-[13px] text-gray-500 dark:text-gray-400">
+                                    Data dasar obat yang tampil di rekam medis dan transaksi.
+                                </p>
+                            </div>
                         </div>
                         <div>
                             <h4 class="text-xs font-semibold tracking-wide text-gray-800 uppercase dark:text-gray-200">
-                                Identitas Obat
+                                Kode Obat
                             </h4>
-                            <p class="text-[11px] text-gray-500 dark:text-gray-400">
-                                Data dasar obat yang tampil di rekam medis dan transaksi.
-                            </p>
+                            <p class="text-[13px] text-gray-500 dark:text-gray-400" id="kode_obat"></p>
                         </div>
                     </div>
 
@@ -866,9 +860,9 @@
                                 class="block text-xs font-medium text-gray-600 dark:text-gray-300">
                                 Stok Obat (global)
                             </label>
-                            <input type="number" name="stok_obat" id="edit_stok_obat"
+                            <input name="stok_obat" id="edit_stok_obat"
                                 class="mt-1 block w-full text-sm bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                                required>
+                                readonly>
                             <p class="text-[10px] text-gray-400 mt-1">
                                 Stok ini otomatis bertambah dari per depot.
                             </p>
@@ -919,15 +913,6 @@
                                     Atur harga beli dan jual untuk umum dan OTC.
                                 </p>
                             </div>
-                        </div>
-
-                        <div class="flex items-center mt-2">
-                            <input id="edit_kunci_harga_obat" name="kunci_harga_obat" type="checkbox"
-                                class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                            <label for="edit_kunci_harga_obat"
-                                class="ml-2 text-[11px] font-medium text-gray-700 dark:text-gray-300">
-                                Kunci harga obat (tidak dapat diubah saat transaksi)
-                            </label>
                         </div>
                     </div>
 

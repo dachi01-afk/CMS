@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Farmasi;
 use App\Http\Controllers\Controller;
 use App\Models\Obat;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -154,11 +155,28 @@ class PenggunaanObatController extends Controller
      */
     public function print(Request $request)
     {
-        $rows      = $this->buildBaseQuery($request)->get();
-        $startDate = $request->input('start_date');
-        $endDate   = $request->input('end_date');
-        $namaObat  = $request->input('nama_obat');
+        $rows = $this->buildBaseQuery($request)->get();
 
-        return view('farmasi.penggunaan-obat.print', compact('rows', 'startDate', 'endDate', 'namaObat'));
+        $startDateRaw = $request->input('start_date');
+        $endDateRaw   = $request->input('end_date');
+        $namaObat     = $request->input('nama_obat');
+
+        // ===== Format tanggal Indonesia =====
+        Carbon::setLocale('id');
+
+        $startDate = $startDateRaw
+            ? Carbon::parse($startDateRaw)->translatedFormat('d F Y')
+            : null;
+
+        $endDate = $endDateRaw
+            ? Carbon::parse($endDateRaw)->translatedFormat('d F Y')
+            : null;
+
+        $printedAt = Carbon::now()->translatedFormat('d F Y H:i');
+
+        return view(
+            'farmasi.penggunaan-obat.print-preview',
+            compact('rows', 'startDate', 'endDate', 'namaObat', 'printedAt')
+        );
     }
 }

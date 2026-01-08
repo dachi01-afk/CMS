@@ -57,7 +57,7 @@
                 <div class="flex items-center gap-2 text-sm w-full md:w-auto">
                     <span class="text-slate-600 dark:text-slate-300 hidden sm:inline">Tampil</span>
 
-                    <select id="obat_pageLength"
+                    <select id="custom_pageLength"
                         class="w-full sm:w-40 md:w-32 border border-slate-300 dark:border-slate-600 text-sm rounded-lg
                                focus:ring-sky-500 focus:border-sky-500
                                bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100

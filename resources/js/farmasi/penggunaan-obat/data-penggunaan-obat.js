@@ -56,6 +56,7 @@ $(function () {
         searching: true, // search bawaan tidak kita pakai, tetap false
         lengthChange: true, // munculkan "Tampil 10 baris"
         pageLength: 10,
+        searchDelay: 250,
         order: [[1, "asc"]],
 
         ajax: {
@@ -306,8 +307,62 @@ $(function () {
         });
     }
 
-    // search custom (input di header)
-    $("#filter_nama_obat").on("keyup", function () {
-        dtPenggunaanObat.search(this.value).draw();
-    });
+    // =========================
+    // Search cepat - Penggunaan Obat
+    // =========================
+    const $filterNamaObat = $("#filter_nama_obat");
+
+    let penggunaanTimer = null;
+    let penggunaanLast = "";
+    let penggunaanXhr = null;
+
+    if ($filterNamaObat.length && dtPenggunaanObat) {
+        // ambil jqXHR DataTables sebelum request dikirim
+        dtPenggunaanObat.on("preXhr.dt", function (e, settings, data) {
+            if (settings.jqXHR) penggunaanXhr = settings.jqXHR;
+        });
+
+        const runPenggunaanSearch = (value) => {
+            if (value === penggunaanLast) return;
+            penggunaanLast = value;
+
+            if (value.length < 2) {
+                dtPenggunaanObat.search("").draw();
+                return;
+            }
+
+            dtPenggunaanObat.search(value).draw();
+        };
+
+        // lebih responsif dari keyup
+        $filterNamaObat.on("input", function () {
+            const value = $(this).val().trim();
+
+            // abort request sebelumnya biar ga numpuk / balapan response
+            if (penggunaanXhr && penggunaanXhr.readyState !== 4) {
+                try {
+                    penggunaanXhr.abort();
+                } catch (e) {}
+            }
+
+            // debounce adaptif
+            const delay =
+                value.length <= 2 ? 300 : value.length <= 5 ? 180 : 120;
+
+            clearTimeout(penggunaanTimer);
+            penggunaanTimer = setTimeout(
+                () => runPenggunaanSearch(value),
+                delay
+            );
+        });
+
+        // Enter = langsung cari
+        $filterNamaObat.on("keydown", function (e) {
+            if (e.key === "Enter") {
+                e.preventDefault();
+                clearTimeout(penggunaanTimer);
+                runPenggunaanSearch($(this).val().trim());
+            }
+        });
+    }
 });

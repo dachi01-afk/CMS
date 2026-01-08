@@ -19,4 +19,9 @@ class SatuanObat extends Model
     {
         return $this->hasMany(BahanHabisPakai::class, 'satuan_id');
     }
+
+    public function stokTransaksiDetail()
+    {
+        return $this->hasMany(StokTransaksiDetail::class, 'satuan_id');
+    }
 }

@@ -2,13 +2,18 @@
 
 namespace App\Http\Controllers\Farmasi;
 
-use App\Http\Controllers\Controller;
-use App\Models\Depot;
-use App\Models\KategoriObat;
 use App\Models\Obat;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
+use App\Models\Depot;
+use App\Models\JenisObat;
+use App\Exports\ObatExport;
+use App\Imports\ObatImport;
 use Illuminate\Support\Str;
+use App\Models\KategoriObat;
+use Illuminate\Http\Request;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
+use Maatwebsite\Excel\Facades\Excel;
 use Yajra\DataTables\Facades\DataTables;
 
 class ObatController extends Controller
@@ -147,10 +152,7 @@ class ObatController extends Controller
                 return 0;
             }
 
-            // "100.000" -> "100000"
-            // "1.234,56" -> "1234.56"
             $value = str_replace(['.', ','], ['', '.'], $value);
-
             return (float) $value;
         };
 
@@ -160,7 +162,6 @@ class ObatController extends Controller
 
         $totalStok = $stokDepotCollection->sum();
 
-        // fallback ke stok_obat kalau stok_depot kosong / semua 0
         if ($totalStok <= 0) {
             $totalStok = (int) $request->input('stok_obat', 0);
         }
@@ -171,11 +172,6 @@ class ObatController extends Controller
         $hargaBeli = $parseNumber($request->input('harga_beli_satuan'));
         $hargaJual = $parseNumber($request->input('harga_jual_umum'));
         $hargaOtc  = $parseNumber($request->input('harga_otc'));
-
-        // ==============================
-        // Kode obat: pakai barcode kalau diisi, kalau tidak auto generate
-        // ==============================
-        $kodeObat = $request->input('barcode') ?: 'OBT-' . Str::upper(Str::random(8));
 
         // ==============================
         // VALIDASI
@@ -196,14 +192,10 @@ class ObatController extends Controller
 
             'stok_obat'        => ['required', 'integer', 'min:0'],
 
-            // harga – sudah dibersihkan di JS, tapi tetap kita validasi
             'harga_beli_satuan' => ['nullable', 'numeric', 'min:0'],
             'harga_jual_umum'   => ['nullable', 'numeric', 'min:0'],
             'harga_otc'         => ['nullable', 'numeric', 'min:0'],
 
-            // 'kunci_harga_obat'  => ['required', 'boolean'],
-
-            // array depot
             'depot_id'          => ['required', 'array', 'min:1'],
             'depot_id.*'        => ['nullable', 'exists:depot,id'],
 
@@ -213,6 +205,44 @@ class ObatController extends Controller
             'tipe_depot'        => ['nullable', 'array'],
             'tipe_depot.*'      => ['nullable', 'exists:tipe_depot,id'],
         ]);
+
+        // ==============================
+        // KODE OBAT
+        // ==============================
+        $kodeObat = $request->input('barcode');
+
+        if (!$kodeObat) {
+            DB::transaction(function () use ($request, &$kodeObat) {
+
+                $jenisId    = $request->input('jenis');
+                $kategoriId = $request->input('kategori_obat');
+
+                $jenis    = JenisObat::find($jenisId);
+                $kategori = KategoriObat::findOrFail($kategoriId);
+
+                $kodeJenis = $jenis
+                    ? strtoupper(substr($jenis->nama_jenis_obat, 0, 3))
+                    : 'UNK';
+
+                $kodeKategori = strtoupper(substr($kategori->nama_kategori_obat, 0, 3));
+
+                $lastKode = Obat::where('jenis_obat_id', $jenisId)
+                    ->where('kategori_obat_id', $kategoriId)
+                    ->orderBy('kode_obat', 'desc')
+                    ->lockForUpdate()
+                    ->value('kode_obat');
+
+                if ($lastKode) {
+                    $lastNumber = (int) substr($lastKode, -3);
+                    $newNumber  = $lastNumber + 1;
+                } else {
+                    $newNumber = 1;
+                }
+
+                $urutan  = str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+                $kodeObat = "{$kodeJenis}-{$kodeKategori}-{$urutan}";
+            });
+        }
 
         // ==============================
         // SIMPAN DATA OBAT
@@ -232,12 +262,10 @@ class ObatController extends Controller
             'total_harga'             => $hargaBeli,
             'harga_jual_obat'         => $hargaJual,
             'harga_otc_obat'          => $hargaOtc,
-            // 'kunci_harga_obat'        => $request->boolean('kunci_harga_obat'),
         ]);
 
         // ==============================
-        // SIMPAN RELASI MANY-TO-MANY DEPOT
-        // + UPDATE tipe_depot_id & jumlah_stok_depot DI TABEL depot
+        // SIMPAN RELASI DEPOT (TIDAK DIUBAH)
         // ==============================
         $depotIds     = $request->input('depot_id', []);
         $tipeDepotIds = $request->input('tipe_depot', []);
@@ -246,36 +274,27 @@ class ObatController extends Controller
         $attachDepotIds = [];
 
         foreach ($depotIds as $index => $depId) {
-            if (!$depId) {
-                continue;
-            }
+            if (!$depId) continue;
 
             $attachDepotIds[] = $depId;
-
             $depot = Depot::find($depId);
-            if (!$depot) {
-                continue;
-            }
+            if (!$depot) continue;
 
             $tipeId = $tipeDepotIds[$index] ?? null;
             $stok   = (int) ($stokDepot[$index] ?? 0);
 
-            // set tipe_depot jika diisi
             if ($tipeId) {
                 $depot->tipe_depot_id = $tipeId;
             }
 
-            // simpan stok per depot
             $depot->jumlah_stok_depot = $stok;
             $depot->save();
         }
 
-        // attach ke pivot depot_obat (many to many)
         if (!empty($attachDepotIds)) {
             $obat->depotObat()->sync($attachDepotIds);
         }
 
-        // reload relasi buat respon ke FE
         $obat->load(
             'brandFarmasi',
             'kategoriObat',
@@ -289,18 +308,6 @@ class ObatController extends Controller
             'data'    => $obat,
             'message' => 'Berhasil menambahkan data obat!',
         ]);
-    }
-
-    /**
-     * Generate kode_obat unik (OBT-XXXXXXX)
-     */
-    protected function generateKodeObat(): string
-    {
-        do {
-            $kode = 'OBT-' . strtoupper(Str::random(8));
-        } while (Obat::where('kode_obat', $kode)->exists());
-
-        return $kode;
     }
 
     public function getObatById($id)
@@ -442,14 +449,19 @@ class ObatController extends Controller
                 if (empty($depotId)) continue;
 
                 $tipeId = $tipeDepot[$index] ?? null;
+                $stok   = $stokDepot[$index] ?? 0;
 
-                // kalau user tidak pilih tipe, skip (jangan overwrite jadi null)
-                if (empty($tipeId)) continue;
+                $updateData = [];
 
-                // ✅ update depot.tipe_depot_id
+                if (!empty($tipeId)) {
+                    $updateData['tipe_depot_id'] = (int) $tipeId;
+                }
+
+                $updateData['jumlah_stok_depot'] = (int) $stok;
+
                 DB::table('depot')
                     ->where('id', (int) $depotId)
-                    ->update(['tipe_depot_id' => (int) $tipeId]);
+                    ->update($updateData);
             }
 
             // ==============================
@@ -484,6 +496,39 @@ class ObatController extends Controller
             ], 500);
         }
     }
+
+    public function export()
+    {
+        return Excel::download(new ObatExport, 'obat.xlsx');
+    }
+
+    public function importExcel(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv'
+        ]);
+
+        Excel::import(new ObatImport, $request->file('file'));
+
+        return redirect()->back()->with('success', 'Data obat berhasil diimport!');
+    }
+
+    public function printPDF()
+    {
+        $obats = Obat::with([
+            'brandFarmasi',
+            'kategoriObat',
+            'jenisObat',
+            'satuanObat',
+            'depotObat.tipeDepot'
+        ])->get();
+
+        return Pdf::loadView('farmasi.obat.print-pdf-obat', compact('obats'))
+            ->setPaper('a4', 'landscape') // orientasi landscape supaya muat tabel
+            ->stream('data-obat.pdf');
+    }
+
+
 
     public function deleteObat($id)
     {

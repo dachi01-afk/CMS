@@ -30,4 +30,9 @@ class BahanHabisPakai extends Model
     {
         return $this->belongsToMany(Depot::class, 'depot_bhp', 'bahan_habis_pakai_id', 'depot_id')->withPivot('stok');
     }
+
+    public function stokTransaksiDetail()
+    {
+        return $this->hasMany(StokTransaksiDetail::class, 'bahan_habis_pakai_id');
+    }
 }

@@ -2,7 +2,7 @@ import axios from "axios";
 import { initFlowbite } from "flowbite";
 import $ from "jquery";
 
-// data poli
+// data layanan
 $(function () {
     var table = $("#layananTable").DataTable({
         processing: true,
@@ -26,15 +26,7 @@ $(function () {
             {
                 data: "harga_layanan",
                 name: "harga_layanan",
-                render: function (data) {
-                    if (!data) return "-";
-                    const formatted = Number(data).toLocaleString("id-ID", {
-                        style: "currency",
-                        currency: "IDR",
-                        minimumFractionDigits: 0,
-                    });
-                    return formatted; // hasilnya: Rp1.000.000
-                },
+                orderable: false,
             },
             { data: "nama_kategori", name: "nama_kategori" },
             {
@@ -147,77 +139,195 @@ $(function () {
     updatePagination();
 });
 
-// Create Data Layanan
+// ==========================
+// UTIL
+// ==========================
+function onlyDigits(str) {
+    return (str || "").toString().replace(/\D/g, "");
+}
+
+function formatRupiahInput(str) {
+    // input -> "150000" => "150.000"
+    const d = onlyDigits(str);
+    return d.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+function formatRupiahDisplay(num) {
+    const n = Number(num || 0);
+    return new Intl.NumberFormat("id-ID").format(n);
+}
+
+function getNumericValue(str) {
+    const d = onlyDigits(str);
+    return d ? parseInt(d, 10) : 0;
+}
+
+function calcHargaAkhir(hargaAwal, diskon, tipe) {
+    let potongan = 0;
+
+    if (tipe === "persen") {
+        // batasin 0-100 biar aman
+        const p = Math.max(0, Math.min(100, Number(diskon || 0)));
+        potongan = (p / 100) * hargaAwal;
+    } else {
+        potongan = Number(diskon || 0);
+    }
+
+    let akhir = hargaAwal - potongan;
+    if (akhir < 0) akhir = 0;
+
+    return Math.round(akhir);
+}
+
+// helper set invalid + error text
+function setInvalid($el, errorSelector, msg) {
+    $el.addClass("is-invalid");
+    $(errorSelector).html(msg || "");
+}
+
+function clearInvalid(selectors, errorSelectors) {
+    $(selectors).removeClass("is-invalid");
+    $(errorSelectors).html("");
+}
+
+// ==========================
+// CREATE LAYANAN
+// ==========================
 $(function () {
     const addModalEl = document.getElementById("modalCreateLayanan");
     const $formAdd = $("#formCreateLayanan");
 
-    // Fungsi untuk reset form: bersihkan input, hapus class error, dan kosongkan pesan error
-    function resetAddForm() {
-        if ($formAdd[0]) {
-            $formAdd[0].reset();
-        }
-        // Hapus class error untuk semua field yang mungkin divalidasi
-        $(
-            "#kategori_layanan_id_create, #nama_layanan_create, #harga_layanan_create"
-        ).removeClass("is-invalid");
-        // Kosongkan pesan error
-        $(
-            "#kategori_layanan_id-error, #nama_layanan-error, #harga_layanan-error"
-        ).html("");
-    }
-
-    // Fungsi untuk show modal
     function showModal() {
-        addModalEl.classList.remove("hidden");
+        addModalEl?.classList.remove("hidden");
     }
 
-    // Fungsi untuk hide modal
     function hideModal() {
-        addModalEl.classList.add("hidden");
+        addModalEl?.classList.add("hidden");
         resetAddForm();
     }
 
-    // Event: Buka modal saat tombol "Tambah" diklik
+    function resetAddForm() {
+        if ($formAdd[0]) $formAdd[0].reset();
+
+        clearInvalid(
+            "#kategori_layanan_id_create, #nama_layanan_create, #harga_sebelum_diskon_create, #diskon_create",
+            "#kategori_layanan_id_create-error, #nama_layanan_create-error, #harga_sebelum_diskon_create-error, #diskon_create-error, #harga_setelah_diskon_create-error"
+        );
+
+        // reset tampilan prefix diskon
+        setDiskonInputStyleCreate();
+        $("#harga_setelah_diskon_create").val("");
+    }
+
+    function setDiskonInputStyleCreate() {
+        const tipe = $("#diskon_tipe_create").val();
+        const $input = $("#diskon_create");
+        const $prefix = $("#diskon_prefix_rp_create");
+
+        if (tipe === "nominal") {
+            $prefix.removeClass("hidden");
+            $input.addClass("pl-10").removeClass("pl-3");
+            $input.attr("placeholder", "0");
+        } else {
+            $prefix.addClass("hidden");
+            $input.removeClass("pl-10").addClass("pl-3");
+            $input.attr("placeholder", "0 - 100");
+        }
+    }
+
+    function hitungHargaCreate() {
+        const hargaAwal = getNumericValue(
+            $("#harga_sebelum_diskon_create").val()
+        );
+        const tipe = $("#diskon_tipe_create").val();
+
+        let diskonVal = 0;
+        if (tipe === "persen") {
+            diskonVal = getNumericValue($("#diskon_create").val());
+            diskonVal = Math.max(0, Math.min(100, diskonVal));
+        } else {
+            diskonVal = getNumericValue($("#diskon_create").val());
+        }
+
+        const akhir = calcHargaAkhir(hargaAwal, diskonVal, tipe);
+        $("#harga_setelah_diskon_create").val(formatRupiahDisplay(akhir));
+    }
+
+    // open/close
     $("#buttonModalCreateLayanan").on("click", function () {
         resetAddForm();
         showModal();
     });
 
-    // Event: Tutup modal saat tombol close diklik
     $(
         "#buttonCloseModalCreateLayanan, #buttonCloseModalCreateLayanan_footer"
     ).on("click", function () {
         hideModal();
     });
 
-    // 💰 Auto Format Rupiah Input (tampilan saja)
-    $("#harga_layanan_create").on("input", function () {
-        let value = $(this).val().replace(/\D/g, ""); // Hapus semua selain angka
-        if (value) {
-            value = new Intl.NumberFormat("id-ID").format(value);
-        }
-        $(this).val(value);
+    // harga input format + hitung
+    $("#harga_sebelum_diskon_create").on("input", function () {
+        $(this).val(formatRupiahInput($(this).val()));
+        hitungHargaCreate();
     });
 
-    // Event: Submit form untuk create data
+    // diskon tipe berubah
+    $("#diskon_tipe_create").on("change", function () {
+        $("#diskon_create").val("");
+        setDiskonInputStyleCreate();
+        hitungHargaCreate();
+    });
+
+    // diskon input
+    $("#diskon_create").on("input", function () {
+        const tipe = $("#diskon_tipe_create").val();
+        const raw = $(this).val();
+
+        if (tipe === "nominal") {
+            $(this).val(formatRupiahInput(raw));
+        } else {
+            // persen hanya angka, batasi 0-100
+            let p = getNumericValue(raw);
+            p = Math.max(0, Math.min(100, p));
+            $(this).val(p ? String(p) : "");
+        }
+
+        hitungHargaCreate();
+    });
+
+    // init style
+    setDiskonInputStyleCreate();
+
+    // submit
     $formAdd.on("submit", function (e) {
         e.preventDefault();
+
         const url = $formAdd.data("url");
 
-        // Ambil nilai dan bersihkan harga dari pemisah ribuan
-        const rawHarga = $("#harga_layanan_create").val() || "";
-        const hargaNumeric = rawHarga.replace(/\D/g, ""); // Kirim hanya digit ke backend
+        clearInvalid(
+            "#kategori_layanan_id_create, #nama_layanan_create, #harga_sebelum_diskon_create, #diskon_create",
+            "#kategori_layanan_id_create-error, #nama_layanan_create-error, #harga_sebelum_diskon_create-error, #diskon_create-error, #harga_setelah_diskon_create-error"
+        );
 
-        // Kumpulkan data form (sesuai skema: kategori_layanan_id, nama_layanan, harga_layanan)
-        // Note: poli_id tidak dikirim karena tidak ada di modal (tambah jika perlu)
+        const hargaSebelum = getNumericValue(
+            $("#harga_sebelum_diskon_create").val()
+        );
+        const tipe = $("#diskon_tipe_create").val();
+        const diskon = getNumericValue($("#diskon_create").val());
+        const hargaSetelah = getNumericValue(
+            $("#harga_setelah_diskon_create").val()
+        );
+
         const formData = {
             kategori_layanan_id: $("#kategori_layanan_id_create").val(),
             nama_layanan: $("#nama_layanan_create").val(),
-            harga_layanan: hargaNumeric,
+            diskon_tipe: tipe,
+            diskon:
+                tipe === "persen" ? Math.max(0, Math.min(100, diskon)) : diskon,
+            harga_sebelum_diskon: hargaSebelum,
+            harga_setelah_diskon: hargaSetelah,
         };
 
-        // Kirim request POST menggunakan Axios
         axios
             .post(url, formData)
             .then((response) => {
@@ -230,45 +340,61 @@ $(function () {
                     timer: 2000,
                     showConfirmButton: false,
                 });
+
                 hideModal();
                 $("#layananTable").DataTable().ajax.reload(null, false);
             })
             .catch((error) => {
-                // Bersihkan error lama dulu
-                $(
-                    "#kategori_layanan_id_create, #nama_layanan_create, #harga_layanan_create"
-                ).removeClass("is-invalid");
-                $(
-                    "#kategori_layanan_id-error, #nama_layanan-error, #harga_layanan-error"
-                ).html("");
-
                 if (error.response?.status === 422) {
                     const errors = error.response.data.errors || {};
 
-                    // Mapping field ke selector input
-                    const fieldMapping = {
-                        kategori_layanan_id: "#kategori_layanan_id_create",
-                        nama_layanan: "#nama_layanan_create",
-                        harga_layanan: "#harga_layanan_create",
+                    // mapping error -> selector input + div error
+                    const map = {
+                        kategori_layanan_id: {
+                            el: "#kategori_layanan_id_create",
+                            err: "#kategori_layanan_id_create-error",
+                        },
+                        nama_layanan: {
+                            el: "#nama_layanan_create",
+                            err: "#nama_layanan_create-error",
+                        },
+                        harga_sebelum_diskon: {
+                            el: "#harga_sebelum_diskon_create",
+                            err: "#harga_sebelum_diskon_create-error",
+                        },
+                        diskon: {
+                            el: "#diskon_create",
+                            err: "#diskon_create-error",
+                        },
+                        harga_setelah_diskon: {
+                            el: "#harga_setelah_diskon_create",
+                            err: "#harga_setelah_diskon_create-error",
+                        },
+                        diskon_tipe: {
+                            el: "#diskon_tipe_create",
+                            err: "#diskon_create-error",
+                        },
                     };
 
-                    for (const field in errors) {
-                        const inputSelector = fieldMapping[field];
-                        if (inputSelector) {
-                            $(inputSelector).addClass("is-invalid");
+                    Object.keys(errors).forEach((field) => {
+                        if (map[field]) {
+                            setInvalid(
+                                $(map[field].el),
+                                map[field].err,
+                                errors[field][0]
+                            );
                         }
-                        $(`#${field}-error`).html(errors[field][0]);
-                    }
+                    });
 
                     Swal.fire({
                         icon: "error",
-                        title: "Validasi Gagal!",
+                        title: "Validasi Gagal",
                         text: "Periksa kembali input Anda.",
                     });
                 } else {
                     Swal.fire({
                         icon: "error",
-                        title: "Error Server!",
+                        title: "Error Server",
                         text:
                             error.response?.data?.message ||
                             "Terjadi kesalahan server.",
@@ -278,67 +404,110 @@ $(function () {
     });
 });
 
-// update data layanan
+// ==========================
+// UPDATE LAYANAN
+// ==========================
 $(function () {
     const editModalEl = document.getElementById("modalUpdateLayanan");
     const editModal = editModalEl
-        ? new Modal(editModalEl, {
-              backdrop: "static",
-              closable: false,
-          })
+        ? new Modal(editModalEl, { backdrop: "static", closable: false })
         : null;
+
     const $formEdit = $("#formUpdateLayanan");
     const $selectKategori = $("#kategori_layanan_id_update");
 
     function resetEditForm() {
         if ($formEdit[0]) $formEdit[0].reset();
 
-        $(
-            "#nama_layanan_update, #harga_layanan_update, #kategori_layanan_id_update"
-        ).removeClass("is-invalid");
+        clearInvalid(
+            "#kategori_layanan_id_update, #nama_layanan_update, #harga_sebelum_diskon_update, #diskon_update",
+            "#kategori_layanan_id_update-error, #nama_layanan_update-error, #harga_sebelum_diskon_update-error, #diskon_update-error, #harga_setelah_diskon_update-error"
+        );
 
-        $(
-            "#nama_layanan-error, #harga_layanan-error, #kategori_layanan_id-error"
-        ).html("");
+        setDiskonInputStyleUpdate();
+        $("#harga_setelah_diskon_update").val("");
     }
 
-    /**
-     * Load kategori layanan ke dalam dropdown UPDATE
-     * lalu set selected berdasarkan kategori_layanan_id
-     */
+    function setDiskonInputStyleUpdate() {
+        const tipe = $("#diskon_tipe_update").val();
+        const $input = $("#diskon_update");
+        const $prefix = $("#diskon_prefix_rp_update");
+
+        if (tipe === "nominal") {
+            $prefix.removeClass("hidden");
+            $input.addClass("pl-10").removeClass("pl-3");
+            $input.attr("placeholder", "0");
+        } else {
+            $prefix.addClass("hidden");
+            $input.removeClass("pl-10").addClass("pl-3");
+            $input.attr("placeholder", "0 - 100");
+        }
+    }
+
+    function hitungHargaUpdate() {
+        const hargaAwal = getNumericValue(
+            $("#harga_sebelum_diskon_update").val()
+        );
+        const tipe = $("#diskon_tipe_update").val();
+
+        let diskonVal = getNumericValue($("#diskon_update").val());
+        if (tipe === "persen")
+            diskonVal = Math.max(0, Math.min(100, diskonVal));
+
+        const akhir = calcHargaAkhir(hargaAwal, diskonVal, tipe);
+        $("#harga_setelah_diskon_update").val(formatRupiahDisplay(akhir));
+    }
+
     function loadKategoriUpdate(selectedId = null) {
         $selectKategori.html(`<option value="">Memuat kategori...</option>`);
 
         axios.get("/kategori_layanan/get-data-kategori-layanan").then((res) => {
             const list = res.data.data || [];
-
             $selectKategori.html(
                 `<option value="">Pilih kategori layanan</option>`
             );
 
             list.forEach((item) => {
-                $selectKategori.append(`
-                        <option value="${item.id}">
-                            ${item.nama_kategori}
-                        </option>
-                    `);
+                $selectKategori.append(
+                    `<option value="${item.id}">${item.nama_kategori}</option>`
+                );
             });
 
-            // Set selected value berdasarkan ID layanan yg sedang di-edit
-            if (selectedId) {
-                $selectKategori.val(selectedId);
-            }
+            if (selectedId) $selectKategori.val(selectedId);
         });
     }
 
-    // Auto format rupiah
-    $("#harga_layanan_update").on("input", function () {
-        let value = $(this).val().replace(/\D/g, "");
-        if (value) value = new Intl.NumberFormat("id-ID").format(value);
-        $(this).val(value);
+    // events format input
+    $("#harga_sebelum_diskon_update").on("input", function () {
+        $(this).val(formatRupiahInput($(this).val()));
+        hitungHargaUpdate();
     });
 
-    // Klik tombol edit
+    $("#diskon_tipe_update").on("change", function () {
+        $("#diskon_update").val("");
+        setDiskonInputStyleUpdate();
+        hitungHargaUpdate();
+    });
+
+    $("#diskon_update").on("input", function () {
+        const tipe = $("#diskon_tipe_update").val();
+        const raw = $(this).val();
+
+        if (tipe === "nominal") {
+            $(this).val(formatRupiahInput(raw));
+        } else {
+            let p = getNumericValue(raw);
+            p = Math.max(0, Math.min(100, p));
+            $(this).val(p ? String(p) : "");
+        }
+
+        hitungHargaUpdate();
+    });
+
+    // init style
+    setDiskonInputStyleUpdate();
+
+    // klik edit
     $("body").on("click", ".btn-edit-layanan", function () {
         resetEditForm();
 
@@ -349,22 +518,45 @@ $(function () {
             .then((response) => {
                 const layanan = response.data.data;
 
-                // Isi form awal
                 $("#id_update").val(layanan.id);
                 $("#nama_layanan_update").val(layanan.nama_layanan);
 
-                $("#harga_layanan_update").val(
-                    new Intl.NumberFormat("id-ID").format(layanan.harga_layanan)
+                $("#harga_sebelum_diskon_update").val(
+                    formatRupiahDisplay(layanan.harga_sebelum_diskon)
+                );
+                $("#harga_setelah_diskon_update").val(
+                    formatRupiahDisplay(layanan.harga_setelah_diskon)
                 );
 
-                /**
-                 * INI YANG PALING PENTING:
-                 * loadKategoriUpdate() HARUS diberikan
-                 * layanan.kategori_layanan_id
-                 * (bukan layanan.kategoriLayanan.id)
-                 */
-                loadKategoriUpdate(layanan.kategori_layanan_id);
+                // jika backend punya diskon_tipe, pakai itu. kalau tidak, fallback inferensi.
+                const tipe = layanan.diskon_tipe
+                    ? layanan.diskon_tipe
+                    : layanan.diskon >= 1 && layanan.diskon <= 100
+                    ? "persen"
+                    : "nominal";
 
+                $("#diskon_tipe_update").val(tipe);
+                setDiskonInputStyleUpdate();
+
+                if (layanan.diskon) {
+                    if (tipe === "persen")
+                        $("#diskon_update").val(
+                            String(
+                                Math.max(
+                                    0,
+                                    Math.min(100, Number(layanan.diskon))
+                                )
+                            )
+                        );
+                    else
+                        $("#diskon_update").val(
+                            formatRupiahDisplay(layanan.diskon)
+                        );
+                } else {
+                    $("#diskon_update").val("");
+                }
+
+                loadKategoriUpdate(layanan.kategori_layanan_id);
                 editModal?.show();
             })
             .catch(() => {
@@ -376,15 +568,31 @@ $(function () {
             });
     });
 
-    // Submit form update
+    // submit update
     $formEdit.on("submit", function (e) {
         e.preventDefault();
+
+        clearInvalid(
+            "#kategori_layanan_id_update, #nama_layanan_update, #harga_sebelum_diskon_update, #diskon_update",
+            "#kategori_layanan_id_update-error, #nama_layanan_update-error, #harga_sebelum_diskon_update-error, #diskon_update-error, #harga_setelah_diskon_update-error"
+        );
+
+        const tipe = $("#diskon_tipe_update").val();
+        const diskon = getNumericValue($("#diskon_update").val());
 
         const formData = {
             id: $("#id_update").val(),
             kategori_layanan_id: $("#kategori_layanan_id_update").val(),
             nama_layanan: $("#nama_layanan_update").val(),
-            harga_layanan: $("#harga_layanan_update").val().replace(/\D/g, ""),
+            diskon_tipe: tipe,
+            diskon:
+                tipe === "persen" ? Math.max(0, Math.min(100, diskon)) : diskon,
+            harga_sebelum_diskon: getNumericValue(
+                $("#harga_sebelum_diskon_update").val()
+            ),
+            harga_setelah_diskon: getNumericValue(
+                $("#harga_setelah_diskon_update").val()
+            ),
         };
 
         axios
@@ -393,7 +601,9 @@ $(function () {
                 Swal.fire({
                     icon: "success",
                     title: "Berhasil!",
-                    text: response.data.message,
+                    text:
+                        response.data.message ||
+                        "Data layanan berhasil diperbarui.",
                     timer: 2000,
                     showConfirmButton: false,
                 });
@@ -402,42 +612,64 @@ $(function () {
                 $("#layananTable").DataTable().ajax.reload(null, false);
             })
             .catch((error) => {
-                $(
-                    "#nama_layanan_update, #harga_layanan_update, #kategori_layanan_id_update"
-                ).removeClass("is-invalid");
-                $(
-                    "#nama_layanan-error, #harga_layanan-error, #kategori_layanan_id-error"
-                ).html("");
-
                 if (error.response?.status === 422) {
-                    const errors = error.response.data.errors;
+                    const errors = error.response.data.errors || {};
 
-                    if (errors.nama_layanan) {
-                        $("#nama_layanan_update").addClass("is-invalid");
-                        $("#nama_layanan-error").html(errors.nama_layanan[0]);
-                    }
+                    const map = {
+                        kategori_layanan_id: {
+                            el: "#kategori_layanan_id_update",
+                            err: "#kategori_layanan_id_update-error",
+                        },
+                        nama_layanan: {
+                            el: "#nama_layanan_update",
+                            err: "#nama_layanan_update-error",
+                        },
+                        harga_sebelum_diskon: {
+                            el: "#harga_sebelum_diskon_update",
+                            err: "#harga_sebelum_diskon_update-error",
+                        },
+                        diskon: {
+                            el: "#diskon_update",
+                            err: "#diskon_update-error",
+                        },
+                        harga_setelah_diskon: {
+                            el: "#harga_setelah_diskon_update",
+                            err: "#harga_setelah_diskon_update-error",
+                        },
+                        diskon_tipe: {
+                            el: "#diskon_tipe_update",
+                            err: "#diskon_update-error",
+                        },
+                    };
 
-                    if (errors.harga_layanan) {
-                        $("#harga_layanan_update").addClass("is-invalid");
-                        $("#harga_layanan-error").html(errors.harga_layanan[0]);
-                    }
-
-                    if (errors.kategori_layanan_id) {
-                        $("#kategori_layanan_id_update").addClass("is-invalid");
-                        $("#kategori_layanan_id-error").html(
-                            errors.kategori_layanan_id[0]
-                        );
-                    }
+                    Object.keys(errors).forEach((field) => {
+                        if (map[field]) {
+                            setInvalid(
+                                $(map[field].el),
+                                map[field].err,
+                                errors[field][0]
+                            );
+                        }
+                    });
 
                     Swal.fire({
                         icon: "error",
                         title: "Validasi Gagal!",
                         text: "Periksa kembali input Anda.",
                     });
+                } else {
+                    Swal.fire({
+                        icon: "error",
+                        title: "Error Server",
+                        text:
+                            error.response?.data?.message ||
+                            "Terjadi kesalahan server.",
+                    });
                 }
             });
     });
 
+    // close modal update
     $(
         "#buttonCloseModalUpdateLayanan, #buttonCloseModalUpdateLayanan_footer"
     ).on("click", function () {
