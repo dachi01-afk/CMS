@@ -232,6 +232,7 @@ class LayananController extends Controller
             ], 500);
         }
     }
+
     public function getDataPoli()
     {
         try {
@@ -251,7 +252,12 @@ class LayananController extends Controller
 
     public function getDataLayananById($id)
     {
-        $dataLayanan = Layanan::with('kategoriLayanan')->where('id', $id)->firstOrFail();
+        $dataLayanan = Layanan::with(['kategoriLayanan', 'layananPoli:id,nama_poli'])
+            ->where('id', $id)
+            ->firstOrFail();
+
+        // ✅ bikin field poli_id jadi array ID poli (sesuai request FE)
+        $dataLayanan->poli_id = $dataLayanan->layananPoli->pluck('id')->values();
 
         return response()->json([
             'data' => $dataLayanan,
@@ -281,6 +287,10 @@ class LayananController extends Controller
             'diskon_tipe' => ['nullable', Rule::in(['nominal', 'persen'])],
             'diskon' => ['nullable'],
             'harga_setelah_diskon' => ['nullable'], // boleh dikirim FE, tapi server tetap hitung ulang
+
+            'is_global' => ['required', 'boolean'],
+            'poli_id'   => ['exclude_if:is_global,1', 'required_if:is_global,0', 'array', 'min:1'],
+            'poli_id.*' => ['integer', 'exists:poli,id'],
         ], [
             'id.required' => 'ID layanan wajib ada.',
             'id.exists' => 'Data layanan tidak ditemukan.',
@@ -370,6 +380,20 @@ class LayananController extends Controller
                 }
 
                 $layanan->update($payload);
+
+                // ✅ simpan is_global kalau kolomnya ada
+                if (Schema::hasColumn('layanan', 'is_global')) {
+                    $layanan->is_global = (int) $request->is_global;
+                    $layanan->save();
+                }
+
+                // ✅ pivot layanan_poli
+                if ((int)$request->is_global === 0) {
+                    $poliId = $request->input('poli_id', []);
+                    $layanan->layananPoli()->sync($poliId);
+                } else {
+                    $layanan->layananPoli()->detach();
+                }
 
                 return response()->json([
                     'success' => true,
