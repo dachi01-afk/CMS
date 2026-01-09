@@ -39,4 +39,8 @@ public function kategori()
         return $this->hasMany(OrderLayananDetail::class);
     }
 
+    public function layananPoli()
+    {
+        return $this->belongsToMany(Poli::class, 'layanan_poli', 'layanan_id', 'poli_id');
+    }
 }

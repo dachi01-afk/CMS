@@ -87,6 +87,7 @@
                     <tr>
                         <th class="px-6 py-3">No</th>
                         <th class="px-6 py-3">Nama Layanan</th>
+                        <th class="px-6 py-3">Poli</th>
                         <th class="px-6 py-3">Harga Layanan</th>
                         <th class="px-6 py-3">Diskon</th>
                         <th class="px-6 py-3">Tarif Layanan</th>
@@ -223,18 +224,18 @@
 
                     <!-- Pilih Poli (muncul kalau tidak global) -->
                     <div id="poli_section_create" class="space-y-1.5">
-                        <label for="poli_ids_create"
+                        <label for="poli_id_create"
                             class="block text-sm font-semibold text-slate-800 dark:text-slate-100">
                             Poli yang Bisa Mengakses Layanan
                         </label>
-                        <select id="poli_ids_create" name="poli_ids[]" multiple
+                        <select id="poli_id_create" name="poli_id[]" multiple
                             class="w-full rounded-lg border border-slate-300 bg-white text-slate-800 text-sm
          dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100">
                         </select>
                         <p class="text-[11px] text-slate-500 dark:text-slate-300">
                             Pilih satu atau beberapa poli. Jika layanan global, bagian ini akan disembunyikan.
                         </p>
-                        <div id="poli_ids_create-error" class="text-red-600 text-sm mt-1"></div>
+                        <div id="poli_id_create-error" class="text-red-600 text-sm mt-1"></div>
                     </div>
 
                 </div>

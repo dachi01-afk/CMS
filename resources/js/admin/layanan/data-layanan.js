@@ -4,7 +4,6 @@ import $ from "jquery";
 
 // data layanan
 $(function () {
-
     function toRupiah(val) {
         const n = Number(val || 0);
         return new Intl.NumberFormat("id-ID").format(n);
@@ -36,6 +35,28 @@ $(function () {
 
             { data: "nama_layanan", name: "nama_layanan" },
 
+            // Poli (global / spesifik)
+            {
+                data: "poli_label",
+                name: "poli_label",
+                orderable: false,
+                searchable: false,
+                defaultContent: "-",
+                render: function (data, type, row) {
+                    if (!data) return "-";
+
+                    // optional: kasih badge sederhana kalau global
+                    if (row.is_global === true || row.is_global === 1) {
+                        return `<span class="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-lg
+                          bg-emerald-50 text-emerald-700 border border-emerald-100">
+                        ${data}
+                    </span>`;
+                    }
+
+                    return data; // list nama poli
+                },
+            },
+
             // Harga sebelum diskon (format Rp di FE, value tetap angka)
             {
                 data: "harga_sebelum_diskon",
@@ -47,18 +68,11 @@ $(function () {
 
             // Diskon -> tampilkan label_diskon (Rp / %), fallback 0
             {
-                data: "label_diskon",       // ✅ ambil dari controller
-                name: "label_diskon",       // (sorting label diskon biasanya nggak dipakai)
+                data: "label_diskon",
+                name: "label_diskon",
                 orderable: false,
-                render: function (data, type, row) {
-                    // kalau 0 / null
-                    if (!data) return "-";
-
-                    // kalau persen sudah "10%" dari server
-                    if (String(data).includes("%")) return data;
-
-                    // kalau nominal dari server sudah "Rp150.000"
-                    return data;
+                render: function (data) {
+                    return data ? data : "-";
                 },
             },
 
@@ -136,12 +150,15 @@ $(function () {
         const totalPages = info.pages;
 
         $info.text(
-            `Menampilkan ${info.start + 1}–${info.end} dari ${info.recordsDisplay} data (Halaman ${currentPage} dari ${totalPages})`
+            `Menampilkan ${info.start + 1}–${info.end} dari ${
+                info.recordsDisplay
+            } data (Halaman ${currentPage} dari ${totalPages})`
         );
 
         $pagination.empty();
 
-        const prevDisabled = currentPage === 1 ? "opacity-50 cursor-not-allowed" : "";
+        const prevDisabled =
+            currentPage === 1 ? "opacity-50 cursor-not-allowed" : "";
         $pagination.append(
             `<li><a href="#" id="btnPrev" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 ${prevDisabled}">Previous</a></li>`
         );
@@ -149,7 +166,8 @@ $(function () {
         const maxVisible = 5;
         let start = Math.max(currentPage - Math.floor(maxVisible / 2), 1);
         let end = Math.min(start + maxVisible - 1, totalPages);
-        if (end - start < maxVisible - 1) start = Math.max(end - maxVisible + 1, 1);
+        if (end - start < maxVisible - 1)
+            start = Math.max(end - maxVisible + 1, 1);
 
         for (let i = start; i <= end; i++) {
             const active =
@@ -162,7 +180,8 @@ $(function () {
             );
         }
 
-        const nextDisabled = currentPage === totalPages ? "opacity-50 cursor-not-allowed" : "";
+        const nextDisabled =
+            currentPage === totalPages ? "opacity-50 cursor-not-allowed" : "";
         $pagination.append(
             `<li><a href="#" id="btnNext" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 ${nextDisabled}">Next</a></li>`
         );
@@ -174,7 +193,8 @@ $(function () {
         if ($link.hasClass("opacity-50")) return;
 
         if ($link.attr("id") === "btnPrev") table.page("previous").draw("page");
-        else if ($link.attr("id") === "btnNext") table.page("next").draw("page");
+        else if ($link.attr("id") === "btnNext")
+            table.page("next").draw("page");
         else if ($link.hasClass("page-number"))
             table.page(parseInt($link.data("page")) - 1).draw("page");
     });
@@ -186,7 +206,6 @@ $(function () {
     table.on("draw", updatePagination);
     updatePagination();
 });
-
 
 // ==========================
 // UTIL
@@ -271,8 +290,8 @@ $(function () {
         if ($formAdd[0]) $formAdd[0].reset();
 
         clearInvalid(
-            "#kategori_layanan_id_create, #nama_layanan_create, #harga_sebelum_diskon_create, #diskon_create, #poli_ids_create, #is_global_create",
-            "#kategori_layanan_id_create-error, #nama_layanan_create-error, #harga_sebelum_diskon_create-error, #diskon_create-error, #harga_setelah_diskon_create-error, #poli_ids_create-error, #is_global_create-error"
+            "#kategori_layanan_id_create, #nama_layanan_create, #harga_sebelum_diskon_create, #diskon_create, #poli_id_create, #is_global_create",
+            "#kategori_layanan_id_create-error, #nama_layanan_create-error, #harga_sebelum_diskon_create-error, #diskon_create-error, #harga_setelah_diskon_create-error, #poli_id_create-error, #is_global_create-error"
         );
 
         setDiskonInputStyleCreate();
@@ -301,7 +320,7 @@ $(function () {
     function initTomPoliCreate() {
         if (poliTomCreate) return;
 
-        poliTomCreate = new TomSelect("#poli_ids_create", {
+        poliTomCreate = new TomSelect("#poli_id_create", {
             plugins: ["remove_button"],
             maxItems: null, // multi
             closeAfterSelect: false, // biar bisa klik banyak tanpa nutup
@@ -344,7 +363,7 @@ $(function () {
                     : [];
 
                 // ✅ cara paling mirip screenshot: isi <option> dulu
-                const sel = document.getElementById("poli_ids_create");
+                const sel = document.getElementById("poli_id_create");
                 sel.innerHTML = "";
 
                 list.forEach((item) => {
@@ -467,8 +486,8 @@ $(function () {
         const url = $formAdd.data("url");
 
         clearInvalid(
-            "#kategori_layanan_id_create, #nama_layanan_create, #harga_sebelum_diskon_create, #diskon_create, #poli_ids_create, #is_global_create",
-            "#kategori_layanan_id_create-error, #nama_layanan_create-error, #harga_sebelum_diskon_create-error, #diskon_create-error, #harga_setelah_diskon_create-error, #poli_ids_create-error, #is_global_create-error"
+            "#kategori_layanan_id_create, #nama_layanan_create, #harga_sebelum_diskon_create, #diskon_create, #poli_id_create, #is_global_create",
+            "#kategori_layanan_id_create-error, #nama_layanan_create-error, #harga_sebelum_diskon_create-error, #diskon_create-error, #harga_setelah_diskon_create-error, #poli_id_create-error, #is_global_create-error"
         );
 
         const hargaSebelum = getNumericValue(
@@ -500,7 +519,7 @@ $(function () {
             is_global: isGlobal ? 1 : 0,
 
             // ✅ FIX: harus poli_ids (bukan poli_id)
-            poli_ids: poliIds,
+            poli_id: poliIds,
         };
 
         axios
@@ -556,8 +575,8 @@ $(function () {
                             err: "#is_global_create-error",
                         },
                         poli_ids: {
-                            el: "#poli_ids_create",
-                            err: "#poli_ids_create-error",
+                            el: "#poli_id_create",
+                            err: "#poli_id_create-error",
                         },
                     };
 
