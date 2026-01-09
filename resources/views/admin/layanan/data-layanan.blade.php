@@ -328,7 +328,7 @@
 <!-- ===================== -->
 <!-- Modal Update Layanan  -->
 <!-- ===================== -->
-<div id="modalUpdateLayanan" aria-hidden="true" 
+<div id="modalUpdateLayanan" aria-hidden="true"
     class="hidden fixed inset-0 z-50 flex items-center justify-center p-4
            bg-slate-900/60 backdrop-blur-sm overflow-y-auto overflow-x-hidden">
 
@@ -391,6 +391,55 @@
                             placeholder="Masukkan nama layanan">
                     </div>
                     <div id="nama_layanan_update-error" class="text-red-600 text-sm mt-1"></div>
+                </div>
+
+                <!-- Pengaturan Akses Poli (UPDATE) -->
+                <div class="space-y-3">
+
+                    <!-- Toggle Global -->
+                    <div
+                        class="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3
+                dark:bg-slate-700 dark:border-slate-600">
+                        <div>
+                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">Layanan Global</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-300">
+                                Jika aktif, layanan dapat diakses oleh semua poli.
+                            </p>
+                        </div>
+
+                        <label class="inline-flex items-center cursor-pointer select-none">
+                            <input type="checkbox" id="is_global_update" name="is_global" class="sr-only peer">
+                            <div
+                                class="relative w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer
+                        peer-checked:bg-emerald-600 dark:bg-slate-600
+                        after:content-[''] after:absolute after:top-0.5 after:left-[2px]
+                        after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all
+                        peer-checked:after:translate-x-full">
+                            </div>
+                        </label>
+                    </div>
+                    <div id="is_global_update-error" class="text-red-600 text-sm -mt-2"></div>
+
+                    <!-- Pilih Poli (muncul kalau tidak global) -->
+                    <div id="poli_section_update" class="space-y-1.5">
+                        <label for="poli_id_update"
+                            class="block text-sm font-semibold text-slate-800 dark:text-slate-100">
+                            Poli yang Bisa Mengakses Layanan
+                        </label>
+
+                        <!-- tetap poli_id ya (array) -->
+                        <select id="poli_id_update" name="poli_id[]" multiple
+                            class="w-full rounded-lg border border-slate-300 bg-white text-slate-800 text-sm
+                   dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100">
+                        </select>
+
+                        <p class="text-[11px] text-slate-500 dark:text-slate-300">
+                            Pilih satu atau beberapa poli. Jika layanan global, bagian ini akan disembunyikan.
+                        </p>
+
+                        <div id="poli_id_update-error" class="text-red-600 text-sm mt-1"></div>
+                    </div>
+
                 </div>
 
                 <!-- Tarif & Diskon -->
