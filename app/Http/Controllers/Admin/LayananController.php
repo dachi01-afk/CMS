@@ -25,9 +25,12 @@ class LayananController extends Controller
 
     public function getDataLayanan()
     {
-        $query = Layanan::with([
-            'kategoriLayanan',
-        ])->latest();
+        $query = Layanan::query()
+            ->with([
+                'kategoriLayanan',
+                'layananPoli:id,nama_poli',
+            ])
+            ->latest();
 
         return DataTables::eloquent($query)
             ->addIndexColumn()
@@ -42,7 +45,7 @@ class LayananController extends Controller
                 return optional($row->kategoriLayanan)->nama_kategori ?? '-';
             })
 
-            // HARGA SEBELUM DISKON (angka mentah, format Rp di JS)
+            // HARGA SEBELUM DISKON (angka mentah)
             ->addColumn('harga_sebelum_diskon', function ($row) {
                 return is_null($row->harga_sebelum_diskon) ? 0 : (float) $row->harga_sebelum_diskon;
             })
@@ -52,19 +55,37 @@ class LayananController extends Controller
                 return is_null($row->diskon) ? 0 : (float) $row->diskon;
             })
 
-            // LABEL DISKON (logika kamu)
+            // LABEL DISKON
             ->addColumn('label_diskon', function ($row) {
-                $diskon = (float) ($row->diskon ?? 0);
+                $hargaAwal  = (float) ($row->harga_sebelum_diskon ?? 0);
+                $hargaAkhir = (float) ($row->harga_setelah_diskon ?? 0);
+                $diskon     = (float) ($row->diskon ?? 0);
 
-                if ($diskon <= 0) return null;
+                // tidak ada diskon
+                if ($hargaAwal <= 0) return null;
 
-                // persen 1-100
-                if ($diskon >= 1 && $diskon <= 100) {
-                    return rtrim(rtrim((string) $diskon, '0'), '.') . '%';
+                $selisih = $hargaAwal - $hargaAkhir;
+
+                // kalau harga akhir >= harga awal, anggap tidak ada diskon
+                if ($selisih <= 0) return null;
+
+                /**
+                 * LOGIKA:
+                 * - Kalau diskon <= 100, kita anggap ini diskon persen (sesuai desain kamu sebelumnya),
+                 *   tapi LABEL persen dihitung dari harga supaya tidak pernah salah tampil.
+                 * - Kalau diskon > 100, anggap nominal.
+                 */
+                if ($diskon > 0 && $diskon <= 100) {
+                    $pct = ($selisih / $hargaAwal) * 100;
+                    $pct = max(0, $pct);
+
+                    $pctStr = rtrim(rtrim(number_format($pct, 2, '.', ''), '0'), '.');
+                    return $pctStr . '%';
                 }
 
-                // nominal
-                return 'Rp' . number_format($diskon, 0, ',', '.');
+                // nominal -> tampilkan dari selisih (lebih konsisten) atau dari diskon
+                // saya pakai selisih supaya pasti match dengan tarif
+                return 'Rp' . number_format($selisih, 0, ',', '.');
             })
 
             // HARGA SETELAH DISKON (angka mentah)
@@ -77,12 +98,27 @@ class LayananController extends Controller
                 return (bool) ($row->is_global ?? false);
             })
 
-            // (OPSIONAL) Label global untuk tampilan badge di tabel
-            ->addColumn('global_label', function ($row) {
-                return ($row->is_global ?? false) ? 'Global' : 'Spesifik Poli';
+            // ✅ KOLOM POLI (LOGIC GLOBAL VS PIVOT)
+            ->addColumn('poli_label', function ($row) {
+                $isGlobal = (int) ($row->is_global ?? 0);
+
+                if ($isGlobal === 1) {
+                    return 'Dapat Diakses Oleh Semua Poli';
+                }
+
+                // ambil nama poli dari relasi pivot
+                $names = $row->layananPoli
+                    ? $row->layananPoli->pluck('nama_poli')->filter()->values()->all()
+                    : [];
+
+                if (count($names) === 0) {
+                    return 'Belum ditentukan';
+                }
+
+                return implode(', ', $names);
             })
 
-            // AKSI (OPSIONAL)
+            // AKSI
             ->addColumn('action', function ($row) {
                 return '
                 <div class="flex items-center justify-center gap-2">
@@ -110,6 +146,7 @@ class LayananController extends Controller
     }
 
 
+
     public function createDataLayanan(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -118,15 +155,21 @@ class LayananController extends Controller
             'harga_sebelum_diskon'     => 'required|numeric|min:0',
             'diskon'                   => 'nullable|numeric|min:0',
             'harga_setelah_diskon'     => 'required|numeric|min:0',
+
+            'is_global'                => 'required|boolean',
+
+            // ✅ PENTING:
+            // kalau is_global = 1, poli_id diabaikan dari validasi (supaya min:1 tidak error walau poli_id=[])
+            'poli_id'                  => 'exclude_if:is_global,1|required_if:is_global,0|array|min:1',
+            'poli_id.*'                => 'integer|exists:poli,id',
         ], [
-            'kategori_layanan_id.required' => 'Kategori layanan wajib dipilih.',
-            'kategori_layanan_id.exists'   => 'Kategori layanan tidak ditemukan.',
-
-            'nama_layanan.required' => 'Nama layanan wajib diisi.',
-
-            'harga_sebelum_diskon.required' => 'Harga sebelum diskon wajib diisi.',
-            'harga_setelah_diskon.required' => 'Harga setelah diskon wajib diisi.',
+            'poli_id.required_if' => 'Jika layanan tidak global, minimal pilih 1 poli.',
+            'poli_id.min'         => 'Minimal pilih 1 poli.',
         ]);
+
+        // ❌ HAPUS dd() ini, karena bikin proses berhenti
+        // dd($validator);
+
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
@@ -135,25 +178,40 @@ class LayananController extends Controller
             ], 422);
         }
 
-        // dd($validator);
-
         try {
-            Layanan::create([
-                'kategori_layanan_id'      => $request->kategori_layanan_id,
-                'nama_layanan'             => $request->nama_layanan,
-                'harga_sebelum_diskon'     => $request->harga_sebelum_diskon,
-                'diskon'                   => $request->diskon ?? 0,
-                'harga_setelah_diskon'     => $request->harga_setelah_diskon,
-            ]);
+            $result = DB::transaction(function () use ($request) {
+
+                $layanan = Layanan::create([
+                    'kategori_layanan_id'      => $request->kategori_layanan_id,
+                    'nama_layanan'             => $request->nama_layanan,
+                    'harga_sebelum_diskon'     => $request->harga_sebelum_diskon,
+                    'diskon'                   => $request->diskon ?? 0,
+                    'harga_setelah_diskon'     => $request->harga_setelah_diskon,
+                    'is_global'                => (int) $request->is_global,
+                ]);
+
+                // ✅ kalau tidak global → simpan pivot
+                if ((int) $request->is_global === 0) {
+                    $poliId = $request->input('poli_id', []); // poli_id tetap ya
+                    $layanan->layananPoli()->sync($poliId);
+                } else {
+                    // ✅ global → pastikan pivot bersih
+                    $layanan->layananPoli()->detach();
+                }
+
+                return $layanan;
+            });
 
             return response()->json([
                 'success' => true,
-                'message' => 'Berhasil menambahkan data layanan.'
+                'message' => 'Berhasil menambahkan data layanan.',
+                'data'    => $result
             ], 201);
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menyimpan data.'
+                'message' => 'Terjadi kesalahan saat menyimpan data.',
+                // 'error' => $e->getMessage(),
             ], 500);
         }
     }

@@ -26,4 +26,9 @@ class Poli extends Model
     {
         return $this->hasMany(OrderLayanan::class);
     }
+
+    public function layananPoli()
+    {
+        return $this->belongsToMany(Layanan::class, 'layanan_poli', 'poli_id', 'layanan_id');
+    }
 }
