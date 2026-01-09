@@ -38,4 +38,9 @@ class Dokter extends Model
     {
         return $this->hasMany(JadwalDokter::class);
     }
+
+    public function orderLayanan()
+    {
+        return $this->hasMany(OrderLayanan::class);
+    }
 }

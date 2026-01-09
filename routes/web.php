@@ -161,6 +161,7 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::post('/create-data-layanan', [LayananController::class, 'createDataLayanan'])->name('layanan.create.data');
         Route::get('/get-data-layanan-by-id/{id}', [LayananController::class, 'getDataLayananById'])->name('layanan.get.data.by.id');
         Route::get('/get-data-kategori-layanan', [LayananController::class, 'getDataKategoriLayanan'])->name('layanan.get.data.kategori.layanan');
+        Route::get('/get-data-poli', [KategoriLayananController::class, 'getDataPoli'])->name('kategori.layanan.get.data.poli');
         Route::post('/update-data-layanan', [LayananController::class, 'updateDataLayanan'])->name('layanan.update.data');
         Route::post('/delete-data-layanan', [LayananController::class, 'deleteDataLayanan'])->name('layanan.delete.data');
     });
