@@ -9,10 +9,11 @@ use App\Models\Poli;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
-use Yajra\DataTables\DataTables;
+use Yajra\DataTables\Facades\DataTables;
 
 class LayananController extends Controller
 {
@@ -24,62 +25,90 @@ class LayananController extends Controller
 
     public function getDataLayanan()
     {
-        $dataLayanan = Layanan::with('kategoriLayanan')->latest()->get();
+        $query = Layanan::with([
+            'kategoriLayanan',
+        ])->latest();
 
-        return DataTables::of($dataLayanan)
+        return DataTables::eloquent($query)
             ->addIndexColumn()
-            ->addColumn('nama_layanan', fn($row) => $row->nama_layanan ?? '-')
-            ->addColumn('harga_layanan', function ($row) {
 
-                $hargaAwal  = number_format($row->harga_sebelum_diskon, 0, ',', '.');
-                $hargaAkhir = number_format($row->harga_setelah_diskon, 0, ',', '.');
+            // NAMA LAYANAN
+            ->editColumn('nama_layanan', function ($row) {
+                return $row->nama_layanan ?? '-';
+            })
 
-                if ($row->diskon > 0) {
+            // KATEGORI
+            ->addColumn('nama_kategori', function ($row) {
+                return optional($row->kategoriLayanan)->nama_kategori ?? '-';
+            })
 
-                    // 🔑 LOGIC UTAMA: TENTUKAN FORMAT DISKON
-                    if ($row->diskon >= 1 && $row->diskon <= 100) {
-                        // Persen
-                        $labelDiskon = rtrim(rtrim($row->diskon, '0'), '.') . '%';
-                    } else {
-                        // Nominal Rupiah
-                        $labelDiskon = 'Rp' . number_format($row->diskon, 0, ',', '.');
-                    }
+            // HARGA SEBELUM DISKON (angka mentah, format Rp di JS)
+            ->addColumn('harga_sebelum_diskon', function ($row) {
+                return is_null($row->harga_sebelum_diskon) ? 0 : (float) $row->harga_sebelum_diskon;
+            })
 
-                    return '
-            <div class="flex flex-col">
-                <span class="line-through text-xs text-gray-400">
-                    Rp' . $hargaAwal . '
-                </span>
-                <span class="font-semibold text-green-600">
-                    Rp' . $hargaAkhir . '
-                </span>
-                <span class="text-xs text-blue-500">
-                    Diskon ' . $labelDiskon . '
-                </span>
-            </div>
-        ';
+            // DISKON (angka mentah)
+            ->addColumn('diskon', function ($row) {
+                return is_null($row->diskon) ? 0 : (float) $row->diskon;
+            })
+
+            // LABEL DISKON (logika kamu)
+            ->addColumn('label_diskon', function ($row) {
+                $diskon = (float) ($row->diskon ?? 0);
+
+                if ($diskon <= 0) return null;
+
+                // persen 1-100
+                if ($diskon >= 1 && $diskon <= 100) {
+                    return rtrim(rtrim((string) $diskon, '0'), '.') . '%';
                 }
 
-                return '<span class="font-medium">Rp' . $hargaAwal . '</span>';
+                // nominal
+                return 'Rp' . number_format($diskon, 0, ',', '.');
             })
-            ->addColumn('nama_kategori', fn($row) => $row->kategoriLayanan->nama_kategori ?? '-')
-            ->addColumn('action', function ($l) {
+
+            // HARGA SETELAH DISKON (angka mentah)
+            ->addColumn('harga_setelah_diskon', function ($row) {
+                return is_null($row->harga_setelah_diskon) ? 0 : (float) $row->harga_setelah_diskon;
+            })
+
+            // GLOBAL BOOLEAN
+            ->addColumn('is_global', function ($row) {
+                return (bool) ($row->is_global ?? false);
+            })
+
+            // (OPSIONAL) Label global untuk tampilan badge di tabel
+            ->addColumn('global_label', function ($row) {
+                return ($row->is_global ?? false) ? 'Global' : 'Spesifik Poli';
+            })
+
+            // AKSI (OPSIONAL)
+            ->addColumn('action', function ($row) {
                 return '
-                <button class="btn-edit-layanan text-blue-600 hover:text-blue-800 mr-2" 
-                        data-id="' . $l->id . '"  
+                <div class="flex items-center justify-center gap-2">
+                    <button 
+                        class="btn-edit-layanan inline-flex items-center justify-center w-8 h-8 rounded-lg 
+                               bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100"
+                        data-id="' . $row->id . '" 
                         title="Edit">
-                    <i class="fa-regular fa-pen-to-square text-lg"></i>
-                </button>
-                <button class="btn-delete-layanan text-red-600 hover:text-red-800" 
-                        data-id="' . $l->id . '" 
+                        <i class="fa-regular fa-pen-to-square text-xs"></i>
+                    </button>
+
+                    <button 
+                        class="btn-delete-layanan inline-flex items-center justify-center w-8 h-8 rounded-lg 
+                               bg-red-50 text-red-600 hover:bg-red-100 border border-red-100"
+                        data-id="' . $row->id . '" 
                         title="Hapus">
-                    <i class="fa-regular fa-trash-can text-lg"></i>
-                </button>
-                ';
+                        <i class="fa-regular fa-trash-can text-xs"></i>
+                    </button>
+                </div>
+            ';
             })
-            ->rawColumns(['action', 'harga_layanan'])
-            ->make(true);
+
+            ->rawColumns(['action'])
+            ->toJson();
     }
+
 
     public function createDataLayanan(Request $request)
     {
@@ -142,6 +171,22 @@ class LayananController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal memuat daftar kategori layanan.'
+            ], 500);
+        }
+    }
+    public function getDataPoli()
+    {
+        try {
+            $data = Poli::all();
+
+            return response()->json([
+                'success' => true,
+                'data' => $data
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat daftar poli.'
             ], 500);
         }
     }

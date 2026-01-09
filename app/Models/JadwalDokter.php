@@ -39,4 +39,9 @@ class JadwalDokter extends Model
             ->whereTime('jam_awal', '<=', $jamSekarang)
             ->whereTime('jam_selesai', '>=', $jamSekarang);
     }
+
+    public function orderLayanan()
+    {
+        return $this->hasMany(OrderLayanan::class);
+    }
 }

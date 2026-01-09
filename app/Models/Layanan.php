@@ -24,9 +24,13 @@ class Layanan extends Model
     {
         return $this->belongsTo(KategoriLayanan::class);
     }
-
     public function penjualanLayanan()
     {
         return $this->hasMany(PenjualanLayanan::class);
+    }
+
+    public function orderLayananDetail()
+    {
+        return $this->hasMany(OrderLayananDetail::class);
     }
 }

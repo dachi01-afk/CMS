@@ -21,4 +21,9 @@ class Poli extends Model
     {
         return $this->hasMany(Kunjungan::class);
     }
+
+    public function orderLayanan()
+    {
+        return $this->hasMany(OrderLayanan::class);
+    }
 }

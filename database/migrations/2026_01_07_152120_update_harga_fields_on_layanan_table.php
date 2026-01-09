@@ -16,6 +16,9 @@ return new class extends Migration
             // tambah field baru
             $table->decimal('diskon', 12, 2)->default(0)->after('harga_sebelum_diskon');
             $table->decimal('harga_setelah_diskon', 12, 2)->after('diskon');
+
+            // layanan bisa dipakai semua poli (global)
+            $table->boolean('is_global')->default(false)->after('harga_setelah_diskon');
         });
     }
 
@@ -29,6 +32,7 @@ return new class extends Migration
             $table->dropColumn([
                 'diskon',
                 'harga_setelah_diskon',
+                'is_global',
             ]);
         });
     }
