@@ -29,4 +29,10 @@ class Layanan extends Model
     {
         return $this->hasMany(PenjualanLayanan::class);
     }
+    // App\Models\Layanan.php
+public function kategori()
+{
+    return $this->belongsTo(KategoriLayanan::class, 'kategori_layanan_id');
+}
+
 }

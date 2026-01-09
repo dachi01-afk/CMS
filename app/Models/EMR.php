@@ -44,4 +44,9 @@ class EMR extends Model
     {
         return $this->hasOne(Pembayaran::class, 'emr_id');
     }
+    public function resumeDokter()
+{
+    return $this->hasOne(\App\Models\ResumeDokter::class, 'emr_id');
+}
+
 }

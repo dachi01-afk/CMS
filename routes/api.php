@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\APIMobileController;
+use App\Http\Controllers\Api\Dokter\ResumeDokterController;
+use App\Http\Controllers\Api\LihatPemeriksaanOlehPerawat;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -87,12 +89,8 @@ Route::middleware(['auth:sanctum', 'role:Pasien'])->group(function () {
 
     // ❌ HAPUS DARI SINI - sudah dipindah ke public
     // Route::get('/getJadwalDokter', [APIMobileController::class, 'getJadwalDokter'])->name('dokter.jadwal');
-    
-    Route::get('/getDataJadwalDokter', [APIMobileController::class, 'getDataJadwalDokter'])->name('dokter.jadwal.data');
-    Route::get('/getDataKunjungan', [APIMobileController::class, 'getDataKunjungan'])->name('kunjungan.data');
-    Route::get('/getDataDokter', [APIMobileController::class, 'getDataDokter'])->name('dokter.data');
-    Route::get('/getDataDokterSpesialisasi', [APIMobileController::class, 'getDataDokterSpesialisasi'])->name('dokter.spesialisasi');
 
+    Route::get('/getDataDokter', [APIMobileController::class, 'getDataDokter'])->name('dokter.data');
     Route::post('/kunjungan/create', [APIMobileController::class, 'bookingDokter'])->name('kunjungan.create');
     Route::put('/kunjungan/{id}/status', [APIMobileController::class, 'ubahStatusKunjungan'])->name('kunjungan.ubah_status');
     Route::post('/kunjungan/batalkan', [APIMobileController::class, 'batalkanStatusKunjungan'])->name('kunjungan.batalkan');
@@ -109,7 +107,28 @@ Route::middleware(['auth:sanctum', 'role:Pasien'])->group(function () {
         Route::get('/status/{order_id}', [APIMobileController::class, 'checkPaymentStatus'])->name('status');
         Route::get('/get-data-metode-pembayaran', [APIMobileController::class, 'getDataMetodePembayaran']);
     });
+    Route::get('/pasien/layanan', [APIMobileController::class, 'getAllLayananPasien']);
+    Route::get('/pasien/layanan/{id}', [APIMobileController::class, 'getDetailLayananPasien']);
+    Route::get('/pasien/kategori-layanan', [APIMobileController::class, 'getKategoriLayanan']);
+    Route::post('/pasien/order-layanan', [APIMobileController::class, 'orderLayananPasienMobile'])
+        ->name('pasien.order_layanan');
+
+    Route::get('/pasien/resume-dokter', [APIMobileController::class, 'getResumeDokterPasien'])
+        ->name('pasien.resume_dokter');
+    Route::get('/pasien/resume-dokter/{id}', [APIMobileController::class, 'getDetailResumeDokterPasien'])
+        ->name('pasien.resume_dokter.detail');
+    Route::get('kategori-layanan', [APIMobileController::class, 'getKategoriLayanan']);
+    Route::get('layanan', [APIMobileController::class, 'getLayananPasien']);
+    Route::get('/pasien/riwayat-pembelian-layanan', [APIMobileController::class, 'getRiwayatPembelianLayanan']);
+    Route::get(
+    '/pasien/dokter-by-poli-jadwal',
+    [APIMobileController::class, 'getDokterByPoliJadwal']
+);
 });
+Route::get(
+    '/pembayaran/get-data-metode-pembayaran',
+    [APIMobileController::class, 'getDataMetodePembayaran']
+);
 
 /*
 |--------------------------------------------------------------------------
@@ -131,17 +150,23 @@ Route::middleware(['auth:sanctum', 'role:Dokter'])
         Route::get('/detail-riwayat-pasien/{kunjunganId}', [APIMobileController::class, 'getDetailRiwayatPasien'])->name('detail_riwayat_pasien');
 
         Route::get('/layanan-order', [APIMobileController::class, 'getLayananOrderDokter']);
-        Route::get('/detail-order-layanan/{kunjunganId}', [APIMobileController::class, 'getDetailOrderLayanan']);
+        Route::get('/detail-order-layanan/{kunjunganId}', [APIMobileController::class, 'getDeta\ilOrderLayanan']);
 
         Route::get('/pasien/riwayat-emr/{pasien_id}', [APIMobileController::class, 'getRiwayatEMRPasien'])->name('riwayat_emr_pasien');
         Route::get('/get-data-kunjungan/{kunjungan_id}', [APIMobileController::class, 'getDataKunjunganById'])->name('get_data_kunjungan_by_id');
-        Route::get('/riwayat-diagnosis/{pasien_id}', [APIMobileController::class, 'getRiwayatDiagnosisDokter'])->name('riwayat_diagnosis_dokter');
-        Route::get('/detail-kunjungan/{kunjungan_id}', [APIMobileController::class, 'getDataKunjungan'])->name('get_data_kunjungan');
         Route::get('/perawat', [APIMobileController::class, 'getPerawatByDokter'])->name('perawat.index');
         Route::get('/emr/{emr_id}', [APIMobileController::class, 'getEmrById']);
         Route::post('/save-emr-layanan', [APIMobileController::class, 'saveEMRLayanan']);
-        
-   
-        
+        Route::get('/emr/{emrId}/resume', [ResumeDokterController::class, 'show']);
+        Route::post('/emr/{emrId}/resume', [ResumeDokterController::class, 'store']);
+        Route::post('/emr/{emrId}/resume/finalize', [ResumeDokterController::class, 'finalize']);
         Route::put('/edit-emr/{emr_id}', [APIMobileController::class, 'editEMR'])->name('edit_emr');
+
+    });
+
+Route::middleware(['auth:sanctum', 'role:Perawat'])
+    ->prefix('perawat')
+    ->group(function () {
+        Route::get('/kunjungan-tugas', [LihatPemeriksaanOlehPerawat::class, 'getKunjunganTugasPerawat']);
+        Route::get('/kunjungan-sudah-vital', [LihatPemeriksaanOlehPerawat::class, 'getKunjunganSudahDiisiVitalPerawat']);
     });
