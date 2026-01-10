@@ -91,6 +91,7 @@
             <thead
                 class="bg-gray-50 dark:bg-gray-800/80 text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-300">
                 <tr>
+                    <th class="px-3 py-2.5 text-left">No</th>
                     <th class="px-3 py-2.5 text-left">Kode</th>
                     <th class="px-3 py-2.5 text-left">Nama Obat</th>
                     <th class="px-3 py-2.5 text-left">Farmasi</th>

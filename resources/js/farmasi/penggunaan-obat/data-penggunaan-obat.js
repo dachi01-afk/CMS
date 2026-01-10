@@ -1,11 +1,13 @@
 $(function () {
     const $table = $("#table-penggunaan-obat");
 
-    // URL dari data-atribut tabel
+    // ==========================
+    // CFG (URL dari data-atribut tabel)
+    // ==========================
     const cfg = {
-        urlData: $table.data("url-data"),
-        urlExport: $table.data("url-export"),
-        urlPrint: $table.data("url-print"),
+        urlData: $table.data("url-data") || null,
+        urlExport: $table.data("url-export") || null,
+        urlPrint: $table.data("url-print") || null,
     };
 
     console.log("CFG PENGGUNAAN OBAT:", cfg);
@@ -15,8 +17,12 @@ $(function () {
     const $namaObat = $("#filter_nama_obat");
     const $lastRefresh = $("#text-last-refresh");
 
+    // ==========================
     // Helper: update label "Last refresh"
+    // ==========================
     function setLastRefresh() {
+        if (!$lastRefresh.length) return;
+
         const now = new Date();
         const formatter = new Intl.DateTimeFormat("id-ID", {
             weekday: "short",
@@ -26,6 +32,7 @@ $(function () {
             hour: "2-digit",
             minute: "2-digit",
         });
+
         $lastRefresh.text(formatter.format(now));
     }
 
@@ -40,21 +47,54 @@ $(function () {
         return `${y}-${m}-${d}`;
     }
 
-    if (!$startDate.val()) $startDate.val(formatDateInput(firstDay));
-    if (!$endDate.val()) $endDate.val(formatDateInput(today));
+    if ($startDate.length && !$startDate.val()) $startDate.val(formatDateInput(firstDay));
+    if ($endDate.length && !$endDate.val()) $endDate.val(formatDateInput(today));
+
+    // ==========================
+    // Helper format rupiah
+    // ==========================
+    function formatRupiah(angka) {
+        const num = Number(angka) || 0;
+        return num.toLocaleString("id-ID", {
+            style: "currency",
+            currency: "IDR",
+            maximumFractionDigits: 0,
+        });
+    }
+
+    // ==========================
+    // Helper: build URL + query params dengan aman
+    // - buang param kosong
+    // - minimal 2 huruf untuk nama_obat (biar konsisten dengan UI)
+    // - anti "??" / query dobel
+    // ==========================
+    function buildUrlWithParams(baseUrl, paramsObj) {
+        if (!baseUrl) return null;
+
+        const urlObj = new URL(baseUrl, window.location.origin);
+
+        Object.entries(paramsObj || {}).forEach(([key, val]) => {
+            if (val === undefined || val === null) return;
+
+            const v = String(val).trim();
+            if (!v) return;
+
+            if (key === "nama_obat" && v.length < 2) return;
+
+            urlObj.searchParams.set(key, v);
+        });
+
+        return urlObj.toString();
+    }
 
     // ==========================
     // DataTables init
     // ==========================
     const dtPenggunaanObat = $table.DataTable({
-        // layout pakai default bawaan DataTables: l f r t i p
-        // (Tampil X baris, Search, Table, Info, Pagination)
-        // => jadi DOM tidak perlu kita atur manual
-
         processing: true,
         serverSide: true,
-        searching: true, // search bawaan tidak kita pakai, tetap false
-        lengthChange: true, // munculkan "Tampil 10 baris"
+        searching: true,
+        lengthChange: true,
         pageLength: 10,
         searchDelay: 250,
         order: [[1, "asc"]],
@@ -63,9 +103,9 @@ $(function () {
             url: cfg.urlData,
             type: "GET",
             data: function (d) {
-                d.start_date = $startDate.val();
-                d.end_date = $endDate.val();
-                d.nama_obat = $namaObat.val();
+                d.start_date = $startDate.length ? ($startDate.val() || "") : "";
+                d.end_date = $endDate.length ? ($endDate.val() || "") : "";
+                d.nama_obat = $namaObat.length ? ($namaObat.val() || "") : "";
             },
         },
 
@@ -177,7 +217,9 @@ $(function () {
                 },
             },
         ],
+
         dom: "t",
+
         rowCallback: function (row, data) {
             $(row).addClass(
                 "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
@@ -186,6 +228,9 @@ $(function () {
         },
     });
 
+    // ==========================
+    // Custom Pagination + Info
+    // ==========================
     const $info = $("#poli-customInfo");
     const $pagination = $("#poli-customPagination");
     const $perPage = $("#poli-pageLength");
@@ -195,15 +240,17 @@ $(function () {
         const currentPage = info.page + 1;
         const totalPages = info.pages;
 
-        $info.text(
-            `Menampilkan ${info.start + 1}–${info.end} dari ${
-                info.recordsDisplay
-            } data (Halaman ${currentPage} dari ${totalPages})`
-        );
+        if ($info.length) {
+            $info.text(
+                `Menampilkan ${info.start + 1}–${info.end} dari ${info.recordsDisplay} data (Halaman ${currentPage} dari ${totalPages})`
+            );
+        }
+
+        if (!$pagination.length) return;
         $pagination.empty();
 
         const prevDisabled =
-            currentPage === 1 ? "opacity-50 cursor-not-allowed" : "";
+            currentPage === 1 ? "opacity-50 cursor-not-allowed pointer-events-none" : "";
         $pagination.append(
             `<li><a href="#" id="btnPrev" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 ${prevDisabled}">Previous</a></li>`
         );
@@ -211,8 +258,7 @@ $(function () {
         const maxVisible = 5;
         let start = Math.max(currentPage - Math.floor(maxVisible / 2), 1);
         let end = Math.min(start + maxVisible - 1, totalPages);
-        if (end - start < maxVisible - 1)
-            start = Math.max(end - maxVisible + 1, 1);
+        if (end - start < maxVisible - 1) start = Math.max(end - maxVisible + 1, 1);
 
         for (let i = start; i <= end; i++) {
             const active =
@@ -225,7 +271,7 @@ $(function () {
         }
 
         const nextDisabled =
-            currentPage === totalPages ? "opacity-50 cursor-not-allowed" : "";
+            currentPage === totalPages ? "opacity-50 cursor-not-allowed pointer-events-none" : "";
         $pagination.append(
             `<li><a href="#" id="btnNext" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 ${nextDisabled}">Next</a></li>`
         );
@@ -234,36 +280,39 @@ $(function () {
     $pagination.on("click", "a", function (e) {
         e.preventDefault();
         const $link = $(this);
-        if ($link.hasClass("opacity-50")) return;
-        if ($link.attr("id") === "btnPrev")
-            dtPenggunaanObat.page("previous").draw("page");
-        else if ($link.attr("id") === "btnNext")
-            dtPenggunaanObat.page("next").draw("page");
+
+        // kalau disable, abaikan
+        if ($link.hasClass("pointer-events-none") || $link.hasClass("opacity-50")) return;
+
+        if ($link.attr("id") === "btnPrev") dtPenggunaanObat.page("previous").draw("page");
+        else if ($link.attr("id") === "btnNext") dtPenggunaanObat.page("next").draw("page");
         else if ($link.hasClass("page-number"))
-            dtPenggunaanObat
-                .page(parseInt($link.data("page")) - 1)
-                .draw("page");
+            dtPenggunaanObat.page(parseInt($link.data("page")) - 1).draw("page");
     });
 
     $perPage.on("change", function () {
         dtPenggunaanObat.page.len(parseInt($(this).val())).draw();
     });
 
-    dtPenggunaanObat.on("draw", updatePagination);
+    dtPenggunaanObat.on("draw", function () {
+        updatePagination();
+        setLastRefresh();
+    });
+
     updatePagination();
+    setLastRefresh();
 
     // ==========================
     // Events
     // ==========================
-
     $("#btn-filter-penggunaan-obat").on("click", function () {
         dtPenggunaanObat.ajax.reload();
     });
 
     $("#btn-reset-penggunaan-obat").on("click", function () {
-        $startDate.val(formatDateInput(firstDay));
-        $endDate.val(formatDateInput(today));
-        $namaObat.val("");
+        if ($startDate.length) $startDate.val(formatDateInput(firstDay));
+        if ($endDate.length) $endDate.val(formatDateInput(today));
+        if ($namaObat.length) $namaObat.val("");
         dtPenggunaanObat.ajax.reload();
     });
 
@@ -274,41 +323,45 @@ $(function () {
         }
     });
 
-    // Export & Print (simple redirect ke route, backend yang handle file/print)
-    $("#btn-export-penggunaan-obat").on("click", function () {
-        if (!cfg.urlExport) return;
-        const params = $.param({
-            start_date: $startDate.val(),
-            end_date: $endDate.val(),
-            nama_obat: $namaObat.val(),
+    // ==========================
+    // Export & Print (SAFE)
+    // ==========================
+    $("#btn-export-penggunaan-obat").on("click", function (e) {
+        e.preventDefault();
+        if (!cfg.urlExport) {
+            console.warn("URL Export kosong. Pastikan data-url-export terisi.");
+            return;
+        }
+
+        const url = buildUrlWithParams(cfg.urlExport, {
+            start_date: $startDate.length ? $startDate.val() : "",
+            end_date: $endDate.length ? $endDate.val() : "",
+            nama_obat: $namaObat.length ? $namaObat.val() : "",
         });
-        window.open(cfg.urlExport + "?" + params, "_blank");
+
+        if (!url) return;
+        window.open(url, "_blank");
     });
 
-    $("#btn-print-penggunaan-obat").on("click", function () {
-        if (!cfg.urlPrint) return;
-        const params = $.param({
-            start_date: $startDate.val(),
-            end_date: $endDate.val(),
-            nama_obat: $namaObat.val(),
-        });
-        window.open(cfg.urlPrint + "?" + params, "_blank");
-    });
+    $("#btn-print-penggunaan-obat").on("click", function (e) {
+        e.preventDefault();
+        if (!cfg.urlPrint) {
+            console.warn("URL Print kosong. Pastikan data-url-print terisi.");
+            return;
+        }
 
-    // ==========================
-    // Helper format rupiah
-    // ==========================
-    function formatRupiah(angka) {
-        const num = Number(angka) || 0;
-        return num.toLocaleString("id-ID", {
-            style: "currency",
-            currency: "IDR",
-            maximumFractionDigits: 0,
+        const url = buildUrlWithParams(cfg.urlPrint, {
+            start_date: $startDate.length ? $startDate.val() : "",
+            end_date: $endDate.length ? $endDate.val() : "",
+            nama_obat: $namaObat.length ? $namaObat.val() : "",
         });
-    }
+
+        if (!url) return;
+        window.open(url, "_blank");
+    });
 
     // =========================
-    // Search cepat - Penggunaan Obat
+    // Search cepat - Penggunaan Obat (debounce + abort)
     // =========================
     const $filterNamaObat = $("#filter_nama_obat");
 
@@ -334,7 +387,6 @@ $(function () {
             dtPenggunaanObat.search(value).draw();
         };
 
-        // lebih responsif dari keyup
         $filterNamaObat.on("input", function () {
             const value = $(this).val().trim();
 
@@ -345,15 +397,10 @@ $(function () {
                 } catch (e) {}
             }
 
-            // debounce adaptif
-            const delay =
-                value.length <= 2 ? 300 : value.length <= 5 ? 180 : 120;
+            const delay = value.length <= 2 ? 300 : value.length <= 5 ? 180 : 120;
 
             clearTimeout(penggunaanTimer);
-            penggunaanTimer = setTimeout(
-                () => runPenggunaanSearch(value),
-                delay
-            );
+            penggunaanTimer = setTimeout(() => runPenggunaanSearch(value), delay);
         });
 
         // Enter = langsung cari

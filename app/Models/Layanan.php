@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Layanan extends Model
 {
     protected $table = 'layanan';
+
     protected $guarded = [];
 
     public function kunjungan()
@@ -24,15 +25,17 @@ class Layanan extends Model
     {
         return $this->belongsTo(KategoriLayanan::class);
     }
+
     public function penjualanLayanan()
     {
         return $this->hasMany(PenjualanLayanan::class);
     }
+
     // App\Models\Layanan.php
-public function kategori()
-{
-    return $this->belongsTo(KategoriLayanan::class, 'kategori_layanan_id');
-}
+    public function kategori()
+    {
+        return $this->belongsTo(KategoriLayanan::class, 'kategori_layanan_id');
+    }
 
     public function orderLayananDetail()
     {
@@ -40,6 +43,11 @@ public function kategori()
     }
 
     public function layananPoli()
+    {
+        return $this->belongsToMany(Poli::class, 'layanan_poli', 'layanan_id', 'poli_id');
+    }
+
+    public function polis()
     {
         return $this->belongsToMany(Poli::class, 'layanan_poli', 'layanan_id', 'poli_id');
     }

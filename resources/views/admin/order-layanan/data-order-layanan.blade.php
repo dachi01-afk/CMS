@@ -265,12 +265,13 @@
                                     class="layanan-select w-full bg-white border border-gray-300 text-gray-900 text-xs md:text-sm rounded-lg
                            focus:ring-2 focus:ring-green-500 focus:border-green-500 px-2.5 py-2
                            dark:bg-gray-700 dark:border-gray-500 dark:text-white">
-                                    <option value="">-- Pilih Layanan --</option>
                                     @foreach ($dataLayanan as $layanan)
                                         <option value="{{ $layanan->id }}"
                                             data-kategori-id="{{ $layanan->kategori_layanan_id }}"
                                             data-kategori-nama="{{ $layanan->kategoriLayanan->nama_kategori ?? '' }}"
-                                            data-harga="{{ $layanan->harga_layanan }}">
+                                            data-harga="{{ $layanan->harga_setelah_diskon }}"
+                                            data-is-global="{{ (int) ($layanan->is_global ?? 0) }}"
+                                            data-poli-ids="{{ $layanan->polis?->pluck('id')->implode(',') ?? '' }}">
                                             {{ $layanan->nama_layanan }}
                                         </option>
                                     @endforeach
@@ -455,8 +456,7 @@
 
             <!-- Form -->
             <form id="formUpdateOrderLayanan"
-                class="px-5 md:px-6 pb-5 pt-4 flex flex-col gap-6 bg-slate-50/60 dark:bg-slate-800"
-                method="POST"
+                class="px-5 md:px-6 pb-5 pt-4 flex flex-col gap-6 bg-slate-50/60 dark:bg-slate-800" method="POST"
                 data-url="{{ route('order.layanan.update.data.order.layanan') }}">
                 @csrf
 
@@ -588,15 +588,15 @@
                                     class="layanan-select w-full bg-white border border-gray-300 text-gray-900 text-xs md:text-sm rounded-lg
                            focus:ring-2 focus:ring-green-500 focus:border-green-500 px-2.5 py-2
                            dark:bg-gray-700 dark:border-gray-500 dark:text-white">
-                                    <option value="">-- Pilih Layanan --</option>
                                     @foreach ($dataLayanan as $layanan)
                                         <option value="{{ $layanan->id }}"
                                             data-kategori-id="{{ $layanan->kategori_layanan_id }}"
                                             data-kategori-nama="{{ $layanan->kategoriLayanan->nama_kategori ?? '' }}"
-                                            data-harga="{{ $layanan->harga_layanan }}">
+                                            data-harga="{{ $layanan->getRawOriginal('harga_setelah_diskon') ?? 0 }}">
                                             {{ $layanan->nama_layanan }}
                                         </option>
                                     @endforeach
+
                                 </select>
                             </div>
 

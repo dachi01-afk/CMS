@@ -195,10 +195,10 @@ class OrderLayananController extends Controller
             'total_tagihan'  => 'required|numeric|min:0',
 
             'items'                         => 'required|array|min:1',
-            'items.*.layanan_id'           => 'required|exists:layanan,id',
-            'items.*.kategori_layanan_id'  => 'required|exists:kategori_layanan,id',
-            'items.*.jumlah'               => 'required|integer|min:1',
-            'items.*.total_tagihan'        => 'required|numeric|min:0',
+            'items.*.layanan_id'            => 'required|exists:layanan,id',
+            'items.*.kategori_layanan_id'   => 'required|exists:kategori_layanan,id',
+            'items.*.jumlah'                => 'required|integer|min:1',
+            'items.*.total_tagihan'         => 'required|numeric|min:0',
         ], [
             'required' => 'Field ini wajib diisi.',
             'exists'   => 'Data tidak valid.',
@@ -208,14 +208,14 @@ class OrderLayananController extends Controller
             'min'      => 'Nilai minimal tidak terpenuhi.',
         ]);
 
-        // Cek apakah ada item dengan kategori "Pemeriksaan"
-        $kategoriIds   = collect($validated['items'])->pluck('kategori_layanan_id')->unique();
-        $kategoriList  = KategoriLayanan::whereIn('id', $kategoriIds)->get();
-        $isPemeriksaan = $kategoriList->contains(function ($k) {
-            return $k->nama_kategori === 'Pemeriksaan';
-        });
+        // Ambil kategori yang kepakai -> cek apakah ada "Pemeriksaan"
+        $kategoriIds  = collect($validated['items'])->pluck('kategori_layanan_id')->unique()->values();
+        $kategoriList = KategoriLayanan::whereIn('id', $kategoriIds)->get(['id', 'nama_kategori']);
 
-        // 2) Validasi tambahan kalau ada layanan Pemeriksaan
+        $kategoriMap = $kategoriList->pluck('nama_kategori', 'id'); // [id => nama]
+        $isPemeriksaan = $kategoriList->contains(fn($k) => $k->nama_kategori === 'Pemeriksaan');
+
+        // 2) Validasi tambahan kalau ada Pemeriksaan
         if ($isPemeriksaan) {
             $request->validate([
                 'poli_id'          => 'required|exists:poli,id',
@@ -231,26 +231,50 @@ class OrderLayananController extends Controller
         try {
             $kunjunganId = null;
 
-            // 3) Kalau ada Pemeriksaan → buat kunjungan + no antrian
+            // ✅ Jika ada pemeriksaan, pastikan poli yang dipilih valid untuk semua layanan pemeriksaan (is_global/pivot)
             if ($isPemeriksaan) {
                 $poliId = (int) $request->poli_id;
 
-                $hariIni = Carbon::now()->locale('id')->dayName; // "Senin", dst.
+                // ambil layanan yang kategori-nya "Pemeriksaan"
+                $pemeriksaanItems = collect($validated['items'])->filter(function ($it) use ($kategoriMap) {
+                    $nama = $kategoriMap[(int)$it['kategori_layanan_id']] ?? null;
+                    return $nama === 'Pemeriksaan';
+                });
 
+                $layananPemeriksaanIds = $pemeriksaanItems->pluck('layanan_id')->unique()->values();
+
+                $layanans = Layanan::with('layananPoli:id')
+                    ->whereIn('id', $layananPemeriksaanIds)
+                    ->get(['id', 'is_global']);
+
+                // cek: layanan restricted harus mengandung poliId di pivot
+                foreach ($layanans as $l) {
+                    if ((int)$l->is_global === 0) {
+                        $ok = $l->layananPoli->pluck('id')->contains($poliId);
+                        if (!$ok) {
+                            throw ValidationException::withMessages([
+                                'poli_id' => ['Poli yang dipilih tidak diizinkan untuk salah satu layanan pemeriksaan.'],
+                            ]);
+                        }
+                    }
+                }
+
+                // 3) Kalau Pemeriksaan → validasi jadwal sesuai poli + hari ini
+                $hariIni = Carbon::now()->locale('id')->dayName;
                 $jadwal = JadwalDokter::where('id', $request->jadwal_dokter_id)
                     ->where('poli_id', $poliId)
-                    // ->where('hari', $hariIni) // aktifkan kalau kolom hari cocok
+                    ->where('hari', $hariIni)
                     ->first();
 
-                if (! $jadwal) {
+                if (!$jadwal) {
                     throw ValidationException::withMessages([
-                        'jadwal_dokter_id' => 'Jadwal dokter tidak valid untuk poli ini / hari ini.',
+                        'jadwal_dokter_id' => ['Jadwal dokter tidak valid untuk poli ini / hari ini.'],
                     ]);
                 }
 
+                // 4) Buat kunjungan + no antrian (lock)
                 $tanggal = today();
 
-                // kunci antrian per poli + tanggal
                 $lastRow = Kunjungan::where('poli_id', $poliId)
                     ->whereDate('tanggal_kunjungan', $tanggal)
                     ->orderByRaw('CAST(no_antrian AS UNSIGNED) DESC')
@@ -274,11 +298,11 @@ class OrderLayananController extends Controller
                 $kunjunganId = $kunjungan->id;
             }
 
-            // 4) Generate kode transaksi sekali untuk semua layanan
+            // 5) Kode transaksi untuk semua item
             $kodeTransaksi = 'TRX-' . strtoupper(uniqid());
 
-            $orders      = [];
-            $grandTotal  = 0;
+            $orders = [];
+            $grandTotal = 0;
 
             foreach ($validated['items'] as $item) {
                 $subtotal = (float) $item['total_tagihan'];
@@ -290,7 +314,7 @@ class OrderLayananController extends Controller
                     'kategori_layanan_id'  => $item['kategori_layanan_id'],
                     'kunjungan_id'         => $kunjunganId,
                     'metode_pembayaran_id' => null,
-                    'jumlah'               => $item['jumlah'],
+                    'jumlah'               => (int)$item['jumlah'],
                     'total_tagihan'        => $subtotal,
                     'sub_total'            => $subtotal,
                     'kode_transaksi'       => $kodeTransaksi,
@@ -298,10 +322,6 @@ class OrderLayananController extends Controller
                     'status'               => 'Belum Bayar',
                 ]);
             }
-
-            // (opsional) override total_tagihan header dengan hasil hitung backend
-            // kalau mau lebih aman:
-            // $validated['total_tagihan'] = $grandTotal;
 
             DB::commit();
 
@@ -316,9 +336,15 @@ class OrderLayananController extends Controller
                     'orders'         => $orders,
                     'kunjungan_id'   => $kunjunganId,
                 ],
-            ]);
+            ], 201);
         } catch (\Throwable $e) {
             DB::rollBack();
+
+            // kalau ini ValidationException, Laravel sudah kirim 422 otomatis,
+            // tapi kita tetap amanin kalau terlempar manual
+            if ($e instanceof ValidationException) {
+                throw $e;
+            }
 
             return response()->json([
                 'success' => false,
@@ -433,6 +459,50 @@ class OrderLayananController extends Controller
                 'total_tagihan' => $items->sum('total_tagihan'),
             ],
         ]);
+    }
+
+    public function getDataPoli(Request $request)
+    {
+        $request->validate([
+            'layanan_id'   => 'required|array|min:1',
+            'layanan_id.*' => 'integer|exists:layanan,id',
+        ]);
+
+        $layanans = Layanan::with('layananPoli:id,nama_poli')
+            ->whereIn('id', $request->layanan_id)
+            ->get(['id', 'is_global']);
+
+        // Ambil yang spesifik poli saja (is_global = 0)
+        $restricted = $layanans->filter(fn($l) => (int)$l->is_global === 0);
+
+        // Jika semua global => boleh semua poli
+        if ($restricted->isEmpty()) {
+            $allPoli = Poli::select('id', 'nama_poli')->orderBy('nama_poli')->get();
+            return response()->json(['success' => true, 'data' => $allPoli, 'mode' => 'all']);
+        }
+
+        // Intersection poli_id dari semua layanan restricted
+        $allowedIds = null;
+        foreach ($restricted as $l) {
+            $ids = $l->layananPoli->pluck('id')->toArray();
+            $allowedIds = is_null($allowedIds) ? $ids : array_values(array_intersect($allowedIds, $ids));
+        }
+
+        if (empty($allowedIds)) {
+            return response()->json([
+                'success' => true,
+                'data' => [],
+                'mode' => 'empty',
+                'message' => 'Tidak ada poli yang cocok untuk semua layanan pemeriksaan yang dipilih.'
+            ]);
+        }
+
+        $allowedPoli = Poli::select('id', 'nama_poli')
+            ->whereIn('id', $allowedIds)
+            ->orderBy('nama_poli')
+            ->get();
+
+        return response()->json(['success' => true, 'data' => $allowedPoli, 'mode' => 'filtered']);
     }
 
     /**
