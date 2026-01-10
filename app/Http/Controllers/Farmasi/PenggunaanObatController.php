@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers\Farmasi;
 
+use App\Exports\PenggunaanObatExport;
 use App\Http\Controllers\Controller;
 use App\Models\Obat;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
+use Maatwebsite\Excel\Facades\Excel;
+use Maatwebsite\Excel\Excel as ExcelWriter;
 
 class PenggunaanObatController extends Controller
 {
@@ -98,55 +102,25 @@ class PenggunaanObatController extends Controller
             ->make(true);
     }
 
-    /**
-     * #2 – Export CSV
-     * route: farmasi.penggunaan-obat.export
-     */
     public function export(Request $request)
     {
-        $rows = $this->buildBaseQuery($request)->get();
+        $query = $this->buildBaseQuery($request);
 
-        $fileName = 'penggunaan-obat-' . now()->format('Ymd_His') . '.csv';
+        $fileName = 'penggunaan-obat-' . now()->format('Ymd_His') . '.xlsx';
 
-        $headers = [
-            'Content-Type'        => 'text/csv; charset=UTF-8',
-            'Content-Disposition' => "attachment; filename=\"$fileName\"",
-        ];
+        $start = $request->start_date;
+        $end   = $request->end_date;
 
-        $callback = function () use ($rows) {
-            $handle = fopen('php://output', 'w');
+        $title = 'Laporan Penggunaan Obat';
+        if ($start && $end) {
+            $title .= " ({$start} s/d {$end})";
+        }
 
-            // (opsional) BOM biar Excel enak baca UTF-8
-            fprintf($handle, chr(0xEF) . chr(0xBB) . chr(0xBF));
-
-            fputcsv($handle, [
-                'Nama Obat',
-                'Kandungan',
-                'Satuan',
-                'Penggunaan Umum',
-                'Nominal Umum',
-                'Penggunaan BPJS',
-                'Nominal BPJS',
-                'Sisa Obat',
-            ]);
-
-            foreach ($rows as $row) {
-                fputcsv($handle, [
-                    $row->nama_obat,
-                    $row->kandungan_obat,
-                    $row->satuan,
-                    $row->penggunaan_umum,
-                    $row->nominal_umum,
-                    $row->penggunaan_bpjs,
-                    $row->nominal_bpjs,
-                    $row->sisa_obat,
-                ]);
-            }
-
-            fclose($handle);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        return Excel::download(
+            new PenggunaanObatExport($query, $title),
+            $fileName,
+            ExcelWriter::XLSX
+        );
     }
 
     /**
@@ -155,28 +129,36 @@ class PenggunaanObatController extends Controller
      */
     public function print(Request $request)
     {
-        $rows = $this->buildBaseQuery($request)->get();
+        // pakai query yang sama biar hasilnya konsisten dengan tabel & export
+        $query = $this->buildBaseQuery($request);
 
-        $startDateRaw = $request->input('start_date');
-        $endDateRaw   = $request->input('end_date');
-        $namaObat     = $request->input('nama_obat');
+        // untuk PDF, sebaiknya ambil semua rows (kalau rekap per obat biasanya kecil)
+        $rows = $query->orderBy('nama_obat')->get();
 
-        // ===== Format tanggal Indonesia =====
-        Carbon::setLocale('id');
+        $start = $request->start_date;
+        $end   = $request->end_date;
+        $nama  = $request->nama_obat;
 
-        $startDate = $startDateRaw
-            ? Carbon::parse($startDateRaw)->translatedFormat('d F Y')
-            : null;
+        $periode = '-';
+        if ($start && $end) {
+            $periode = Carbon::parse($start)->translatedFormat('d F Y')
+                . ' s/d ' .
+                Carbon::parse($end)->translatedFormat('d F Y');
+        }
 
-        $endDate = $endDateRaw
-            ? Carbon::parse($endDateRaw)->translatedFormat('d F Y')
-            : null;
+        $meta = [
+            'judul'      => 'Laporan Penggunaan Obat',
+            'periode'    => $periode,
+            'filterNama' => $nama ? $nama : '-',
+            'printedAt'  => now()->translatedFormat('d F Y H:i'),
+        ];
 
-        $printedAt = Carbon::now()->translatedFormat('d F Y H:i');
+        $pdf = Pdf::loadView('farmasi.penggunaan-obat.print-preview', compact('rows', 'meta'))
+            ->setPaper('a4', 'landscape');
 
-        return view(
-            'farmasi.penggunaan-obat.print-preview',
-            compact('rows', 'startDate', 'endDate', 'namaObat', 'printedAt')
-        );
+        $fileName = 'cetak-penggunaan-obat-' . now()->format('Ymd_His') . '.pdf';
+
+        // stream = buka di tab baru (lebih cocok untuk print)
+        return $pdf->stream($fileName);
     }
 }

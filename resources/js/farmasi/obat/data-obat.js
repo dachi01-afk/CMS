@@ -31,19 +31,23 @@ $(function () {
         info: false,
         ajax: "/farmasi/obat/get-data-obat",
         columns: [
-            // KODE
+            {
+                data: "DT_RowIndex",
+                name: "DT_RowIndex",
+                orderable: false,
+                searchable: false,
+            },
+
             {
                 data: "kode",
                 name: "kode",
             },
 
-            // NAMA OBAT
             {
                 data: "nama_obat",
                 name: "nama_obat",
             },
 
-            // FARMASI (brand)
             {
                 data: "farmasi",
                 name: "farmasi",
@@ -53,7 +57,6 @@ $(function () {
                 },
             },
 
-            // JENIS
             {
                 data: "jenis",
                 name: "jenis",
@@ -63,7 +66,6 @@ $(function () {
                 },
             },
 
-            // KATEGORI
             {
                 data: "kategori",
                 name: "kategori",
@@ -74,7 +76,6 @@ $(function () {
                 },
             },
 
-            // STOK (global)
             {
                 data: "stok",
                 name: "stok",
@@ -99,7 +100,6 @@ $(function () {
                 },
             },
 
-            // HARGA UMUM
             {
                 data: "harga_umum",
                 name: "harga_umum",
@@ -110,7 +110,6 @@ $(function () {
                 },
             },
 
-            // HARGA BELI
             {
                 data: "harga_beli",
                 name: "harga_beli",
@@ -121,7 +120,6 @@ $(function () {
                 },
             },
 
-            // AVG HPP
             {
                 data: "avg_hpp",
                 name: "avg_hpp",
@@ -132,7 +130,6 @@ $(function () {
                 },
             },
 
-            // HARGA OTC
             {
                 data: "harga_otc",
                 name: "harga_otc",
@@ -143,7 +140,6 @@ $(function () {
                 },
             },
 
-            // MARGIN PROFIT
             {
                 data: "margin_profit",
                 name: "margin_profit",
@@ -154,7 +150,6 @@ $(function () {
                 },
             },
 
-            // AKSI
             {
                 data: "action",
                 name: "action",

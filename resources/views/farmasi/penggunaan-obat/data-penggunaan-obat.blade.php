@@ -104,9 +104,10 @@
 
         <div class="flex gap-2 justify-end">
             <button id="btn-export-penggunaan-obat" type="button"
+                data-url-export="{{ route('export.data.penggunaan.obat') }}"
                 class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded-lg
-                       border border-emerald-500 text-emerald-600 hover:bg-emerald-50
-                       dark:border-emerald-400 dark:text-emerald-200 dark:hover:bg-emerald-900/20">
+           border border-emerald-500 text-emerald-600 hover:bg-emerald-50
+           dark:border-emerald-400 dark:text-emerald-200 dark:hover:bg-emerald-900/20">
                 <i class="fa-solid fa-file-excel text-[10px]"></i>
                 <span>Export</span>
             </button>
