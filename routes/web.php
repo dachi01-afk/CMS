@@ -279,6 +279,7 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::get('/', [OrderLayananController::class, 'index'])->name('order.layanan.index');
         Route::get('/get-data-order-layanan', [OrderLayananController::class, 'getDataOrderLayanan'])->name('order.layanan.get.data.order.layanan');
         Route::get('/get-data-pasien', [OrderLayananController::class, 'searchPasien'])->name('order.layanan.get.data.pasien');
+        Route::get('/get-data-poli', [OrderLayananController::class, 'getDataPoli'])->name('order.layanan.get.data.poli');
         Route::get('/get-data-jadwal-dokter-hari-ini', [OrderLayananController::class, 'getJadwalDokterHariIni'])->name('order.layanan.get.data.jadwal.dokter.hari.ini');
         Route::post('/create-data-order-layanan', [OrderLayananController::class, 'createDataOrderLayanan'])->name('order.layanan.create.data.order.layanan');
         Route::get('/get-data-order-layanan/{kodeTransaksi}', [OrderLayananController::class, 'getDataOrderLayananById'])->name('order.layanan.get.data.order.layanan.by.id');
