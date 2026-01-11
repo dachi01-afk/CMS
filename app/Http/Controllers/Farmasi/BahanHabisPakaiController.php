@@ -86,39 +86,41 @@ class BahanHabisPakaiController extends Controller
             };
 
             // ==============================
-            // VALIDASI (custom response JSON)
+            // VALIDASI
             // ==============================
             $validator = Validator::make($request->all(), [
-                'kode'          => ['nullable', 'string', 'max:255'],
-                'nama_barang'   => ['required', 'string', 'max:255'],
+                'kode'        => ['nullable', 'string', 'max:255', 'unique:bahan_habis_pakai,kode'],
+                'nama_barang' => ['required', 'string', 'max:255'],
 
                 'brand_farmasi_id' => ['nullable', 'exists:brand_farmasi,id'],
                 'jenis_id'         => ['nullable', 'exists:jenis_obat,id'],
                 'satuan_id'        => ['required', 'exists:satuan_obat,id'],
 
-                'dosis'                    => ['required', 'numeric', 'min:0'],
-                'tanggal_kadaluarsa_bhp'   => ['required', 'date'],
-                'no_batch'                 => ['required', 'string', 'max:255'],
+                'dosis'                  => ['required', 'numeric', 'min:0'],
+                'tanggal_kadaluarsa_bhp' => ['required', 'date'],
+                'no_batch'               => ['required', 'string', 'max:255'],
 
-                'stok_barang'              => ['required', 'integer', 'min:0'],
+                // stok_barang TIDAK WAJIB karena akan dihitung dari stok_depot
+                'stok_barang'            => ['nullable', 'integer', 'min:0'],
 
-                'harga_beli_satuan_bhp'    => ['nullable', 'numeric', 'min:0'],
-                'harga_jual_umum_bhp'      => ['nullable', 'numeric', 'min:0'],
-                'harga_otc_bhp'            => ['nullable', 'numeric', 'min:0'],
+                'harga_beli_satuan_bhp'  => ['nullable', 'numeric', 'min:0'],
+                'harga_jual_umum_bhp'    => ['nullable', 'numeric', 'min:0'],
+                'harga_otc_bhp'          => ['nullable', 'numeric', 'min:0'],
 
-                'depot_id'                 => ['required', 'array', 'min:1'],
-                'depot_id.*'               => ['nullable', 'exists:depot,id'],
+                'depot_id'               => ['required', 'array', 'min:1'],
+                'depot_id.*'             => ['required', 'distinct', 'exists:depot,id'],
 
-                'stok_depot'               => ['required', 'array', 'min:1'],
-                'stok_depot.*'             => ['nullable', 'integer', 'min:0'],
+                'stok_depot'             => ['required', 'array', 'min:1'],
+                'stok_depot.*'           => ['required', 'integer', 'min:0'],
 
-                'tipe_depot'               => ['nullable', 'array'],
-                'tipe_depot.*'             => ['nullable', 'exists:tipe_depot,id'],
+                'tipe_depot'             => ['nullable', 'array'],
+                'tipe_depot.*'           => ['nullable', 'exists:tipe_depot,id'],
             ], [
-                // opsional: custom message lebih enak dibaca
                 'nama_barang.required' => 'Nama barang wajib diisi.',
                 'satuan_id.required'   => 'Satuan wajib dipilih.',
                 'depot_id.required'    => 'Minimal 1 depot harus dipilih.',
+                'depot_id.*.required'  => 'Nama depot wajib dipilih.',
+                'depot_id.*.distinct'  => 'Depot tidak boleh duplikat.',
             ]);
 
             if ($validator->fails()) {
@@ -130,93 +132,96 @@ class BahanHabisPakaiController extends Controller
             }
 
             // ==============================
-            // Hitung total stok dari semua depot
+            // HITUNG TOTAL STOK DARI DEPOT (SUM SEMUA, TERMASUK 0)
             // ==============================
-            $stokDepotCollection = collect($request->input('stok_depot', []))
-                ->map(fn($v) => (int) $v)
-                ->filter(fn($v) => $v > 0);
+            $stokDepotArr = collect($request->input('stok_depot', []))
+                ->map(fn($v) => max((int) $v, 0))
+                ->values()
+                ->all();
 
-            $totalStok = $stokDepotCollection->sum();
-
-            if ($totalStok <= 0) {
-                $totalStok = (int) $request->input('stok_barang', 0);
-            }
-
-            // contoh error bisnis (optional):
-            // jika semua stok 0 dan stok_barang juga 0, boleh dianggap invalid
-            if ($totalStok <= 0) {
-                return response()->json([
-                    'status'  => 400,
-                    'message' => 'Stok tidak boleh 0. Isi stok barang atau stok depot.',
-                ], 400);
-            }
+            $totalStok = array_sum($stokDepotArr);
 
             // ==============================
-            // Parse harga
+            // PARSE HARGA
             // ==============================
             $hargaBeli = $parseNumber($request->input('harga_beli_satuan_bhp'));
             $hargaJual = $parseNumber($request->input('harga_jual_umum_bhp'));
             $hargaOtc  = $parseNumber($request->input('harga_otc_bhp'));
 
             // ==============================
-            // Kode: pakai barcode kalau diisi, kalau tidak auto
+            // SIMPAN TRANSAKSI
             // ==============================
-            $kodeBHP = $request->input('kode') ?: 'BHP-' . Str::upper(Str::random(8));
+            $dataBHP = DB::transaction(function () use (
+                $request,
+                $hargaBeli,
+                $hargaJual,
+                $hargaOtc,
+                $totalStok
+            ) {
+                // ✅ KODE BARANG TETAP ADA
+                // Jika user isi kode -> pakai
+                // Jika kosong -> auto BHP-YYYYMM-XXXX
+                $kodeBHP = $request->input('kode');
 
-            // ==============================
-            // SIMPAN (pakai transaksi biar aman)
-            // ==============================
-            $dataBHP = DB::transaction(function () use ($request, $kodeBHP, $hargaBeli, $hargaJual, $hargaOtc, $totalStok) {
+                if (!$kodeBHP) {
+                    $ymd    = now()->format('Ymd');        // YYYYMMDD
+                    $prefix = "BHP-{$ymd}-";               // BHP-YYYYMMDD-
+
+                    $lastKode = BahanHabisPakai::where('kode', 'like', $prefix . '%')
+                        ->lockForUpdate()
+                        ->orderBy('kode', 'desc')
+                        ->value('kode');
+
+                    $nextNumber = 1;
+
+                    if ($lastKode) {
+                        $lastSeq = (int) substr($lastKode, -4); // ambil XXXX
+                        $nextNumber = $lastSeq + 1;
+                    }
+
+                    $kodeBHP = $prefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+                }
 
                 $dataBHP = BahanHabisPakai::create([
-                    'kode'               => $kodeBHP,
+                    'kode'                   => $kodeBHP,
                     'brand_farmasi_id'        => $request->input('brand_farmasi_id'),
-                    'jenis_id'           => $request->input('jenis_id'),
-                    'satuan_id'               => $request->input('satuan_id'),
-                    'nama_barang'             => $request->input('nama_barang'),
-                    'tanggal_kadaluarsa_bhp'  => $request->input('tanggal_kadaluarsa_bhp'),
-                    'no_batch'                => $request->input('no_batch'),
-                    'stok_barang'             => $totalStok,
-                    'dosis'                   => $request->input('dosis'),
-                    'harga_beli_satuan_bhp'   => $hargaBeli,
-                    'harga_jual_umum_bhp'     => $hargaJual,
-                    'harga_otc_bhp'           => $hargaOtc,
+                    'jenis_id'               => $request->input('jenis_id'),
+                    'satuan_id'              => $request->input('satuan_id'),
+                    'nama_barang'            => $request->input('nama_barang'),
+                    'tanggal_kadaluarsa_bhp' => $request->input('tanggal_kadaluarsa_bhp'),
+                    'no_batch'               => $request->input('no_batch'),
+                    'stok_barang'            => $totalStok, // ✅ selalu dari SUM depot
+                    'dosis'                  => $request->input('dosis'),
+                    'harga_beli_satuan_bhp'  => $hargaBeli,
+                    'harga_jual_umum_bhp'    => $hargaJual,
+                    'harga_otc_bhp'          => $hargaOtc,
                 ]);
 
                 $depotIds     = $request->input('depot_id', []);
                 $stokDepot    = $request->input('stok_depot', []);
-                $tipeDepotIds = $request->input('tipe_depot', []); // kalau pivot kamu juga simpan tipe (opsional)
+                $tipeDepotIds = $request->input('tipe_depot', []);
 
                 $syncData = [];
 
-                // bikin payload sync untuk pivot: depot_bhp.stok
-                foreach ($depotIds as $index => $depId) {
-                    if (empty($depId)) continue;
+                foreach ($depotIds as $i => $depId) {
+                    $depId = (int) $depId;
+                    $stok  = (int) ($stokDepot[$i] ?? 0);
+                    $stok  = max($stok, 0);
 
-                    $stok = (int) ($stokDepot[$index] ?? 0);
+                    $row = ['stok' => $stok];
 
-                    // kalau mau skip depot yg stoknya 0, aktifkan ini:
-                    // if ($stok <= 0) continue;
+                    // Jika pivot kamu punya kolom tipe_depot_id, aktifkan baris ini:
+                    // $row['tipe_depot_id'] = $tipeDepotIds[$i] ?? null;
 
-                    $syncData[$depId] = [
-                        'stok' => $stok,
-                    ];
+                    $syncData[$depId] = $row;
                 }
 
-                // simpan ke pivot depot_bhp
-                if (!empty($syncData)) {
-                    $dataBHP->depotBHP()->sync($syncData); // insert/update stok di depot_bhp
-                }
+                $dataBHP->depotBHP()->sync($syncData);
 
                 return $dataBHP;
             });
 
-            $dataBHP->load(
-                'brandFarmasi',
-                'jenisBHP',
-                'satuanBHP',
-                'depotBHP.tipeDepot'
-            );
+            $dataBHP->load('brandFarmasi', 'jenisBHP', 'satuanBHP', 'depotBHP.tipeDepot');
 
             return response()->json([
                 'status'  => 200,
@@ -226,8 +231,8 @@ class BahanHabisPakaiController extends Controller
         } catch (Throwable $e) {
             Log::error('createDataBahanHabisPakai error', [
                 'message' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
+                'file'    => $e->getFile(),
+                'line'    => $e->getLine(),
             ]);
 
             $payload = [
@@ -236,7 +241,7 @@ class BahanHabisPakaiController extends Controller
             ];
 
             if (config('app.debug')) {
-                $payload['debug'] = $e->getMessage(); // hanya local
+                $payload['debug'] = $e->getMessage();
             }
 
             return response()->json($payload, 500);
@@ -261,8 +266,6 @@ class BahanHabisPakaiController extends Controller
 
     public function updateDataBahanHabisPakai(Request $request, $id)
     {
-        $dataBhp = BahanHabisPakai::findOrFail($id);
-
         $parseNumber = function ($value) {
             if ($value === null || $value === '') return 0;
             $value = str_replace(['.', ','], ['', '.'], $value);
@@ -273,32 +276,34 @@ class BahanHabisPakaiController extends Controller
         // VALIDASI
         // ==============================
         $validated = $request->validate([
-            'kode'                => ['nullable', 'string', 'max:255'],
-            'nama_barang'         => ['required', 'string', 'max:255'],
+            // kode boleh divalidasi agar input aman, tapi TIDAK dipakai untuk update
+            'kode'                   => ['nullable', 'string', 'max:255'],
 
-            'brand_farmasi_id'    => ['nullable', 'exists:brand_farmasi,id'],
-            'jenis_id'            => ['nullable', 'exists:jenis_obat,id'],
-            'satuan_id'           => ['required', 'exists:satuan_obat,id'],
+            'nama_barang'            => ['required', 'string', 'max:255'],
+            'brand_farmasi_id'       => ['nullable', 'exists:brand_farmasi,id'],
+            'jenis_id'               => ['nullable', 'exists:jenis_obat,id'],
+            'satuan_id'              => ['required', 'exists:satuan_obat,id'],
 
-            'dosis'               => ['required', 'numeric', 'min:0'],
+            'dosis'                  => ['required', 'numeric', 'min:0'],
             'tanggal_kadaluarsa_bhp' => ['required', 'date'],
-            'no_batch'            => ['required', 'string', 'max:255'],
+            'no_batch'               => ['required', 'string', 'max:255'],
 
-            'stok_barang'         => ['required', 'integer', 'min:0'],
+            // stok_barang tidak lagi jadi sumber utama, tapi biarkan validasi kalau form kamu masih kirim
+            'stok_barang'            => ['nullable', 'integer', 'min:0'],
 
-            'harga_beli_satuan_bhp' => ['nullable'],
-            'harga_jual_umum_bhp'   => ['nullable'],
-            'harga_otc_bhp'         => ['nullable'],
+            'harga_beli_satuan_bhp'  => ['nullable'],
+            'harga_jual_umum_bhp'    => ['nullable'],
+            'harga_otc_bhp'          => ['nullable'],
 
             // array depot
-            'depot_id'            => ['nullable', 'array'],
-            'depot_id.*'          => ['nullable', 'exists:depot,id'],
+            'depot_id'               => ['nullable', 'array'],
+            'depot_id.*'             => ['nullable', 'exists:depot,id'],
 
-            'stok_depot'          => ['nullable', 'array'],
-            'stok_depot.*'        => ['nullable', 'integer', 'min:0'],
+            'stok_depot'             => ['nullable', 'array'],
+            'stok_depot.*'           => ['nullable', 'integer', 'min:0'],
 
-            'tipe_depot'          => ['nullable', 'array'],
-            'tipe_depot.*'        => ['nullable', 'exists:tipe_depot,id'],
+            'tipe_depot'             => ['nullable', 'array'],
+            'tipe_depot.*'           => ['nullable', 'exists:tipe_depot,id'],
         ]);
 
         $depotIds  = (array) $request->input('depot_id', []);
@@ -306,16 +311,15 @@ class BahanHabisPakaiController extends Controller
         $stokDepot = (array) $request->input('stok_depot', []);
 
         // ==============================
-        // Hitung total stok dari semua depot (pakai stok_depot)
+        // Hitung total stok dari semua depot (TERMASUK 0)
         // ==============================
         $stokDepotCollection = collect($stokDepot)
-            ->map(fn($v) => (int) $v)
-            ->filter(fn($v) => $v > 0);
+            ->map(fn($v) => max((int) $v, 0));
 
-        $totalStok = $stokDepotCollection->sum();
+        $totalStok = (int) $stokDepotCollection->sum();
 
-        // ✅ fallback HARUS ke stok_barang (bukan stok_obat)
-        if ($totalStok <= 0) {
+        // fallback kalau stok_depot tidak dikirim sama sekali (mis. form lama)
+        if (empty($stokDepot) && $request->filled('stok_barang')) {
             $totalStok = (int) $request->input('stok_barang', 0);
         }
 
@@ -326,16 +330,44 @@ class BahanHabisPakaiController extends Controller
         $hargaJual = $parseNumber($request->input('harga_jual_umum_bhp'));
         $hargaOtc  = $parseNumber($request->input('harga_otc_bhp'));
 
-        $kodeBhp = $request->input('kode') ?: $dataBhp->kode;
-
         DB::beginTransaction();
 
         try {
             // ==============================
+            // Ambil data + lock (aman untuk generate kode)
+            // ==============================
+            $dataBhp = BahanHabisPakai::where('id', $id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            // ==============================
+            // KODE: TIDAK DIUBAH.
+            // Jika kode di DB kosong => generate BHP-YYYYMMDD-XXXX
+            // ==============================
+            if ($dataBhp->kode === null || trim($dataBhp->kode) === '') {
+                $ymd    = now()->format('Ymd');     // YYYYMMDD
+                $prefix = "BHP-{$ymd}-";            // BHP-YYYYMMDD-
+
+                $lastKode = BahanHabisPakai::where('kode', 'like', $prefix . '%')
+                    ->lockForUpdate()
+                    ->orderBy('kode', 'desc')
+                    ->value('kode');
+
+                $nextNumber = 1;
+                if ($lastKode) {
+                    $lastSeq = (int) substr($lastKode, -4); // ambil XXXX
+                    $nextNumber = $lastSeq + 1;
+                }
+
+                $dataBhp->kode = $prefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+            }
+            // selain kondisi di atas: kode tetap (abaikan $request->kode)
+
+            // ==============================
             // UPDATE DATA BHP
             // ==============================
             $dataBhp->update([
-                'kode'                   => $kodeBhp,
+                // 'kode' tidak ditaruh di sini agar tidak pernah tertimpa input
                 'brand_farmasi_id'       => $request->input('brand_farmasi_id'),
                 'jenis_id'               => $request->input('jenis_id'),
                 'satuan_id'              => $request->input('satuan_id'),
@@ -344,13 +376,19 @@ class BahanHabisPakaiController extends Controller
                 'tanggal_kadaluarsa_bhp' => $request->input('tanggal_kadaluarsa_bhp'),
                 'no_batch'               => $request->input('no_batch'),
 
-                'stok_barang'            => $totalStok,
+                'stok_barang'            => $totalStok, // ✅ selalu dari SUM depot (termasuk 0)
                 'dosis'                  => $request->input('dosis'),
 
                 'harga_beli_satuan_bhp'  => $hargaBeli,
                 'harga_jual_umum_bhp'    => $hargaJual,
                 'harga_otc_bhp'          => $hargaOtc,
             ]);
+
+            // kalau kode baru saja digenerate (di-set langsung ke model), pastikan tersimpan
+            // (update() di atas tidak menyentuh 'kode')
+            if ($dataBhp->isDirty('kode')) {
+                $dataBhp->save();
+            }
 
             // ==============================
             // UPDATE TIPE DEPOT DI TABEL DEPOT (tetap seperti punyamu)
@@ -367,7 +405,7 @@ class BahanHabisPakaiController extends Controller
             }
 
             // ==============================
-            // ✅ UPDATE PIVOT depot_bhp.stok
+            // UPDATE PIVOT depot_bhp.stok (TERMASUK 0)
             // ==============================
             $syncData = [];
 
@@ -376,19 +414,19 @@ class BahanHabisPakaiController extends Controller
                 if ($depotId <= 0) continue;
 
                 $syncData[$depotId] = [
-                    'stok' => (int) ($stokDepot[$i] ?? 0),
+                    'stok' => max((int) ($stokDepot[$i] ?? 0), 0),
                 ];
             }
 
-            // kalau kosong, detach semua
-            if (empty($syncData)) {
-                $dataBhp->depotBHP()->detach();
-            } else {
-                // ini akan INSERT/UPDATE stok pada pivot depot_bhp
-                $dataBhp->depotBHP()->sync($syncData);
+            // kalau depot_id tidak dikirim, biarkan pivot seperti sebelumnya (tidak detach otomatis)
+            // tapi kalau kamu memang mau detach saat kosong, ubah sesuai kebutuhan.
+            if (!empty($depotIds)) {
+                if (empty($syncData)) {
+                    $dataBhp->depotBHP()->detach();
+                } else {
+                    $dataBhp->depotBHP()->sync($syncData);
+                }
             }
-
-
 
             DB::commit();
 
@@ -398,7 +436,7 @@ class BahanHabisPakaiController extends Controller
                     'brandFarmasi',
                     'jenisBHP',
                     'satuanBHP',
-                    'depotBHP', // kalau kamu mau lihat pivot stok, load ini
+                    'depotBHP',
                 ]),
                 'message' => 'Berhasil Mengupdate Data Bahan Habis Pakai!',
             ]);
@@ -412,6 +450,7 @@ class BahanHabisPakaiController extends Controller
             ], 500);
         }
     }
+
 
     public function deleteDataBahanHabisPakai($id)
     {

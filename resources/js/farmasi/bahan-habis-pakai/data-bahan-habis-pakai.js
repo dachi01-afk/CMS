@@ -61,7 +61,13 @@ $(function () {
         // harga_otc, margin_profit, action
         // ===========================================
         columns: [
-            // NO
+            {
+                data: "DT_RowIndex",
+                name: "DT_RowIndex",
+                searchable: false,
+                orderable: false,
+            },
+
             {
                 data: "kode",
                 name: "kode",
@@ -144,6 +150,11 @@ $(function () {
             },
         ],
 
+        language: {
+            zeroRecords: "Data tidak ditemukan.",
+            emptyTable: "Belum ada data BHP.",
+        },
+
         rowCallback: function (row, data) {
             $(row).addClass(
                 "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
@@ -155,10 +166,28 @@ $(function () {
     });
 
     // ==========================
-    // GLOBAL SEARCH (input custom)
+    // GLOBAL SEARCH (custom input) - jQuery
     // ==========================
-    $("#data-obat-search-input").on("keyup", function () {
-        table.search(this.value).draw();
+    const $globalSearch = $("#globalSearchObat");
+
+    let searchTimer = null;
+    const SEARCH_DELAY = 200; // ms (silakan ubah 200-500)
+
+    $globalSearch.on("input", function () {
+        const keyword = (this.value || "").trim();
+
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+            table.search(keyword).draw(); // otomatis reset ke halaman 1
+        }, SEARCH_DELAY);
+    });
+
+    // Tekan ESC untuk clear + refresh tabel
+    $globalSearch.on("keydown", function (e) {
+        if (e.key === "Escape") {
+            $(this).val("");
+            table.search("").draw();
+        }
     });
 
     // ==========================
@@ -995,6 +1024,7 @@ $(function () {
             initTipeDepotSelectCreate($firstRow);
         }
 
+        updateGlobalStockCreate();
         if (modalCreate) modalCreate.show();
     });
 
@@ -1020,7 +1050,7 @@ $(function () {
         $newRow.find(".select-tipe-depot-create").val("");
         $newRow.find(".btn-clear-tipe-depot-create").addClass("hidden");
 
-        $newRow.find(".input-stok-depot").val(0);
+        $newRow.find(".input-stok-depot-create").val(0);
 
         $depotContainerCreate.append($newRow);
 
@@ -1051,9 +1081,13 @@ $(function () {
 
     // >>> TAMBAHKAN INI (setelah handler .btn-remove-depot juga boleh)
     // setiap stok per depot diubah, update stok global
-    $(document).on("input", ".input-stok-depot-create", function () {
-        updateGlobalStockCreate();
-    });
+    $(document).on(
+        "input change",
+        "#depot-container-create-bhp .input-stok-depot-create",
+        function () {
+            updateGlobalStockCreate();
+        }
+    );
 
     $formCreate.on("submit", function (e) {
         e.preventDefault();
@@ -1880,10 +1914,8 @@ $(function () {
             .get(`/farmasi/bahan-habis-pakai/get-data-bhp-by-id/${id}`)
             .then((response) => {
                 const data = response.data.data || response.data;
-                console.log(data);
 
                 $("#id_update").val(data.id);
-                $("#kode_update").val(data.kode || "");
                 $("#nama_barang_update").val(data.nama_barang || "");
                 $("#dosis_update").val(data.dosis || "");
 
@@ -2128,7 +2160,9 @@ $(function () {
     $(document).on("click", ".btn-remove-depot-update", function () {
         if (!$depotContainerUpdate.length) return;
 
-        const $rows = $depotContainerUpdate.find(".depot-row-template-update-bhp");
+        const $rows = $depotContainerUpdate.find(
+            ".depot-row-template-update-bhp"
+        );
 
         if ($rows.length <= 1) {
             resetDepotRowsUpdate();
