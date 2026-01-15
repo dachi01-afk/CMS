@@ -73,6 +73,11 @@ Route::prefix('/testing-chart')->group(function () {
     Route::get('/kunjungan', [TestingChartController::class, 'chartKunjungan'])->name('testing.chart.kunjungan');
 });
 
+Route::prefix('/testing-tom-select')->group(function () {
+    Route::get('/', [TestingController::class, 'testingTomSelect'])->name('testing.tom.select.index');
+    Route::get('/data-obat', [TestingController::class, 'dataObat'])->name('testing.tom.select.data.obat');
+});
+
 Route::prefix('/testing-qr-code')->group(function () {
     // Route::get('/', [QrCodeController::class, 'generate'])->name('testing.qr.code.index');
     Route::get('/qr/generate/all', [QrCodeController::class, 'generateAll'])->name('qr.generate.all');
@@ -350,6 +355,9 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('/get-data-bhp-by-id/{id}', [BahanHabisPakaiController::class, 'getDataBahanHabisPakaiById'])->name('get.data.bahan.habis.pakai.by.id');
             Route::post('/update-data-bhp/{id}', [BahanHabisPakaiController::class, 'updateDataBahanHabisPakai'])->name('update.data.bahan.habis.pakai');
             Route::post('/delete-data-bhp/{id}', [BahanHabisPakaiController::class, 'deleteDataBahanHabisPakai'])->name('delete.data.bahan.habis.pakai');
+            Route::get('/export-excel-data-bhp', [BahanHabisPakaiController::class, 'exportExcelBhp'])->name('export.excel.data.bahan.habis.pakai');
+            Route::get('/print-pdf-data-bhp', [BahanHabisPakaiController::class, 'printPdfBhp'])->name('print.pdf.data.bahan.habis.pakai');
+            Route::post('/import-excel-data-bhp', [BahanHabisPakaiController::class, 'importExcelBhp'])->name('import.excel.data.bahan.habis.pakai');
         });
 
         // Route Penggunaan BHP 
@@ -376,7 +384,28 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
         // Route Restock Dan Return Obat Dan Barang 
         Route::prefix('restock-return')->group(function () {
             Route::get('/', [RestockDanReturnController::class, 'index'])->name('restock.return.obat.dan.barang');
-            Route::get('/get-data-restock-dan-return-barang-dan-obat', [RestockDanReturnController::class, 'getDataRestockDanReturnBarangDanObat'])->name('get.data.restock.dan.return.barang.dan.obat');
+
+            Route::get('/get-data-restock-dan-return-barang-dan-obat', [RestockDanReturnController::class, 'getDataRestockDanReturnBarangDanObat'])->name('get.data.restock.dan.return');
+
+            // ✅ META dropdown form
+            Route::get('/form-meta', [RestockDanReturnController::class, 'getFormMeta'])->name('farmasi.restock_return.form_meta');
+
+            // ✅ search select
+            Route::get('/obat', [RestockDanReturnController::class, 'getDataObat'])->name('farmasi.restock_return.obat');
+            Route::get('/bhp', [RestockDanReturnController::class, 'getDataBHP'])->name('farmasi.restock_return.bhp');
+
+            // ✅ meta per item (harga lama + kategori + satuan + batch/expired histori)
+            Route::get('/obat/{id}/meta', [RestockDanReturnController::class, 'getMetaObat'])->name('farmasi.restock_return.obat_meta');
+            Route::get('/bhp/{id}/meta', [RestockDanReturnController::class, 'getMetaBhp'])->name('farmasi.restock_return.bhp_meta');
+
+            // ✅ store
+            Route::post('/store', [RestockDanReturnController::class, 'store'])->name('create.data.restock.dan.return');
+        });
+
+        // Route Depot
+        Route::prefix('depot')->group(function () {
+            Route::get('/', [DepotController::class, 'index'])->name('depot.index');
+            Route::get('/get-data-depot', [DepotController::class, 'dataTables'])->name('get.data.depot.dataTables');
         });
 
 

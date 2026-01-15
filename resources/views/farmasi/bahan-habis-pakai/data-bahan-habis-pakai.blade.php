@@ -39,84 +39,35 @@
                     Tambah Data Bahan Habis Pakai
                 </button>
 
-                <a href="{{ route('export.data.obat') }}"
+                <a href="{{ route('export.excel.data.bahan.habis.pakai') }}" id="btn-export-bhp-excel"
                     class="inline-flex items-center justify-center px-3 md:px-4 py-2 rounded-xl border text-[11px] md:text-xs
                font-medium bg-white text-gray-700 border-gray-200 hover:bg-gray-50
                dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700">
                     <i class="fa-solid fa-file-csv mr-1.5 text-[10px]"></i>
-                    Export CSV
+                    Export Excel
                 </a>
 
-                {{-- Export dropdown (pakai Flowbite dropdown) --}}
-                <div class="relative" id="exportBhpWrapper">
-                    <button type="button" id="btn-export-trigger" data-dropdown-toggle="dropdownExportBhp"
-                        data-dropdown-placement="bottom-start"
-                        class="inline-flex items-center gap-2 px-3 md:px-4 py-2 rounded-xl border text-[11px] md:text-xs font-medium
-               bg-white text-gray-700 border-gray-200 hover:bg-gray-50
-               dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700 dark:hover:bg-gray-800
-               shadow-sm">
-                        <i class="fa-solid fa-file-export text-[12px]"></i>
-                        <span>Export</span>
-                        <i class="fa-solid fa-chevron-down text-[10px] opacity-70"></i>
-                    </button>
+                <button type="button" id="btn-print-bhp"
+                    class="inline-flex items-center justify-center px-4 py-2 rounded-xl border text-[11px] md:text-xs
+           font-medium bg-white text-gray-700 border-gray-200 hover:bg-gray-50
+           dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700">
+                    <i class="fa-solid fa-print mr-1.5 text-[10px]"></i>
+                    Print PDF
+                </button>
 
-                    {{-- Dropdown menu --}}
-                    <div id="dropdownExportBhp"
-                        class="hidden z-50 mt-2 w-56 rounded-xl border border-gray-200 bg-white shadow-lg
-               dark:bg-gray-900 dark:border-gray-700">
-                        <ul class="py-2 text-sm text-gray-700 dark:text-gray-100" aria-labelledby="btn-export-trigger">
-                            <li>
-                                <button type="button" id="btn-export-excel"
-                                    class="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">
-                                    <i class="fa-solid fa-file-excel text-[14px]"></i>
-                                    <div class="text-left">
-                                        <div class="text-[12px] font-medium">Excel (.xlsx)</div>
-                                        <div class="text-[10px] opacity-70">Export semua data sesuai filter</div>
-                                    </div>
-                                </button>
-                            </li>
+                <button type="button" id="btn-import-bhp"
+                    class="inline-flex items-center justify-center px-4 py-2 rounded-xl border text-[11px] md:text-xs
+           font-medium bg-white text-gray-700 border-gray-200 hover:bg-gray-50">
+                    <i class="fa-solid fa-file-import mr-1.5 text-[10px]"></i>
+                    Import Excel
+                </button>
 
-                            {{-- Optional: kalau nanti mau tambah CSV --}}
-                            <li>
-                                <button type="button" id="btn-export-csv"
-                                    class="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">
-                                    <i class="fa-solid fa-file-csv text-[14px]"></i>
-                                    <div class="text-left">
-                                        <div class="text-[12px] font-medium">CSV</div>
-                                        <div class="text-[10px] opacity-70">Export sesuai filter</div>
-                                    </div>
-                                </button>
-                            </li>
-
-                            <li>
-                                <button type="button" id="btn-export-print"
-                                    class="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-50 dark:hover:bg-gray-800">
-                                    <i class="fa-solid fa-print text-[14px]"></i>
-                                    <div class="text-left">
-                                        <div class="text-[12px] font-medium">Print</div>
-                                        <div class="text-[10px] opacity-70">Print tampilan tabel</div>
-                                    </div>
-                                </button>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-
-
-                {{-- Import --}}
-                {{-- action="{{ route('farmasi.obat.import') }}" method="POST" --}}
-                <form id="form-import-obat" enctype="multipart/form-data" class="hidden">
+                <form id="form-import-bhp" action="{{ route('import.excel.data.bahan.habis.pakai') }}" method="POST"
+                    enctype="multipart/form-data" class="hidden">
                     @csrf
-                    <input type="file" name="file" id="input-file-import-obat" accept=".xlsx,.xls,.csv">
+                    <input type="file" id="input-file-import-bhp" name="file" accept=".xlsx,.xls">
                 </form>
 
-                <button type="button" id="btn-import-obat"
-                    class="inline-flex items-center justify-center px-3 md:px-4 py-2 rounded-xl text-[11px] md:text-xs 
-                           font-medium bg-white text-emerald-700 border border-emerald-500 hover:bg-emerald-50
-                           dark:bg-gray-900 dark:border-emerald-500 dark:text-emerald-300">
-                    <i class="fa-solid fa-upload mr-1.5 text-[10px]"></i>
-                    Import
-                </button>
             </div>
         </div>
     </div>
@@ -196,8 +147,7 @@
                     <!-- Barcode -->
                     <div class="grid grid-cols-1">
                         <div>
-                            <label for="kode_create"
-                                class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                            <label for="kode_create" class="block text-xs font-medium text-gray-600 dark:text-gray-300">
                                 Kode Barang <span class="text-gray-400">(opsional)</span>
                             </label>
 
@@ -215,8 +165,7 @@
                     <!-- Nama / Brand / Kategori -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                            <label for="nama_barang"
-                                class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                            <label for="nama_barang" class="block text-xs font-medium text-gray-600 dark:text-gray-300">
                                 Nama Barang <span class="text-red-500">*</span>
                             </label>
                             <div class="relative mt-1">

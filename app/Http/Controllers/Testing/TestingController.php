@@ -2,20 +2,21 @@
 
 namespace App\Http\Controllers\Testing;
 
-use App\Http\Controllers\Controller;
-use App\Models\Dokter;
-use App\Models\EMR;
-use App\Models\JadwalDokter;
-use App\Models\Kunjungan;
-use App\Models\MetodePembayaran;
-use App\Models\Pasien;
-use App\Models\Pembayaran;
-use App\Models\Resep;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
-use Midtrans\Config;
 use Midtrans\Snap;
+use App\Models\EMR;
+use App\Models\Obat;
+use Midtrans\Config;
+use App\Models\Resep;
+use App\Models\Dokter;
+use App\Models\Pasien;
+use App\Models\Kunjungan;
+use App\Models\Pembayaran;
+use App\Models\JadwalDokter;
+use Illuminate\Http\Request;
+use App\Models\MetodePembayaran;
+use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\Controller;
+use Illuminate\Support\Facades\Auth;
 
 class TestingController extends Controller
 {
@@ -292,5 +293,18 @@ class TestingController extends Controller
     public function contohDetailEMR()
     {
         return view('contoh-detail-emr');
+    }
+
+    public function testingTomSelect()
+    {
+        return view('testing.testing-tom-select');
+    }
+
+    public function dataObat(Request $request)
+    {
+        $search = $request->get('q');
+
+        $dataObat = Obat::with('kategoriObat')->where('nama_obat', 'like', "%{$search}%")->get();
+        return response()->json($dataObat);
     }
 }

@@ -2,14 +2,19 @@
 
 namespace App\Http\Controllers\Farmasi;
 
+use App\Exports\BahanHabisPakaiExport;
 use App\Http\Controllers\Controller;
+use App\Imports\BahanHabisPakaiImport;
 use App\Models\BahanHabisPakai;
 use App\Models\Depot;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
 use Throwable;
 use Yajra\DataTables\DataTables;
 
@@ -461,5 +466,74 @@ class BahanHabisPakaiController extends Controller
             'data' => $dataBhp,
             'message' => 'Berhasil Menghapus Data BHP!'
         ]);
+    }
+
+    public function exportExcelBhp()
+    {
+        $fileName = 'BHP_' . Carbon::now('Asia/Jakarta')->format('Y-m-d') . '.xlsx';
+        return Excel::download(new BahanHabisPakaiExport, $fileName);
+    }
+
+    public function printPdfBhp(Request $request)
+    {
+        $q = trim((string) $request->query('q', '')); // keyword dari search input (opsional)
+
+        $query = BahanHabisPakai::query()
+            ->with(['brandFarmasi', 'satuanBHP'])
+            ->latest();
+
+        // Jika kamu mau print "semua data" tanpa filter, hapus blok ini.
+        if ($q !== '') {
+            $query->where(function ($w) use ($q) {
+                $w->where('kode', 'like', "%{$q}%")
+                    ->orWhere('nama_barang', 'like', "%{$q}%")
+                    ->orWhereHas('brandFarmasi', function ($b) use ($q) {
+                        $b->where('nama_brand', 'like', "%{$q}%");
+                    });
+            });
+        }
+
+        $rows = $query->get();
+
+        $meta = [
+            'title' => 'Laporan Data Stok Bahan Habis Pakai',
+            'printed_at' => Carbon::now('Asia/Jakarta')->format('d/m/Y H:i'),
+            'keyword' => $q,
+            'total' => $rows->count(),
+        ];
+
+        $pdf = Pdf::loadView('farmasi.bahan-habis-pakai.print-preview-bahan-habis-pakai', compact('rows', 'meta'))
+            ->setPaper('a4', 'landscape');
+
+        $filename = 'PRINT_BHP_' . Carbon::now('Asia/Jakarta')->format('Y-m-d') . '.pdf';
+
+        // stream = buka di tab baru (enak untuk print)
+        return $pdf->stream($filename);
+    }
+
+    public function importExcelBhp(Request $request)
+    {
+        $request->validate([
+            'file' => ['required', 'file', 'mimes:xlsx,xls', 'max:20480'],
+        ], [
+            'file.required' => 'File excel wajib dipilih.',
+            'file.mimes' => 'File harus berformat .xlsx atau .xls',
+        ]);
+
+        try {
+            $import = new BahanHabisPakaiImport();
+
+            Excel::import($import, $request->file('file'));
+
+            // Kalau ada baris gagal validasi
+            if ($import->failures()->isNotEmpty()) {
+                $first = $import->failures()->first();
+                return back()->with('error', 'Ada data yang gagal diimport. Baris: ' . $first->row());
+            }
+
+            return back()->with('success', 'Import BHP berhasil.');
+        } catch (Throwable $e) {
+            return back()->with('error', 'Import gagal: ' . $e->getMessage());
+        }
     }
 }

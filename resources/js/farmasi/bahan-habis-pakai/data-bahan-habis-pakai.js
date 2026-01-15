@@ -165,6 +165,24 @@ $(function () {
         },
     });
 
+    $("#btn-export-bhp-excel").on("click", function () {
+        window.location.href =
+            "/farmasi/bahan-habis-pakai/export-excel-data-bhp";
+    });
+
+    $("#btn-print-bhp").on("click", function () {
+        // ambil keyword dari input search custom kamu
+        const keyword = ($("#globalSearchObat").val() || "").trim();
+
+        let url = "/farmasi/bahan-habis-pakai/print-pdf-data-bhp";
+        if (keyword.length) {
+            url += "?q=" + encodeURIComponent(keyword);
+        }
+
+        // buka pdf di tab baru supaya user bisa langsung ctrl+p
+        window.open(url, "_blank");
+    });
+
     // ==========================
     // GLOBAL SEARCH (custom input) - jQuery
     // ==========================
@@ -187,6 +205,39 @@ $(function () {
         if (e.key === "Escape") {
             $(this).val("");
             table.search("").draw();
+        }
+    });
+
+    $("#btn-import-bhp").on("click", function () {
+        $("#input-file-import-bhp").trigger("click");
+    });
+
+    $("#input-file-import-bhp").on("change", function () {
+        if (!this.files.length) return;
+
+        const fileName = this.files[0].name;
+
+        if (window.Swal) {
+            Swal.fire({
+                icon: "question",
+                title: "Import Data BHP?",
+                html: `File: <b>${fileName}</b><br>Pastikan format kolom sesuai template.`,
+                showCancelButton: true,
+                confirmButtonText: "Ya, Import",
+                cancelButtonText: "Batal",
+            }).then((res) => {
+                if (res.isConfirmed) {
+                    $("#form-import-bhp").submit();
+                } else {
+                    $("#input-file-import-bhp").val("");
+                }
+            });
+        } else {
+            if (confirm("Import data BHP dari file ini?")) {
+                $("#form-import-bhp").submit();
+            } else {
+                $("#input-file-import-bhp").val("");
+            }
         }
     });
 
