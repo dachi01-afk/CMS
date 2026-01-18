@@ -332,8 +332,7 @@
                     </div>
 
 
-                    <!--
-                     -->
+                    <!-- -->
                     <div class="grid grid-cols-1">
                         <div>
                             <label for="kandungan" class="block text-xs font-medium text-gray-600 dark:text-gray-300">

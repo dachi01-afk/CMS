@@ -45,4 +45,60 @@
     </div>
 </div>
 
+<!-- Modal Overlay -->
+<div id="modal-show-obat" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50">
+
+    <!-- Modal Box -->
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-3xl mx-4">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between px-6 py-4 border-b">
+            <h2 class="text-lg font-semibold text-slate-800">
+                List Obat Pada Depot 
+            </h2>
+
+            <button id="btn-close-show-modal-obat" class="text-slate-400 hover:text-slate-600 text-xl">
+                &times;
+            </button>
+        </div>
+
+        <!-- Content -->
+        <div class="px-6 py-4">
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm border border-slate-200 rounded-lg">
+                    <thead class="bg-slate-100 text-slate-700">
+                        <tr>
+                            <th class="px-4 py-2 text-left border">
+                                Nama Obat / Bahan Habis Pakai
+                            </th>
+                            <th class="px-4 py-2 text-left border">
+                                Stok Obat
+                            </th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="modal-obat-body">
+                        <!-- Diisi via jQuery -->
+                        <tr>
+                            <td colspan="2" class="px-4 py-6 text-center text-slate-400">
+                                Memuat data...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="flex justify-end px-6 py-4 border-t">
+            <button id="btn-close-footer"
+                class="px-4 py-2 rounded-lg bg-slate-200 hover:bg-slate-300 text-sm font-medium">
+                Tutup
+            </button>
+        </div>
+
+    </div>
+</div>
+
+
 @vite(['resources/js/farmasi/depot/data-depot.js'])

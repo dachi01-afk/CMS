@@ -162,17 +162,19 @@ class DepotController extends Controller
             ->addColumn('aksi', function ($row) {
                 $id = $row->id;
 
-                $showObat   = url("/farmasi/depot/$id/obat");
+                $showObat   = url("/farmasi/depot/get-data-obat-by-depot/$id");
                 $opnameObat = url("/farmasi/depot/$id/stok-opname-obat");
                 $opnameBhp  = url("/farmasi/depot/$id/stok-opname-bhp");
 
                 return '
                     <div class="flex items-center justify-end gap-2 flex-wrap">
-                        <a href="' . $showObat . '"
+                        <button id="btn-show-obat" 
+                                data-id="' . $id . '"
+                                data-url="' . $showObat . '"
                            class="inline-flex items-center justify-center px-3 py-2 rounded-xl text-[11px] font-semibold
                                   bg-sky-600 text-white hover:bg-sky-700">
                             Show Obat
-                        </a>
+                        </button>
 
                         <a href="' . $opnameObat . '"
                            class="inline-flex items-center justify-center px-3 py-2 rounded-xl text-[11px] font-semibold
@@ -191,5 +193,14 @@ class DepotController extends Controller
 
             ->rawColumns(['nama_depot', 'aksi'])
             ->make(true);
+    }
+
+    public function getDataObatByDepotId($id)
+    {
+        $dataDepot = Depot::where('id', $id)->get();
+        return response()->json([
+            'data' => $dataDepot->obat,
+            'message' => 'Data Obat Berhasil Diambil',
+        ], 200);
     }
 }

@@ -35,14 +35,14 @@ class DatabaseSeeder extends Seeder
             BrandFarmasiSeeder::class,
             JenisObatSeeder::class,
             SatuanObatSeeder::class,
-            ObatSeeder::class,
+            // ObatSeeder::class,
             JadwalDokterSeeder::class,
             // KunjunganSeeder::class,
             // KunjunganLayananSeeder::class,
             // ResepSeeder::class,
             // ResepObatSeeder::class,
-            EMRSeeder::class,
-            MetodePembayaranSeeder::class,
+            // EMRSeeder::class,
+            // MetodePembayaranSeeder::class,
             PerawatDokterPoliSeeder::class,
             // PembayaranSeeder::class,
             // TesLabSeeder::class,
@@ -50,7 +50,7 @@ class DatabaseSeeder extends Seeder
             // TestimoniSeeder::class,
             TipeDepotSeeder::class,
             DepotSeeder::class,
-            DepotObatSeeder::class,
+            // DepotObatSeeder::class,
         ]);
     }
 }

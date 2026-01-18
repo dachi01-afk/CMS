@@ -35,7 +35,7 @@ $(function () {
         dom: "t",
         rowCallback: function (row) {
             $(row).addClass(
-                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600",
             );
             $("td", row).addClass("px-6 py-4 text-gray-900 dark:text-white");
         },
@@ -63,7 +63,7 @@ $(function () {
         $info.text(
             `Menampilkan ${info.start + 1}–${info.end} dari ${
                 info.recordsDisplay
-            } data (Halaman ${currentPage} dari ${totalPages})`
+            } data (Halaman ${currentPage} dari ${totalPages})`,
         );
 
         $pagination.empty();
@@ -127,4 +127,96 @@ $(function () {
 
     table.on("draw", updatePagination);
     updatePagination();
+});
+
+$(function () {
+    const elementModalShowObat = document.getElementById("modal-show-obat");
+    const modalShowObat = elementModalShowObat
+        ? new Modal(elementModalShowObat, {
+              backdrop: "static",
+              closable: false,
+          })
+        : null;
+
+    // =========================
+    // SHOW MODAL + LOAD DATA
+    // =========================
+    $(document).on("click", "#btn-show-obat", function () {
+        const url = $(this).data("url"); // ✅ BENAR
+
+        if (!url) {
+            console.error("URL tidak ditemukan pada tombol Show Obat");
+            return;
+        }
+
+        // tampilkan modal
+        modalShowObat.show();
+
+        // reset isi tabel
+        $("#modal-obat-body").html(`
+            <tr>
+                <td colspan="2"
+                    class="px-4 py-6 text-center text-slate-400">
+                    Memuat data...
+                </td>
+            </tr>
+        `);
+
+        // ajax ambil data obat
+        $.ajax({
+            url: url,
+            type: "GET",
+            success: function (res) {
+                let html = "";
+
+                if (!res.data || res.data.length === 0) {
+                    html = `
+                        <tr>
+                            <td colspan="2"
+                                class="px-4 py-6 text-center text-slate-400">
+                                Data tidak tersedia
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    res.data.forEach((item) => {
+                        html += `
+                            <tr class="border-t">
+                                <td class="px-4 py-2">
+                                    ${item.nama_obat ?? "-"}
+                                </td>
+                                <td class="px-4 py-2">
+                                    ${item.pivot?.stok ?? 0}
+                                </td>
+                            </tr>
+                        `;
+                    });
+                }
+
+                $("#modal-obat-body").html(html);
+            },
+            error: function (xhr) {
+                console.error(xhr);
+                $("#modal-obat-body").html(`
+                    <tr>
+                        <td colspan="2"
+                            class="px-4 py-6 text-center text-red-500">
+                            Gagal mengambil data
+                        </td>
+                    </tr>
+                `);
+            },
+        });
+    });
+
+    // =========================
+    // CLOSE MODAL
+    // =========================
+    $(document).on(
+        "click",
+        "#btn-close-show-modal-obat, #btn-close-footer",
+        function () {
+            modalShowObat.hide();
+        },
+    );
 });
