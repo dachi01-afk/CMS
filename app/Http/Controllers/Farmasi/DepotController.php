@@ -3,7 +3,9 @@
 namespace App\Http\Controllers\Farmasi;
 
 use App\Models\Depot;
+use App\Models\DepotObat;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -106,44 +108,11 @@ class DepotController extends Controller
         return DataTables::of($q)
             ->addIndexColumn()
 
-            // kolom depot (dibuat cantik + info tipe + badge ringkas)
-            ->editColumn('nama_depot', function ($row) {
-                $tipe = $row->nama_tipe_depot ?: 'Tanpa Tipe';
-
-                $obat = (int) ($row->total_obat ?? 0);
-                $bhp  = (int) ($row->total_bhp ?? 0);
-                $stokDepot = (int) ($row->jumlah_stok_depot ?? 0);
-
+            ->addColumn('nama_depot', function ($row) {
                 return '
-                    <div class="flex items-start gap-3">
-                        <div class="h-10 w-10 rounded-xl bg-emerald-50 border border-emerald-100 flex items-center justify-center">
-                            <span class="text-emerald-700 font-bold text-xs">DP</span>
-                        </div>
-
+                    <div class="flex items-center gap-3">
                         <div class="min-w-0">
                             <div class="font-semibold text-slate-800 leading-tight">' . e($row->nama_depot) . '</div>
-
-                            <div class="mt-1 flex flex-wrap items-center gap-2">
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-semibold
-                                             bg-slate-100 text-slate-700 border border-slate-200">
-                                    ' . e($tipe) . '
-                                </span>
-
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-semibold
-                                             bg-sky-50 text-sky-700 border border-sky-100">
-                                    Obat: ' . $obat . '
-                                </span>
-
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-semibold
-                                             bg-teal-50 text-teal-700 border border-teal-100">
-                                    BHP: ' . $bhp . '
-                                </span>
-
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-lg text-[11px] font-semibold
-                                             bg-emerald-50 text-emerald-700 border border-emerald-100">
-                                    Stok Depot: ' . number_format($stokDepot, 0, ',', '.') . '
-                                </span>
-                            </div>
                         </div>
                     </div>
                 ';
@@ -163,7 +132,7 @@ class DepotController extends Controller
                 $id = $row->id;
 
                 $showObat   = url("/farmasi/depot/get-data-obat-by-depot/$id");
-                $opnameObat = url("/farmasi/depot/$id/stok-opname-obat");
+                $repairObat = url("/farmasi/depot/get-data-repair-obat-by-depot/$id");
                 $opnameBhp  = url("/farmasi/depot/$id/stok-opname-bhp");
 
                 return '
@@ -176,11 +145,13 @@ class DepotController extends Controller
                             Show Obat
                         </button>
 
-                        <a href="' . $opnameObat . '"
+                        <button id="btn-repair-obat" 
+                                data-id="' . $id . '"
+                                data-url="' . $repairObat . '"
                            class="inline-flex items-center justify-center px-3 py-2 rounded-xl text-[11px] font-semibold
                                   bg-emerald-600 text-white hover:bg-emerald-700">
                             Stok Opname Obat
-                        </a>
+                        </button>
 
                         <a href="' . $opnameBhp . '"
                            class="inline-flex items-center justify-center px-3 py-2 rounded-xl text-[11px] font-semibold
@@ -197,10 +168,116 @@ class DepotController extends Controller
 
     public function getDataObatByDepotId($id)
     {
-        $dataDepot = Depot::where('id', $id)->get();
+        $depot = Depot::with('depotObat')->findOrFail($id);
+
         return response()->json([
-            'data' => $dataDepot->obat,
+            // Kita ambil array 'obat' yang ada di dalam objek depot tersebut
+            'data'    => $depot->depotObat,
             'message' => 'Data Obat Berhasil Diambil',
         ], 200);
+    }
+
+    public function getDataRepairStokObatByDepotId(Request $request, $id)
+    {
+        // 1. Langsung Query ke model DepotObat (tabel depot_obat) 
+        // Cari data yang depot_id nya sesuai dengan $id yang dikirim
+        $query = DepotObat::where('depot_id', $id)->with('obat');
+
+        // 2. Masukkan ke Engine DataTable
+        return DataTables::of($query)
+            ->addIndexColumn()
+            ->filter(function ($instance) use ($request) {
+                if ($request->has('search') && !empty($request->get('search')['value'])) {
+                    $search = $request->get('search')['value'];
+
+                    // Logic pencarian harus masuk ke relasi 'obat' karena 
+                    // nama_obat dan kode_obat ada di tabel obats
+                    $instance->where(function ($q) use ($search) {
+                        $q->whereHas('obat', function ($queryObat) use ($search) {
+                            $queryObat->where('nama_obat', 'LIKE', "%$search%")
+                                ->orWhere('kode_obat', 'LIKE', "%$search%");
+                        });
+                    });
+                }
+            })
+            // Ambil data stok dari tabel pivot/depot_obat
+            ->editColumn('pivot.stok_obat', function ($row) {
+                return $row->stok_obat; // Sesuaikan dengan nama kolom stok di tabel depot_obat
+            })
+            // Keluarkan kode_obat dari relasi obat
+            ->addColumn('kode_obat', function ($row) {
+                return $row->obat->kode_obat ?? '-';
+            })
+            // Keluarkan nama_obat dari relasi obat
+            ->addColumn('nama_obat', function ($row) {
+                return $row->obat->nama_obat ?? '-';
+            })
+            ->make(true);
+    }
+
+    public function repairStokObat(Request $request)
+    {
+        // 1. Validasi Input
+        $request->validate([
+            'depot_id'          => 'required|exists:depot,id',
+            'items'             => 'required|array|min:1',
+            'items.*.obat_id'   => 'required|exists:obat,id',
+            'items.*.qty_fisik' => 'required|numeric|min:0',
+        ]);
+
+        try {
+            DB::transaction(function () use ($request) {
+                $depotId = $request->depot_id;
+
+                foreach ($request->items as $item) {
+                    $obatId   = $item['obat_id'];
+                    $qtyFisik = $item['qty_fisik']; // Angka nyata di rak (Contoh: 100)
+
+                    // --- LANGKAH 1: Ambil Stok Sistem Saat Ini ---
+                    $stokSistem = DB::table('depot_obat')
+                        ->where('depot_id', $depotId)
+                        ->where('obat_id', $obatId)
+                        ->value('stok_obat') ?? 0; // Contoh: 300
+
+                    // --- LANGKAH 2: Hitung Selisih ---
+                    // 300 (sistem) - 100 (fisik) = 200 (selisih yang harus dibuang)
+                    $selisih = $stokSistem - $qtyFisik;
+
+                    // --- LANGKAH 3: Update Tabel Pivot (depot_obat) ---
+                    // Timpa stok sistem dengan angka fisik agar saat modal dibuka lagi muncul 100
+                    DB::table('depot_obat')
+                        ->where('depot_id', $depotId)
+                        ->where('obat_id', $obatId)
+                        ->update([
+                            'stok_obat'  => $qtyFisik,
+                            'updated_at' => now()
+                        ]);
+
+                    // --- LANGKAH 4: Update Master (obat & depot) ---
+                    // Kurangi total stok global dan depot sebesar SELISIH-nya saja
+                    if ($selisih != 0) {
+                        // Update Master Obat
+                        DB::table('obat')
+                            ->where('id', $obatId)
+                            ->decrement('jumlah', $selisih);
+
+                        // Update Master Depot
+                        DB::table('depot')
+                            ->where('id', $depotId)
+                            ->decrement('jumlah_stok_depot', $selisih);
+                    }
+                }
+            });
+
+            return response()->json([
+                'status'  => 200,
+                'message' => 'Berhasil! Stok depot diperbarui sesuai fisik dan master disesuaikan.'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 500,
+                'message' => 'Gagal: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

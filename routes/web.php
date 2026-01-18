@@ -407,6 +407,8 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('/', [DepotController::class, 'index'])->name('depot.index');
             Route::get('/get-data-depot', [DepotController::class, 'dataTables'])->name('get.data.depot.dataTables');
             Route::get("/get-data-obat-by-depot/{id}", [DepotController::class, 'getDataObatByDepotId'])->name('get.data.obat.by.depot.id');
+            Route::get("/get-data-repair-obat-by-depot/{id}", [DepotController::class, 'getDataRepairStokObatByDepotId'])->name('get.data.repair.obat.by.depot.id');
+            Route::post('/repair-stok-obat', [DepotController::class, 'repairStokObat'])->name('repair.stok.obat');
         });
 
 

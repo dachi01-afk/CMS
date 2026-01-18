@@ -48,8 +48,8 @@ class DatabaseSeeder extends Seeder
             // TesLabSeeder::class,
             // AdministrasiSeeder::class,
             // TestimoniSeeder::class,
-            TipeDepotSeeder::class,
-            DepotSeeder::class,
+            // TipeDepotSeeder::class,
+            // DepotSeeder::class,
             // DepotObatSeeder::class,
         ]);
     }

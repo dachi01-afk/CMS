@@ -32,7 +32,7 @@ class Depot extends Model
 
     public function depotObat()
     {
-        return $this->belongsToMany(Obat::class, 'depot_obat', 'depot_id', 'obat_id');
+        return $this->belongsToMany(Obat::class, 'depot_obat', 'depot_id', 'obat_id')->withPivot('stok_obat')->withTimestamps();
     }
 
     public function depotBHP()
