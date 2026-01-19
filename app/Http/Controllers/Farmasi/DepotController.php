@@ -7,6 +7,7 @@ use App\Models\DepotObat;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Models\DepotBHP;
 use Yajra\DataTables\Facades\DataTables;
 
 class DepotController extends Controller
@@ -101,7 +102,7 @@ class DepotController extends Controller
             // total stok BHP (SUM stok)
             ->selectSub(function ($sq) {
                 $sq->from('depot_bhp')
-                    ->selectRaw('COALESCE(SUM(stok),0)')
+                    ->selectRaw('COALESCE(SUM(stok_barang),0)')
                     ->whereColumn('depot_bhp.depot_id', 'depot.id');
             }, 'total_stok_bhp');
 
@@ -133,7 +134,7 @@ class DepotController extends Controller
 
                 $showObat   = url("/farmasi/depot/get-data-obat-by-depot/$id");
                 $repairObat = url("/farmasi/depot/get-data-repair-obat-by-depot/$id");
-                $opnameBhp  = url("/farmasi/depot/$id/stok-opname-bhp");
+                $repairBhp  = url("/farmasi/depot/get-data-repair-bhp-by-depot/$id");
 
                 return '
                     <div class="flex items-center justify-end gap-2 flex-wrap">
@@ -153,11 +154,13 @@ class DepotController extends Controller
                             Stok Opname Obat
                         </button>
 
-                        <a href="' . $opnameBhp . '"
+                        <button id="btn-repair-bhp" 
+                                data-id="' . $id . '"
+                                data-url="' . $repairBhp . '"
                            class="inline-flex items-center justify-center px-3 py-2 rounded-xl text-[11px] font-semibold
                                   bg-teal-600 text-white hover:bg-teal-700">
                             Stok Opname BHP
-                        </a>
+                        </button>
                     </div>
                 ';
             })
@@ -260,6 +263,104 @@ class DepotController extends Controller
                         DB::table('obat')
                             ->where('id', $obatId)
                             ->decrement('jumlah', $selisih);
+
+                        // Update Master Depot
+                        DB::table('depot')
+                            ->where('id', $depotId)
+                            ->decrement('jumlah_stok_depot', $selisih);
+                    }
+                }
+            });
+
+            return response()->json([
+                'status'  => 200,
+                'message' => 'Berhasil! Stok depot diperbarui sesuai fisik dan master disesuaikan.'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 500,
+                'message' => 'Gagal: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function getDataRepairStokBHPByDepotId($id)
+    {
+        $depot = DepotBHP::getDataBHP($id)->get();
+
+        return DataTables::of($depot)
+            ->addIndexColumn()
+            ->filter(function ($query) { // Hapus parameter kedua ($request)
+    // Gunakan helper request() langsung
+    $search = request('search'); 
+    
+    if (!empty($search['value'])) {
+        $keyword = $search['value'];
+
+        $query->whereHas('bahanHabisPakai', function ($q) use ($keyword) {
+            $q->where('nama_bhp', 'LIKE', "%$keyword%")
+              ->orWhere('kode_bhp', 'LIKE', "%$keyword%");
+        });
+    }
+})
+            ->addColumn('kode_bhp', function ($row) {
+                return $row->bahanHabisPakai->kode ?? '-';
+            })
+            ->addColumn('nama_bhp', function ($row) {
+                return $row->bahanHabisPakai->nama_barang ?? '-';
+            })
+            // Ambil data stok dari tabel pivot/depot_obat
+            ->editColumn('pivot.stok_barang', function ($row) {
+                return $row->stok_barang; // Sesuaikan dengan nama kolom stok di tabel depot_obat
+            })
+            ->make(true);
+    }
+
+        public function repairStokBHP(Request $request)
+    {
+        // 1. Validasi Input
+        $request->validate([
+            'depot_id'          => 'required|exists:depot,id',
+            'items'             => 'required|array|min:1',
+            'items.*.bahan_habis_pakai_id'   => 'required|exists:bahan_habis_pakai,id',
+            'items.*.qty_fisik' => 'required|numeric|min:0',
+        ]);
+
+        try {
+            DB::transaction(function () use ($request) {
+                $depotId = $request->depot_id;
+
+                foreach ($request->items as $item) {
+                    $bhpId   = $item['bahan_habis_pakai_id'];
+                    $qtyFisik = $item['qty_fisik']; // Angka nyata di rak (Contoh: 100)
+
+                    // --- LANGKAH 1: Ambil Stok Sistem Saat Ini ---
+                    $stokSistem = DB::table('depot_bhp')
+                        ->where('depot_id', $depotId)
+                        ->where('bahan_habis_pakai_id', $bhpId)
+                        ->value('stok_barang') ?? 0; // Contoh: 300
+
+                    // --- LANGKAH 2: Hitung Selisih ---
+                    // 300 (sistem) - 100 (fisik) = 200 (selisih yang harus dibuang)
+                    $selisih = $stokSistem - $qtyFisik;
+
+                    // --- LANGKAH 3: Update Tabel Pivot (depot_obat) ---
+                    // Timpa stok sistem dengan angka fisik agar saat modal dibuka lagi muncul 100
+                    DB::table('depot_bhp')
+                        ->where('depot_id', $depotId)
+                        ->where('bahan_habis_pakai_id', $bhpId)
+                        ->update([
+                            'stok_barang'  => $qtyFisik,
+                            'updated_at' => now()
+                        ]);
+
+                    // --- LANGKAH 4: Update Master (obat & depot) ---
+                    // Kurangi total stok global dan depot sebesar SELISIH-nya saja
+                    if ($selisih != 0) {
+                        // Update Master Obat
+                        DB::table('bahan_habis_pakai')
+                            ->where('id', $bhpId)
+                            ->decrement('stok_barang', $selisih);
 
                         // Update Master Depot
                         DB::table('depot')

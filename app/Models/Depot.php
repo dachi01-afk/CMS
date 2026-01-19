@@ -37,6 +37,6 @@ class Depot extends Model
 
     public function depotBHP()
     {
-        return $this->belongsToMany(BahanHabisPakai::class, 'depot_bhp', 'depot_id', 'bahan_habis_pakai_id')->withPivot('stok');
+        return $this->belongsToMany(BahanHabisPakai::class, 'depot_bhp', 'depot_id', 'bahan_habis_pakai_id')->withPivot('stok_barang')->withTimestamps();
     }
 }

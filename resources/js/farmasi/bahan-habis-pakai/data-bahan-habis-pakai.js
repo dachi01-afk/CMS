@@ -98,8 +98,8 @@ $(function () {
                         stok === 0
                             ? "bg-red-50 text-red-700 border-red-100"
                             : stok < 10
-                            ? "bg-amber-50 text-amber-700 border-amber-100"
-                            : "bg-emerald-50 text-emerald-700 border-emerald-100";
+                              ? "bg-amber-50 text-amber-700 border-amber-100"
+                              : "bg-emerald-50 text-emerald-700 border-emerald-100";
 
                     return `
                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] border ${warna}">
@@ -157,10 +157,10 @@ $(function () {
 
         rowCallback: function (row, data) {
             $(row).addClass(
-                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600",
             );
             $("td", row).addClass(
-                "px-4 md:px-6 py-3 md:py-4 text-gray-900 dark:text-white align-middle"
+                "px-4 md:px-6 py-3 md:py-4 text-gray-900 dark:text-white align-middle",
             );
         },
     });
@@ -256,14 +256,14 @@ $(function () {
         $info.text(
             `Menampilkan ${info.start + 1}–${info.end} dari ${
                 info.recordsDisplay
-            } data (Halaman ${currentPage} dari ${totalPages})`
+            } data (Halaman ${currentPage} dari ${totalPages})`,
         );
         $paginate.empty();
 
         const prevDisabled =
             currentPage === 1 ? "opacity-50 cursor-not-allowed" : "";
         $paginate.append(
-            `<li><a href="#" id="btnPrev" class="flex items-center justify-center px-3 h-8 text-[11px] text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 ${prevDisabled}">Previous</a></li>`
+            `<li><a href="#" id="btnPrev" class="flex items-center justify-center px-3 h-8 text-[11px] text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 ${prevDisabled}">Previous</a></li>`,
         );
 
         const maxVisible = 5;
@@ -278,14 +278,14 @@ $(function () {
                     ? "text-blue-600 bg-blue-50 border-blue-300 hover:bg-blue-100"
                     : "text-gray-500 bg-white border-gray-300 hover:bg-gray-100 hover:text-gray-700";
             $paginate.append(
-                `<li><a href="#" class="page-number flex items-center justify-center px-3 h-8 text-[11px] border ${active}" data-page="${i}">${i}</a></li>`
+                `<li><a href="#" class="page-number flex items-center justify-center px-3 h-8 text-[11px] border ${active}" data-page="${i}">${i}</a></li>`,
             );
         }
 
         const nextDisabled =
             currentPage === totalPages ? "opacity-50 cursor-not-allowed" : "";
         $paginate.append(
-            `<li><a href="#" id="btnNext" class="flex items-center justify-center px-3 h-8 text-[11px] text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 ${nextDisabled}">Next</a></li>`
+            `<li><a href="#" id="btnNext" class="flex items-center justify-center px-3 h-8 text-[11px] text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 ${nextDisabled}">Next</a></li>`,
         );
     }
 
@@ -1040,7 +1040,7 @@ $(function () {
 
     $("#harga_jual_umum_bhp_create").on("blur", function () {
         const beli = parseRupiahNumber(
-            $("#harga_beli_satuan_bhp_create").val()
+            $("#harga_beli_satuan_bhp_create").val(),
         );
         const jual = parseRupiahNumber($(this).val());
 
@@ -1084,7 +1084,7 @@ $(function () {
         function () {
             modalCreate?.hide();
             resetFormCreate();
-        }
+        },
     );
 
     // ==========================
@@ -1117,7 +1117,7 @@ $(function () {
         if (!$depotContainerCreate.length) return;
 
         const $rows = $depotContainerCreate.find(
-            ".depot-row-template-create-bhp"
+            ".depot-row-template-create-bhp",
         );
 
         if ($rows.length <= 1) {
@@ -1137,7 +1137,7 @@ $(function () {
         "#depot-container-create-bhp .input-stok-depot-create",
         function () {
             updateGlobalStockCreate();
-        }
+        },
     );
 
     $formCreate.on("submit", function (e) {
@@ -1161,15 +1161,15 @@ $(function () {
                     const $row = $(this);
 
                     depot_id.push(
-                        $row.find(".select-nama-depot-create").val() || ""
+                        $row.find(".select-nama-depot-create").val() || "",
                     );
                     tipe_depot.push(
                         (
                             $row.find(".select-tipe-depot-create").val() || ""
-                        ).trim()
+                        ).trim(),
                     );
                     stok_depot.push(
-                        $row.find(".input-stok-depot-create").val() || 0
+                        $row.find(".input-stok-depot-create").val() || 0,
                     );
                 });
         }
@@ -1185,11 +1185,11 @@ $(function () {
             tanggal_kadaluarsa_bhp: $("#tanggal_kadaluarsa_bhp_create").val(),
             no_batch: $("#no_batch_create").val(),
             harga_beli_satuan_bhp: parseRupiah(
-                $("#harga_beli_satuan_bhp_create").val()
+                $("#harga_beli_satuan_bhp_create").val(),
             ),
             // avg_hpp_bhp: $("#avg_hpp_bhp_create").val(),
             harga_jual_umum_bhp: parseRupiah(
-                $("#harga_jual_umum_bhp_create").val()
+                $("#harga_jual_umum_bhp_create").val(),
             ),
             harga_otc_bhp: parseRupiah($("#harga_otc_bhp_create").val()),
             keterangan: $("#keterangan").val(),
@@ -1297,7 +1297,7 @@ $(function () {
         "#depot-container-update-bhp .input-stok-depot-update",
         function () {
             hitungTotalStokDepotUpdate();
-        }
+        },
     );
 
     // =====================================
@@ -1927,7 +1927,7 @@ $(function () {
 
     $("#harga_jual_umum_bhp_update").on("blur", function () {
         const beli = parseRupiahNumberUpdate(
-            $("#harga_beli_satuan_bhp_update").val()
+            $("#harga_beli_satuan_bhp_update").val(),
         );
         const jual = parseRupiahNumberUpdate($(this).val());
 
@@ -1974,31 +1974,31 @@ $(function () {
                 $("#stok_barang_update").val(data.stok_barang ?? 0);
 
                 $("#tanggal_kadaluarsa_bhp_update").val(
-                    data.tanggal_kadaluarsa_bhp || ""
+                    data.tanggal_kadaluarsa_bhp || "",
                 );
                 $("#no_batch_update").val(data.no_batch || "");
 
                 if (data.harga_beli_satuan_bhp != null) {
                     $("#harga_beli_satuan_bhp_update").val(
                         new Intl.NumberFormat("id-ID").format(
-                            Number(data.harga_beli_satuan_bhp)
-                        )
+                            Number(data.harga_beli_satuan_bhp),
+                        ),
                     );
                 }
 
                 if (data.harga_jual_umum_bhp != null) {
                     $("#harga_jual_umum_bhp_update").val(
                         new Intl.NumberFormat("id-ID").format(
-                            Number(data.harga_jual_umum_bhp)
-                        )
+                            Number(data.harga_jual_umum_bhp),
+                        ),
                     );
                 }
 
                 if (data.harga_otc_bhp != null) {
                     $("#harga_otc_bhp_update").val(
                         new Intl.NumberFormat("id-ID").format(
-                            Number(data.harga_otc_bhp)
-                        )
+                            Number(data.harga_otc_bhp),
+                        ),
                     );
                 }
 
@@ -2012,7 +2012,7 @@ $(function () {
                         nama_brand: data.brand_farmasi.nama_brand,
                     });
                     brandFarmasiSelectUpdate.setValue(
-                        String(data.brand_farmasi.id)
+                        String(data.brand_farmasi.id),
                     );
                 }
 
@@ -2034,7 +2034,7 @@ $(function () {
                         nama_satuan_obat: data.satuan_b_h_p.nama_satuan_obat,
                     });
                     satuanObatSelectUpdate.setValue(
-                        String(data.satuan_b_h_p.id)
+                        String(data.satuan_b_h_p.id),
                     );
                 }
 
@@ -2047,10 +2047,10 @@ $(function () {
                     const depots = Array.isArray(data.depot_b_h_p)
                         ? data.depot_b_h_p
                         : Array.isArray(data.depot_bhp)
-                        ? data.depot_bhp
-                        : Array.isArray(data.depotBHP)
-                        ? data.depotBHP
-                        : [];
+                          ? data.depot_bhp
+                          : Array.isArray(data.depotBHP)
+                            ? data.depotBHP
+                            : [];
 
                     if (depots.length === 0) {
                         // tidak ada depot: tetap 1 row kosong
@@ -2099,10 +2099,10 @@ $(function () {
                             initTipeDepotSelectUpdate($row);
 
                             const depotSelect = $row.find(
-                                ".select-nama-depot-update"
+                                ".select-nama-depot-update",
                             )[0];
                             const tipeSelect = $row.find(
-                                ".select-tipe-depot-update"
+                                ".select-tipe-depot-update",
                             )[0];
 
                             // ========== NAMA DEPOT (dari depotItem.nama_depot) ==========
@@ -2117,7 +2117,7 @@ $(function () {
                                 tsDepot.setValue(String(depotItem.id));
                             } else {
                                 $row.find(".select-nama-depot-update").val(
-                                    depotItem.id ?? ""
+                                    depotItem.id ?? "",
                                 );
                             }
 
@@ -2134,12 +2134,12 @@ $(function () {
                                                 .nama_tipe_depot,
                                     });
                                     tsTipe.setValue(
-                                        String(depotItem.tipe_depot.id)
+                                        String(depotItem.tipe_depot.id),
                                     );
                                 }
                             } else if (depotItem.tipe_depot) {
                                 $row.find(".select-tipe-depot-update").val(
-                                    depotItem.tipe_depot.id ?? ""
+                                    depotItem.tipe_depot.id ?? "",
                                 );
                             }
 
@@ -2179,7 +2179,7 @@ $(function () {
         function () {
             resetFormUpdate();
             if (modalUpdate) modalUpdate.hide();
-        }
+        },
     );
 
     // ==========================
@@ -2212,7 +2212,7 @@ $(function () {
         if (!$depotContainerUpdate.length) return;
 
         const $rows = $depotContainerUpdate.find(
-            ".depot-row-template-update-bhp"
+            ".depot-row-template-update-bhp",
         );
 
         if ($rows.length <= 1) {
@@ -2238,7 +2238,7 @@ $(function () {
 
         if (!id) {
             console.error(
-                "Data ID Dari Tabel Bahan Habis Pakai Tidak Ditemukan, tidak bisa update"
+                "Data ID Dari Tabel Bahan Habis Pakai Tidak Ditemukan, tidak bisa update",
             );
             Swal.fire({
                 icon: "error",
@@ -2296,13 +2296,13 @@ $(function () {
             no_batch: $("#no_batch_update").val(),
 
             harga_beli_satuan_bhp: parseRupiahNumberUpdate(
-                $("#harga_beli_satuan_bhp_update").val()
+                $("#harga_beli_satuan_bhp_update").val(),
             ),
             harga_jual_umum_bhp: parseRupiahNumberUpdate(
-                $("#harga_jual_umum_bhp_update").val()
+                $("#harga_jual_umum_bhp_update").val(),
             ),
             harga_otc_bhp: parseRupiahNumberUpdate(
-                $("#harga_otc_bhp_update").val()
+                $("#harga_otc_bhp_update").val(),
             ),
 
             depot_id: depot_id,
@@ -2387,8 +2387,8 @@ $(function () {
                             showConfirmButton: false,
                             timer: 2000,
                         }).then(() => {
-                            if ($("#dataObatTable".length)) {
-                                $("#dataObatTable")
+                            if ($("#tabelBahanHabisPakai".length)) {
+                                $("#tabelBahanHabisPakai")
                                     .DataTable()
                                     .ajax.reload(null, false);
                             } else {
