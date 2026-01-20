@@ -26,9 +26,11 @@ class BahanHabisPakai extends Model
     {
         return $this->belongsTo(Depot::class);
     }
+
     public function depotBHP()
     {
-        return $this->belongsToMany(Depot::class, 'depot_bhp', 'bahan_habis_pakai_id', 'depot_id')->withPivot('stok');
+        return $this->belongsToMany(Depot::class, 'depot_bhp', 'bahan_habis_pakai_id', 'depot_id')
+                    ->withPivot('stok_barang')->withTimestamps();
     }
 
     public function stokTransaksiDetail()

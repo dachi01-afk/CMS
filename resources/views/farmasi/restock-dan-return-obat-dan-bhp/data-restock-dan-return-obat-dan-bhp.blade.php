@@ -341,9 +341,7 @@
 
                     <div class="mt-4">
 
-                        {{-- =========================
-           PANEL: OBAT (sesuai foto)
-           ========================= --}}
+                        {{-- ========================= PANEL: OBAT (sesuai foto) ========================= --}}
                         <div id="panel-obat" data-panel="obat">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
@@ -352,11 +350,7 @@
                                     <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
                                         Nama Obat <span class="text-red-500">*</span>
                                     </label>
-                                    <select name="obat_id" id="obat_id"
-                                        class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
-                               focus:border-blue-500 focus:ring-1 focus:ring-blue-500
-                               dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                                        required>
+                                    <select name="obat_id" id="obat_id" required class="mt-1">
                                         <option value="">Pilih obat...</option>
                                     </select>
                                     <div class="text-red-600 text-[11px] mt-1" data-error="obat_id"></div>
@@ -367,13 +361,10 @@
                                     <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
                                         Kategori Obat <span class="text-red-500">*</span>
                                     </label>
-                                    <select name="kategori_obat_id" id="kategori_obat_id"
-                                        class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
-                               focus:border-blue-500 focus:ring-1 focus:ring-blue-500
-                               dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                                        required>
-                                        <option value="">Pilih kategori...</option>
-                                    </select>
+                                    <input name="kategori_obat_id" id="kategori_obat_id"
+                                        class="mt-1 block w-full text-sm bg-gray-100 border border-gray-200 rounded-lg px-3 py-2
+               dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                        disabled placeholder="Otomatis">
                                     <div class="text-red-600 text-[11px] mt-1" data-error="kategori_obat_id"></div>
                                 </div>
 
@@ -759,7 +750,5 @@
         </div>
     </div>
 </div>
-
-
 
 @vite(['resources/js/farmasi/restock-dan-return-obat-dan-bhp/data-restock-dan-return-obat-dan-bhp.js'])

@@ -33,7 +33,7 @@ class TipeDepotController extends Controller
     public function createDataTipeDepot(Request $request)
     {
         $validated = $request->validate([
-            'nama_tipe_depot' => ['required', 'string', 'max:100', 'unique:depot,nama_tipe_depot'],
+            'nama_tipe_depot' => ['required', 'string', 'max:100'],
         ]);
 
         $jenis = TipeDepot::create([
@@ -47,7 +47,7 @@ class TipeDepotController extends Controller
     public function deleteDataTipeDepot(Request $request)
     {
         $request->validate([
-            'id' => ['required', 'integer', 'exists:jenis_obat,id'],
+            'id' => ['required', 'integer', 'exists:tipe_depot,id'],
         ]);
 
         $jenis = TipeDepot::findOrFail($request->id);

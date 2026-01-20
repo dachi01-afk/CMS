@@ -21,9 +21,9 @@
             <div class="relative w-full md:w-72">
                 <input id="globalSearchObat" type="text"
                     class="w-full text-xs md:text-sm pl-9 pr-3 py-2.5 rounded-xl border border-gray-200
-                           bg-gray-50 focus:bg-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500
-                           dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
-                    placeholder="Cari kode, nama obat atau kategori">
+             bg-gray-50 focus:bg-white focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500
+             dark:bg-gray-900 dark:border-gray-700 dark:text-gray-100"
+                    placeholder="Cari kode, nama Barang">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
                     <i class="fa-solid fa-magnifying-glass text-xs"></i>
                 </span>
@@ -39,32 +39,35 @@
                     Tambah Data Bahan Habis Pakai
                 </button>
 
-                {{-- Export dropdown (DataTables di JS) --}}
-                <div class="relative" id="exportObatWrapper">
-                    <button type="button" id="btn-export-trigger"
-                        class="inline-flex items-center justify-center px-3 md:px-4 py-2 rounded-xl border text-[11px] md:text-xs
-                               font-medium bg-white text-gray-700 border-gray-200 hover:bg-gray-50
-                               dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700">
-                        <i class="fa-solid fa-file-export mr-1.5 text-[10px]"></i>
-                        Export
-                        <i class="fa-solid fa-chevron-down ml-1 text-[8px]"></i>
-                    </button>
-                </div>
+                <a href="{{ route('export.excel.data.bahan.habis.pakai') }}" id="btn-export-bhp-excel"
+                    class="inline-flex items-center justify-center px-3 md:px-4 py-2 rounded-xl border text-[11px] md:text-xs
+               font-medium bg-white text-gray-700 border-gray-200 hover:bg-gray-50
+               dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700">
+                    <i class="fa-solid fa-file-csv mr-1.5 text-[10px]"></i>
+                    Export Excel
+                </a>
 
-                {{-- Import --}}
-                {{-- action="{{ route('farmasi.obat.import') }}" method="POST" --}}
-                <form id="form-import-obat" enctype="multipart/form-data" class="hidden">
+                <button type="button" id="btn-print-bhp"
+                    class="inline-flex items-center justify-center px-4 py-2 rounded-xl border text-[11px] md:text-xs
+           font-medium bg-white text-gray-700 border-gray-200 hover:bg-gray-50
+           dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700">
+                    <i class="fa-solid fa-print mr-1.5 text-[10px]"></i>
+                    Print PDF
+                </button>
+
+                <button type="button" id="btn-import-bhp"
+                    class="inline-flex items-center justify-center px-4 py-2 rounded-xl border text-[11px] md:text-xs
+           font-medium bg-white text-gray-700 border-gray-200 hover:bg-gray-50">
+                    <i class="fa-solid fa-file-import mr-1.5 text-[10px]"></i>
+                    Import Excel
+                </button>
+
+                <form id="form-import-bhp" action="{{ route('import.excel.data.bahan.habis.pakai') }}" method="POST"
+                    enctype="multipart/form-data" class="hidden">
                     @csrf
-                    <input type="file" name="file" id="input-file-import-obat" accept=".xlsx,.xls,.csv">
+                    <input type="file" id="input-file-import-bhp" name="file" accept=".xlsx,.xls">
                 </form>
 
-                <button type="button" id="btn-import-obat"
-                    class="inline-flex items-center justify-center px-3 md:px-4 py-2 rounded-xl text-[11px] md:text-xs 
-                           font-medium bg-white text-emerald-700 border border-emerald-500 hover:bg-emerald-50
-                           dark:bg-gray-900 dark:border-emerald-500 dark:text-emerald-300">
-                    <i class="fa-solid fa-upload mr-1.5 text-[10px]"></i>
-                    Import
-                </button>
             </div>
         </div>
     </div>
@@ -75,6 +78,7 @@
             <thead
                 class="bg-gray-50 dark:bg-gray-800/80 text-[11px] uppercase tracking-wide text-gray-500 dark:text-gray-300">
                 <tr>
+                    <th class="px-3 py-2.5 text-left">No</th>
                     <th class="px-3 py-2.5 text-left">Kode</th>
                     <th class="px-3 py-2.5 text-left">Nama Barang</th>
                     <th class="px-3 py-2.5 text-left">Brand Farmasi</th>
@@ -144,18 +148,17 @@
                     <div class="grid grid-cols-1">
                         <div>
                             <label for="kode_create" class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                Barcode
+                                Kode Barang <span class="text-gray-400">(opsional)</span>
                             </label>
+
                             <div class="mt-1 flex gap-2">
                                 <input type="text" name="kode" id="kode_create"
                                     class="block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                                    placeholder="Scan / masukkan barcode" autocomplete="off">
-                                <button type="button"
-                                    class="hidden md:inline-flex items-center px-3 py-2 text-[11px] font-medium rounded-lg border border-dashed border-gray-300 text-gray-500 hover:border-blue-400 hover:text-blue-600 dark:border-gray-600 dark:text-gray-300 dark:hover:border-blue-500">
-                                    <i class="fa-solid fa-barcode text-xs mr-1"></i> Scan
-                                </button>
+                                    placeholder="Contoh: BHP-0001 (kosongkan jika auto)" autocomplete="off">
                             </div>
+
                             <div id="kode_create-error" class="text-red-600 text-[11px] mt-1"></div>
+
                         </div>
                     </div>
 
@@ -294,7 +297,7 @@
                                 Stok & Kedaluwarsa
                             </h4>
                             <p class="text-[11px] text-gray-500 dark:text-gray-400">
-                                Pantau stok awal dan tanggal kedaluwarsa untuk mencegah obat kadaluarsa.
+                                Pantau stok awal dan tanggal kedaluwarsa untuk mencegah BHP kadaluarsa.
                             </p>
                         </div>
                     </div>
@@ -303,11 +306,13 @@
                         <div>
                             <label for="stok_barang"
                                 class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                Stok Obat (global)
+                                Stok BHP (global)
                             </label>
-                            <input type="number" name="stok_barang" id="stok_barang" value="0"
-                                class="mt-1 block w-full text-sm bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                                required>
+                            <input type="text" name="stok_barang" id="stok_barang" value="0" readonly
+                                tabindex="-1" inputmode="numeric"
+                                class="mt-1 block w-full text-sm bg-gray-100 border border-gray-200 rounded-lg px-3 py-2
+           cursor-not-allowed pointer-events-none
+           dark:bg-gray-800 dark:border-gray-700 dark:text-white">
                             <p class="text-[10px] text-gray-400 mt-1">
                                 Stok ini otomatis bertambah dari per depot.
                             </p>
@@ -359,15 +364,6 @@
                                     Atur harga beli dan jual untuk umum dan OTC.
                                 </p>
                             </div>
-                        </div>
-
-                        <div class="flex items-center mt-2">
-                            <input id="kunci_harga_obat" name="kunci_harga_obat" type="checkbox"
-                                class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                            <label for="kunci_harga_obat"
-                                class="ml-2 text-[11px] font-medium text-gray-700 dark:text-gray-300">
-                                Kunci harga obat (tidak dapat diubah saat transaksi)
-                            </label>
                         </div>
                     </div>
 
@@ -595,26 +591,6 @@
                         </div>
                     </div>
 
-                    <!-- Barcode -->
-                    <div class="grid grid-cols-1">
-                        <div>
-                            <label for="kode_update"
-                                class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                Barcode
-                            </label>
-                            <div class="mt-1 flex gap-2">
-                                <input type="text" name="barcode" id="kode_update"
-                                    class="block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                                    placeholder="Scan / masukkan barcode" autocomplete="off">
-                                <button type="button"
-                                    class="hidden md:inline-flex items-center px-3 py-2 text-[11px] font-medium rounded-lg border border-dashed border-gray-300 text-gray-500 hover:border-blue-400 hover:text-blue-600 dark:border-gray-600 dark:text-gray-300 dark:hover:border-blue-500">
-                                    <i class="fa-solid fa-barcode text-xs mr-1"></i> Scan
-                                </button>
-                            </div>
-                            <div id="kode_update-error" class="text-red-600 text-[11px] mt-1"></div>
-                        </div>
-                    </div>
-
                     <!-- Nama / Brand / Kategori -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -746,7 +722,7 @@
                                 Stok & Kedaluwarsa
                             </h4>
                             <p class="text-[11px] text-gray-500 dark:text-gray-400">
-                                Pantau stok dan tanggal kedaluwarsa untuk mencegah obat kadaluarsa.
+                                Pantau stok dan tanggal kedaluwarsa untuk mencegah BHP kadaluarsa.
                             </p>
                         </div>
                     </div>
@@ -755,11 +731,14 @@
                         <div>
                             <label for="stok_barang_update"
                                 class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                Stok Obat (global)
+                                Stok BHP (global)
                             </label>
-                            <input type="number" id="stok_barang_update"
-                                class="mt-1 block w-full text-sm bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                                required>
+                            <input type="text" id="stok_barang_update" value="0" readonly tabindex="-1"
+                                inputmode="numeric"
+                                class="mt-1 block w-full text-sm bg-gray-100 border border-gray-200 rounded-lg px-3 py-2
+           cursor-not-allowed pointer-events-none
+           dark:bg-gray-800 dark:border-gray-700 dark:text-white">
+
                             <p class="text-[10px] text-gray-400 mt-1">
                                 Stok ini otomatis bertambah dari per depot.
                             </p>
@@ -810,15 +789,6 @@
                                     Atur harga beli dan jual untuk umum dan OTC.
                                 </p>
                             </div>
-                        </div>
-
-                        <div class="flex items-center mt-2">
-                            <input id="edit_kunci_harga_obat" name="kunci_harga_obat" type="checkbox"
-                                class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                            <label for="edit_kunci_harga_obat"
-                                class="ml-2 text-[11px] font-medium text-gray-700 dark:text-gray-300">
-                                Kunci harga obat (tidak dapat diubah saat transaksi)
-                            </label>
                         </div>
                     </div>
 

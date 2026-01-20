@@ -20,19 +20,11 @@ class KadaluarsaObatController extends Controller
     public function getWarningKadaluarsa(Request $request)
     {
         $today     = Carbon::today()->startOfDay();
-        $threshold = (int) $request->input('threshold', 7);  // warning window ke depan
+        $threshold = (int) $request->input('threshold', 90);
         $limit     = (int) $request->input('limit', 5);
 
         $nearDate = $today->copy()->addDays($threshold)->endOfDay();
 
-        /**
-         * ✅ Ambil:
-         * - sudah lewat (expired)  : tanggal < today
-         * - hari ini              : tanggal = today
-         * - kurang dari threshold : today < tanggal <= nearDate
-         *
-         * Jadi range query: tanggal <= nearDate (include expired juga)
-         */
         $data = Obat::select('id', 'kode_obat', 'nama_obat', 'jumlah', 'tanggal_kadaluarsa_obat')
             ->whereNotNull('tanggal_kadaluarsa_obat')
             ->whereDate('tanggal_kadaluarsa_obat', '<=', $nearDate)
@@ -47,11 +39,11 @@ class KadaluarsaObatController extends Controller
 
                 // ✅ status khusus untuk FE
                 if ($diff < 0) {
-                    $obat->status_key = 'expired'; // lewat
+                    $obat->status_key = 'expired';
                 } elseif ($diff === 0) {
-                    $obat->status_key = 'today';   // kadaluarsa hari ini
+                    $obat->status_key = 'today';
                 } elseif ($diff <= $threshold) {
-                    $obat->status_key = 'warning'; // < 7 hari
+                    $obat->status_key = 'warning';
                 } else {
                     $obat->status_key = 'aman';
                 }

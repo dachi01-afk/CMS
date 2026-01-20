@@ -29,27 +29,22 @@ class DatabaseSeeder extends Seeder
             BrandFarmasiSeeder::class,
             JenisObatSeeder::class,
             SatuanObatSeeder::class,
-            ObatSeeder::class,
+            // ObatSeeder::class,
             JadwalDokterSeeder::class,
             // KunjunganSeeder::class,
             // KunjunganLayananSeeder::class,
             // ResepSeeder::class,
             // ResepObatSeeder::class,
-            EMRSeeder::class,
-            MetodePembayaranSeeder::class,
+            // EMRSeeder::class,
+            // MetodePembayaranSeeder::class,
             PerawatDokterPoliSeeder::class,
             // PembayaranSeeder::class,
             // TesLabSeeder::class,
             // AdministrasiSeeder::class,
             // TestimoniSeeder::class,
-            TipeDepotSeeder::class,
-            DepotSeeder::class,
-            DepotObatSeeder::class,
-
-            // ✅ taruh di sini aja (paling bawah biar master data sudah ada)
-            PasienTransaksiContohSeeder::class,
-            EMRContohSeeder::class,
-
+            // TipeDepotSeeder::class,
+            // DepotSeeder::class,
+            // DepotObatSeeder::class,
         ]);
     }
 }

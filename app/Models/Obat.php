@@ -50,7 +50,7 @@ class Obat extends Model
 
     public function depotObat()
     {
-        return $this->belongsToMany(Depot::class, 'depot_obat', 'obat_id', 'depot_id');
+        return $this->belongsToMany(Depot::class, 'depot_obat', 'obat_id', 'depot_id')->withPivot('stok_obat')->withTimestamps();
     }
 
     public function stokTransaksiDetail()
