@@ -12,24 +12,7 @@ use Illuminate\Support\Facades\Auth;
 class ResumeDokterController extends Controller
 {
     // GET /api/dokter/emr/{emrId}/resume
-    public function show($emrId)
-    {
-        $resume = ResumeDokter::with(['dokter', 'emr'])
-            ->where('emr_id', $emrId)
-            ->first();
 
-        if (! $resume) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Resume belum ada',
-            ], 404);
-        }
-
-        return response()->json([
-            'success' => true,
-            'data' => $resume,
-        ]);
-    }
 
     // POST /api/dokter/emr/{emrId}/resume  (create/update draft)
     public function store(Request $request, $emrId)

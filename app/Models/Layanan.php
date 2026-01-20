@@ -10,6 +10,30 @@ class Layanan extends Model
 
     protected $guarded = [];
 
+    // ✅ TAMBAHAN: Appends untuk memastikan harga_layanan selalu ada di JSON response
+    protected $appends = ['harga_layanan'];
+
+    // ✅ ACCESSOR: Auto-calculate harga_layanan dari kolom baru
+    public function getHargaLayananAttribute()
+    {
+        // Prioritas:
+        // 1. harga_setelah_diskon (kalau ada diskon)
+        // 2. harga_sebelum_diskon (harga asli)
+        // 3. Default 0
+        
+        $hargaSetelah = $this->attributes['harga_setelah_diskon'] ?? null;
+        $hargaSebelum = $this->attributes['harga_sebelum_diskon'] ?? null;
+        
+        // Pakai harga setelah diskon kalau > 0, kalau tidak pakai harga sebelum diskon
+        if ($hargaSetelah !== null && $hargaSetelah > 0) {
+            return (float) $hargaSetelah;
+        }
+        
+        return (float) ($hargaSebelum ?? 0);
+    }
+
+    // ===== RELASI =====
+    
     public function kunjungan()
     {
         return $this->belongsToMany(
@@ -31,7 +55,6 @@ class Layanan extends Model
         return $this->hasMany(PenjualanLayanan::class);
     }
 
-    // App\Models\Layanan.php
     public function kategori()
     {
         return $this->belongsTo(KategoriLayanan::class, 'kategori_layanan_id');

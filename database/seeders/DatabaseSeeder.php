@@ -2,13 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
-use App\Models\KategoriObat;
-use App\Models\KunjunganLayanan;
-use App\Models\MetodePembayaran;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-
 
 class DatabaseSeeder extends Seeder
 {
@@ -51,6 +45,11 @@ class DatabaseSeeder extends Seeder
             TipeDepotSeeder::class,
             DepotSeeder::class,
             DepotObatSeeder::class,
+
+            // ✅ taruh di sini aja (paling bawah biar master data sudah ada)
+            PasienTransaksiContohSeeder::class,
+            EMRContohSeeder::class,
+
         ]);
     }
 }

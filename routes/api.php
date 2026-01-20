@@ -19,16 +19,9 @@ Route::get('/test', function () {
 Route::post('/login', [APIMobileController::class, 'login'])->name('api.login');
 Route::post('/register', [APIMobileController::class, 'register'])->name('api.register');
 Route::post('/login-dokter', [APIMobileController::class, 'loginDokter'])->name('api.login_dokter');
-
-Route::get('/getDataTestimoni', [APIMobileController::class, 'getDataTestimoni']);
-Route::post('/create-data-testimoni', [APIMobileController::class, 'createDataTestimoni']);
 Route::get('/getDataSpesialisasiDokter', [APIMobileController::class, 'getDataSpesialisasiDokter']);
 Route::get('/getDokterBySpesialisasi/{spesialisasi_id}', [APIMobileController::class, 'getDokterBySpesialisasi']);
-
-// ✅ JADWAL DOKTER - PUBLIC (untuk kalender sidebar)
 Route::get('/getJadwalDokter', [APIMobileController::class, 'getJadwalDokter'])->name('dokter.jadwal.public');
-
-/* Throttled public endpoints (OTP/forgot) */
 Route::middleware('throttle:6,1')->group(function () {
     Route::post('/forgot-password/send-otp', [APIMobileController::class, 'sendForgotPasswordOTP'])->name('forgot_password.send_otp');
     Route::post('/forgot-password/reset', [APIMobileController::class, 'resetPasswordWithOTP'])->name('forgot_password.reset');
@@ -36,22 +29,9 @@ Route::middleware('throttle:6,1')->group(function () {
     Route::post('/forgot-username/send-otp', [APIMobileController::class, 'sendForgotUsernameOTP'])->name('forgot_username.send_otp');
     Route::post('/forgot-username/verify-or-change', [APIMobileController::class, 'verifyOrChangeUsernameWithOTP'])->name('forgot_username.verify_or_change');
 
-    Route::post('/forgot-username', [APIMobileController::class, 'sendForgotUsername'])->name('forgot_username.deprecated');
 });
 
-/* Midtrans callback (public, dipanggil server Midtrans) */
-Route::post('/pembayaran/midtrans/callback', [APIMobileController::class, 'midtransCallback'])->name('midtrans.callback');
-
-/* Katalog data publik */
-Route::get('/getDataPoli', [APIMobileController::class, 'getPoliDokter'])->name('poli.data');
 Route::get('/getPolibyIdDokter/{dokter_id}', [APIMobileController::class, 'getPolibyIdDokter'])->name('poli.by_dokter');
-Route::get('/getAllDokter', [APIMobileController::class, 'getAllDokter'])->name('dokter.all');
-
-/*
-|--------------------------------------------------------------------------
-| PROTECTED ROUTES (Sanctum Auth)
-|--------------------------------------------------------------------------
-*/
 Route::middleware(['auth:sanctum'])->group(function () {
     Route::post('/logout', [APIMobileController::class, 'logout'])->name('api.logout');
 
@@ -65,10 +45,6 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::put('/update-stok/{obatId}', [APIMobileController::class, 'updateStokObat'])->name('update_stok');
     });
 
-    Route::middleware('throttle:60,1')->group(function () {
-        Route::get('/notifications/recent', [APIMobileController::class, 'getRecentNotifications']);
-        Route::put('/notifications/{id}/read', [APIMobileController::class, 'markNotificationAsRead']);
-    });
 });
 
 /*
@@ -96,6 +72,8 @@ Route::middleware(['auth:sanctum', 'role:Pasien'])->prefix('pasien')->name('pasi
     // ========================================
     Route::get('/data-dokter', [APIMobileController::class, 'getDataDokter'])->name('dokter.data');
     Route::get('/dokter-by-poli-jadwal', [APIMobileController::class, 'getDokterByPoliJadwal'])->name('dokter.by_poli_jadwal');
+    Route::get('/jadwal-dokter', [APIMobileController::class, 'getJadwalDokterByDokterPoliTanggal'])
+        ->name('dokter.jadwal_by_dokter_poli_tanggal');
 
     // ========================================
     // KUNJUNGAN (OLD SYSTEM)
@@ -133,6 +111,7 @@ Route::middleware(['auth:sanctum', 'role:Pasien'])->prefix('pasien')->name('pasi
 
     // Riwayat pembelian layanan (legacy)
     Route::get('/riwayat-pembelian-layanan', [APIMobileController::class, 'getRiwayatPembelianLayanan'])->name('riwayat_pembelian_layanan');
+    Route::get('/poli', [APIMobileController::class, 'getDataPoli']);
 
     // ========================================
     // PEMBAYARAN
@@ -189,8 +168,6 @@ Route::get('/getJadwalDokter', [APIMobileController::class, 'getJadwalDokter'])-
 // Spesialisasi & Testimoni
 Route::get('/getDataSpesialisasiDokter', [APIMobileController::class, 'getDataSpesialisasiDokter']);
 Route::get('/getDokterBySpesialisasi/{spesialisasi_id}', [APIMobileController::class, 'getDokterBySpesialisasi']);
-Route::get('/getDataTestimoni', [APIMobileController::class, 'getDataTestimoni']);
-Route::post('/create-data-testimoni', [APIMobileController::class, 'createDataTestimoni']);
 
 // Metode pembayaran (public)
 Route::get('/pembayaran/get-data-metode-pembayaran', [APIMobileController::class, 'getDataMetodePembayaran']);
@@ -229,25 +206,6 @@ Route::middleware(['auth:sanctum'])->prefix('penjualan-obat')->name('penjualan_o
     Route::get('/sales-summary', [APIMobileController::class, 'getSalesSummary'])->name('sales_summary');
     Route::put('/update-stok/{obatId}', [APIMobileController::class, 'updateStokObat'])->name('update_stok');
 });
-
-/*
-|--------------------------------------------------------------------------
-| NOTIFICATIONS (Authenticated)
-|--------------------------------------------------------------------------
-*/
-
-Route::middleware(['auth:sanctum', 'throttle:60,1'])->group(function () {
-    Route::get('/notifications/recent', [APIMobileController::class, 'getRecentNotifications']);
-    Route::put('/notifications/{id}/read', [APIMobileController::class, 'markNotificationAsRead']);
-});
-
-/*
-|--------------------------------------------------------------------------
-| MIDTRANS CALLBACK (Public - Called by Midtrans Server)
-|--------------------------------------------------------------------------
-*/
-
-Route::post('/pembayaran/midtrans/callback', [APIMobileController::class, 'midtransCallback'])->name('midtrans.callback');
 
 /*
 |--------------------------------------------------------------------------
