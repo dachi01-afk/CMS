@@ -38,7 +38,7 @@
                 <li class="me-2" role="presentation">
                     <button class="inline-block p-4 border-b-2 rounded-t-lg" id="data-pemakaian-bhp-tab"
                         data-tabs-target="#data-pemakaian-bhp" type="button" role="tab"
-                        aria-controls="data-pemakaian-bhp" aria-selected="true">
+                        aria-controls="data-pemakaian-bhp">
                         Pemakaian Bahan Habis Pakai
                     </button>
                 </li>

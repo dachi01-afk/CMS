@@ -16,6 +16,9 @@ return new class extends Migration
             $table->foreignId('bahan_habis_pakai_id')
                 ->constrained('bahan_habis_pakai', 'id', 'riwayat_penggunaan_bahan_habis_pakai_bahan_habis_pakai_id')
                 ->cascadeOnUpdate()->cascadeOnDelete();
+            $table->foreignId('depot_id')
+                ->constrained('depot', 'id', 'riwayat_penggunaan_bahan_habis_pakai_depot_id')
+                ->cascadeOnUpdate()->cascadeOnDelete();
             $table->foreignId('user_id')
                 ->constrained('user', 'id', 'riwayat_penggunaan_bahan_habis_pakai_user_id')
                 ->cascadeOnUpdate()->cascadeOnDelete();

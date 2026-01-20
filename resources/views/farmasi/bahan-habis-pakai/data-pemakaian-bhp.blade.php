@@ -13,16 +13,33 @@
                 <form id="form-pemakaian-bhp" class="space-y-5" data-url="{{ route('store.data.pemakaian.bhp') }}">
                     @csrf
 
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">Cari Nama Bahan / Alat</label>
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                                {{-- <i class="fa-solid fa-box-open"></i> --}}
-                            </span>
-                            <select id="select-bhp" name="bahan_habis_pakai_id"
-                                class="block w-full p-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-blue-500 focus:border-blue-500 transition-all outline-none">
-                                <option value="">-- Pilih Barang --</option>
-                            </select>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">Cari Nama Bahan /
+                                Alat</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                                    {{-- <i class="fa-solid fa-box-open"></i> --}}
+                                </span>
+                                <select id="select-bhp" name="bahan_habis_pakai_id"
+                                    class="block w-full p-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-blue-500 focus:border-blue-500 transition-all outline-none">
+                                    <option value="">-- Pilih Barang --</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">Cari Depot</label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                                    {{-- <i class="fa-solid fa-box-open"></i> --}}
+                                </span>
+                                <select id="select-depot" name="depot_id"
+                                    class="block w-full p-3 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:ring-blue-500 focus:border-blue-500 transition-all outline-none">
+                                    <option value="">-- Pilih Depot --</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 

@@ -47,7 +47,9 @@ class BahanHabisPakai extends Model
             'kode',
             'harga_jual_umum_bhp',
             'stok_barang',
-        )->where('stok_barang', '>', 0)->orderBy('nama_barang', 'asc');
+        )->with(['satuanBHP' => function($q) {
+            $q->select('id', 'nama_satuan_obat');
+        }])->where('stok_barang', '>', 0)->orderBy('nama_barang', 'asc');
     }
 
     public static function simpanData($data)

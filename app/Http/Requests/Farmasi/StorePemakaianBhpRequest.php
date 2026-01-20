@@ -23,16 +23,20 @@ class StorePemakaianBhpRequest extends FormRequest
     {
         return [
             'bahan_habis_pakai_id' => ['required', 'exists:bahan_habis_pakai,id'],
+            'depot_id' => ['required', 'exists:depot,id'],
             'jumlah_pemakaian' => ['required', 'integer', 'min:1'],
             'tanggal_pemakaian' => ['required', 'date'],
             'keterangan' => ['nullable'],
         ];
     }
 
-    public function messages() {
-        return [ 
+    public function messages()
+    {
+        return [
             'bahan_habis_pakai_id.required' => 'Barang harus dipilih.',
+            'depot_id.required' => 'Depot harus dipilih.',
             'jumlah_pemakaian.min' => 'Jumlah pemakaian minimal 1 unit.',
+            'jumlah_pemakaian.required' => 'Jumlah pemakaian harus di isi.',
         ];
     }
 }

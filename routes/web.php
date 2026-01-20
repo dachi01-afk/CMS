@@ -362,8 +362,9 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
         });
 
         Route::prefix('pemakaian-bhp')->group(function () {
-            Route::get('get-data-bhp', [PemakaianBahanHabisPakaiController::class, 'getDataPemakaianBHP'])->name('get.data.pemakaian.bhp');
+            Route::get('get-data-bhp', [PemakaianBahanHabisPakaiController::class, 'getDataPemakaianBHP'])->name('get.data.bhp.pemakaian.bhp');
             Route::post('store-data-pemakaian-bhp', [PemakaianBahanHabisPakaiController::class, 'storeDataPemakaianBHP'])->name('store.data.pemakaian.bhp');
+            Route::get('get-data-depot', [PemakaianBahanHabisPakaiController::class, 'getDataDepot'])->name('get.data.depot.pemakaian.bhp');
         });
 
         // Route Penggunaan BHP 
