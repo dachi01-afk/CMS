@@ -2,21 +2,22 @@
 
 namespace App\Http\Controllers\Farmasi;
 
-use App\Exports\BahanHabisPakaiExport;
-use App\Http\Controllers\Controller;
-use App\Imports\BahanHabisPakaiImport;
-use App\Models\BahanHabisPakai;
+use Throwable;
 use App\Models\Depot;
-use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use App\Models\BahanHabisPakai;
+use Barryvdh\DomPDF\Facade\Pdf;
+use Yajra\DataTables\DataTables;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Validator;
-use Illuminate\Support\Str;
+use App\Http\Controllers\Controller;
 use Maatwebsite\Excel\Facades\Excel;
-use Throwable;
-use Yajra\DataTables\DataTables;
+use App\Exports\BahanHabisPakaiExport;
+use App\Imports\BahanHabisPakaiImport;
+use Illuminate\Support\Facades\Validator;
+use App\Http\Requests\Farmasi\StoreBahanHabisPakaiRequest;
 
 class BahanHabisPakaiController extends Controller
 {
@@ -81,149 +82,24 @@ class BahanHabisPakaiController extends Controller
             ->make(true);
     }
 
-public function createDataBahanHabisPakai(Request $request)
-{
-    try {
-        $parseNumber = function ($value) {
-            if ($value === null || $value === '') return 0;
-            $value = str_replace(['.', ','], ['', '.'], $value);
-            return (float) $value;
-        };
+    public function createDataBahanHabisPakai(StoreBahanHabisPakaiRequest $request)
+    {
+        try {
+            // Data sudah otomatis tervalidasi dan ter-parse harganya di Request Class
+            $bhp = BahanHabisPakai::simpanData($request->validated());
 
-        // ==============================
-        // VALIDASI
-        // ==============================
-        $validator = Validator::make($request->all(), [
-            'kode'             => ['nullable', 'string', 'max:255', 'unique:bahan_habis_pakai,kode'],
-            'nama_barang'      => ['required', 'string', 'max:255'],
-            'brand_farmasi_id' => ['nullable', 'exists:brand_farmasi,id'],
-            'jenis_id'         => ['nullable', 'exists:jenis_obat,id'],
-            'satuan_id'        => ['required', 'exists:satuan_obat,id'],
-            'dosis'            => ['required', 'numeric', 'min:0'],
-            'tanggal_kadaluarsa_bhp' => ['required', 'date'],
-            'no_batch'         => ['required', 'string', 'max:255'],
-            'stok_barang'      => ['nullable', 'integer', 'min:0'],
-            'harga_beli_satuan_bhp'  => ['nullable', 'numeric', 'min:0'],
-            'harga_jual_umum_bhp'    => ['nullable', 'numeric', 'min:0'],
-            'harga_otc_bhp'          => ['nullable', 'numeric', 'min:0'],
-            'depot_id'         => ['required', 'array', 'min:1'],
-            'depot_id.*'       => ['required', 'distinct', 'exists:depot,id'],
-            'stok_depot'       => ['required', 'array', 'min:1'],
-            'stok_depot.*'     => ['required', 'integer', 'min:0'],
-            'tipe_depot'       => ['nullable', 'array'],
-            'tipe_depot.*'     => ['nullable', 'exists:tipe_depot,id'],
-        ], [
-            'nama_barang.required' => 'Nama barang wajib diisi.',
-            'satuan_id.required'   => 'Satuan wajib dipilih.',
-            'depot_id.required'    => 'Minimal 1 depot harus dipilih.',
-        ]);
-
-        if ($validator->fails()) {
             return response()->json([
-                'status'  => 422,
-                'message' => 'Validasi gagal. Periksa input yang ditandai.',
-                'errors'  => $validator->errors(),
-            ], 422);
+                'status'  => 200,
+                'message' => 'Berhasil menambahkan data BHP!',
+                'data'    => $bhp->load('brandFarmasi', 'jenisBHP', 'satuanBHP', 'depotBHP'),
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'status'  => 500,
+                'message' => 'Gagal menyimpan data: ' . $e->getMessage()
+            ], 500);
         }
-
-        // Hitung total stok untuk main table
-        $stokDepotArr = collect($request->input('stok_depot', []))
-            ->map(fn($v) => max((int) $v, 0))
-            ->all();
-        $totalStok = array_sum($stokDepotArr);
-
-        $hargaBeli = $parseNumber($request->input('harga_beli_satuan_bhp'));
-        $hargaJual = $parseNumber($request->input('harga_jual_umum_bhp'));
-        $hargaOtc  = $parseNumber($request->input('harga_otc_bhp'));
-
-        // ==============================
-        // SIMPAN TRANSAKSI
-        // ==============================
-        $dataBHP = DB::transaction(function () use (
-            $request,
-            $hargaBeli,
-            $hargaJual,
-            $hargaOtc,
-            $totalStok
-        ) {
-            // Generate Kode Otomatis jika kosong
-            $kodeBHP = $request->input('kode');
-            if (!$kodeBHP) {
-                $ymd    = now()->format('Ymd');
-                $prefix = "BHP-{$ymd}-";
-                $lastKode = BahanHabisPakai::where('kode', 'like', $prefix . '%')
-                    ->lockForUpdate()
-                    ->orderBy('kode', 'desc')
-                    ->value('kode');
-
-                $nextNumber = $lastKode ? ((int) substr($lastKode, -4)) + 1 : 1;
-                $kodeBHP = $prefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
-            }
-
-            // 1. Simpan ke tabel bahan_habis_pakai
-            $bhp = BahanHabisPakai::create([
-                'kode'                   => $kodeBHP,
-                'brand_farmasi_id'       => $request->input('brand_farmasi_id'),
-                'jenis_id'               => $request->input('jenis_id'),
-                'satuan_id'              => $request->input('satuan_id'),
-                'nama_barang'            => $request->input('nama_barang'),
-                'tanggal_kadaluarsa_bhp' => $request->input('tanggal_kadaluarsa_bhp'),
-                'no_batch'               => $request->input('no_batch'),
-                'stok_barang'            => $totalStok,
-                'dosis'                  => $request->input('dosis'),
-                'harga_beli_satuan_bhp'  => $hargaBeli,
-                'harga_jual_umum_bhp'    => $hargaJual,
-                'harga_otc_bhp'          => $hargaOtc,
-            ]);
-
-            $depotIds = $request->input('depot_id', []);
-            $stokDepotInput = $request->input('stok_depot', []);
-            $syncData = [];
-
-            foreach ($depotIds as $i => $depId) {
-                $depId = (int) $depId;
-                $stokBaru = max((int) ($stokDepotInput[$i] ?? 0), 0);
-
-                // --- LOGIC UPDATE JUMLAH_STOK_DEPOT DI TABEL DEPOT ---
-                // Ambil data depot, lock untuk keamanan transaksi
-                $depot = Depot::where('id', $depId)->lockForUpdate()->first();
-                
-                if ($depot) {
-                    // Update field jumlah_stok_depot: lama + baru
-                    $depot->increment('jumlah_stok_depot', $stokBaru);
-                }
-                // ------------------------------------------------------
-
-                $syncData[$depId] = ['stok_barang' => $stokBaru];
-            }
-
-            // 2. Simpan ke tabel pivot depot_bhp
-            $bhp->depotBHP()->sync($syncData);
-
-            return $bhp;
-        });
-
-        $dataBHP->load('brandFarmasi', 'jenisBHP', 'satuanBHP', 'depotBHP');
-
-        return response()->json([
-            'status'  => 200,
-            'data'    => $dataBHP,
-            'message' => 'Berhasil menambahkan data Bahan Habis Pakai dan memperbarui stok depot!',
-        ], 200);
-
-    } catch (\Throwable $e) {
-        Log::error('createDataBahanHabisPakai error', [
-            'message' => $e->getMessage(),
-            'trace'   => $e->getTraceAsString()
-        ]);
-
-        return response()->json([
-            'status'  => 500,
-            'message' => 'Terjadi kesalahan pada server.',
-            'debug'   => config('app.debug') ? $e->getMessage() : null
-        ], 500);
     }
-}
 
     public function getDataBahanHabisPakaiById($id)
     {

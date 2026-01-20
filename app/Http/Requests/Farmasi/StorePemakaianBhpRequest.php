@@ -29,7 +29,7 @@ class StorePemakaianBhpRequest extends FormRequest
         ];
     }
 
-    public function message() {
+    public function messages() {
         return [ 
             'bahan_habis_pakai_id.required' => 'Barang harus dipilih.',
             'jumlah_pemakaian.min' => 'Jumlah pemakaian minimal 1 unit.',

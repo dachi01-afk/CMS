@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class BahanHabisPakai extends Model
 {
@@ -49,5 +50,85 @@ class BahanHabisPakai extends Model
         )->where('stok_barang', '>', 0)->orderBy('nama_barang', 'asc');
     }
 
-    
+    public static function simpanData($data)
+    {
+        return DB::transaction(function () use ($data) {
+            $kode = $data['kode'] ?? self::buatKodeBHP();
+            $totalStokInput = array_sum($data['stok_depot'] ?? []);
+
+            // 1. Simpan ke tabel bahan_habis_pakai
+            $dataBhp = self::create([
+                'kode'                   => $kode,
+                'brand_farmasi_id'       => $data['brand_farmasi_id'],
+                'jenis_id'               => $data['jenis_id'],
+                'satuan_id'              => $data['satuan_id'],
+                'nama_barang'            => $data['nama_barang'],
+                'tanggal_kadaluarsa_bhp' => $data['tanggal_kadaluarsa_bhp'],
+                'no_batch'               => $data['no_batch'],
+                'stok_barang'            => $totalStokInput,
+                'dosis'                  => $data['dosis'],
+                'harga_beli_satuan_bhp'  => $data['harga_beli_satuan_bhp'],
+                'harga_jual_umum_bhp'    => $data['harga_jual_umum_bhp'],
+                'harga_otc_bhp'          => $data['harga_otc_bhp'],
+            ]);
+
+            $syncData = [];
+            $depotIds = $data['depot_id'] ?? [];
+            $tipeDepotIds = $data['tipe_depot'] ?? [];
+            $stokDepot = $data['stok_depot'] ?? [];
+
+            // 2. Loop Pertama: Sync Pivot dan Update Tipe Depot
+            foreach ($depotIds as $index => $depId) {
+                if (empty($depId)) continue;
+
+                // Masukkan ke array sync untuk tabel pivot 'depot_bhp'
+                $syncData[$depId] = [
+                    'stok_barang' => (int) ($stokDepot[$index] ?? 0)
+                ];
+
+                // Update Tipe Depot di tabel 'depot'
+                $tipeId = $tipeDepotIds[$index] ?? null;
+                if ($tipeId) {
+                    Depot::where('id', $depId)->update(['tipe_depot_id' => $tipeId]);
+                }
+            }
+
+            if (!empty($syncData)) {
+                // Jalankan sync ke tabel pivot
+                $dataBhp->depotBHP()->sync($syncData);
+
+                // 3. Loop Kedua: Hitung Akumulasi Stok Seluruh Barang di Depot tersebut
+                // Ini agar kolom 'jumlah_stok_depot' adalah total dari SEMUA BHP + Obat yang ada di depot itu
+                foreach ($depotIds as $depId) {
+                    if (empty($depId)) continue;
+
+                    // Hitung total stok dari semua BHP yang ada di depot ini
+                    $totalBhpDiDepot = DB::table('depot_bhp')
+                        ->where('depot_id', $depId)
+                        ->sum('stok_barang');
+
+                    // Jika tabel Obat juga menggunakan depot yang sama, 
+                    // kamu bisa menjumlahkannya juga di sini (Opsional tergantung strukturmu)
+                    // $totalObatDiDepot = DB::table('depot_obat')->where('depot_id', $depId)->sum('stok_obat');
+
+                    $totalSemuaBaru = $totalBhpDiDepot; // + $totalObatDiDepot;
+
+                    Depot::where('id', $depId)->update([
+                        'jumlah_stok_depot' => $totalSemuaBaru
+                    ]);
+                }
+            }
+
+            return $dataBhp;
+        });
+    }
+
+    private static function buatKodeBHP()
+    {
+        $prefix = "BHP -" . now()->format('Ymd') . '-';
+        $last = self::where('kode', 'like', $prefix . '%')->orderBy('kode', 'desc')->first();
+
+        $number = $last ? ((int) substr($last->kode, -4)) + 1 : 1;
+        return $prefix . str_pad($number, 4, '0', STR_PAD_LEFT);
+    }
 }
