@@ -28,10 +28,18 @@
                 data-tabs-toggle="#tab-content" role="tablist">
 
                 <li class="me-2" role="presentation">
-                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="data-obat-tab"
-                        data-tabs-target="#data-data-obat" type="button" role="tab" aria-controls="data-data-obat"
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="data-bhp-tab"
+                        data-tabs-target="#data-bhp" type="button" role="tab" aria-controls="data-bhp"
                         aria-selected="true">
                         Data Stok Bahan Habis Pakai
+                    </button>
+                </li>
+
+                <li class="me-2" role="presentation">
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="data-pemakaian-bhp-tab"
+                        data-tabs-target="#data-pemakaian-bhp" type="button" role="tab"
+                        aria-controls="data-pemakaian-bhp" aria-selected="true">
+                        Pemakaian Bahan Habis Pakai
                     </button>
                 </li>
             </ul>
@@ -42,9 +50,16 @@
 
             {{-- Tabs Content --}}
             <div id="tab-content">
-                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-data-obat" role="tabpanel"
-                    aria-labelledby="data-obat-tab">
+                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-bhp" role="tabpanel"
+                    aria-labelledby="data-bhp-tab">
                     @include('farmasi.bahan-habis-pakai.data-bahan-habis-pakai')
+                </div>
+            </div>
+
+            <div id="tab-content">
+                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-pemakaian-bhp"
+                    role="tabpanel" aria-labelledby="data-pemakaian-bhp-tab" data-tabs-target="data-pemakaian-bhp">
+                    @include('farmasi.bahan-habis-pakai.data-pemakaian-bhp')
                 </div>
             </div>
 
