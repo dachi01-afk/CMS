@@ -515,8 +515,6 @@ class ObatController extends Controller
             ->stream('data-obat.pdf');
     }
 
-
-
     public function deleteObat($id)
     {
         $dataObat = Obat::findOrFail($id);

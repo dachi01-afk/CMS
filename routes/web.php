@@ -323,7 +323,7 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::delete('/delete-data-obat/{id}', [ObatController::class, 'deleteObat'])->name('obat.delete');
             Route::get('/export-data-obat', [ObatController::class, 'export'])->name('export.data.obat');
             Route::post('/import-data-obat', [ObatController::class, 'importExcel'])->name('import.data.obat');
-            Route::get('/print-data-obat', [ObatController::class, 'printPDF'])->name('obat.printPDF');
+            Route::get('/print-data-obat', [ObatController::class, 'printPDF'])->name('print.data.obat');
 
             Route::get('/get-data-penjualan-obat', [OrderObatController::class, 'getDataPenjualanObat'])->name('obat.penjualan.obat');
             Route::get('/search-data-pasien', [OrderObatController::class, 'search'])->name('obat.search.data.pasien');

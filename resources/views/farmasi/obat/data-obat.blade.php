@@ -48,6 +48,12 @@
                     Export CSV
                 </a>
 
+                <button type="button" id="btn-print-obat" data-url="{{ route('print.data.obat') }}"
+                    class="inline-flex items-center justify-center px-4 py-2 rounded-xl border text-[11px] md:text-xs font-medium bg-white text-gray-700 border-gray-200 hover:bg-gray-50 dark:bg-gray-900 dark:text-gray-100 dark:border-gray-700">
+                    <i class="fa-solid fa-print mr-1.5 text-[10px]"></i>
+                    Print PDF
+                </button>
+
                 <!-- Import Excel -->
                 <form id="import-form" action="{{ route('import.data.obat') }}" method="POST"
                     enctype="multipart/form-data">
