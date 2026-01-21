@@ -15,10 +15,10 @@ return new class extends Migration
             $table->id();
             $table->foreignId('order_lab_id')
                 ->constrained('order_lab', 'id', 'order_lab_detail_order_lab_id')
-                ->casCadeOnUpdate()->nullOnDelete();
+                ->casCadeOnUpdate()->cascadeOnDelete();
             $table->foreignId('jenis_pemeriksaan_lab_id')
                 ->constrained('jenis_pemeriksaan_lab', 'id', 'order_lab_detail_order_jenis_pemeriksaan_lab_id')
-                ->casCadeOnUpdate()->nullOnDelete();
+                ->casCadeOnUpdate()->cascadeOnDelete();
             $table->enum('status_pemeriksaan', ['Pending', 'Selesai']);
             $table->timestamps();
         });

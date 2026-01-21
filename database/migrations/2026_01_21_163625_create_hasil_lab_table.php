@@ -15,10 +15,10 @@ return new class extends Migration
             $table->id();
             $table->foreignId('order_lab_detail_id')
                 ->constrained('order_lab_detail', 'id', 'hasil_lab_order_lab_detail_id')
-                ->casCadeOnUpdate()->nullOnDelete();
+                ->casCadeOnUpdate()->cascadeOnDelete();
             $table->foreignId('perawat_id')
                 ->constrained('perawat', 'id', 'hasil_lab_perawat_id')
-                ->casCadeOnUpdate()->nullOnDelete();
+                ->casCadeOnUpdate()->cascadeOnDelete();
             $table->decimal('nilai_hasil', 15, 2);
             $table->string('nilai_rujukan');
             $table->text('keterangan');

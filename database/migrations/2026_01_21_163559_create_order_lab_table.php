@@ -16,10 +16,10 @@ return new class extends Migration
             $table->string('no_order_lab')->unique();
             $table->foreignId('dokter_id')
                 ->constrained('dokter', 'id', 'order_lab_dokter_id')
-                ->casCadeOnUpdate()->nullOnDelete();
+                ->casCadeOnUpdate()->cascadeOnDelete();
             $table->foreignId('pasien_id')
                 ->constrained('pasien', 'id', 'order_lab_pasien_id')
-                ->casCadeOnUpdate()->nullOnDelete();
+                ->casCadeOnUpdate()->cascadeOnDelete();
             $table->date('tanggal_order');
             $table->date('tanggal_pemeriksaan');
             $table->time('jam_pemeriksaan');
