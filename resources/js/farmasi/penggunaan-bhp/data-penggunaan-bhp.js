@@ -286,4 +286,63 @@ $(function () {
             }
         });
     }
+
+    const api = {
+        exportData:
+            $("#table-penggunaan-barang").attr("data-url-export") || null,
+        printData: $("#table-penggunaan-barang").attr("data-url-print") || null,
+    };
+
+    function buildUrlWithParams(baseUrl, paramsObj) {
+        if (!baseUrl) return null;
+
+        const urlObj = new URL(baseUrl, window.location.origin);
+
+        Object.entries(paramsObj || {}).forEach(([key, val]) => {
+            if (val === undefined || val === null) return;
+
+            const v = String(val).trim();
+            if (!v) return;
+
+            if (key === "nama_barang" && v.length < 2) return;
+
+            urlObj.searchParams.set(key, v);
+        });
+
+        return urlObj.toString();
+    }
+
+    $("#btn-export-penggunaan-barang").on("click", function (e) {
+        e.preventDefault();
+        if (!api.exportData) {
+            console.warn("URL Export Kosong.");
+            return;
+        }
+
+        const url = buildUrlWithParams(api.exportData, {
+            start_date: $startDate.length ? $startDate.val() : "",
+            end_date: $endDate.length ? $endDate.val() : "",
+            nama_barang: $namaBarang.length ? $namaBarang.val() : "",
+        });
+
+        if (!url) return;
+        window.open(url, "_blank");
+    });
+
+    $("#btn-print-penggunaan-barang").on("click", function (e) {
+        e.preventDefault();
+
+        if (!api.printData) {
+            console.warn("URL Print Kosong");
+        }
+
+        const url = buildUrlWithParams(api.printData, {
+            start_date: $startDate.length ? $startDate.val() : "",
+            end_date: $endDate.length ? $endDate.val() : "",
+            nama_barang: $namaBarang.length ? $namaBarang.val() : "",
+        });
+
+        if (!url) return;
+        window.open(url, "_blank");
+    });
 });

@@ -126,9 +126,8 @@
         class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
             <table id="table-penggunaan-barang" class="min-w-full text-xs text-left text-slate-600 dark:text-slate-100"
-                data-url-data="{{ route('get.data.penggunaan.obat') }}"
-                data-url-export="{{ route('export.data.penggunaan.obat') }}"
-                data-url-print="{{ route('print.data.penggunaan.obat') }}">
+                data-url-export="{{ route('export.data.penggunaan.bhp') }}"
+                data-url-print="{{ route('print.pdf.data.penggunaan.bhp') }}">
                 <thead
                     class="text-[11px] uppercase bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-200">
                     <tr>

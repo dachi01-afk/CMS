@@ -371,6 +371,8 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
         Route::prefix('penggunaan-bhp')->group(function () {
             Route::get('/', [PenggunaanBHPController::class, 'index'])->name('penggunaan.bhp');
             Route::get('/get-data-penggunaan-bhp', [PenggunaanBHPController::class, 'getDataPenggunaanBHP'])->name('get.data.penggunaan.bhp');
+            Route::get('/export-data-penggunaan-bhp', [PenggunaanBHPController::class, 'exportExcel'])->name('export.data.penggunaan.bhp');
+            Route::get('/print-pdf-data-penggunaan-bhp', [PenggunaanBHPController::class, 'printPdf'])->name('print.pdf.data.penggunaan.bhp');
         });
 
         // Route Kadaluarsa BHP 

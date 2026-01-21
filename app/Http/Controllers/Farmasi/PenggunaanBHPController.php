@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers\Farmasi;
 
-use App\Http\Controllers\Controller;
-use App\Models\BahanHabisPakai;
 use Illuminate\Http\Request;
+use App\Models\BahanHabisPakai;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
+use App\Exports\PenggunaanBhpExport;
+use App\Http\Controllers\Controller;
+use Maatwebsite\Excel\Facades\Excel;
 use Yajra\DataTables\Facades\DataTables;
 
 class PenggunaanBHPController extends Controller
@@ -59,63 +62,46 @@ class PenggunaanBHPController extends Controller
             ->make(true);
     }
 
-    public function export(Request $request)
+    public function exportExcel(Request $request)
     {
-        $query = $this->buildBaseQuery($request);
+        $filters = [
+            'start_date' => $request->filter_start_date,
+            'end_date' => $request->filter_end_date,
+            'nama_barang' => $request->filter_nama_barang,
+        ];
 
-        $fileName = 'penggunaan-obat-' . now()->format('Ymd_His') . '.xlsx';
+        $nama_file = 'Laporan_Penggunaan_BHP_' . date('Ymd_His') . '.xlsx';
 
-        $start = $request->start_date;
-        $end   = $request->end_date;
-
-        $title = 'Laporan Penggunaan Obat';
-        if ($start && $end) {
-            $title .= " ({$start} s/d {$end})";
-        }
-
-        return Excel::download(
-            new PenggunaanObatExport($query, $title),
-            $fileName,
-            ExcelWriter::XLSX
-        );
+        return Excel::download(new PenggunaanBhpExport($filters), $nama_file);
     }
 
     /**
      * #3 – Print
      * route: farmasi.penggunaan-obat.print
      */
-    public function print(Request $request)
+    public function printPdf(Request $request)
     {
-        // pakai query yang sama biar hasilnya konsisten dengan tabel & export
-        $query = $this->buildBaseQuery($request);
+        // 1. Ambil data dengan filter yang sama
+        $data = BahanHabisPakai::getDataPenggunaanBhp([
+            'start_date' => $request->filter_start_date,
+            'end_date' => $request->filter_end_date,
+            'nama_barang' => $request->filter_nama_barang,
+        ])->get(); // Gunakan get() untuk mengambil koleksi data
 
-        // untuk PDF, sebaiknya ambil semua rows (kalau rekap per obat biasanya kecil)
-        $rows = $query->orderBy('nama_obat')->get();
-
-        $start = $request->start_date;
-        $end   = $request->end_date;
-        $nama  = $request->nama_obat;
-
-        $periode = '-';
-        if ($start && $end) {
-            $periode = Carbon::parse($start)->translatedFormat('d F Y')
-                . ' s/d ' .
-                Carbon::parse($end)->translatedFormat('d F Y');
-        }
-
-        $meta = [
-            'judul'      => 'Laporan Penggunaan Obat',
-            'periode'    => $periode,
-            'filterNama' => $nama ? $nama : '-',
-            'printedAt'  => now()->translatedFormat('d F Y H:i'),
+        // 2. Siapkan data untuk dikirim ke view
+        $payload = [
+            'title' => 'Laporan Penggunaan Bahan Habis Pakai',
+            'date' => date('d/m/Y H:i'),
+            'startDate' => $request->filter_start_date,
+            'endDate' => $request->filter_end_date,
+            'data' => $data
         ];
 
-        $pdf = Pdf::loadView('farmasi.penggunaan-obat.print-preview', compact('rows', 'meta'))
-            ->setPaper('a4', 'landscape');
+        // 3. Load view dan set ukuran kertas
+        $pdf = Pdf::loadView('farmasi.penggunaan-bhp.print-preview', $payload)
+            ->setPaper('a4', 'portrait');
 
-        $fileName = 'cetak-penggunaan-obat-' . now()->format('Ymd_His') . '.pdf';
-
-        // stream = buka di tab baru (lebih cocok untuk print)
-        return $pdf->stream($fileName);
+        // 4. Stream atau Download
+        return $pdf->stream('Laporan-Penggunaan-BHP.pdf');
     }
 }
