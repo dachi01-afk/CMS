@@ -47,7 +47,7 @@ class BahanHabisPakai extends Model
             'kode',
             'harga_jual_umum_bhp',
             'stok_barang',
-        )->with(['satuanBHP' => function($q) {
+        )->with(['satuanBHP' => function ($q) {
             $q->select('id', 'nama_satuan_obat');
         }])->where('stok_barang', '>', 0)->orderBy('nama_barang', 'asc');
     }
@@ -132,5 +132,36 @@ class BahanHabisPakai extends Model
 
         $number = $last ? ((int) substr($last->kode, -4)) + 1 : 1;
         return $prefix . str_pad($number, 4, '0', STR_PAD_LEFT);
+    }
+
+    public function scopeGetDataPenggunaanBhp($query, $filters = [])
+    {
+        $startDate = $filters['start_date'] ?? null;
+        $endDate   = $filters['end_date'] ?? null;
+        $namaBhp   = $filters['nama_barang'] ?? null;
+
+        $query->select([
+            'bahan_habis_pakai.id',
+            'bahan_habis_pakai.nama_barang',
+            'bahan_habis_pakai.stok_barang',
+            'bahan_habis_pakai.harga_jual_umum_bhp',
+        ]);
+
+        // Filter Nama Barang
+        if (!empty($namaBhp)) {
+            $query->where('bahan_habis_pakai.nama_barang', 'like', '%' . $namaBhp . '%');
+        }
+
+        $query->addSelect([
+            // PERBAIKAN DI SINI: Bandingkan riwayat_penggunaan dengan bahan_habis_pakai
+            'total_pakai_umum' => DB::table('riwayat_penggunaan_bahan_habis_pakai')
+                ->selectRaw('SUM(jumlah_pemakaian)')
+                // Pastikan foreign key di tabel riwayat (misal: bhp_id) sesuai dengan ID di tabel utama
+                ->whereColumn('riwayat_penggunaan_bahan_habis_pakai.bahan_habis_pakai_id', 'bahan_habis_pakai.id')
+                ->when($startDate, fn($q) => $q->whereDate('created_at', '>=', $startDate))
+                ->when($endDate, fn($q) => $q->whereDate('created_at', '<=', $endDate)),
+        ]);
+
+        return $query;
     }
 }

@@ -79,7 +79,7 @@
         <!-- Page length -->
         <div class="flex items-center gap-2 text-sm">
             <span class="text-slate-600 dark:text-slate-300 hidden sm:inline">Tampil</span>
-            <select id="poli-pageLength"
+            <select id="penggunaan-bhp-pageLength"
                 class="border border-slate-300 dark:border-slate-600 text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500
                            bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 px-2 py-1 w-28">
                 <option value="10">10 baris</option>
@@ -132,13 +132,11 @@
                 <thead
                     class="text-[11px] uppercase bg-slate-50 dark:bg-slate-800/80 text-slate-500 dark:text-slate-200">
                     <tr>
-                        <th class="px-3 py-2">#</th>
-                        <th class="px-3 py-2">Nama Obat</th>
-                        <th class="px-3 py-2 text-center">Penggunaan Umum</th>
-                        <th class="px-3 py-2 text-center">Nominal Obat Umum</th>
-                        <th class="px-3 py-2 text-center">Penggunaan BPJS</th>
-                        <th class="px-3 py-2 text-center">Nominal Obat BPJS</th>
-                        <th class="px-3 py-2 text-center">Sisa Obat</th>
+                        <th class="px-3 py-2 !text-center">#</th>
+                        <th class="px-3 py-2 text-left">Nama Barang</th>
+                        <th class="px-3 py-2 !text-center">Penggunaan Umum</th>
+                        <th class="px-3 py-2 !text-center">Nominal BHP Umum</th>
+                        <th class="px-3 py-2 !text-center">Sisa Stok BHP</th>
                     </tr>
                 </thead>
                 <tbody class="text-[11px]">
@@ -150,10 +148,10 @@
         <!-- Footer -->
         <div
             class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-4 md:px-6 py-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/60 rounded-b-2xl">
-            <div id="poli-customInfo" class="text-xs md:text-sm text-slate-600 dark:text-slate-300">
+            <div id="penggunaan-bhp-customInfo" class="text-xs md:text-sm text-slate-600 dark:text-slate-300">
             </div>
 
-            <ul id="poli-customPagination"
+            <ul id="penggunaan-bhp-customPagination"
                 class="inline-flex items-center gap-0 text-sm isolate rounded-lg border border-slate-200 dark:border-slate-600 overflow-hidden">
             </ul>
         </div>
