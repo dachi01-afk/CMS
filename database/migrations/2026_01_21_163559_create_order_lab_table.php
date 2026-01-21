@@ -20,6 +20,10 @@ return new class extends Migration
             $table->foreignId('pasien_id')
                 ->constrained('pasien', 'id', 'order_lab_pasien_id')
                 ->casCadeOnUpdate()->cascadeOnDelete();
+            $table->foreignId('kunjungan_id')
+                ->constrained('kunjungan', 'id', 'order_lab_kunjungan_id')
+                ->cascadeOnUpdate()
+                ->cascadeOnDelete();
             $table->date('tanggal_order');
             $table->date('tanggal_pemeriksaan');
             $table->time('jam_pemeriksaan');

@@ -19,4 +19,8 @@ class HasilLab extends Model
     {
         return $this->belongsTo(Perawat::class);
     }
+
+    public function scopeGetData($query) {
+        $query->select();
+    }
 }

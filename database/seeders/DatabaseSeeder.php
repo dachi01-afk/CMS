@@ -6,6 +6,8 @@ use App\Models\User;
 use App\Models\KategoriObat;
 use App\Models\KunjunganLayanan;
 use App\Models\MetodePembayaran;
+use App\Models\OrderLab;
+use App\Models\SatuanLab;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -37,7 +39,7 @@ class DatabaseSeeder extends Seeder
             SatuanObatSeeder::class,
             // ObatSeeder::class,
             JadwalDokterSeeder::class,
-            // KunjunganSeeder::class,
+            KunjunganSeeder::class,
             // KunjunganLayananSeeder::class,
             // ResepSeeder::class,
             // ResepObatSeeder::class,
@@ -51,6 +53,10 @@ class DatabaseSeeder extends Seeder
             // TipeDepotSeeder::class,
             // DepotSeeder::class,
             // DepotObatSeeder::class,
+            SatuanLabSeeder::class,
+            JenisPemeriksaanLabSeeder::class,
+            OrderLabSeeder::class,
+            OrderLabDetailSeeder::class,
         ]);
     }
 }
