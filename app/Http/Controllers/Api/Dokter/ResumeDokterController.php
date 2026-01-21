@@ -11,10 +11,34 @@ use Illuminate\Support\Facades\Auth;
 
 class ResumeDokterController extends Controller
 {
-    // GET /api/dokter/emr/{emrId}/resume
+    /**
+     * GET /api/dokter/emr/{emrId}/resume
+     * Mengambil resume dokter berdasarkan EMR ID
+     */
+    public function show($emrId)
+    {
+        $emr = Emr::findOrFail($emrId);
+        $resume = ResumeDokter::where('emr_id', $emr->id)->first();
 
+        if (!$resume) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Resume belum dibuat untuk EMR ini',
+                'data' => null,
+            ], 404);
+        }
 
-    // POST /api/dokter/emr/{emrId}/resume  (create/update draft)
+        return response()->json([
+            'success' => true,
+            'message' => 'Resume dokter ditemukan',
+            'data' => $resume,
+        ]);
+    }
+
+    /**
+     * POST /api/dokter/emr/{emrId}/resume
+     * Create/Update draft resume
+     */
     public function store(Request $request, $emrId)
     {
         $request->validate([
@@ -32,17 +56,15 @@ class ResumeDokterController extends Controller
         $emr = Emr::findOrFail($emrId);
 
         $dokter = Dokter::where('user_id', Auth::id())->first();
-        if (! $dokter) {
+        if (!$dokter) {
             return response()->json([
                 'success' => false,
                 'message' => 'Data dokter tidak ditemukan.',
             ], 404);
         }
 
-        // ambil dulu kalau sudah ada
         $existing = ResumeDokter::where('emr_id', $emr->id)->first();
 
-        // kalau sudah FINAL, jangan boleh diubah
         if ($existing && $existing->status === 'final') {
             return response()->json([
                 'success' => false,
@@ -55,14 +77,20 @@ class ResumeDokterController extends Controller
             ['emr_id' => $emr->id],
             array_merge(
                 $request->only([
-                    'ringkasan_kasus', 'diagnosis_utama', 'diagnosis_sekunder',
-                    'tindakan', 'terapi_ringkas', 'hasil_penunjang_ringkas',
-                    'kondisi_akhir', 'instruksi_pulang', 'rencana_tindak_lanjut',
+                    'ringkasan_kasus',
+                    'diagnosis_utama',
+                    'diagnosis_sekunder',
+                    'tindakan',
+                    'terapi_ringkas',
+                    'hasil_penunjang_ringkas',
+                    'kondisi_akhir',
+                    'instruksi_pulang',
+                    'rencana_tindak_lanjut',
                 ]),
                 [
                     'dokter_id' => $dokter->id,
-                    'status' => 'draft',     // ✅ hanya untuk yang belum final
-                    'finalized_at' => null,  // ✅ draft tidak punya finalized_at
+                    'status' => 'draft',
+                    'finalized_at' => null,
                 ]
             )
         );
@@ -74,10 +102,20 @@ class ResumeDokterController extends Controller
         ]);
     }
 
-    // POST /api/dokter/emr/{emrId}/resume/finalize
+    /**
+     * POST /api/dokter/emr/{emrId}/resume/finalize
+     * Finalize resume (ubah status jadi FINAL)
+     */
     public function finalize($emrId)
     {
-        $resume = ResumeDokter::where('emr_id', $emrId)->firstOrFail();
+        $resume = ResumeDokter::where('emr_id', $emrId)->first();
+
+        if (!$resume) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Resume belum dibuat. Simpan draft terlebih dahulu.',
+            ], 404);
+        }
 
         if ($resume->status === 'final') {
             return response()->json([
@@ -92,9 +130,11 @@ class ResumeDokterController extends Controller
             'finalized_at' => now(),
         ]);
 
+        $resume->refresh();
+
         return response()->json([
             'success' => true,
-            'message' => 'Resume dokter sudah FINAL',
+            'message' => 'Resume dokter berhasil difinalisasi',
             'data' => $resume,
         ]);
     }

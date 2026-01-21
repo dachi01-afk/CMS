@@ -50,6 +50,7 @@ use App\Http\Controllers\Admin\ManajemenPenggunaController;
 use App\Http\Controllers\Farmasi\BahanHabisPakaiController;
 use App\Http\Controllers\Management\JadwalDokterController;
 use App\Http\Controllers\Farmasi\RestockDanReturnController;
+use App\Http\Controllers\PemakaianBahanHabisPakaiController;
 use App\Http\Controllers\Apoteker\Obat\PenjualanObatController;
 use App\Http\Controllers\Dokter\DokterController as DokterDokterController;
 use App\Http\Controllers\Farmasi\PengambilanObatController as FarmasiPengambilanObatController;
@@ -360,9 +361,18 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::post('/import-excel-data-bhp', [BahanHabisPakaiController::class, 'importExcelBhp'])->name('import.excel.data.bahan.habis.pakai');
         });
 
+        Route::prefix('pemakaian-bhp')->group(function () {
+            Route::get('get-data-bhp', [PemakaianBahanHabisPakaiController::class, 'getDataPemakaianBHP'])->name('get.data.bhp.pemakaian.bhp');
+            Route::post('store-data-pemakaian-bhp', [PemakaianBahanHabisPakaiController::class, 'storeDataPemakaianBHP'])->name('store.data.pemakaian.bhp');
+            Route::get('get-data-depot', [PemakaianBahanHabisPakaiController::class, 'getDataDepot'])->name('get.data.depot.pemakaian.bhp');
+        });
+
         // Route Penggunaan BHP 
         Route::prefix('penggunaan-bhp')->group(function () {
             Route::get('/', [PenggunaanBHPController::class, 'index'])->name('penggunaan.bhp');
+            Route::get('/get-data-penggunaan-bhp', [PenggunaanBHPController::class, 'getDataPenggunaanBHP'])->name('get.data.penggunaan.bhp');
+            Route::get('/export-data-penggunaan-bhp', [PenggunaanBHPController::class, 'exportExcel'])->name('export.data.penggunaan.bhp');
+            Route::get('/print-pdf-data-penggunaan-bhp', [PenggunaanBHPController::class, 'printPdf'])->name('print.pdf.data.penggunaan.bhp');
         });
 
         // Route Kadaluarsa BHP 

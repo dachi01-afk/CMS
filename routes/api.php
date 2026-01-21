@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\APIMobileController;
 use App\Http\Controllers\Api\Dokter\ResumeDokterController;
 use App\Http\Controllers\Api\LihatPemeriksaanOlehPerawat;
+
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -234,29 +235,46 @@ Route::middleware(['auth:sanctum', 'role:Dokter'])
     ->prefix('dokter')
     ->name('dokter.')
     ->group(function () {
+
+        // Profile & Data Dokter
         Route::get('/get-data-dokter', [APIMobileController::class, 'getDataDokter']);
         Route::post('/update-profile', [APIMobileController::class, 'updateDataDokter'])->name('update_profile');
+
+        // Kunjungan & Pasien
         Route::get('/get-data-kunjungan-by-id-dokter', [APIMobileController::class, 'getDataKunjunganBerdasarkanIdDokter'])->name('kunjungan_by_dokter');
+        Route::get('/riwayat-pasien-diperiksa', [APIMobileController::class, 'getRiwayatPasienDiperiksa'])->name('riwayat_pasien_diperiksa');
+        Route::get('/detail-riwayat-pasien/{kunjunganId}', [APIMobileController::class, 'getDetailRiwayatPasien'])->name('detail_riwayat_pasien');
+        Route::get('/get-data-kunjungan/{kunjungan_id}', [APIMobileController::class, 'getDataKunjunganById'])->name('get_data_kunjungan_by_id');
+
+        // Data Master
         Route::get('/get-data-obat', [APIMobileController::class, 'getDataObat'])->name('obat');
         Route::get('/get-layanan', [APIMobileController::class, 'getLayanan'])->name('layanan');
+        Route::get('/perawat', [APIMobileController::class, 'getPerawatByDokter'])->name('perawat.index');
+
+        // EMR Management
         Route::post('/save-emr', [APIMobileController::class, 'saveEMR'])->name('save_emr');
-        Route::get('/riwayat-pasien-diperiksa', [APIMobileController::class, 'getRiwayatPasienDiperiksa'])->name('riwayat_pasien_diperiksa');
+        Route::put('/edit-emr/{emr_id}', [APIMobileController::class, 'editEMR'])->name('edit_emr');
+        Route::get('/emr/{emr_id}', [APIMobileController::class, 'getEmrById']);
+        Route::post('/save-emr-layanan', [APIMobileController::class, 'saveEMRLayanan']);
+        Route::get('/pasien/riwayat-emr/{pasien_id}', [APIMobileController::class, 'getRiwayatEMRPasien'])->name('riwayat_emr_pasien');
 
-        Route::get('/detail-riwayat-pasien/{kunjunganId}', [APIMobileController::class, 'getDetailRiwayatPasien'])->name('detail_riwayat_pasien');
-
+        // Layanan Order
         Route::get('/layanan-order', [APIMobileController::class, 'getLayananOrderDokter']);
         Route::get('/detail-order-layanan/{kunjunganId}', [APIMobileController::class, 'getDetailOrderLayanan']);
 
-        Route::get('/pasien/riwayat-emr/{pasien_id}', [APIMobileController::class, 'getRiwayatEMRPasien'])->name('riwayat_emr_pasien');
-        Route::get('/get-data-kunjungan/{kunjungan_id}', [APIMobileController::class, 'getDataKunjunganById'])->name('get_data_kunjungan_by_id');
-        Route::get('/perawat', [APIMobileController::class, 'getPerawatByDokter'])->name('perawat.index');
-        Route::get('/emr/{emr_id}', [APIMobileController::class, 'getEmrById']);
-        Route::post('/save-emr-layanan', [APIMobileController::class, 'saveEMRLayanan']);
-        Route::get('/emr/{emrId}/resume', [ResumeDokterController::class, 'show']);
-        Route::post('/emr/{emrId}/resume', [ResumeDokterController::class, 'store']);
-        Route::post('/emr/{emrId}/resume/finalize', [ResumeDokterController::class, 'finalize']);
-        Route::put('/edit-emr/{emr_id}', [APIMobileController::class, 'editEMR'])->name('edit_emr');
+        // ========================================
+        // ✅ RESUME DOKTER - URUTAN PENTING!
+        // ========================================
+        // Route SPESIFIK (finalize) HARUS di ATAS route UMUM (store)
+        // Jika tidak, Laravel akan match ke route store terlebih dahulu
+        Route::post('/emr/{emrId}/resume/finalize', [ResumeDokterController::class, 'finalize'])
+            ->name('resume.finalize');
 
+        Route::get('/emr/{emrId}/resume', [ResumeDokterController::class, 'show'])
+            ->name('resume.show');
+
+        Route::post('/emr/{emrId}/resume', [ResumeDokterController::class, 'store'])
+            ->name('resume.store');
     });
 
 Route::middleware(['auth:sanctum', 'role:Perawat'])

@@ -96,6 +96,8 @@ export default defineConfig({
                 "resources/js/farmasi/cetak-resep-obat/data-cetak-resep-obat.js",
                 "resources/js/farmasi/restock-dan-return-obat-dan-bhp/data-restock-dan-return-obat-dan-bhp.js",
                 "resources/js/farmasi/depot/data-depot.js",
+                "resources/js/farmasi/penggunaan-bhp/data-penggunaan-bhp.js",
+                "resources/js/farmasi/bahan-habis-pakai/data-pemakaian-bhp.js",
             ],
             refresh: true,
         }),
