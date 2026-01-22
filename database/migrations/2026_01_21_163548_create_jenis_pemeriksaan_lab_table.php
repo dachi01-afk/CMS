@@ -15,9 +15,7 @@ return new class extends Migration
             $table->foreignId('satuan_lab_id')
                 ->nullable()
                 ->constrained('satuan_lab', 'id', 'jenis_pemeriksaan_lab_satuan_lab_id')
-                ->cascadeOnUpdate()
-                ->nullOnDelete();
-
+                ->cascadeOnUpdate()->cascadeOnDelete();
             $table->string('kode_pemeriksaan');
             $table->string('nama_pemeriksaan');
 

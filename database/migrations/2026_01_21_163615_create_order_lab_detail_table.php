@@ -12,16 +12,12 @@ return new class extends Migration
             $table->id();
 
             $table->foreignId('order_lab_id')
-                ->constrained('order_lab')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
-
+                ->constrained('order_lab', 'id', 'order_lab_detail_order_lab_id')
+                ->casCadeOnUpdate()->cascadeOnDelete();
             $table->foreignId('jenis_pemeriksaan_lab_id')
-                ->constrained('jenis_pemeriksaan_lab')
-                ->cascadeOnUpdate()
-                ->restrictOnDelete(); // atau cascadeOnDelete() kalau mau ikut terhapus juga
-
-            $table->enum('status_pemeriksaan', ['Pending', 'Selesai'])->default('Pending');
+                ->constrained('jenis_pemeriksaan_lab', 'id', 'order_lab_detail_order_jenis_pemeriksaan_lab_id')
+                ->casCadeOnUpdate()->cascadeOnDelete();
+            $table->enum('status_pemeriksaan', ['Pending', 'Selesai']);
             $table->timestamps();
 
             $table->unique(['order_lab_id', 'jenis_pemeriksaan_lab_id'], 'uniq_orderlab_jenis');

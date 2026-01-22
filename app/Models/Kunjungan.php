@@ -100,4 +100,9 @@ class Kunjungan extends Model
     {
         return $this->hasMany(PenjualanLayanan::class);
     }
+
+    public function orderLab()
+    {
+        return $this->hasMany(OrderLab::class);
+    }
 }

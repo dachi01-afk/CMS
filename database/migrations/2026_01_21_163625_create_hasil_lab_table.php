@@ -14,16 +14,11 @@ return new class extends Migration
             // hasil lab milik 1 order_lab_detail -> kalau detail dihapus, hasil ikut hilang
             $table->foreignId('order_lab_detail_id')
                 ->constrained('order_lab_detail', 'id', 'hasil_lab_order_lab_detail_id')
-                ->cascadeOnUpdate()
-                ->cascadeOnDelete();
-
-            // perawat bisa null kalau perawatnya dihapus
+                ->casCadeOnUpdate()->cascadeOnDelete();
             $table->foreignId('perawat_id')
                 ->nullable()
                 ->constrained('perawat', 'id', 'hasil_lab_perawat_id')
-                ->cascadeOnUpdate()
-                ->nullOnDelete();
-
+                ->casCadeOnUpdate()->cascadeOnDelete();
             $table->decimal('nilai_hasil', 15, 2);
             $table->string('nilai_rujukan');
             $table->text('keterangan')->nullable();

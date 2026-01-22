@@ -11,13 +11,16 @@ return new class extends Migration
         Schema::create('order_lab', function (Blueprint $table) {
             $table->id();
             $table->string('no_order_lab')->unique();
-
-            // dokter boleh null kalau dokter dihapus (SET NULL)
-            $table->foreignId('dokter_id')->nullable();
-
-            // pasien juga harus nullable kalau pakai SET NULL
-            $table->foreignId('pasien_id')->nullable();
-
+            $table->foreignId('dokter_id')
+                ->constrained('dokter', 'id', 'order_lab_dokter_id')
+                ->casCadeOnUpdate()->cascadeOnDelete();
+            $table->foreignId('pasien_id')
+                ->constrained('pasien', 'id', 'order_lab_pasien_id')
+                ->casCadeOnUpdate()->cascadeOnDelete();
+            $table->foreignId('kunjungan_id')
+                ->constrained('kunjungan', 'id', 'order_lab_kunjungan_id')
+                ->cascadeOnUpdate()
+                ->cascadeOnDelete();
             $table->date('tanggal_order');
             $table->date('tanggal_pemeriksaan');
             $table->time('jam_pemeriksaan');
