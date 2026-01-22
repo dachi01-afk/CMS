@@ -60,7 +60,7 @@ class KadaluarsaObatController extends Controller
     public function getDataKadaluarsaObat(Request $request)
     {
         $today     = Carbon::today()->startOfDay();
-        $threshold = (int) $request->input('threshold', 60);
+        $threshold = (int) $request->input('threshold', 90);
         $nearDate  = $today->copy()->addDays($threshold)->endOfDay();
 
         /**

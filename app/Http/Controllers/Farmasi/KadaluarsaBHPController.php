@@ -20,7 +20,7 @@ class KadaluarsaBHPController extends Controller
     public function getWarningKadaluarsa(Request $request)
     {
         $today     = Carbon::today()->startOfDay();
-        $threshold = (int) $request->input('threshold', 7);  // warning window ke depan
+        $threshold = (int) $request->input('threshold', 90);  // warning window ke depan
         $limit     = (int) $request->input('limit', 5);
 
         $nearDate = $today->copy()->addDays($threshold)->endOfDay();

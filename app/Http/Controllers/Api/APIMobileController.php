@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Dokter;
 use App\Models\EMR;
+use App\Models\HasilLab;
 use App\Models\JadwalDokter;
 use App\Models\KategoriLayanan;
 use App\Models\Kunjungan;
@@ -12,6 +13,7 @@ use App\Models\KunjunganLayanan;
 use App\Models\Layanan;
 use App\Models\MetodePembayaran;
 use App\Models\Obat;
+use App\Models\OrderLab;
 use App\Models\OrderLayanan;
 use App\Models\OrderLayananDetail;
 use App\Models\Pasien;
@@ -21,6 +23,7 @@ use App\Models\PenjualanObat;
 use App\Models\Perawat;
 use App\Models\Poli;
 use App\Models\Resep;
+use App\Models\Testimoni;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -33,6 +36,7 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class APIMobileController extends Controller
 {
@@ -567,6 +571,144 @@ class APIMobileController extends Controller
     }
 
     // punya dokter
+
+    public function dokterDetailOrderLab(Request $request, $orderLabId)
+    {
+        $user = $request->user();
+
+        $dokter = \App\Models\Dokter::where('user_id', $user->id)->first();
+        if (! $dokter) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dokter tidak ditemukan untuk user ini.',
+            ], 404);
+        }
+
+        $order = OrderLab::with([
+            'pasien:id,nama_pasien,no_emr,jenis_kelamin,tanggal_lahir',
+            'dokter:id,nama_dokter',
+            'orderLabDetail.jenisPemeriksaanLab:id,kode_pemeriksaan,nama_pemeriksaan,nilai_normal,satuan_lab_id',
+            'orderLabDetail.jenisPemeriksaanLab.satuanLab:id,nama_satuan',
+        ])
+            ->where('id', $orderLabId)
+            ->where('dokter_id', $dokter->id)
+            ->first();
+
+        if (! $order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order lab tidak ditemukan / bukan milik dokter ini.',
+            ], 404);
+        }
+
+        // ambil hasil lab untuk semua detail
+        $detailIds = $order->orderLabDetail->pluck('id')->toArray();
+        $hasilMap = HasilLab::whereIn('order_lab_detail_id', $detailIds)
+            ->get()
+            ->keyBy('order_lab_detail_id');
+
+        $details = $order->orderLabDetail->map(function ($d) use ($hasilMap) {
+            $jp = $d->jenisPemeriksaanLab;
+            $hasil = $hasilMap->get($d->id);
+
+            return [
+                'order_lab_detail_id' => $d->id,
+                'status_pemeriksaan' => $d->status_pemeriksaan,
+
+                'pemeriksaan' => $jp ? [
+                    'id' => $jp->id,
+                    'kode_pemeriksaan' => $jp->kode_pemeriksaan,
+                    'nama_pemeriksaan' => $jp->nama_pemeriksaan,
+                    'nilai_normal' => $jp->nilai_normal,
+                    'satuan' => $jp->satuanLab?->nama_satuan,
+                ] : null,
+
+                'hasil' => $hasil ? [
+                    'id' => $hasil->id,
+                    'nilai_hasil' => $hasil->nilai_hasil,
+                    'nilai_rujukan' => $hasil->nilai_rujukan,
+                    'keterangan' => $hasil->catatan,
+                    'tanggal_pemeriksaan' => $hasil->tanggal_pemeriksaan,
+                    'jam_pemeriksaan' => $hasil->jam_pemeriksaan,
+                ] : null,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $order->id,
+                'no_order_lab' => $order->no_order_lab,
+                'tanggal_order' => $order->tanggal_order,
+                'tanggal_pemeriksaan' => $order->tanggal_pemeriksaan,
+                'jam_pemeriksaan' => $order->jam_pemeriksaan,
+                'status' => $order->status,
+                'dokter' => $order->dokter ? [
+                    'id' => $order->dokter->id,
+                    'nama_dokter' => $order->dokter->nama_dokter,
+                ] : null,
+                'pasien' => $order->pasien ? [
+                    'id' => $order->pasien->id,
+                    'nama_pasien' => $order->pasien->nama_pasien,
+                    'no_emr' => $order->pasien->no_emr,
+                    'jenis_kelamin' => $order->pasien->jenis_kelamin,
+                    'tanggal_lahir' => $order->pasien->tanggal_lahir,
+                ] : null,
+                'detail' => $details,
+            ],
+        ]);
+    }
+
+    public function dokterListOrderLab(Request $request)
+    {
+        $user = $request->user();
+
+        // ambil dokter berdasarkan user login
+        $dokter = \App\Models\Dokter::where('user_id', $user->id)->first();
+        if (! $dokter) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dokter tidak ditemukan untuk user ini.',
+            ], 404);
+        }
+
+        $data = OrderLab::with([
+            'pasien:id,nama_pasien,no_emr',
+            'orderLabDetail.jenisPemeriksaanLab:id,kode_pemeriksaan,nama_pemeriksaan,satuan_lab_id',
+            'orderLabDetail.jenisPemeriksaanLab.satuanLab:id,nama_satuan',
+        ])
+            ->where('dokter_id', $dokter->id)
+            ->orderByDesc('tanggal_order')
+            ->orderByDesc('id')
+            ->get()
+            ->map(function ($o) {
+                $total = $o->orderLabDetail->count();
+                $done = $o->orderLabDetail->where('status_pemeriksaan', 'Selesai')->count();
+
+                return [
+                    'id' => $o->id,
+                    'no_order_lab' => $o->no_order_lab,
+                    'tanggal_order' => $o->tanggal_order,
+                    'tanggal_pemeriksaan' => $o->tanggal_pemeriksaan,
+                    'jam_pemeriksaan' => $o->jam_pemeriksaan,
+                    'status' => $o->status,
+                    'progress' => [
+                        'total' => $total,
+                        'selesai' => $done,
+                    ],
+                    'pasien' => $o->pasien ? [
+                        'id' => $o->pasien->id,
+                        'nama_pasien' => $o->pasien->nama_pasien,
+                        'no_emr' => $o->pasien->no_emr,
+                    ] : null,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+        ]);
+    }
 
     public function getDataDokter()
     {
@@ -1457,6 +1599,242 @@ class APIMobileController extends Controller
         }
     }
 
+    public function getMasterLabDokter(Request $request)
+    {
+        $items = DB::table('jenis_pemeriksaan_lab as j')
+            ->leftJoin('satuan_lab as s', 's.id', '=', 'j.satuan_lab_id')
+            ->select([
+                'j.id',
+                'j.kode_pemeriksaan',
+                'j.nama_pemeriksaan',
+                'j.nilai_normal',
+                'j.harga_pemeriksaan_lab',
+                'j.status',
+                'j.satuan_lab_id',
+                DB::raw('COALESCE(s.nama_satuan, "") as nama_satuan'),
+            ])
+            ->orderBy('j.nama_pemeriksaan')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $items,
+        ]);
+    }
+
+    public function dokterMasterLab()
+    {
+        $rows = DB::table('jenis_pemeriksaan_lab as j')
+            ->leftJoin('satuan_lab as s', 's.id', '=', 'j.satuan_lab_id')
+            ->where('j.status', 'Active') // ⬅️ penting
+            ->select(
+                'j.id',
+                'j.nama_pemeriksaan',
+                'j.nilai_normal',
+                'j.harga_pemeriksaan_lab',
+                DB::raw('COALESCE(s.nama_satuan, "") as satuan')
+            )
+            ->orderBy('j.nama_pemeriksaan')
+            ->get()
+            ->map(function ($r) {
+                return [
+                    'id' => $r->id,
+                    'nama' => $r->nama_pemeriksaan, // ⬅️ WAJIB "nama"
+                    'nilai_normal' => $r->nilai_normal,
+                    'satuan' => $r->satuan,
+                    'harga' => $r->harga_pemeriksaan_lab,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $rows,
+        ]);
+    }
+
+    public function dokterCreateOrderLab(Request $request)
+    {
+        $data = $request->all();
+
+        // 1) isi pasien_id & dokter_id dari kunjungan
+        if (! empty($data['kunjungan_id'])) {
+            $k = DB::table('kunjungan')->where('id', $data['kunjungan_id'])->first();
+            if ($k) {
+                if (empty($data['pasien_id']) && ! empty($k->pasien_id)) {
+                    $data['pasien_id'] = (int) $k->pasien_id;
+                }
+                if (empty($data['dokter_id']) && ! empty($k->dokter_id)) {
+                    $data['dokter_id'] = (int) $k->dokter_id;
+                }
+            }
+        }
+
+        // 2) parse jenis_pemeriksaan_lab_ids dari items / ids
+        $jenisIds = [];
+
+        if (isset($data['jenis_pemeriksaan_lab_ids']) && is_array($data['jenis_pemeriksaan_lab_ids'])) {
+            foreach ($data['jenis_pemeriksaan_lab_ids'] as $v) {
+                if (is_numeric($v)) {
+                    $jenisIds[] = (int) $v;
+                } elseif (is_string($v) && preg_match('/(\d+)/', $v, $m)) {
+                    $jenisIds[] = (int) $m[1];
+                }
+            }
+        }
+
+        if (empty($jenisIds) && isset($data['items']) && is_array($data['items'])) {
+            foreach ($data['items'] as $it) {
+                if (is_numeric($it)) {
+                    $jenisIds[] = (int) $it;
+
+                    continue;
+                }
+
+                if (is_array($it)) {
+                    $raw = $it['id'] ?? $it['lab_test_id'] ?? $it['jenis_pemeriksaan_lab_id'] ?? $it['value'] ?? null;
+                    if ($raw === null) {
+                        continue;
+                    }
+
+                    if (is_numeric($raw)) {
+                        $jenisIds[] = (int) $raw;
+                    } elseif (is_string($raw) && preg_match('/(\d+)/', $raw, $m)) {
+                        $jenisIds[] = (int) $m[1];
+                    }
+                }
+            }
+        }
+
+        $data['jenis_pemeriksaan_lab_ids'] = array_values(array_unique(array_filter($jenisIds, fn ($x) => (int) $x > 0)));
+
+        // 3) AUTO isi tanggal & jam kalau kosong
+        if (empty($data['tanggal_pemeriksaan'])) {
+            $data['tanggal_pemeriksaan'] = now()->toDateString();
+        }
+        if (empty($data['jam_pemeriksaan'])) {
+            $data['jam_pemeriksaan'] = now()->format('H:i');
+        }
+
+        // 4) validasi
+        $v = Validator::make($data, [
+            'dokter_id' => 'required|exists:dokter,id',
+            'pasien_id' => 'required|exists:pasien,id',
+            'tanggal_pemeriksaan' => 'required|date',
+            'jam_pemeriksaan' => ['required', function ($attr, $value, $fail) {
+                if (! preg_match('/^\d{2}:\d{2}(:\d{2})?$/', (string) $value)) {
+                    $fail('Format jam_pemeriksaan harus HH:MM atau HH:MM:SS');
+                }
+            }],
+            'jenis_pemeriksaan_lab_ids' => 'required|array|min:1',
+            'jenis_pemeriksaan_lab_ids.*' => 'required|exists:jenis_pemeriksaan_lab,id',
+        ]);
+
+        if ($v->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $v->errors(),
+                'debug_received' => $data,
+            ], 422);
+        }
+
+        // 5) simpan
+        return DB::transaction(function () use ($data) {
+
+            $no = 'LAB-'.date('Ymd').'-'.strtoupper(Str::random(6));
+
+            $orderId = DB::table('order_lab')->insertGetId([
+                'no_order_lab' => $no,
+                'dokter_id' => (int) $data['dokter_id'],
+                'pasien_id' => (int) $data['pasien_id'],
+                'tanggal_order' => now()->toDateString(),
+                'tanggal_pemeriksaan' => $data['tanggal_pemeriksaan'],
+                'jam_pemeriksaan' => $data['jam_pemeriksaan'],
+                'status' => 'Pending',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $details = [];
+            foreach ($data['jenis_pemeriksaan_lab_ids'] as $jpId) {
+                $details[] = [
+                    'order_lab_id' => $orderId,
+                    'jenis_pemeriksaan_lab_id' => (int) $jpId,
+                    'status_pemeriksaan' => 'Pending',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+            DB::table('order_lab_detail')->insert($details);
+
+            $order = DB::table('order_lab')->where('id', $orderId)->first();
+
+            $detailRows = DB::table('order_lab_detail as d')
+                ->join('jenis_pemeriksaan_lab as j', 'j.id', '=', 'd.jenis_pemeriksaan_lab_id')
+                ->leftJoin('satuan_lab as s', 's.id', '=', 'j.satuan_lab_id')
+                ->where('d.order_lab_id', $orderId)
+                ->select(
+                    'd.id as order_lab_detail_id',
+                    'd.status_pemeriksaan',
+                    'j.id as jenis_id',
+                    'j.kode_pemeriksaan',
+                    'j.nama_pemeriksaan',
+                    'j.nilai_normal',
+                    'j.harga_pemeriksaan_lab',
+                    's.nama_satuan'
+                )
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order lab berhasil dibuat',
+                'data' => [
+                    'order' => $order,
+                    'details' => $detailRows,
+                ],
+            ]);
+        });
+    }
+
+    /**
+     * Dokter submit / create hasil lab (upsert) berdasarkan order_lab_detail
+     * POST /api/dokter/hasil-lab
+     */
+    public function dokterCreateHasilLab(Request $request)
+    {
+        $user = $request->user(); // sanctum
+        // ambil dokter dari relasi / mapping milikmu
+        $dokterId = $user->dokter->id ?? null;
+
+        $data = $request->validate([
+            'order_lab_detail_id' => 'required|exists:order_lab_detail,id',
+            'nilai_hasil' => 'required|string',
+            'nilai_rujukan' => 'nullable|string',
+            'keterangan' => 'nullable|string',
+            'tanggal_pemeriksaan' => 'required|date',
+            'jam_pemeriksaan' => 'required|string',
+        ]);
+
+        $hasil = HasilLab::updateOrCreate(
+            ['order_lab_detail_id' => $data['order_lab_detail_id']],
+            [
+                'dokter_id' => $dokterId,   // ✅ ini kuncinya
+                'perawat_id' => null,       // boleh null
+                'nilai_hasil' => $data['nilai_hasil'],
+                'nilai_rujukan' => $data['nilai_rujukan'],
+                'keterangan' => $data['keterangan'],
+                'tanggal_pemeriksaan' => $data['tanggal_pemeriksaan'],
+                'jam_pemeriksaan' => $data['jam_pemeriksaan'],
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Hasil lab tersimpan',
+            'data' => $hasil,
+        ]);
+    }
+
     public function getLayananOrderDokter(Request $request)
     {
         try {
@@ -1490,45 +1868,44 @@ class APIMobileController extends Controller
                 ->whereIn('k.status', ['Engaged', 'Payment'])
                 ->whereIn('pl.status', ['Belum Bayar', 'Pending']) // sesuaikan value statusmu
                 ->selectRaw('
-    pl.id,
-    pl.kunjungan_id,
-    pl.pasien_id,
-    pl.kode_transaksi,
-    pl.jumlah,
-    pl.total_tagihan,
-    pl.sub_total,
-    pl.uang_yang_diterima,
-    pl.kembalian,
-    pl.tanggal_transaksi,
-    pl.status AS status_pembayaran,
-    pl.created_at AS created_at_transaksi,
+                    pl.id,
+                    pl.kunjungan_id,
+                    pl.pasien_id,
+                    pl.kode_transaksi,
+                    pl.jumlah,
+                    pl.total_tagihan,
+                    pl.sub_total,
+                    pl.uang_yang_diterima,
+                    pl.kembalian,
+                    pl.tanggal_transaksi,
+                    pl.status AS status_pembayaran,
+                    pl.created_at AS created_at_transaksi,
 
-    k.poli_id,
-k.tanggal_kunjungan,
-    k.no_antrian,             
-    k.status AS status_kunjungan,
-    k.keluhan_awal,                -- ✅ TAMBAH
+                    k.poli_id,
+                k.tanggal_kunjungan,
+                    k.no_antrian,             
+                    k.status AS status_kunjungan,
+                    k.keluhan_awal,                -- ✅ TAMBAH
 
-    p.nama_pasien AS nama_pasien,
-    p.no_emr AS no_rekam_medis,
-    p.alamat AS alamat_pasien,     -- ✅ TAMBAH
+                    p.nama_pasien AS nama_pasien,
+                    p.no_emr AS no_rekam_medis,
+                    p.alamat AS alamat_pasien,     -- ✅ TAMBAH
 
-    po.nama_poli AS nama_poli,
+                    po.nama_poli AS nama_poli,
 
-    COALESCE(jl.ringkasan_layanan, "") AS ringkasan_layanan,
+                    COALESCE(jl.ringkasan_layanan, "") AS ringkasan_layanan,
 
-    e.tekanan_darah,
-    e.suhu_tubuh,
-    e.nadi,
-    e.pernapasan,
-    e.saturasi_oksigen,
-    e.riwayat_penyakit_dahulu,
-    e.riwayat_penyakit_keluarga,
-    e.created_at AS tanggal_pemeriksaan_perawat,
+                    e.tekanan_darah,
+                    e.suhu_tubuh,
+                    e.nadi,
+                    e.pernapasan,
+                    e.saturasi_oksigen,
+                    e.riwayat_penyakit_dahulu,
+                    e.riwayat_penyakit_keluarga,
+                    e.created_at AS tanggal_pemeriksaan_perawat,
 
-    pr.nama_perawat AS nama_perawat
-')
-
+                    pr.nama_perawat AS nama_perawat
+                ')
                 ->orderByDesc('pl.tanggal_transaksi')
                 ->get();
 
@@ -2473,6 +2850,802 @@ k.tanggal_kunjungan,
     }
 
     // punya pasien
+    private function getAuthPasien(Request $request): ?\App\Models\Pasien
+    {
+        $user = $request->user();
+        if (! $user) {
+            return null;
+        }
+
+        // Coba ambil dari relasi dulu
+        if ($user->relationLoaded('pasien') && $user->pasien) {
+            return $user->pasien;
+        }
+
+        // Kalau tidak ada, query langsung
+        return \App\Models\Pasien::where('user_id', $user->id)->first();
+    }
+
+    private function currentPasienId(Request $request): ?int
+    {
+        $user = $request->user();
+        if (! $user) {
+            return null;
+        }
+
+        // Cek relasi pasien() di User model (jika ada)
+        // if ($user->pasien && $user->pasien->id) return (int)$user->pasien->id;
+
+        // Fallback: query langsung
+        $p = DB::table('pasien')->where('user_id', $user->id)->first();
+
+        return $p?->id ? (int) $p->id : null;
+    }
+
+    public function pasienListTestimoni(Request $request)
+    {
+        try {
+            $query = \App\Models\Testimoni::query()->orderByDesc('created_at');
+
+            // ✅ Optional filter: only_mine=1 untuk tampilkan punya pasien login saja
+            if ($request->boolean('only_mine')) {
+                $user = $request->user();
+                if (! $user) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'User tidak terautentikasi.',
+                    ], 401);
+                }
+
+                $pasien = \App\Models\Pasien::where('user_id', $user->id)->first();
+                if (! $pasien) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Data pasien tidak ditemukan untuk user ini.',
+                    ], 404);
+                }
+
+                $query->where('pasien_id', $pasien->id);
+            }
+
+            $perPage = (int) $request->get('per_page', 10);
+            $items = $query->paginate($perPage);
+
+            // ✅ Rapikan URL foto
+            $items->getCollection()->transform(function ($t) {
+                if ($t->foto) {
+                    $t->foto_url = $this->toPublicUrl($t->foto);
+                } else {
+                    $t->foto_url = null;
+                }
+
+                return $t;
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'List testimoni berhasil diambil.',
+                'data' => $items,
+            ]);
+
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Error getting list testimoni: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil list testimoni.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * GET /api/pasien/testimoni/{id}
+     * Detail testimoni
+     */
+    public function pasienDetailTestimoni(Request $request, $id)
+    {
+        try {
+            $testimoni = Testimoni::find($id);
+            if (! $testimoni) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Testimoni tidak ditemukan.',
+                ], 404);
+            }
+
+            $testimoni->foto_url = $testimoni->foto ? $this->toPublicUrl($testimoni->foto) : null;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Detail testimoni berhasil diambil.',
+                'data' => $testimoni,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil detail testimoni.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * POST /api/pasien/testimoni
+     * Pasien buat testimoni
+     *
+     * body:
+     * - nama_testimoni (optional, kalau kosong bisa auto dari pasien.nama_pasien)
+     * - umur (optional)
+     * - pekerjaan (optional)
+     * - isi_testimoni (required)
+     * - link_video (optional)
+     * - foto (optional file)
+     */
+    public function pasienCreateTestimoni(Request $request)
+    {
+        try {
+            // ✅ PERBAIKAN 1: Ambil user yang login
+            $user = $request->user();
+            if (! $user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'User tidak terautentikasi.',
+                ], 401);
+            }
+
+            // ✅ PERBAIKAN 2: Ambil data pasien dengan lebih aman
+            $pasien = \App\Models\Pasien::where('user_id', $user->id)->first();
+
+            if (! $pasien) {
+                \Illuminate\Support\Facades\Log::error('Pasien tidak ditemukan untuk user_id: '.$user->id);
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data pasien tidak ditemukan untuk user ini.',
+                    'debug' => [
+                        'user_id' => $user->id,
+                        'username' => $user->username,
+                    ],
+                ], 404);
+            }
+
+            // ✅ PERBAIKAN 3: Log untuk debugging
+            \Illuminate\Support\Facades\Log::info('Creating testimoni:', [
+                'user_id' => $user->id,
+                'pasien_id' => $pasien->id,
+                'nama_pasien' => $pasien->nama_pasien,
+                'request_data' => $request->all(),
+            ]);
+
+            // ✅ Validasi input
+            $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+                'nama_testimoni' => 'nullable|string|max:255',
+                'umur' => 'nullable|string|max:50',
+                'pekerjaan' => 'nullable|string|max:255',
+                'isi_testimoni' => 'required|string',
+                'link_video' => 'nullable|string|max:255',
+                'foto' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:2048',
+            ], [
+                'isi_testimoni.required' => 'Isi testimoni wajib diisi.',
+                'foto.mimes' => 'Format foto harus jpg, jpeg, png, atau webp.',
+                'foto.max' => 'Ukuran foto maksimal 2MB.',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal.',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            // ✅ Handle upload foto
+            $fotoPath = null;
+            if ($request->hasFile('foto')) {
+                try {
+                    // Simpan ke storage/app/public/testimoni
+                    $fotoPath = $request->file('foto')->store('testimoni', 'public');
+
+                    \Illuminate\Support\Facades\Log::info('Foto uploaded successfully', [
+                        'path' => $fotoPath,
+                    ]);
+                } catch (\Exception $e) {
+                    \Illuminate\Support\Facades\Log::error('Error uploading foto: '.$e->getMessage());
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Gagal mengupload foto: '.$e->getMessage(),
+                    ], 500);
+                }
+            }
+
+            // ✅ PERBAIKAN 4: Tentukan nama_testimoni (fallback ke nama_pasien)
+            $namaTestimoni = $request->input('nama_testimoni');
+            if (empty($namaTestimoni)) {
+                $namaTestimoni = $pasien->nama_pasien ?: 'Pasien';
+            }
+
+            // ✅ Create testimoni
+            $testimoni = \App\Models\Testimoni::create([
+                'pasien_id' => $pasien->id,
+                'nama_testimoni' => $namaTestimoni,
+                'umur' => $request->input('umur'),
+                'pekerjaan' => $request->input('pekerjaan'),
+                'isi_testimoni' => $request->input('isi_testimoni'),
+                'foto' => $fotoPath,
+                'link_video' => $request->input('link_video'),
+            ]);
+
+            // ✅ Generate foto_url
+            $testimoni->foto_url = $testimoni->foto ? $this->toPublicUrl($testimoni->foto) : null;
+
+            \Illuminate\Support\Facades\Log::info('Testimoni created successfully', [
+                'testimoni_id' => $testimoni->id,
+                'pasien_id' => $pasien->id,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Testimoni berhasil dibuat.',
+                'data' => $testimoni,
+            ], 201);
+
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Error creating testimoni: '.$e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membuat testimoni.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * POST /api/pasien/testimoni/{id}
+     * Update testimoni milik pasien login
+     */
+    public function pasienUpdateTestimoni(Request $request, $id)
+    {
+        try {
+            $pasien = $this->getAuthPasien($request);
+            if (! $pasien) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data pasien tidak ditemukan untuk user ini.',
+                ], 404);
+            }
+
+            $testimoni = Testimoni::where('id', $id)
+                ->where('pasien_id', $pasien->id)
+                ->first();
+
+            if (! $testimoni) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Testimoni tidak ditemukan / bukan milik kamu.',
+                ], 404);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'nama_testimoni' => 'nullable|string|max:255',
+                'umur' => 'nullable|string|max:50',
+                'pekerjaan' => 'nullable|string|max:255',
+                'isi_testimoni' => 'nullable|string',
+                'link_video' => 'nullable|string|max:255',
+                'foto' => 'nullable|file|mimes:jpg,jpeg,png,webp|max:2048',
+                'hapus_foto' => 'nullable|boolean',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal.',
+                    'errors' => $validator->errors(),
+                ], 422);
+            }
+
+            // hapus foto jika diminta
+            if ($request->boolean('hapus_foto') && $testimoni->foto) {
+                Storage::disk('public')->delete($testimoni->foto);
+                $testimoni->foto = null;
+            }
+
+            // replace foto jika upload baru
+            if ($request->hasFile('foto')) {
+                if ($testimoni->foto) {
+                    Storage::disk('public')->delete($testimoni->foto);
+                }
+                $testimoni->foto = $request->file('foto')->store('testimoni', 'public');
+            }
+
+            // update field lain
+            foreach (['nama_testimoni', 'umur', 'pekerjaan', 'isi_testimoni', 'link_video'] as $f) {
+                if ($request->has($f)) {
+                    $testimoni->$f = $request->input($f);
+                }
+            }
+
+            $testimoni->save();
+
+            $testimoni->foto_url = $testimoni->foto ? $this->toPublicUrl($testimoni->foto) : null;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Testimoni berhasil diupdate.',
+                'data' => $testimoni,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal update testimoni.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * DELETE /api/pasien/testimoni/{id}
+     * Hapus testimoni milik pasien login
+     */
+    public function pasienDeleteTestimoni(Request $request, $id)
+    {
+        try {
+            $pasien = $this->getAuthPasien($request);
+            if (! $pasien) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data pasien tidak ditemukan untuk user ini.',
+                ], 404);
+            }
+
+            $testimoni = Testimoni::where('id', $id)
+                ->where('pasien_id', $pasien->id)
+                ->first();
+
+            if (! $testimoni) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Testimoni tidak ditemukan / bukan milik kamu.',
+                ], 404);
+            }
+
+            if ($testimoni->foto) {
+                Storage::disk('public')->delete($testimoni->foto);
+            }
+
+            $testimoni->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Testimoni berhasil dihapus.',
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal hapus testimoni.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * helper buat bikin URL foto yang konsisten
+     * kalau kamu pakai storage:link, maka /storage/...
+     */
+    private function toPublicUrl(string $path): string
+    {
+        // Contoh hasil: https://domain.com/storage/testimoni/xxx.jpg
+        return asset('storage/'.ltrim($path, '/'));
+    }
+
+    /**
+     * ✅ LIST ORDER LAB - FIX FINAL
+     */
+    public function pasienListOrderLab(Request $request)
+    {
+        $pasienId = $this->currentPasienId($request);
+        if (! $pasienId) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pasien tidak ditemukan untuk user ini.',
+            ], 404);
+        }
+
+        try {
+            $q = DB::table('order_lab as o')
+                ->where('o.pasien_id', $pasienId)
+                ->leftJoin('dokter as d', 'd.id', '=', 'o.dokter_id')
+                ->select(
+                    'o.id',
+                    'o.no_order_lab',
+                    'o.dokter_id',
+                    'o.pasien_id',
+                    'o.tanggal_order',
+                    'o.tanggal_pemeriksaan',
+                    'o.jam_pemeriksaan',
+                    'o.status',
+                    // ✅ FIX: hanya gunakan kolom yang ADA di tabel dokter
+                    DB::raw("COALESCE(d.nama_dokter, '-') as dokter_nama"),
+                    'o.created_at',
+                    'o.updated_at'
+                )
+                ->orderByDesc('o.id');
+
+            // ✅ Optional filters
+            if ($request->filled('status')) {
+                $q->where('o.status', $request->status);
+            }
+            if ($request->filled('from')) {
+                $q->whereDate('o.tanggal_pemeriksaan', '>=', $request->from);
+            }
+            if ($request->filled('to')) {
+                $q->whereDate('o.tanggal_pemeriksaan', '<=', $request->to);
+            }
+
+            $rows = $q->paginate((int) ($request->get('per_page', 15)));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'List order lab pasien',
+                'data' => $rows,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error pasienListOrderLab: '.$e->getMessage(), [
+                'pasien_id' => $pasienId,
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat data order lab',
+                'error' => config('app.debug') ? $e->getMessage() : 'Terjadi kesalahan server',
+            ], 500);
+        }
+    }
+
+    /**
+     * ✅ DETAIL ORDER LAB - FIX FINAL
+     */
+    public function pasienDetailOrderLab(Request $request, $orderLabId)
+    {
+        $user = $request->user();
+
+        $pasien = \App\Models\Pasien::where('user_id', $user->id)->first();
+        if (! $pasien) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pasien tidak ditemukan untuk user ini.',
+            ], 404);
+        }
+
+        $order = OrderLab::with([
+            'pasien:id,nama_pasien,no_emr,jenis_kelamin,tanggal_lahir',
+            'dokter:id,nama_dokter',
+            'orderLabDetail.jenisPemeriksaanLab:id,kode_pemeriksaan,nama_pemeriksaan,nilai_normal,satuan_lab_id',
+            'orderLabDetail.jenisPemeriksaanLab.satuanLab:id,nama_satuan',
+        ])
+            ->where('id', $orderLabId)
+            ->where('pasien_id', $pasien->id)
+            ->first();
+
+        if (! $order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order lab tidak ditemukan / bukan milik pasien ini.',
+            ], 404);
+        }
+
+        $detailIds = $order->orderLabDetail->pluck('id')->toArray();
+        $hasilMap = HasilLab::whereIn('order_lab_detail_id', $detailIds)
+            ->get()
+            ->keyBy('order_lab_detail_id');
+
+        $details = $order->orderLabDetail->map(function ($d) use ($hasilMap) {
+            $jp = $d->jenisPemeriksaanLab;
+            $hasil = $hasilMap->get($d->id);
+
+            return [
+                'order_lab_detail_id' => $d->id,
+                'status_pemeriksaan' => $d->status_pemeriksaan,
+                'pemeriksaan' => $jp ? [
+                    'id' => $jp->id,
+                    'kode_pemeriksaan' => $jp->kode_pemeriksaan,
+                    'nama_pemeriksaan' => $jp->nama_pemeriksaan,
+                    'nilai_normal' => $jp->nilai_normal,
+                    'satuan' => $jp->satuanLab?->nama_satuan,
+                ] : null,
+                'hasil' => $hasil ? [
+                    'id' => $hasil->id,
+                    'nilai_hasil' => $hasil->nilai_hasil,
+                    'nilai_rujukan' => $hasil->nilai_rujukan,
+                    'keterangan' => $hasil->catatan,
+                    'tanggal_pemeriksaan' => $hasil->tanggal_pemeriksaan,
+                    'jam_pemeriksaan' => $hasil->jam_pemeriksaan,
+                ] : null,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $order->id,
+                'no_order_lab' => $order->no_order_lab,
+                'tanggal_order' => $order->tanggal_order,
+                'tanggal_pemeriksaan' => $order->tanggal_pemeriksaan,
+                'jam_pemeriksaan' => $order->jam_pemeriksaan,
+                'status' => $order->status,
+                'dokter' => $order->dokter ? [
+                    'id' => $order->dokter->id,
+                    'nama_dokter' => $order->dokter->nama_dokter,
+                ] : null,
+                'pasien' => $order->pasien ? [
+                    'id' => $order->pasien->id,
+                    'nama_pasien' => $order->pasien->nama_pasien,
+                    'no_emr' => $order->pasien->no_emr,
+                    'jenis_kelamin' => $order->pasien->jenis_kelamin,
+                    'tanggal_lahir' => $order->pasien->tanggal_lahir,
+                ] : null,
+                'detail' => $details,
+            ],
+        ]);
+    }
+
+    public function pasienMarkNotifAsRead(Request $request, $notificationId)
+    {
+        try {
+            $user = $request->user();
+
+            $updated = DB::table('notifications')
+                ->where('id', $notificationId)
+                ->where('user_id', $user->id)
+                ->whereNull('read_at')
+                ->update([
+                    'read_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+            if (! $updated) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Notifikasi tidak ditemukan atau sudah dibaca',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Notifikasi ditandai sudah dibaca',
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menandai notifikasi',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Pasien mark all notif as read
+     * PATCH /api/pasien/notifikasi/read-all
+     */
+    public function pasienMarkAllNotifAsRead(Request $request)
+    {
+        try {
+            $user = $request->user();
+
+            DB::table('notifications')
+                ->where('user_id', $user->id)
+                ->whereNull('read_at')
+                ->update([
+                    'read_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Semua notifikasi ditandai sudah dibaca',
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menandai notifikasi',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * GET LAYANAN PUBLIK (untuk homepage/landing - tanpa auth)
+     * Endpoint: GET /api/layanan-publik
+     * Query params (optional):
+     * - limit: jumlah data (default 10)
+     * - kategori: filter by kategori
+     * - search: cari by nama_layanan
+     */
+    public function getLayananPublik(Request $request)
+    {
+        try {
+            $limit = (int) $request->input('limit', 10);
+            $kategori = $request->input('kategori');
+            $search = $request->input('search');
+
+            $query = DB::table('layanan')
+                ->whereNull('deleted_at');
+
+            // Filter by kategori jika ada
+            if ($kategori) {
+                $query->where('kategori', $kategori);
+            }
+
+            // Search by nama layanan
+            if ($search) {
+                $query->where('nama_layanan', 'LIKE', "%{$search}%");
+            }
+
+            $layanan = $query
+                ->select([
+                    'id',
+                    'kode_layanan',
+                    'nama_layanan',
+                    'deskripsi',
+                    'kategori',
+                    'tipe_layanan',
+                    'jumlah_visit',
+                    'durasi_menit',
+                    'harga_fix',
+                    'gambar',
+                    'lokasi_tersedia',
+                    'syarat_perawat',
+                    'created_at',
+                ])
+                ->orderBy('created_at', 'DESC')
+                ->limit($limit)
+                ->get();
+
+            // Format response
+            $layanan = $layanan->map(function ($item) {
+                return [
+                    'id' => (int) $item->id,
+                    'kode_layanan' => $item->kode_layanan,
+                    'nama_layanan' => $item->nama_layanan,
+                    'deskripsi' => $item->deskripsi,
+                    'kategori' => $item->kategori,
+                    'tipe_layanan' => $item->tipe_layanan,
+                    'jumlah_visit' => $item->jumlah_visit,
+                    'durasi_menit' => $item->durasi_menit,
+
+                    // Format harga
+                    'harga_fix' => (float) $item->harga_fix,
+                    'harga_formatted' => 'Rp '.number_format($item->harga_fix, 0, ',', '.'),
+
+                    // Gambar URL (sesuaikan dengan storage Anda)
+                    'gambar' => $item->gambar,
+                    'gambar_url' => $item->gambar
+                        ? asset('storage/'.$item->gambar)
+                        : null,
+
+                    'lokasi_tersedia' => $item->lokasi_tersedia,
+                    'syarat_perawat' => $item->syarat_perawat,
+                    'created_at' => $item->created_at,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data layanan berhasil diambil',
+                'data' => $layanan,
+                'total' => $layanan->count(),
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Error getLayananPublik: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data layanan',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * GET DETAIL LAYANAN PUBLIK (tanpa auth)
+     * Endpoint: GET /api/layanan-publik/{id}
+     */
+    public function getDetailLayananPublik($id)
+    {
+        try {
+            $layanan = DB::table('layanan')
+                ->where('id', $id)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if (! $layanan) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Layanan tidak ditemukan',
+                ], 404);
+            }
+
+            $data = [
+                'id' => (int) $layanan->id,
+                'kode_layanan' => $layanan->kode_layanan,
+                'nama_layanan' => $layanan->nama_layanan,
+                'deskripsi' => $layanan->deskripsi,
+                'kategori' => $layanan->kategori,
+                'tipe_layanan' => $layanan->tipe_layanan,
+                'jumlah_visit' => $layanan->jumlah_visit,
+                'durasi_menit' => $layanan->durasi_menit,
+                'harga_fix' => (float) $layanan->harga_fix,
+                'harga_formatted' => 'Rp '.number_format($layanan->harga_fix, 0, ',', '.'),
+                'gambar' => $layanan->gambar,
+                'gambar_url' => $layanan->gambar
+                    ? asset('storage/'.$layanan->gambar)
+                    : null,
+                'lokasi_tersedia' => $layanan->lokasi_tersedia,
+                'syarat_perawat' => $layanan->syarat_perawat,
+                'aktif' => (bool) $layanan->aktif,
+                'created_at' => $layanan->created_at,
+            ];
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Detail layanan berhasil diambil',
+                'data' => $data,
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Error getDetailLayananPublik: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil detail layanan',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * GET KATEGORI LAYANAN (untuk filter)
+     * Endpoint: GET /api/kategori-layanan-publik
+     */
+    public function getKategoriLayananPublik()
+    {
+        try {
+            // Ambil kategori unik dari tabel layanan
+            $kategori = DB::table('layanan')
+                ->select('kategori')
+                ->whereNotNull('kategori')
+                ->whereNull('deleted_at')
+                ->distinct()
+                ->orderBy('kategori')
+                ->get()
+                ->pluck('kategori');
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Data kategori layanan berhasil diambil',
+                'data' => $kategori,
+                'total' => $kategori->count(),
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Error getKategoriLayananPublik: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil kategori layanan',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 
     public function getProfile(Request $request)
     {
@@ -2484,12 +3657,13 @@ k.tanggal_kunjungan,
             ], 401);
         }
 
-        $pasien = Pasien::where('user_id', $user->id)->firstOrFail();
+        $pasien = Pasien::where('user_id', $user->id)->first();
 
-        // Pastikan QR code ada (kalau punya helper)
-        if (method_exists($this, 'ensureQrCodePasien')) {
-            $this->ensureQrCodePasien($pasien);
-            $pasien->refresh();
+        if (! $pasien) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data pasien tidak ditemukan',
+            ], 404);
         }
 
         return response()->json([
@@ -2497,8 +3671,7 @@ k.tanggal_kunjungan,
             'data' => [
                 'id' => $pasien->id,
                 'user_id' => $pasien->user_id,
-
-                // Identitas utama
+                'nama_pasien' => $pasien->nama_pasien, // ✅ FIELD UTAMA
                 'no_emr' => $pasien->no_emr,
                 'nama_pasien' => $pasien->nama_pasien,
                 'nik' => $pasien->nik,

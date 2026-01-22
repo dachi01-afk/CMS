@@ -29,4 +29,9 @@ class Perawat extends Model
     {
         return $this->hasMany(Emr::class);
     }
+
+    public function hasilLab()
+    {
+        return $this->hasMany(HasilLab::class);
+    }
 }
