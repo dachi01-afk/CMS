@@ -256,14 +256,40 @@
                     @php
                         $no = 1;
                         $totalSebelum = 0;
+
+                        $groupedItems = [];
+                        foreach ($items as $item) {
+                            $layananId = optional($item->layanan)->id ?? ($item->id ?? null);
+                            if (!$layananId) {
+                                continue;
+                            }
+
+                            if (!isset($groupedItems[$layananId])) {
+                                $groupedItems[$layananId] = [
+                                    'item' => $item,
+                                    'qty' => 0,
+                                    'subtotal' => 0,
+                                ];
+                            }
+
+                            $qty = (int) ($item->jumlah ?? 1);
+
+                            // === GANTI DISINI: pakai harga_sebelum_diskon
+                            $hargaSatuan = (float) (optional($item->layanan)->harga_sebelum_diskon ?? 0);
+
+                            $subtotal = $hargaSatuan * $qty;
+
+                            $groupedItems[$layananId]['qty'] += $qty;
+                            $groupedItems[$layananId]['subtotal'] += $subtotal;
+                        }
                     @endphp
 
-                    @foreach ($items as $item)
+
+                    @foreach ($groupedItems as $data)
                         @php
-                            $qty = (int) ($item->jumlah ?? 1);
-                            $hargaSatuan = (float) (optional($item->layanan)->harga_setelah_diskon ?? 0);
-                            // subtotal per baris (sebelum diskon)
-                            $subtotal = $hargaSatuan * $qty;
+                            $item = $data['item'];
+                            $qty = $data['qty'];
+                            $subtotal = $data['subtotal'];
                             $totalSebelum += $subtotal;
 
                             $kategori =
@@ -309,6 +335,7 @@
                         </td>
                     </tr>
                 </tbody>
+
             </table>
         </div>
 

@@ -671,6 +671,8 @@ class TransaksiLayananController extends Controller
             'kategori_utama'        => $kategoriUtama,
         ];
 
+        // dd($summary->total_sebelum_diskon);
+
         $namaPT = 'Royal Klinik';
 
         return view('kasir.riwayat-transaksi.kwitansi-transaksi-layanan', [
