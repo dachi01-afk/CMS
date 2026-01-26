@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
+use Yajra\DataTables\Services\DataTable;
 
 class MutasiStokObat extends Model
 {
@@ -56,5 +57,10 @@ class MutasiStokObat extends Model
         }
 
         return $enum;
+    }
+
+    public function scopeGetData($query)
+    {
+        return $query;
     }
 }

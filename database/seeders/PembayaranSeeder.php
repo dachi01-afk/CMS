@@ -59,7 +59,7 @@ class PembayaranSeeder extends Seeder
             // ==========================
             $totalObat = ($emr->resep?->obat ?? collect())->sum(function ($obat) {
                 $harga  = (float) (
-                    $obat->harga_jual
+                    $obat->harga_jual_obat
                     ?? $obat->harga
                     ?? 0
                 );

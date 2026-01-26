@@ -251,7 +251,7 @@
                         @foreach ($dataPembayaran->emr->kunjungan->layanan as $layanan)
                             @php
                                 $qty = (int) ($layanan->pivot->jumlah ?? 1);
-                                $harga = $layanan->harga_layanan ?? ($layanan->harga ?? 0);
+                                $harga = $layanan->harga_setelah_diskon ?? ($layanan->harga ?? 0);
                                 $subtotal = $qty * $harga;
                                 $total += $subtotal;
                             @endphp

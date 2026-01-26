@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
+use Yajra\DataTables\Facades\DataTables;
 use App\Http\Controllers\QrCodeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\PoliController;
@@ -23,6 +25,7 @@ use App\Http\Controllers\Farmasi\OrderLabController;
 use App\Http\Controllers\Farmasi\SupplierController;
 use App\Http\Controllers\Farmasi\JenisObatController;
 use App\Http\Controllers\Farmasi\OrderObatController;
+use App\Http\Controllers\Farmasi\PesananDanStokMasuk;
 use App\Http\Controllers\Farmasi\TipeDepotController;
 use App\Http\Controllers\Management\DokterController;
 use App\Http\Controllers\Management\PasienController;
@@ -426,6 +429,11 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::post('/repair-stok-bhp', [DepotController::class, 'repairStokBHP'])->name('repair.stok.bhp');
         });
 
+        Route::prefix('pesanan-dan-stok-masuk')->group(function () {
+            Route::get('/', [PesananDanStokMasuk::class, 'index'])->name('pesanan.dan.stok.masuk.index');
+            Route::get('/get-data-pesanan-dan-stok-masuk', [PesananDanStokMasuk::class, 'getData'])->name('pesanan.dan.stok.masuk.get.data');
+        });
+
 
         // Route Brand Farmasi
         Route::get('/get-data-brand-farmasi', [BrandFarmasiController::class, 'getDataBrandFarmasi'])->name('get.data.brand.farmasi');
@@ -561,5 +569,13 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
 
 Route::get('/login-dokter', [AuthController::class, 'login'])->name('login.dokter');
 Route::post('/proses-login-dokter', [AuthController::class, 'prosesLogin'])->name('proses.login.dokter');
+
+Route::get('user-data', function () {
+    $model = User::query();
+
+    return DataTables::eloquent($model)
+        ->addColumn('intro', 'Hi {{$username}}!')
+        ->toJson();
+});
 
 require __DIR__ . '/auth.php';

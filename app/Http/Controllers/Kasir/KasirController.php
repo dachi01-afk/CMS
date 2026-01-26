@@ -176,7 +176,7 @@ class KasirController extends Controller
             ->rawColumns(['bukti_pembayaran', 'action'])
             ->make(true);
     }
-    
+
     public function chartKeuangan(Request $request)
     {
         $range = $request->get('range', 'harian'); // harian|mingguan|bulanan|tahunan
@@ -930,7 +930,7 @@ HTML;
 
         $totalLayanan = $layananCollection->sum(function ($layanan) {
             $jumlah = $layanan->pivot->jumlah ?? 0;
-            $harga  = $layanan->harga_layanan ?? 0;
+            $harga  = $layanan->harga_setelah_diskon ?? 0;
 
             return $jumlah * $harga;
         });

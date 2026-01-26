@@ -270,6 +270,11 @@
                                         :active="Request::routeIs('depot.index')">
                                         Depot
                                     </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="pesanan.dan.stok.masuk.index"
+                                        class="fa-solid fa-truck-medical" :active="Request::routeIs('pesanan.dan.stok.masuk.index')">
+                                        Pesanan Dan Stok Masuk
+                                    </x-mycomponents.sidebar_link>
                                 </ul>
                             </div>
 

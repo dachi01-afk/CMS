@@ -8,69 +8,81 @@ use Illuminate\Database\Seeder;
 
 class LayananSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        // Ambil ID kategori "Pemeriksaan" dan "Non Pemeriksaan"
         $kategoriPemeriksaan = KategoriLayanan::where('nama_kategori', 'Pemeriksaan')->first();
         $kategoriNonPemeriksaan = KategoriLayanan::where('nama_kategori', 'Non Pemeriksaan')->first();
 
-        // Kalau kategori belum ada, hentikan seeder biar kelihatan error-nya
         if (! $kategoriPemeriksaan || ! $kategoriNonPemeriksaan) {
             $this->command->error('Kategori "Pemeriksaan" atau "Non Pemeriksaan" belum ada. Jalankan KategoriLayananSeeder dulu.');
             return;
         }
 
-        // === LAYANAN PEMERIKSAAN (semua pakai kategori "Pemeriksaan") ===
         $listLayanan = [
+            // ================= PEMERIKSAAN =================
             [
-                'nama_layanan'        => 'Konsultasi / pemeriksaan saja',
-                'harga_layanan'       => 50000.00,
+                'nama_layanan' => 'Konsultasi / pemeriksaan saja',
+                'harga_sebelum_diskon' => 50000,
+                'diskon' => 5000,
                 'kategori_layanan_id' => $kategoriPemeriksaan->id,
             ],
             [
-                'nama_layanan'        => 'Scaling / pembersihan karang gigi',
-                'harga_layanan'       => 200000.00,
+                'nama_layanan' => 'Scaling / pembersihan karang gigi',
+                'harga_sebelum_diskon' => 200000,
+                'diskon' => 20000,
                 'kategori_layanan_id' => $kategoriPemeriksaan->id,
             ],
             [
-                'nama_layanan'        => 'Tambal gigi',
-                'harga_layanan'       => 350000.00,
+                'nama_layanan' => 'Tambal gigi',
+                'harga_sebelum_diskon' => 350000,
+                'diskon' => 25000,
                 'kategori_layanan_id' => $kategoriPemeriksaan->id,
             ],
             [
-                'nama_layanan'        => 'Pencabutan gigi sederhana',
-                'harga_layanan'       => 150000.00,
+                'nama_layanan' => 'Pencabutan gigi sederhana',
+                'harga_sebelum_diskon' => 150000,
+                'diskon' => 10000,
                 'kategori_layanan_id' => $kategoriPemeriksaan->id,
             ],
             [
-                'nama_layanan'        => 'Perawatan saluran akar (endodontik)',
-                'harga_layanan'       => 300000.00,
+                'nama_layanan' => 'Perawatan saluran akar (endodontik)',
+                'harga_sebelum_diskon' => 300000,
+                'diskon' => 30000,
                 'kategori_layanan_id' => $kategoriPemeriksaan->id,
             ],
 
-            // === LAYANAN NON PEMERIKSAAN (3 data) ===
+            // ================= NON PEMERIKSAAN =================
             [
-                'nama_layanan'        => 'Pendaftaran Pasien Baru',
-                'harga_layanan'       => 10000.00,
+                'nama_layanan' => 'Pendaftaran Pasien Baru',
+                'harga_sebelum_diskon' => 10000,
+                'diskon' => 0,
                 'kategori_layanan_id' => $kategoriNonPemeriksaan->id,
             ],
             [
-                'nama_layanan'        => 'Pembuatan / Cetak Ulang Kartu Berobat',
-                'harga_layanan'       => 15000.00,
+                'nama_layanan' => 'Pembuatan / Cetak Ulang Kartu Berobat',
+                'harga_sebelum_diskon' => 15000,
+                'diskon' => 2000,
                 'kategori_layanan_id' => $kategoriNonPemeriksaan->id,
             ],
             [
-                'nama_layanan'        => 'Cetak Ulang Rekam Medis / Resume Medis',
-                'harga_layanan'       => 20000.00,
+                'nama_layanan' => 'Cetak Ulang Rekam Medis / Resume Medis',
+                'harga_sebelum_diskon' => 20000,
+                'diskon' => 5000,
                 'kategori_layanan_id' => $kategoriNonPemeriksaan->id,
             ],
         ];
 
-        foreach ($listLayanan as $layanan) {
-            Layanan::create($layanan);
+        foreach ($listLayanan as $data) {
+            $hargaSetelahDiskon = $data['harga_sebelum_diskon'] - $data['diskon'];
+
+            Layanan::create([
+                'kategori_layanan_id'  => $data['kategori_layanan_id'],
+                'nama_layanan'         => $data['nama_layanan'],
+                'harga_sebelum_diskon' => $data['harga_sebelum_diskon'],
+                'diskon'               => $data['diskon'],
+                'harga_setelah_diskon' => $hargaSetelahDiskon,
+                'is_global'            => 1,
+            ]);
         }
     }
 }
