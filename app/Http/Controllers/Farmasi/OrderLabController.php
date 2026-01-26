@@ -38,7 +38,7 @@ class OrderLabController extends Controller
         // 2. Panggil Query menggunakan Scope yang kita buat tadi
         $data = OrderLab::getData() // Load relasi & select
             ->filterByPerawat($perawatId->id) // Filter Logic Dokter-Perawat
-            ->today()
+            // ->today()
             ->latest('tanggal_order'); // Urutkan terbaru
 
         // 3. Return ke DataTables

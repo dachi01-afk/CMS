@@ -14,4 +14,9 @@ class Supplier extends Model
     {
         return $this->hasMany(StokTransaksi::class);
     }
+
+    public function mutasiStokObat()
+    {
+        return $this->hasMany(MutasiStokObat::class);
+    }
 }

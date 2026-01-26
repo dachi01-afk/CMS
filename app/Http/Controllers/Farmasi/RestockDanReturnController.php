@@ -2,14 +2,20 @@
 
 namespace App\Http\Controllers\Farmasi;
 
-use App\Http\Controllers\Controller;
-use App\Models\StokTransaksi;
-use App\Models\StokTransaksiDetail;
+use App\Models\User;
+use App\Models\Depot;
+use App\Models\Perawat;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
+use App\Models\StokTransaksi;
+use App\Models\MutasiStokObat;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
+use App\Models\StokTransaksiDetail;
+use App\Http\Controllers\Controller;
+use App\Models\Farmasi;
+use App\Models\MutasiStokObatDetail;
+use Illuminate\Support\Facades\Auth;
 use Yajra\DataTables\Facades\DataTables;
+use Illuminate\Support\Facades\Validator;
 
 class RestockDanReturnController extends Controller
 {
@@ -83,26 +89,31 @@ class RestockDanReturnController extends Controller
      */
     public function getFormMeta()
     {
-        $kategoriObat = DB::table('kategori_obat')->select('id', 'nama_kategori_obat as nama')->orderBy('nama_kategori_obat')->get();
+        $kategoriObat = DB::table('kategori_obat')
+            ->select('id', 'nama_kategori_obat as nama')
+            ->orderBy('nama_kategori_obat')
+            ->get();
 
-        $satuan = DB::table('satuan_obat')->select('id', 'nama_satuan_obat as nama')->orderBy('nama_satuan_obat')->get();
+        $satuan = DB::table('satuan_obat')
+            ->select('id', 'nama_satuan_obat as nama')
+            ->orderBy('nama_satuan_obat')
+            ->get();
 
         $depot = DB::table('depot')
-            ->select('id', 'nama_depot as nama') // <- sesuaikan kolom ini jika beda
+            ->select('id', 'nama_depot as nama')
             ->orderBy('nama_depot')
             ->get();
 
-
-        // default depot "Apotek" (kalau ada)
-        $defaultDepotId = optional(
-            DB::table('depot')->where('nama_depot', 'Apotek')->first()
-        )->id;
+        $defaultDepot = DB::table('depot')->where('nama_depot', 'Apotek')->first();
+        $defaultDepotId = $defaultDepot ? $defaultDepot->id : null;
 
         return response()->json([
-            'kategori_obat' => $kategoriObat,
-            'satuan'        => $satuan,
-            'depot'         => $depot,
+            'kategori_obat'    => $kategoriObat,
+            'satuan'           => $satuan,
+            'depot'            => $depot,
             'default_depot_id' => $defaultDepotId,
+            // PANGGIL DARI MODEL DI SINI
+            'jenis_transaksi'  => MutasiStokObat::getEnumValues('jenis_transaksi'),
         ]);
     }
 
@@ -203,6 +214,7 @@ class RestockDanReturnController extends Controller
         $stok = (float) ($obat->jumlah ?? 0);
         $totalHargaPersediaan = (float) ($obat->total_harga ?? 0);
         $hargaBeliLama = $stok > 0 ? ($totalHargaPersediaan / $stok) : 0;
+        $hargaJualOtcLama = $obat->harga_otc_obat;
 
         return response()->json([
             'id'                => $obat->id,
@@ -211,8 +223,10 @@ class RestockDanReturnController extends Controller
             'nama_kategori'     => $obat->nama_kategori_obat ?? '-',
             'satuan_id'         => $obat->satuan_obat_id,
             'nama_satuan'       => $obat->nama_satuan_obat ?? '-',
-            'harga_beli_lama'   => $hargaBeliLama,
+            'harga_beli_satuan_obat_lama'   => (float) $obat->total_harga,
+            'harga_jual_otc_obat_lama'   => (float) $obat->harga_otc_obat,
             'harga_jual_lama'   => (float) $obat->harga_jual_obat,
+            'harga_total_awal'   => (float) $obat->total_harga,
             'batch_lama'        => $obat->nomor_batch_obat ?? '',
             'expired_lama'      => $obat->tanggal_kadaluarsa_obat ?? '',
             'stok_sekarang'     => $stok
@@ -257,27 +271,39 @@ class RestockDanReturnController extends Controller
      */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+        // 1. Pre-processing: Bersihkan format Rupiah dari input sebelum divalidasi
+        $input = $request->all();
+        if (isset($input['items']) && is_array($input['items'])) {
+            foreach ($input['items'] as $key => $item) {
+                if (isset($item['harga_beli'])) {
+                    $input['items'][$key]['harga_beli'] = (int) preg_replace('/[^0-9]/', '', $item['harga_beli']);
+                }
+                if (isset($item['harga_jual'])) {
+                    $input['items'][$key]['harga_jual'] = (int) preg_replace('/[^0-9]/', '', $item['harga_jual']);
+                }
+            }
+        }
+
+        // 2. Validasi
+        $validator = Validator::make($input, [
             'tanggal_transaksi' => 'required|date',
-            'jenis_transaksi'   => 'required|in:restock,return',
+            'jenis_transaksi'   => 'required',
             'supplier_id'       => 'nullable|exists:supplier,id',
-            'nomor_faktur'      => 'nullable|string|max:255',
+            // 'nomor_transaksi'      => 'nullable|string|max:255',
             'keterangan'        => 'nullable|string',
 
-            // items[] (disarankan)
             'items'                 => 'required|array|min:1',
             'items.*.type'          => 'required|in:obat,bhp',
-            'items.*.obat_id'       => 'nullable|required_if:items.*.type,obat|exists:obat,id',
-            'items.*.bhp_id'        => 'nullable|required_if:items.*.type,bhp|exists:bahan_habis_pakai,id',
-            'items.*.batch'         => 'nullable|string|max:255',
-            'items.*.expired_date'  => 'nullable|date',
+            'items.*.obat_id'       => 'nullable|required_if:items.*.type,obat',
+            'items.*.batch'         => 'required|string|max:255',
+            'items.*.expired_date'  => 'required|date',
             'items.*.jumlah'        => 'required|integer|min:1',
-            'items.*.satuan_id'     => 'nullable|exists:satuan_obat,id',
-            'items.*.harga_beli'    => 'nullable|numeric|min:0',
-            'items.*.depot_id'      => 'required|exists:depot_obat,id',
-            'items.*.keterangan'    => 'nullable|string',
+            'items.*.harga_beli'    => 'required|numeric|min:0',
+            'items.*.depot_id'      => 'required|exists:depot,id', // Sesuaikan nama tabel depot kamu
         ], [
             'items.required' => 'Minimal 1 rincian item harus ditambahkan.',
+            'items.*.obat_id.required_if' => 'Obat harus dipilih.',
+            'items.*.batch.required' => 'Nomor Batch wajib diisi.',
         ]);
 
         if ($validator->fails()) {
@@ -287,43 +313,56 @@ class RestockDanReturnController extends Controller
             ], 422);
         }
 
-        return DB::transaction(function () use ($request) {
+        return DB::transaction(function () use ($input) {
             $kode = $this->generateKodeTransaksi();
 
-            $st = StokTransaksi::create([
-                'kode_transaksi'    => $kode,
-                'tanggal_transaksi' => $request->tanggal_transaksi,
-                'jenis_transaksi'   => $request->jenis_transaksi,
-                'supplier_id'       => $request->supplier_id,
-                'nomor_faktur'      => $request->nomor_faktur,
-                'keterangan'        => $request->keterangan,
-                'created_by'        => Auth::id(),
+            $id = Auth::id();
+
+            $userId = User::where('id', $id)->firstOrFail();
+
+            $farmasiId = Farmasi::where('user_id', $userId)->value('id');
+
+            // dd($farmasiId);
+
+            // 3. Simpan Header
+            $st = MutasiStokObat::create([
+                // 'kode_transaksi'    => $kode,
+                'tanggal_transaksi' => $input['tanggal_transaksi'],
+                'jenis_transaksi'   => $input['jenis_transaksi'],
+                'supplier_id'       => $input['supplier_id'] ?? null,
+                'nomor_transaksi'      => $kode ?? null,
+                'keterangan'        => $input['keterangan'] ?? null,
+                'farmasi_id'        => $id,
             ]);
 
-            foreach ($request->items as $it) {
-                StokTransaksiDetail::create([
-                    'stok_transaksi_id'     => $st->id,
-                    'obat_id'               => $it['type'] === 'obat' ? ($it['obat_id'] ?? null) : null,
-                    'bahan_habis_pakai_id'  => $it['type'] === 'bhp'  ? ($it['bhp_id'] ?? null) : null,
-                    'batch'                 => $it['batch'] ?? null,
-                    'expired_date'          => $it['expired_date'] ?? null,
-                    'jumlah'                => $it['jumlah'],
-                    'satuan_id'             => $it['satuan_id'] ?? null,
-                    'harga_beli'            => $it['harga_beli'] ?? null,
+            // 4. Simpan Detail
+            foreach ($input['items'] as $it) {
+                MutasiStokObatDetail::create([
+                    'mutasi_stok_obat_id'     => $st->id,
+                    'obat_id'               => $it['type'] === 'obat' ? $it['obat_id'] : null,
                     'depot_id'              => $it['depot_id'],
-                    'keterangan'            => $it['keterangan'] ?? null,
+                    'nomor_batch'                 => $it['batch'],
+                    'tanggal_kadaluarsa'          => $it['expired_date'],
+                    'jumlah'                => $it['jumlah'],
+                    'harga_beli_satuan'            => $it['harga_beli'],
+                    'harga_jual_umum'            => $it['harga_beli'],
+                    'harga_jual_otc'            => $it['harga_beli'],
+                    // 'keterangan'            => $it['keterangan'] ?? null,
                 ]);
 
-                // Kalau nanti kamu mau update stok fisik:
-                // $this->applyStockMutation($request->jenis_transaksi, $it);
+                // Opsional: Update Harga Jual di tabel Obat jika ada harga baru
+                if ($it['type'] === 'obat' && !empty($it['harga_jual'])) {
+                    \App\Models\Obat::where('id', $it['obat_id'])->update([
+                        'harga_beli_terakhir' => $it['harga_beli'],
+                        'harga_jual' => $it['harga_jual']
+                    ]);
+                }
             }
 
             return response()->json([
-                'message' => 'Transaksi berhasil disimpan',
-                'id' => $st->id,
-                'kode' => $st->kode_transaksi,
-                // optional redirect
-                // 'redirect_url' => route('farmasi.restock_return.detail', $st->id),
+                'status'  => 'success',
+                'message' => 'Transaksi ' . $kode . ' berhasil disimpan',
+                'id'      => $st->id
             ]);
         });
     }
@@ -333,8 +372,8 @@ class RestockDanReturnController extends Controller
         $ymd = now()->format('Ymd');
         $prefix = "STK-{$ymd}-";
 
-        $last = StokTransaksi::where('kode_transaksi', 'like', $prefix . '%')
-            ->max('kode_transaksi');
+        $last = MutasiStokObat::where('nomor_transaksi', 'like', $prefix . '%')
+            ->max('nomor_transaksi');
 
         $next = 1;
         if ($last) {
@@ -345,4 +384,93 @@ class RestockDanReturnController extends Controller
 
         return $prefix . str_pad((string)$next, 4, '0', STR_PAD_LEFT);
     }
+
+    public function getDataDepot(Request $request)
+    {
+        $search = $request->get('q');
+        $obatId = $request->get('obat_id'); // Ambil ID obat dari request
+
+        $dataDepot = Depot::where('nama_depot', 'like', "%{$search}%")
+            ->get()
+            ->map(function ($depot) use ($obatId) {
+                // Cari stok di tabel pivot/relasi depot_obat
+                $stok = DB::table('depot_obat')
+                    ->where('depot_id', $depot->id)
+                    ->where('obat_id', $obatId)
+                    ->value('stok_obat') ?? 0;
+
+                return [
+                    'id' => $depot->id,
+                    'nama_depot' => $depot->nama_depot,
+                    'stok_obat' => $stok // Tambahkan info stok ke response
+                ];
+            });
+
+        return response()->json($dataDepot);
+    }
+
+    // public function store(Request $request)
+    // {
+    //     // 1. Validasi Input
+    //     $request->validate([
+    //         'tanggal_transaksi' => 'required|date',
+    //         'jenis_transaksi'   => 'required|string',
+    //         'items'             => 'required|array|min:1',
+    //         'items.*.obat_id'   => 'required',
+    //         'items.*.jumlah'    => 'required|integer|min:1',
+    //     ]);
+
+    //     DB::beginTransaction();
+    //     try {
+    //         // 2. Simpan ke Tabel Header (RestockReturn)
+    //         $transaksi = RestockReturn::create([
+    //             'tanggal_transaksi' => $request->tanggal_transaksi,
+    //             'jenis_transaksi'   => $request->jenis_transaksi,
+    //             'supplier_id'       => $request->supplier_id,
+    //             'nomor_faktur'      => $request->nomor_faktur,
+    //             'keterangan'        => $request->keterangan,
+    //             'user_id'           => auth()->id(), // Mencatat siapa yang input
+    //         ]);
+
+    //         // 3. Simpan ke Tabel Detail & Update Stok di Depot
+    //         foreach ($request->items as $item) {
+    //             // Simpan Detail
+    //             RestockReturnDetail::create([
+    //                 'restock_return_id' => $transaksi->id,
+    //                 'obat_id'           => $item['obat_id'],
+    //                 'batch'             => $item['batch'],
+    //                 'expired_date'      => $item['expired_date'],
+    //                 'jumlah'            => $item['jumlah'],
+    //                 'satuan_id'         => $item['satuan_id'],
+    //                 'harga_beli'        => $item['harga_beli'],
+    //                 'depot_id'          => $item['depot_id'],
+    //                 'keterangan'        => $item['keterangan'] ?? null,
+    //             ]);
+
+    //             // 4. Update Stok di Tabel depot_obat
+    //             // Jika RESTOCK (Barang Masuk) maka stok bertambah (+), jika RETURN (Barang Keluar) maka berkurang (-)
+    //             $operator = ($request->jenis_transaksi == 'restock') ? '+' : '-';
+
+    //             DB::table('depot_obat')
+    //                 ->updateOrInsert(
+    //                     ['depot_id' => $item['depot_id'], 'obat_id' => $item['obat_id']],
+    //                     ['stok' => DB::raw("stok $operator " . $item['jumlah']), 'updated_at' => now()]
+    //                 );
+    //         }
+
+    //         DB::commit();
+
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Transaksi berhasil disimpan!',
+    //             'redirect_url' => route('farmasi.restock-return.index') // Sesuaikan route indexmu
+    //         ]);
+    //     } catch (\Exception $e) {
+    //         DB::rollBack();
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Gagal menyimpan data: ' . $e->getMessage()
+    //         ], 500);
+    //     }
+    // }
 }
