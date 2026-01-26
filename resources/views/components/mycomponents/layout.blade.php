@@ -582,6 +582,21 @@
                                         Cetak Resep Obat
                                     </x-mycomponents.sidebar_link>
 
+                                    <x-mycomponents.sidebar_link href="restock.return.obat.dan.barang"
+                                        class="fa-solid fa-arrows-rotate" :active="Request::routeIs('restock.return.obat.dan.barang')">
+                                        Restock & Return Obat dan BHP
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="depot.index" class="fa-solid fa-capsules"
+                                        :active="Request::routeIs('depot.index')">
+                                        Depot
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="pesanan.dan.stok.masuk.index"
+                                        class="fa-solid fa-truck-medical" :active="Request::routeIs('pesanan.dan.stok.masuk.index')">
+                                        Pesanan Dan Stok Masuk
+                                    </x-mycomponents.sidebar_link>
+                                    
                                     <hr class="my-3 border-slate-200 dark:border-slate-700">
 
                                     <x-mycomponents.sidebar_link href="settings.index" class="fa-solid fa-gear"

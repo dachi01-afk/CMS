@@ -261,7 +261,7 @@
                     @foreach ($items as $item)
                         @php
                             $qty = (int) ($item->jumlah ?? 1);
-                            $hargaSatuan = (float) (optional($item->layanan)->harga_layanan ?? 0);
+                            $hargaSatuan = (float) (optional($item->layanan)->harga_setelah_diskon ?? 0);
                             // subtotal per baris (sebelum diskon)
                             $subtotal = $hargaSatuan * $qty;
                             $totalSebelum += $subtotal;
