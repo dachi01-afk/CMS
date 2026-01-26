@@ -174,6 +174,8 @@ class TransaksiLayananController extends Controller
             'total_tagihan'     => $items->sum('total_tagihan'),
         ];
 
+        // dd($summary->total_tagihan);
+
         return view('kasir.pembayaran.detail-transaksi-layanan', [
             'summary' => $summary,
             'items'   => $items,
