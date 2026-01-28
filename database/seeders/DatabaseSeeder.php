@@ -52,8 +52,11 @@ class DatabaseSeeder extends Seeder
             DepotObatSeeder::class,
             SatuanLabSeeder::class,
             JenisPemeriksaanLabSeeder::class,
+            JenisPemeriksaanRadiologiSeeder::class,
             OrderLabSeeder::class,
             OrderLabDetailSeeder::class,
+            OrderRadiologiSeeder::class,
+            OrderRadiologiDetailSeeder::class,
         ]);
     }
 }

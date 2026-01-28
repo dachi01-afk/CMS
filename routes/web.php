@@ -21,8 +21,8 @@ use App\Http\Controllers\Farmasi\FarmasiController;
 use App\Http\Controllers\Management\UserController;
 use App\Http\Controllers\Perawat\PerawatController;
 use App\Http\Controllers\Testing\TestingController;
-use App\Http\Controllers\Farmasi\OrderLabController;
 use App\Http\Controllers\Farmasi\SupplierController;
+use App\Http\Controllers\Perawat\OrderLabController;
 use App\Http\Controllers\Farmasi\JenisObatController;
 use App\Http\Controllers\Farmasi\OrderObatController;
 use App\Http\Controllers\Farmasi\PesananDanStokMasuk;
@@ -51,6 +51,7 @@ use App\Http\Controllers\Farmasi\PenggunaanObatController;
 use App\Http\Controllers\Kasir\MetodePembayaranController;
 use App\Http\Controllers\Kasir\RiwayatTransaksiController;
 use App\Http\Controllers\Kasir\TransaksiLayananController;
+use App\Http\Controllers\Perawat\OrderRadiologiController;
 use App\Http\Controllers\Admin\ManajemenPenggunaController;
 use App\Http\Controllers\Farmasi\BahanHabisPakaiController;
 use App\Http\Controllers\Management\JadwalDokterController;
@@ -568,6 +569,12 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
             Route::get('/get-data-order-lab', [OrderLabController::class, 'getDataHasilLab'])->name('get.data.order.lab');
             Route::get('/input-hasil/{id}', [OrderLabController::class, 'inputHasil'])->name('input.hasil.order.lab');
             Route::post('/simpan-hasil-lab', [OrderLabController::class, 'simpanHasil'])->name('simpan.hasil.order.lab');
+        });
+
+        Route::prefix('order-radiologi')->group(function () {
+            Route::get('/get-data-order-radiologi',  [OrderRadiologiController::class, 'getDataOrderRadiologi'])->name('get.data.order.radiologi');
+            // Route::get('/input-hasil/{id}', [OrderLabController::class, 'inputHasil'])->name('input.hasil.order.lab');
+            // Route::post('/simpan-hasil-radiologi', [OrderLabController::class, 'simpanHasil'])->name('simpan.hasil.order.lab');
         });
     });
 });

@@ -41,6 +41,14 @@
                         Tes Laboratorium
                     </button>
                 </li>
+
+                <li class="me-2" role="presentation">
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="tes-radiologi-tab"
+                        data-tabs-target="#data-tes-radiologi" type="button" role="tab"
+                        aria-controls="data-tes-radiologi" aria-selected="false">
+                        Tes Radiologi
+                    </button>
+                </li>
             </ul>
         </div>
 
@@ -58,6 +66,11 @@
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-tes-lab" role="tabpanel"
                     aria-labelledby="tes-lab-tab">
                     @include('perawat.kunjungan.data-tes-lab')
+                </div>
+
+                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-tes-radiologi"
+                    role="tabpanel" aria-labelledby="tes-radiologi-tab">
+                    @include('perawat.kunjungan.data-tes-radiologi')
                 </div>
             </div>
         </div>
