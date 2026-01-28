@@ -65,4 +65,9 @@ class Pasien extends Model
     {
         return $this->hasMany(OrderLab::class);
     }
+
+    public function orderRadiologi()
+    {
+        return $this->hasMany(OrderRadiologi::class);
+    }
 }

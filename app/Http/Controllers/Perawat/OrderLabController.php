@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Farmasi;
+namespace App\Http\Controllers\Perawat;
 
 use App\Models\Perawat;
 use App\Models\OrderLab;

@@ -44,7 +44,13 @@ class Dokter extends Model
         return $this->hasMany(OrderLayanan::class);
     }
 
-    public function orderLab() {
+    public function orderLab()
+    {
         return $this->hasMany(OrderLab::class);
+    }
+
+    public function orderRadiologi()
+    {
+        return $this->hasMany(OrderRadiologi::class);
     }
 }
