@@ -34,4 +34,9 @@ class Perawat extends Model
     {
         return $this->hasMany(HasilLab::class);
     }
+
+    public function hasilRadiologi()
+    {
+        return $this->hasMany(HasilRadiologi::class);
+    }
 }
