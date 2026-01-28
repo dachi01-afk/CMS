@@ -84,6 +84,7 @@ export default defineConfig({
                 "resources/js/perawat/kunjungan/data-triage-pasien.js",
                 "resources/js/perawat/kunjungan/form-pengisian-vital-sign-pasien.js",
                 "resources/js/perawat/kunjungan/data-tes-laboratorium.js",
+                "resources/js/perawat/kunjungan/data-tes-radiologi.js",
 
                 // Role Farmasi
                 "resources/js/farmasi/dashboard.js",
@@ -99,6 +100,7 @@ export default defineConfig({
                 "resources/js/farmasi/depot/data-depot.js",
                 "resources/js/farmasi/penggunaan-bhp/data-penggunaan-bhp.js",
                 "resources/js/farmasi/bahan-habis-pakai/data-pemakaian-bhp.js",
+                "resources/js/farmasi/pesanan-dan-stok-masuk/data-pesanan-dan-stok-masuk.js",
             ],
             refresh: true,
         }),

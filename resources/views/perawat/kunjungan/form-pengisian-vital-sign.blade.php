@@ -10,349 +10,325 @@
 </head>
 
 <body class="min-h-screen bg-gradient-to-b from-slate-100 to-slate-200">
-    <div class="mx-auto max-w-4xl px-4 py-8">
+    <div class="mx-auto max-w-5xl px-4 py-8">
 
         {{-- HEADER HALAMAN --}}
-        <div class="flex items-start justify-between gap-4 mb-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
             <div>
                 <div
-                    class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 text-xs font-semibold mb-2">
-                    <i class="fa-solid fa-heart-pulse"></i>
-                    <span>EMR Vital Sign</span>
+                    class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold uppercase tracking-wider mb-2">
+                    <i class="fa-solid fa-user-nurse"></i>
+                    <span>Asesmen Keperawatan</span>
                 </div>
-                <h1 class="text-2xl md:text-3xl font-bold text-slate-800">Input Vital Sign Pasien</h1>
-                <p class="text-sm text-slate-600 mt-1">
-                    No EMR:
-                    <span class="font-semibold text-slate-800">
-                        {{ $dataPasien->no_emr ?? '-' }}
-                    </span>
-                </p>
+                <h1 class="text-2xl md:text-3xl font-bold text-slate-800">Pengkajian Awal Pasien</h1>
+                <p class="text-slate-500 mt-1 text-sm">Lengkapi data klinis pasien dengan akurat.</p>
             </div>
 
-            {{-- Badge status kecil (kalau mau dikembangkan nanti) --}}
-            <div class="hidden md:flex flex-col items-end text-right text-xs text-slate-500">
-                <span>Dientri oleh Perawat</span>
-                <span class="mt-1 px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-100">
-                    Form Aktif
-                </span>
-            </div>
-        </div>
-
-        {{-- RINGKASAN PASIEN / POLI / DOKTER --}}
-        <div class="bg-white/90 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-100 mb-6">
-            <div class="p-4 md:p-5 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div class="flex items-start gap-3">
-                    <div>
-                        <div class="text-[11px] uppercase tracking-wide text-slate-400">Pasien</div>
-                        <div class="font-semibold text-slate-800">
-                            {{ $dataPasien->nama_pasien ?? '-' }}
-                        </div>
-                    </div>
+            {{-- Info Pasien Mini --}}
+            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-4">
+                <div
+                    class="h-10 w-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold">
+                    {{ substr($dataPasien->nama_pasien ?? 'P', 0, 1) }}
                 </div>
-
-                <div class="flex items-start gap-3">
-                    <div>
-                        <div class="text-[11px] uppercase tracking-wide text-slate-400">Poli</div>
-                        <div class="font-semibold text-slate-800">
-                            {{ $dataPoliPasien->nama_poli ?? '-' }}
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex items-start gap-3">
-                    <div>
-                        <div class="text-[11px] uppercase tracking-wide text-slate-400">Dokter Penanggung Jawab</div>
-                        <div class="font-semibold text-slate-800">
-                            {{ $dataDokterPasien->nama_dokter ?? '-' }}
-                        </div>
-                    </div>
+                <div>
+                    <h4 class="font-bold text-sm text-slate-800">{{ $dataPasien->nama_pasien ?? '-' }}</h4>
+                    <p class="text-xs text-slate-500">RM: {{ $dataPasien->no_emr ?? '-' }} |
+                        {{ $dataPasien->tanggal_lahir ? \Carbon\Carbon::parse($dataPasien->tanggal_lahir)->age . ' Tahun' : '-' }}
+                    </p>
                 </div>
             </div>
         </div>
 
-        {{-- FORM VITAL SIGN --}}
-        <div class="bg-white/95 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-100">
-            <div class="px-5 pt-5 pb-2 border-b border-slate-100">
-                <h2 class="text-base md:text-lg font-semibold text-slate-800 flex items-center gap-2">
-                    <span
-                        class="inline-flex h-7 w-7 items-center justify-center rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold">1</span>
-                    Parameter Vital Sign
-                </h2>
-                <p class="text-xs text-slate-500 mt-1">
-                    Isi nilai vital sign pasien sesuai hasil pengukuran aktual.
-                </p>
-            </div>
+        <form id="emr-form" action="{{ route('perawat.submit.data.vital.sign.pasien', $dataIdEMR) }}" method="POST"
+            class="space-y-6">
+            @csrf
 
-            <form id="vital-emr-form" action="{{ route('perawat.submit.data.vital.sign.pasien', $dataIdEMR) }}"
-                method="POST" class="p-5 space-y-6">
-                @csrf
-
-                {{-- <input type="hidden" name="perawat_id" value="{{ $idPerawat }}"> --}}
-
-                {{-- GRID INPUT --}}
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-5">
-                    {{-- Tekanan darah --}}
-                    <div>
-                        <label for="tekanan_darah"
-                            class="block mb-1.5 text-xs font-semibold tracking-wide text-slate-700 uppercase">
-                            Tekanan Darah <span class="text-[11px] font-normal text-slate-400">(mmHg)</span>
-                        </label>
-                        <div class="relative">
-                            <input type="text" id="tekanan_darah" name="tekanan_darah"
-                                value="{{ old('tekanan_darah', $dataEMR->tekanan_darah) }}" placeholder="120/80"
-                                required
-                                class="peer bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
-                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
-                          placeholder:text-slate-400
-                          @error('tekanan_darah') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
-                        </div>
-                        @error('tekanan_darah')
-                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                        <p class="mt-1 text-[11px] text-slate-400">
-                            Contoh: <span class="font-mono">120/80</span> untuk tekanan darah normal dewasa.
-                        </p>
+            {{-- SECTION 1: TANDA VITAL & FISIK --}}
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-3">
+                    <div class="h-8 w-8 rounded-lg bg-blue-100 text-blue-600 flex items-center justify-center">
+                        <i class="fa-solid fa-heart-pulse"></i>
                     </div>
+                    <h3 class="font-bold text-slate-800">I. Tanda Vital & Antropometri</h3>
+                </div>
 
-                    {{-- Suhu tubuh --}}
+                <div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
+                    {{-- TD --}}
                     <div>
-                        <label for="suhu_tubuh"
-                            class="block mb-1.5 text-xs font-semibold tracking-wide text-slate-700 uppercase">
-                            Suhu Tubuh <span class="text-[11px] font-normal text-slate-400">(°C)</span>
-                        </label>
-                        <div class="relative">
-                            <input id="suhu_tubuh" name="suhu_tubuh" type="number" step="0.1" min="30"
-                                max="45" value="{{ old('suhu_tubuh', $dataEMR->suhu_tubuh) }}" placeholder="36.7"
-                                required
-                                class="peer bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
-                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
-                          placeholder:text-slate-400
-                          @error('suhu_tubuh') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
-                        </div>
-                        @error('suhu_tubuh')
-                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                        <p class="mt-1 text-[11px] text-slate-400">
-                            Rentang normal sekitar <span class="font-mono">36–37.5°C</span>.
-                        </p>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Tekanan Darah
+                            (mmHg)</label>
+                        <input type="text" name="tekanan_darah"
+                            value="{{ old('tekanan_darah', $dataEMR->tekanan_darah) }}"
+                            class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            placeholder="120/80">
                     </div>
-
-                    {{-- 🔹 Tinggi Badan --}}
-                    <div>
-                        <label for="tinggi_badan"
-                            class="block mb-1.5 text-xs font-semibold tracking-wide text-slate-700 uppercase">
-                            Tinggi Badan <span class="text-[11px] font-normal text-slate-400">(cm)</span>
-                        </label>
-                        <div class="relative">
-                            <input id="tinggi_badan" name="tinggi_badan" type="number" step="0.1" min="50"
-                                max="250" value="{{ old('tinggi_badan', $dataEMR->tinggi_badan) }}"
-                                placeholder="170" required
-                                class="peer bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
-                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
-                          placeholder:text-slate-400
-                          @error('tinggi_badan') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
-                        </div>
-                        @error('tinggi_badan')
-                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                        <p class="mt-1 text-[11px] text-slate-400">
-                            Isi dalam satuan <span class="font-mono">cm</span>, contoh: <span
-                                class="font-mono">170</span>.
-                        </p>
-                    </div>
-
-                    {{-- 🔹 Berat Badan --}}
-                    <div>
-                        <label for="berat_badan"
-                            class="block mb-1.5 text-xs font-semibold tracking-wide text-slate-700 uppercase">
-                            Berat Badan <span class="text-[11px] font-normal text-slate-400">(kg)</span>
-                        </label>
-                        <div class="relative">
-                            <input id="berat_badan" name="berat_badan" type="number" step="0.1" min="2"
-                                max="300" value="{{ old('berat_badan', $dataEMR->berat_badan) }}" placeholder="65"
-                                required
-                                class="peer bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
-                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
-                          placeholder:text-slate-400
-                          @error('berat_badan') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
-                        </div>
-                        @error('berat_badan')
-                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                        <p class="mt-1 text-[11px] text-slate-400">
-                            Isi dalam satuan <span class="font-mono">kg</span>, contoh: <span
-                                class="font-mono">65</span>.
-                        </p>
-                    </div>
-
-                    {{-- 🔹 IMT --}}
-                    <div>
-                        <label for="imt"
-                            class="block mb-1.5 text-xs font-semibold tracking-wide text-slate-700 uppercase">
-                            Indeks Massa Tubuh (IMT) <span
-                                class="text-[11px] font-normal text-slate-400">(kg/m²)</span>
-                        </label>
-                        <div class="relative">
-                            <input id="imt" name="imt" type="number" step="0.1" min="5"
-                                max="80" value="{{ old('imt', $dataEMR->imt) }}" placeholder="22.5" required
-                                class="peer bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
-                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
-                          placeholder:text-slate-400
-                          @error('imt') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
-                        </div>
-                        @error('imt')
-                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                        <p class="mt-1 text-[11px] text-slate-400">
-                            Contoh nilai normal sekitar <span class="font-mono">18.5–24.9</span>.
-                        </p>
-                    </div>
-
                     {{-- Nadi --}}
                     <div>
-                        <label for="nadi"
-                            class="block mb-1.5 text-xs font-semibold tracking-wide text-slate-700 uppercase">
-                            Nadi <span class="text-[11px] font-normal text-slate-400">(bpm)</span>
-                        </label>
-                        <div class="relative">
-                            <input id="nadi" name="nadi" type="number" min="30" max="220"
-                                value="{{ old('nadi', $dataEMR->nadi) }}" placeholder="80" required
-                                class="peer bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
-                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
-                          placeholder:text-slate-400
-                          @error('nadi') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
-                        </div>
-                        @error('nadi')
-                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                        <p class="mt-1 text-[11px] text-slate-400">
-                            Dewasa normal: sekitar <span class="font-mono">60–100 bpm</span>.
-                        </p>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Nadi (x/mnt)</label>
+                        <input type="number" name="nadi" value="{{ old('nadi', $dataEMR->nadi) }}"
+                            class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            placeholder="80">
                     </div>
-
-                    {{-- Pernapasan --}}
+                    {{-- RR --}}
                     <div>
-                        <label for="pernapasan"
-                            class="block mb-1.5 text-xs font-semibold tracking-wide text-slate-700 uppercase">
-                            Frekuensi Napas <span class="text-[11px] font-normal text-slate-400">(x/menit)</span>
-                        </label>
-                        <div class="relative">
-                            <input id="pernapasan" name="pernapasan" type="number" min="5" max="60"
-                                value="{{ old('pernapasan', $dataEMR->pernapasan) }}" placeholder="18" required
-                                class="peer bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
-                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
-                          placeholder:text-slate-400
-                          @error('pernapasan') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
-                        </div>
-                        @error('pernapasan')
-                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                        <p class="mt-1 text-[11px] text-slate-400">
-                            Normal dewasa: sekitar <span class="font-mono">12–20 x/menit</span>.
-                        </p>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Pernapasan (x/mnt)</label>
+                        <input type="number" name="pernapasan" value="{{ old('pernapasan', $dataEMR->pernapasan) }}"
+                            class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            placeholder="20">
+                    </div>
+                    {{-- Suhu --}}
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Suhu (°C)</label>
+                        <input type="number" step="0.1" name="suhu_tubuh"
+                            value="{{ old('suhu_tubuh', $dataEMR->suhu_tubuh) }}"
+                            class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            placeholder="36.5">
                     </div>
 
                     {{-- SpO2 --}}
                     <div>
-                        <label for="saturasi_oksigen"
-                            class="block mb-1.5 text-xs font-semibold tracking-wide text-slate-700 uppercase">
-                            Saturasi Oksigen <span class="text-[11px] font-normal text-slate-400">(SpO₂, %)</span>
-                        </label>
-                        <div class="relative">
-                            <input id="saturasi_oksigen" name="saturasi_oksigen" type="number" min="50"
-                                max="100" value="{{ old('saturasi_oksigen', $dataEMR->saturasi_oksigen) }}"
-                                placeholder="98" required
-                                class="peer bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
-                          focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full pr-4 pl-3 py-2.5
-                          placeholder:text-slate-400
-                          @error('saturasi_oksigen') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">SpO2 (%)</label>
+                        <input type="number" name="saturasi_oksigen"
+                            value="{{ old('saturasi_oksigen', $dataEMR->saturasi_oksigen) }}"
+                            class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            placeholder="98">
+                    </div>
+
+                    {{-- BB & TB (Auto IMT) --}}
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Berat Badan (kg)</label>
+                        <input type="number" step="0.1" id="bb" name="berat_badan"
+                            value="{{ old('berat_badan', $dataEMR->berat_badan) }}"
+                            class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-slate-50"
+                            placeholder="0">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Tinggi Badan (cm)</label>
+                        <input type="number" id="tb" name="tinggi_badan"
+                            value="{{ old('tinggi_badan', $dataEMR->tinggi_badan) }}"
+                            class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-slate-50"
+                            placeholder="0">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">IMT (Auto)</label>
+                        <input type="text" id="imt" name="imt" value="{{ old('imt', $dataEMR->imt) }}"
+                            readonly
+                            class="w-full rounded-lg border-slate-200 bg-slate-100 text-slate-600 sm:text-sm font-semibold cursor-not-allowed">
+                    </div>
+                </div>
+            </div>
+
+            {{-- SECTION 2: STATUS NEUROLOGIS (GCS) --}}
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-3">
+                    <div class="h-8 w-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center">
+                        <i class="fa-solid fa-brain"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-800">II. Status Neurologis (GCS)</h3>
+                </div>
+                <div class="p-6 grid grid-cols-1 md:grid-cols-4 gap-6">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Eye (E)</label>
+                        <select id="gcs_e" name="gcs_e"
+                            class="w-full rounded-lg border-slate-300 text-sm gcs-input">
+                            <option value="4">4 - Spontan</option>
+                            <option value="3">3 - Terhadap Suara</option>
+                            <option value="2">2 - Terhadap Nyeri</option>
+                            <option value="1">1 - Tidak Ada</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Verbal (V)</label>
+                        <select id="gcs_v" name="gcs_v"
+                            class="w-full rounded-lg border-slate-300 text-sm gcs-input">
+                            <option value="5">5 - Orientasi Baik</option>
+                            <option value="4">4 - Bingung</option>
+                            <option value="3">3 - Kata Tak Tepat</option>
+                            <option value="2">2 - Suara Mengerang</option>
+                            <option value="1">1 - Tidak Ada</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Motorik (M)</label>
+                        <select id="gcs_m" name="gcs_m"
+                            class="w-full rounded-lg border-slate-300 text-sm gcs-input">
+                            <option value="6">6 - Ikut Perintah</option>
+                            <option value="5">5 - Melokalisir Nyeri</option>
+                            <option value="4">4 - Menghindar Nyeri</option>
+                            <option value="3">3 - Fleksi Abnormal</option>
+                            <option value="2">2 - Ekstensi Abnormal</option>
+                            <option value="1">1 - Tidak Ada</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Total GCS</label>
+                        <input type="text" id="gcs_total" name="gcs_total" readonly
+                            class="w-full rounded-lg border-slate-200 bg-purple-50 text-purple-700 font-bold text-center">
+                    </div>
+                    <div class="col-span-1 md:col-span-4">
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Kesadaran
+                            Kualitatif</label>
+                        <select name="kesadaran" class="w-full md:w-1/3 rounded-lg border-slate-300 text-sm">
+                            <option>Compos Mentis</option>
+                            <option>Apatis</option>
+                            <option>Delirium</option>
+                            <option>Somnolen</option>
+                            <option>Sopor</option>
+                            <option>Coma</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            {{-- SECTION 3: SKRINING NYERI & ALERGI --}}
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="h-8 w-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center">
+                                <i class="fa-solid fa-face-frown-open"></i>
+                            </div>
+                            <h3 class="font-bold text-slate-800">III. Skala Nyeri (NRS)</h3>
                         </div>
-                        @error('saturasi_oksigen')
-                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                        <p class="mt-1 text-[11px] text-slate-400">
-                            Nilai normal umumnya <span class="font-mono">&ge; 95%</span>.
-                        </p>
+                        <span id="nyeri_val" class="font-bold text-2xl text-red-600">0</span>
+                    </div>
+                    <div class="p-6">
+                        <input type="range" name="skala_nyeri" min="0" max="10" value="0"
+                            id="nyeri_range"
+                            class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-red-600">
+                        <div class="flex justify-between text-xs text-slate-400 mt-2 font-semibold">
+                            <span>0 (Tidak Nyeri)</span>
+                            <span>5 (Sedang)</span>
+                            <span>10 (Tak Tertahankan)</span>
+                        </div>
+                        <div class="mt-4">
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Lokasi Nyeri</label>
+                            <input type="text" name="lokasi_nyeri"
+                                class="w-full rounded-lg border-slate-300 text-sm"
+                                placeholder="Misal: Perut kanan bawah">
+                        </div>
                     </div>
                 </div>
 
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-3">
+                        <div class="h-8 w-8 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center">
+                            <i class="fa-solid fa-shield-virus"></i>
+                        </div>
+                        <h3 class="font-bold text-slate-800">IV. Keamanan Pasien</h3>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Riwayat Alergi</label>
+                            <div class="flex items-center gap-4 mb-2">
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="has_alergi" value="0"
+                                        class="text-indigo-600 focus:ring-indigo-500" checked
+                                        onclick="document.getElementById('ket_alergi').classList.add('hidden')">
+                                    <span class="text-sm font-medium">Tidak Ada</span>
+                                </label>
+                                <label class="flex items-center gap-2 cursor-pointer">
+                                    <input type="radio" name="has_alergi" value="1"
+                                        class="text-indigo-600 focus:ring-indigo-500"
+                                        onclick="document.getElementById('ket_alergi').classList.remove('hidden')">
+                                    <span class="text-sm font-medium">Ada</span>
+                                </label>
+                            </div>
+                            <input type="text" id="ket_alergi" name="keterangan_alergi"
+                                class="hidden w-full rounded-lg border-red-300 focus:border-red-500 focus:ring-red-500 text-sm placeholder-red-300"
+                                placeholder="Sebutkan alergi (Obat/Makanan)...">
+                        </div>
+                        <hr class="border-slate-100">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Risiko Jatuh
+                                (Morse/Humpty)</label>
+                            <select name="risiko_jatuh" class="w-full rounded-lg border-slate-300 text-sm">
+                                <option value="Rendah">Risiko Rendah</option>
+                                <option value="Sedang">Risiko Sedang</option>
+                                <option value="Tinggi" class="text-red-600 font-bold">Risiko Tinggi (Pasang Gelang
+                                    Kuning)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-
-                {{-- RIWAYAT KESEHATAN --}}
-                <div class="mt-2 p-4 border border-slate-100 rounded-2xl bg-slate-50/80 space-y-4">
-                    <h3 class="text-sm font-semibold text-slate-800 flex items-center gap-2">
-                        <span
-                            class="inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-100 text-amber-700 text-[11px] font-bold">2</span>
-                        Riwayat Kesehatan
-                    </h3>
-
-                    {{-- Riwayat Penyakit Dahulu --}}
+            {{-- SECTION 4: RIWAYAT KESEHATAN (Diperbaiki) --}}
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-3">
+                    <div class="h-8 w-8 rounded-lg bg-teal-100 text-teal-600 flex items-center justify-center">
+                        <i class="fa-solid fa-file-medical"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-800">V. Riwayat Kesehatan</h3>
+                </div>
+                <div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <label for="riwayat_penyakit_dahulu"
-                            class="block mb-1.5 text-xs font-semibold tracking-wide text-slate-700 uppercase">
-                            Riwayat Penyakit Dahulu
-                            <span class="text-[11px] font-normal text-slate-400">(opsional)</span>
-                        </label>
-                        <textarea id="riwayat_penyakit_dahulu" name="riwayat_penyakit_dahulu" rows="3"
-                            placeholder="Contoh: Hipertensi sejak 2018, DM tipe 2 terkontrol, riwayat asma masa kecil."
-                            class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
-                                   focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full px-3 py-2.5
-                                   placeholder:text-slate-400 resize-y
-                                   @error('riwayat_penyakit_dahulu') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">{{ old('riwayat_penyakit_dahulu', $dataEMR->riwayat_penyakit_dahulu ?? '') }}</textarea>
-                        @error('riwayat_penyakit_dahulu')
-                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                        <p class="mt-1 text-[11px] text-slate-400">
-                            Isi ringkas riwayat penyakit utama yang pernah diderita pasien sebelumnya.
-                        </p>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Keluhan Utama (Saat
+                            Ini)</label>
+                        <textarea name="keluhan_utama" rows="3"
+                            class="w-full rounded-lg border-slate-300 text-sm focus:ring-teal-500 focus:border-teal-500"
+                            placeholder="Apa yang dirasakan pasien saat ini?"></textarea>
                     </div>
-
-                    {{-- Riwayat Penyakit Keluarga --}}
                     <div>
-                        <label for="riwayat_penyakit_keluarga"
-                            class="block mb-1.5 text-xs font-semibold tracking-wide text-slate-700 uppercase">
-                            Riwayat Penyakit Keluarga
-                            <span class="text-[11px] font-normal text-slate-400">(opsional)</span>
-                        </label>
-                        <textarea id="riwayat_penyakit_keluarga" name="riwayat_penyakit_keluarga" rows="3"
-                            placeholder="Contoh: Ayah DM tipe 2, ibu hipertensi, kakek stroke."
-                            class="bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-xl
-                                   focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 block w-full px-3 py-2.5
-                                   placeholder:text-slate-400 resize-y
-                                   @error('riwayat_penyakit_keluarga') border-red-500 focus:ring-red-400 focus:border-red-500 @enderror">{{ old('riwayat_penyakit_keluarga', $dataEMR->riwayat_penyakit_keluarga ?? '') }}</textarea>
-                        @error('riwayat_penyakit_keluarga')
-                            <p class="mt-1 text-xs text-red-600">{{ $message }}</p>
-                        @enderror
-                        <p class="mt-1 text-[11px] text-slate-400">
-                            Cantumkan riwayat penyakit yang sering muncul di keluarga inti (orang tua, saudara kandung).
-                        </p>
+                        <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Riwayat Penyakit
+                            Dahulu</label>
+                        <textarea name="riwayat_penyakit_dahulu" rows="3"
+                            class="w-full rounded-lg border-slate-300 text-sm focus:ring-teal-500 focus:border-teal-500"
+                            placeholder="{{ old('riwayat_penyakit_dahulu', $dataEMR->riwayat_penyakit_dahulu ?? '-') }}"></textarea>
                     </div>
                 </div>
+            </div>
 
-
-                {{-- FOOTER FORM --}}
-                <div
-                    class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 pt-4 border-t border-slate-100">
-                    <div class="text-[11px] text-slate-400">
-                        Pastikan data sesuai hasil pengukuran sebelum menekan tombol simpan.
+            {{-- SECTION 5: PLANNING & MASALAH KEPERAWATAN --}}
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex items-center gap-3">
+                    <div class="h-8 w-8 rounded-lg bg-indigo-100 text-indigo-600 flex items-center justify-center">
+                        <i class="fa-solid fa-clipboard-check"></i>
                     </div>
-                    <div class="flex items-center justify-end gap-3">
-                        <a href="{{ $urlBack }}"
-                            class="px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-medium text-slate-700 
-                                  bg-white hover:bg-slate-50 hover:border-slate-400 transition">
-                            Kembali
-                        </a>
-                        <button type="submit"
-                            class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white 
-                                       text-sm font-semibold shadow-sm hover:bg-indigo-700 focus:outline-none 
-                                       focus:ring-2 focus:ring-offset-1 focus:ring-indigo-500 transition">
-                            <i class="fa-solid fa-floppy-disk text-xs"></i>
-                            <span>Simpan Vital Sign</span>
-                        </button>
+                    <h3 class="font-bold text-slate-800">VI. Masalah Keperawatan (A) & Rencana (P)</h3>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-4">
+                        <div class="border border-slate-200 rounded-lg p-4">
+                            <h4 class="text-sm font-bold text-slate-700 mb-3 border-b pb-2">Diagnosa Keperawatan Umum
+                            </h4>
+                            <div class="space-y-2 text-sm text-slate-600">
+                                <label class="flex items-center gap-2"><input type="checkbox" name="diagnosa[]"
+                                        value="Hipertermia" class="rounded text-indigo-600"> Hipertermia</label>
+                                <label class="flex items-center gap-2"><input type="checkbox" name="diagnosa[]"
+                                        value="Nyeri Akut" class="rounded text-indigo-600"> Nyeri Akut</label>
+                                <label class="flex items-center gap-2"><input type="checkbox" name="diagnosa[]"
+                                        value="Ketidakefektifan Pola Napas" class="rounded text-indigo-600"> Pola
+                                    Napas Tidak Efektif</label>
+                                <label class="flex items-center gap-2"><input type="checkbox" name="diagnosa[]"
+                                        value="Risiko Infeksi" class="rounded text-indigo-600"> Risiko Infeksi</label>
+                                <label class="flex items-center gap-2"><input type="checkbox" name="diagnosa[]"
+                                        value="Intoleransi Aktivitas" class="rounded text-indigo-600"> Intoleransi
+                                    Aktivitas</label>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Intervensi
+                                Keperawatan</label>
+                            <textarea name="intervensi" rows="5"
+                                class="w-full rounded-lg border-slate-300 text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                placeholder="1. Monitor TTV per jam&#10;2. Berikan posisi semi fowler&#10;3. Kolaborasi pemberian analgesik..."></textarea>
+                        </div>
                     </div>
                 </div>
-            </form>
-        </div>
+            </div>
+
+            {{-- ACTION BUTTONS --}}
+            <div class="flex items-center justify-end gap-4 pt-6 pb-12">
+                <a href="{{ $urlBack }}"
+                    class="px-6 py-2.5 rounded-xl border border-slate-300 text-slate-600 font-semibold hover:bg-slate-50 transition">Batal</a>
+                <button type="submit"
+                    class="px-6 py-2.5 rounded-xl bg-indigo-600 text-white font-semibold shadow-lg shadow-indigo-200 hover:bg-indigo-700 hover:scale-[1.02] transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-save"></i>
+                    Simpan Pengkajian
+                </button>
+            </div>
+        </form>
     </div>
 
     {{-- SweetAlert2 --}}

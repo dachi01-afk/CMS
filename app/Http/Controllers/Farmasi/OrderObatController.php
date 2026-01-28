@@ -262,7 +262,7 @@ class OrderObatController extends Controller
                     'resep_id'   => $resepId,
                     'obat_id'    => $obatId,
                     'jumlah'     => $qty,
-                    'status'     => 'Belum Diambil',
+                    // 'status'     => 'Belum Diambil',
                     'created_at' => $now,
                     'updated_at' => $now,
                 ]);

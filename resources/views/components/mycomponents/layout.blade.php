@@ -130,8 +130,8 @@
                                     Overview
                                 </p>
                                 <ul class="space-y-1">
-                                    <x-mycomponents.sidebar_link href="admin.index" class="fa-solid fa-house"
-                                        :active="Request::routeIs('admin.index')">
+                                    <x-mycomponents.sidebar_link href="super.admin.index" class="fa-solid fa-house"
+                                        :active="Request::routeIs('super.admin.index')">
                                         Dashboard Utama
                                     </x-mycomponents.sidebar_link>
                                 </ul>
@@ -269,6 +269,11 @@
                                     <x-mycomponents.sidebar_link href="depot.index" class="fa-solid fa-capsules"
                                         :active="Request::routeIs('depot.index')">
                                         Depot
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="pesanan.dan.stok.masuk.index"
+                                        class="fa-solid fa-truck-medical" :active="Request::routeIs('pesanan.dan.stok.masuk.index')">
+                                        Pesanan Dan Stok Masuk
                                     </x-mycomponents.sidebar_link>
                                 </ul>
                             </div>
@@ -577,6 +582,21 @@
                                         Cetak Resep Obat
                                     </x-mycomponents.sidebar_link>
 
+                                    <x-mycomponents.sidebar_link href="restock.return.obat.dan.barang"
+                                        class="fa-solid fa-arrows-rotate" :active="Request::routeIs('restock.return.obat.dan.barang')">
+                                        Restock & Return Obat dan BHP
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="depot.index" class="fa-solid fa-capsules"
+                                        :active="Request::routeIs('depot.index')">
+                                        Depot
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="pesanan.dan.stok.masuk.index"
+                                        class="fa-solid fa-truck-medical" :active="Request::routeIs('pesanan.dan.stok.masuk.index')">
+                                        Pesanan Dan Stok Masuk
+                                    </x-mycomponents.sidebar_link>
+                                    
                                     <hr class="my-3 border-slate-200 dark:border-slate-700">
 
                                     <x-mycomponents.sidebar_link href="settings.index" class="fa-solid fa-gear"

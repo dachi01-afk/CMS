@@ -57,4 +57,9 @@ class Obat extends Model
     {
         return $this->hasMany(StokTransaksiDetail::class);
     }
+
+    public function mutasiStokObatDetail()
+    {
+        return $this->hasMany(MutasiStokObatDetail::class);
+    }
 }

@@ -56,7 +56,7 @@
                                             x{{ $o->pivot->jumlah ?? 1 }}
                                         </td>
                                         <td class="p-4 text-right text-base font-bold text-gray-900 dark:text-white">
-                                            Rp{{ number_format(($o->total_harga ?? 0) * ($o->pivot->jumlah ?? 1), 0, ',', '.') }}
+                                            Rp{{ number_format(($o->harga_jual_obat ?? 0) * ($o->pivot->jumlah ?? 1), 0, ',', '.') }}
                                         </td>
                                     </tr>
                                 @endforeach
@@ -80,7 +80,7 @@
                                             x{{ $l->pivot->jumlah ?? 1 }}
                                         </td>
                                         <td class="p-4 text-right text-base font-bold text-gray-900 dark:text-white">
-                                            Rp{{ number_format(($l->harga_layanan ?? 0) * ($l->pivot->jumlah ?? 1), 0, ',', '.') }}
+                                            Rp{{ number_format(($l->harga_setelah_diskon ?? 0) * ($l->pivot->jumlah ?? 1), 0, ',', '.') }}
                                         </td>
                                     </tr>
                                 @endforeach

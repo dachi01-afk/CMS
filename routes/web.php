@@ -1,6 +1,8 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
+use Yajra\DataTables\Facades\DataTables;
 use App\Http\Controllers\QrCodeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\PoliController;
@@ -19,10 +21,11 @@ use App\Http\Controllers\Farmasi\FarmasiController;
 use App\Http\Controllers\Management\UserController;
 use App\Http\Controllers\Perawat\PerawatController;
 use App\Http\Controllers\Testing\TestingController;
-use App\Http\Controllers\Farmasi\OrderLabController;
 use App\Http\Controllers\Farmasi\SupplierController;
+use App\Http\Controllers\Perawat\OrderLabController;
 use App\Http\Controllers\Farmasi\JenisObatController;
 use App\Http\Controllers\Farmasi\OrderObatController;
+use App\Http\Controllers\Farmasi\PesananDanStokMasuk;
 use App\Http\Controllers\Farmasi\TipeDepotController;
 use App\Http\Controllers\Management\DokterController;
 use App\Http\Controllers\Management\PasienController;
@@ -40,6 +43,7 @@ use App\Http\Controllers\Admin\KategoriLayananController;
 use App\Http\Controllers\Admin\PengambilanObatController;
 use App\Http\Controllers\Farmasi\KadaluarsaBHPController;
 use App\Http\Controllers\Farmasi\PenggunaanBHPController;
+use App\Http\Controllers\SuperAdmin\SuperAdminController;
 use App\Http\Controllers\Admin\PengaturanKlinikController;
 use App\Http\Controllers\Farmasi\CetakResepObatController;
 use App\Http\Controllers\Farmasi\KadaluarsaObatController;
@@ -47,6 +51,7 @@ use App\Http\Controllers\Farmasi\PenggunaanObatController;
 use App\Http\Controllers\Kasir\MetodePembayaranController;
 use App\Http\Controllers\Kasir\RiwayatTransaksiController;
 use App\Http\Controllers\Kasir\TransaksiLayananController;
+use App\Http\Controllers\Perawat\OrderRadiologiController;
 use App\Http\Controllers\Admin\ManajemenPenggunaController;
 use App\Http\Controllers\Farmasi\BahanHabisPakaiController;
 use App\Http\Controllers\Management\JadwalDokterController;
@@ -125,6 +130,10 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::prefix('super-admin')->group(function () {
+        Route::get('index', [SuperAdminController::class, 'dashboard'])->name('super.admin.index');
+    });
 
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('index');
@@ -409,6 +418,8 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('/obat/{id}/meta', [RestockDanReturnController::class, 'getMetaObat'])->name('farmasi.restock_return.obat_meta');
             Route::get('/bhp/{id}/meta', [RestockDanReturnController::class, 'getMetaBhp'])->name('farmasi.restock_return.bhp_meta');
 
+            Route::get('/get-data-depot', [RestockDanReturnController::class, 'getDataDepot'])->name('farmasi.restock_return.get.data.depot');
+
             // ✅ store
             Route::post('/store', [RestockDanReturnController::class, 'store'])->name('create.data.restock.dan.return');
         });
@@ -422,6 +433,11 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::post('/repair-stok-obat', [DepotController::class, 'repairStokObat'])->name('repair.stok.obat');
             Route::get('/get-data-repair-bhp-by-depot/{id}', [DepotController::class, 'getDataRepairStokBHPByDepotId'])->name('get.data.repair.bhp.by.depot.id');
             Route::post('/repair-stok-bhp', [DepotController::class, 'repairStokBHP'])->name('repair.stok.bhp');
+        });
+
+        Route::prefix('pesanan-dan-stok-masuk')->group(function () {
+            Route::get('/', [PesananDanStokMasuk::class, 'index'])->name('pesanan.dan.stok.masuk.index');
+            Route::get('/get-data-pesanan-dan-stok-masuk', [PesananDanStokMasuk::class, 'getData'])->name('pesanan.dan.stok.masuk.get.data');
         });
 
 
@@ -554,10 +570,24 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
             Route::get('/input-hasil/{id}', [OrderLabController::class, 'inputHasil'])->name('input.hasil.order.lab');
             Route::post('/simpan-hasil-lab', [OrderLabController::class, 'simpanHasil'])->name('simpan.hasil.order.lab');
         });
+
+        Route::prefix('order-radiologi')->group(function () {
+            Route::get('/get-data-order-radiologi',  [OrderRadiologiController::class, 'getDataOrderRadiologi'])->name('get.data.order.radiologi');
+            // Route::get('/input-hasil/{id}', [OrderLabController::class, 'inputHasil'])->name('input.hasil.order.lab');
+            // Route::post('/simpan-hasil-radiologi', [OrderLabController::class, 'simpanHasil'])->name('simpan.hasil.order.lab');
+        });
     });
 });
 
 Route::get('/login-dokter', [AuthController::class, 'login'])->name('login.dokter');
 Route::post('/proses-login-dokter', [AuthController::class, 'prosesLogin'])->name('proses.login.dokter');
+
+Route::get('user-data', function () {
+    $model = User::query();
+
+    return DataTables::eloquent($model)
+        ->addColumn('intro', 'Hi {{$username}}!')
+        ->toJson();
+});
 
 require __DIR__ . '/auth.php';

@@ -140,14 +140,28 @@
                             </p>
                             @php
                                 $user = auth()->user();
-                                $kasir = $user->kasir->nama_kasir ??= null;
+
+                                // Default nama kasir null
+                                $kasir = null;
+
+                                // Cek kalau user punya relasi kasir
+                                if ($user && isset($user->kasir)) {
+                                    $kasir = $user->kasir->nama_kasir;
+                                }
+
+                                // Kalau kasir kosong tapi user role super admin, tetap bisa akses
+                                if (!$kasir && $user && $user->role === 'super_admin') {
+                                    $kasir = ''; // biarkan kosong
+                                }
                             @endphp
+
                             <p class="text-xs text-slate-500 mt-0.5">
                                 Kasir:
                                 <span class="font-semibold">
                                     {{ $kasir ?? (auth()->user()->username ?? '-') }}
                                 </span>
                             </p>
+
                         </div>
                     </div>
                 </div>
@@ -293,7 +307,7 @@
                                     <tbody class="bg-white">
                                         @foreach ($items as $item)
                                             @php
-                                                $hargaSatuan = $item->layanan->harga_layanan ?? null;
+                                                $hargaSatuan = $item->layanan->harga_setelah_diskon ?? null;
                                                 $jumlah = $item->jumlah ?? 1;
                                                 $subtotal =
                                                     $item->total_tagihan ?? ($hargaSatuan ? $hargaSatuan * $jumlah : 0);

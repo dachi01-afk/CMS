@@ -10,6 +10,11 @@ class Farmasi extends Model
 
     protected $guarded = [];
 
+    public function mutasiStokObat()
+    {
+        return $this->hasMany(MutasiStokObat::class);
+    }
+
     public function user()
     {
         return $this->belongsTo(User::class);

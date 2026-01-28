@@ -31,6 +31,11 @@ class Depot extends Model
         return $this->belongsTo(TipeDepot::class);
     }
 
+    public function mutasiStokObatDetail()
+    {
+        return $this->belongsTo(MutasiStokObatDetail::class);
+    }
+
     public function depotObat()
     {
         return $this->belongsToMany(Obat::class, 'depot_obat', 'depot_id', 'obat_id')->withPivot('stok_obat')->withTimestamps();

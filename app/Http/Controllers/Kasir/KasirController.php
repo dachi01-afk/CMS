@@ -176,7 +176,7 @@ class KasirController extends Controller
             ->rawColumns(['bukti_pembayaran', 'action'])
             ->make(true);
     }
-    
+
     public function chartKeuangan(Request $request)
     {
         $range = $request->get('range', 'harian'); // harian|mingguan|bulanan|tahunan
@@ -384,12 +384,21 @@ class KasirController extends Controller
 
     public function getDataPembayaran()
     {
+        $hariIni = Carbon::today();
+
         $dataPembayaran = Pembayaran::with([
             'emr.kunjungan.pasien',
             'emr.resep.obat',
             'emr.kunjungan.layanan',
             'metodePembayaran',
-        ])->where('status', 'Belum Bayar')->latest()->get();
+        ])->where('status', 'Belum Bayar')
+            ->where(function ($q) use ($hariIni) {
+                $q->whereHas('emr.kunjungan', function ($kunjungan) use ($hariIni) {
+                    $kunjungan->whereDate('tanggal_kunjungan', $hariIni);
+                });
+            })
+            ->latest()
+            ->get(); // ✅ PENTING: GET;
 
         return DataTables::of($dataPembayaran)
             ->addIndexColumn()
@@ -657,6 +666,8 @@ HTML;
             'emr.resep.obat', // kalau kamu punya relasi ini
         ])->where('kode_transaksi', $kodeTransaksi)
             ->firstOrFail();
+
+        // dd($dataPembayaran);
 
         $dataMetodePembayaran = MetodePembayaran::all();
 
@@ -930,7 +941,7 @@ HTML;
 
         $totalLayanan = $layananCollection->sum(function ($layanan) {
             $jumlah = $layanan->pivot->jumlah ?? 0;
-            $harga  = $layanan->harga_layanan ?? 0;
+            $harga  = $layanan->harga_setelah_diskon ?? 0;
 
             return $jumlah * $harga;
         });
