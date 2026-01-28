@@ -330,6 +330,11 @@
                             class="pb-2 border-b-2 border-pink-500 text-gray-900 dark:text-white">
                             Obat
                         </button>
+
+                        <button type="button" id="tab-bhp" data-tab="bhp"
+                            class="pb-2 border-b-2 border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
+                            Bahan Habis Pakai
+                        </button>
                     </div>
 
                     <div class="mt-4">
@@ -512,6 +517,189 @@
                                 </button>
                             </div>
                         </div>
+
+                        {{-- ========================= PANEL: BHP (sesuai foto) ========================= --}}
+                        <div id="panel-bhp" data-panel="bhp" class="hidden">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                                {{-- Bahan Habis Pakai --}}
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                        Bahan Habis Pakai <span class="text-red-500">*</span>
+                                    </label>
+
+                                    <select name="bhp_id" id="bhp_id" required class="mt-1">
+                                        <option value="">Pilih BHP...</option>
+                                    </select>
+                                    <div class="text-red-600 text-[11px] mt-1" data-error="bhp_id"></div>
+                                </div>
+
+                                {{-- Kategori Bahan --}}
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                        Kategori Bahan <span class="text-red-500">*</span>
+                                    </label>
+                                    <input name="kategori_bhp_id" id="kategori_bhp_id"
+                                        class="mt-1 block w-full text-sm bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                        disabled>
+                                    <div class="text-red-600 text-[11px] mt-1" data-error="kategori_bhp_id"></div>
+                                </div>
+
+                                {{-- Transaksi --}}
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                        Transaksi <span class="text-red-500">*</span>
+                                    </label>
+                                    <select name="transaksi_bhp" id="transaksi_bhp" required
+                                        class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
+                       focus:border-blue-500 focus:ring-1 focus:ring-blue-500
+                       dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                                        <option value="">-- Pilih --</option>
+                                        <option value="restock">Restock</option>
+                                        <option value="return">Return</option>
+                                    </select>
+                                    <div class="text-red-600 text-[11px] mt-1" data-error="transaksi_bhp"></div>
+                                </div>
+
+                                {{-- Expired Date --}}
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                        Expired Date <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="date" name="expired_date_bhp" id="expired_date_bhp"
+                                        class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
+                       focus:border-blue-500 focus:ring-1 focus:ring-blue-500
+                       dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                        required>
+                                    <div class="text-red-600 text-[11px] mt-1" data-error="expired_date_bhp"></div>
+                                </div>
+
+                                {{-- Batch --}}
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                        Batch <span class="text-red-500">*</span>
+                                    </label>
+                                    <input name="batch_bhp" id="batch_bhp"
+                                        class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
+                       focus:border-blue-500 focus:ring-1 focus:ring-blue-500
+                       dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                        required>
+                                    <div class="text-red-600 text-[11px] mt-1" data-error="batch_bhp"></div>
+                                </div>
+
+                                {{-- Jumlah Bahan --}}
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                        Jumlah Bahan <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="number" min="0" name="jumlah_bhp" id="jumlah_bhp"
+                                        value="0"
+                                        class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
+                       focus:border-blue-500 focus:ring-1 focus:ring-blue-500
+                       dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                        required>
+                                    <div class="text-red-600 text-[11px] mt-1" data-error="jumlah_bhp"></div>
+                                </div>
+
+                                {{-- Harga beli satuan BHP lama --}}
+                                <div>
+                                    <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                                        Harga Beli Satuan BHP Lama
+                                    </label>
+                                    <input type="text" name="harga_beli_satuan_bhp_lama"
+                                        id="harga_beli_satuan_bhp_lama" readonly
+                                        class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                       focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5
+                       dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                </div>
+
+                                {{-- Harga satuan BHP baru --}}
+                                <div>
+                                    <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                                        Harga Satuan BHP <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" name="harga_satuan_bhp" id="harga_satuan_bhp"
+                                        class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                       focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5
+                       dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                        required>
+                                    <div class="text-red-600 text-[11px] mt-1" data-error="harga_satuan_bhp"></div>
+                                </div>
+
+                                {{-- Harga jual satuan BHP lama --}}
+                                <div>
+                                    <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                                        Harga Jual Satuan BHP Lama
+                                    </label>
+                                    <input type="text" name="harga_jual_satuan_bhp_lama"
+                                        id="harga_jual_satuan_bhp_lama" readonly
+                                        class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                       focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5
+                       dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                </div>
+
+                                {{-- Satuan --}}
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                        Satuan <span class="text-red-500">*</span>
+                                    </label>
+                                    <input name="satuan_bhp_id" id="satuan_bhp_id"
+                                        class="mt-1 block w-full text-sm bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                        disabled>
+                                    <div class="text-red-600 text-[11px] mt-1" data-error="satuan_bhp_id"></div>
+                                </div>
+
+                                {{-- Harga Total Awal --}}
+                                <div class="md:col-span-2">
+                                    <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                                        Harga Total Awal <span class="text-red-500">*</span>
+                                    </label>
+                                    <input type="text" name="harga_total_awal_bhp" id="harga_total_awal_bhp"
+                                        readonly required
+                                        class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
+                       focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5
+                       dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                    <div class="text-red-600 text-[11px] mt-1" data-error="harga_total_awal_bhp">
+                                    </div>
+                                </div>
+
+                                {{-- Depot Tujuan --}}
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                        Depot Tujuan
+                                    </label>
+                                    <select name="depot_id_bhp" id="depot_id_bhp" class="mt-1"></select>
+
+                                    <div id="info-stok-depot-bhp"
+                                        class="mt-2 text-[11px] text-blue-600 font-medium hidden">
+                                        Stok di depot ini: <span id="nilai-stok-bhp">0</span>
+                                    </div>
+
+                                    <div class="text-red-600 text-[11px] mt-1" data-error="depot_id_bhp"></div>
+                                </div>
+
+                                {{-- Keterangan --}}
+                                <div class="md:col-span-2">
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                        Keterangan
+                                    </label>
+                                    <textarea name="keterangan_bhp" id="keterangan_bhp" rows="2"
+                                        class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
+                       focus:border-blue-500 focus:ring-1 focus:ring-blue-500
+                       dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                        placeholder="Opsional"></textarea>
+                                </div>
+                            </div>
+
+                            {{-- Button: Tambah Rincian --}}
+                            <div class="mt-4 flex justify-end">
+                                <button type="button" id="btn-tambah-rincian-bhp"
+                                    class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold border border-blue-500 text-blue-600 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30">
+                                    Tambah Rincian <i class="fa-solid fa-angle-right text-[10px]"></i>
+                                </button>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 

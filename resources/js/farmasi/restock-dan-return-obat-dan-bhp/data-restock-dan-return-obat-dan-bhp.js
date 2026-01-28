@@ -667,4 +667,80 @@ $(function () {
 
     // Trigger: Setiap kali harga satuan diisi, total awal langsung ngikut
     $("#harga_satuan_obat_baru").on("input keyup", calcTotalObat);
+
+    function setActiveTab(tab) {
+        const tabs = [
+            {
+                btn: document.getElementById("tab-obat"),
+                panel: document.getElementById("panel-obat"),
+            },
+            {
+                btn: document.getElementById("tab-bhp"),
+                panel: document.getElementById("panel-bhp"),
+            },
+        ];
+
+        tabs.forEach((t) => {
+            const active = t.btn?.dataset.tab === tab;
+
+            // button style
+            t.btn.classList.toggle("border-pink-500", active);
+            t.btn.classList.toggle("text-gray-900", active);
+            t.btn.classList.toggle("dark:text-white", active);
+
+            t.btn.classList.toggle("border-transparent", !active);
+            t.btn.classList.toggle("text-gray-500", !active);
+            t.btn.classList.toggle("dark:text-gray-400", !active);
+
+            // panel visibility
+            if (t.panel) t.panel.classList.toggle("hidden", !active);
+        });
+    }
+
+    // default tab
+    setActiveTab("obat");
+
+    document
+        .getElementById("tab-obat")
+        ?.addEventListener("click", () => setActiveTab("obat"));
+    document
+        .getElementById("tab-bhp")
+        ?.addEventListener("click", () => setActiveTab("bhp"));
+
+    // ====== BHP total calc ======
+    const jumlahBhp = document.getElementById("jumlah_bhp");
+    const hargaSatuanBhp = document.getElementById("harga_satuan_bhp");
+    const hargaTotalAwalBhp = document.getElementById("harga_total_awal_bhp");
+
+    function parseRupiah(val) {
+        if (!val) return 0;
+        // remove "Rp", dots, spaces; convert comma to dot if needed
+        return (
+            Number(
+                String(val)
+                    .replace(/[^0-9,]/g, "")
+                    .replace(",", "."),
+            ) || 0
+        );
+    }
+
+    function formatRupiah(num) {
+        // keep it simple: use Indonesian formatting
+        const n = Number(num || 0);
+        return "Rp" + n.toLocaleString("id-ID");
+    }
+
+    function recalcBhpTotal() {
+        const qty = Number(jumlahBhp?.value || 0);
+        const price = parseRupiah(hargaSatuanBhp?.value);
+        const total = qty * price;
+
+        if (hargaTotalAwalBhp) hargaTotalAwalBhp.value = formatRupiah(total);
+    }
+
+    jumlahBhp?.addEventListener("input", recalcBhpTotal);
+    hargaSatuanBhp?.addEventListener("input", recalcBhpTotal);
+
+    // If you already have an "input-rupiah" formatter in your app,
+    // this will still work; it just reads the formatted value and parses it.
 });

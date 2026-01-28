@@ -192,6 +192,8 @@ class ObatController extends Controller
             'tipe_depot.*'      => ['nullable', 'exists:tipe_depot,id'],
         ]);
 
+        return response()->json($request->all());
+
         // ==============================
         // GENERATE KODE OBAT
         // ==============================
