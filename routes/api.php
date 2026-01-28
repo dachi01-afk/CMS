@@ -84,7 +84,12 @@ Route::middleware(['auth:sanctum', 'role:Pasien'])->prefix('pasien')->name('pasi
     Route::get('/vital-terbaru', [APIMobileController::class, 'getLatestVitalPasien'])->name('vital_terbaru');
     Route::get('/vital-history', [APIMobileController::class, 'getVitalHistoryPasien'])->name('vital_history');
     Route::get('/riwayat-diagnosis/{pasien_id}', [APIMobileController::class, 'getRiwayatDiagnosisPasien'])->name('riwayat_diagnosis');
+    Route::get('/hasil-lab/kunjungan/{kunjungan_id}', [APIMobileController::class, 'getHasilLabByKunjungan'])->name('hasil_lab.by_kunjungan');
 
+    Route::prefix('notifikasi')->name('notifikasi.')->group(function () {
+        Route::get('/', [APIMobileController::class, 'getNotifikasiPasien'])->name('list');
+        Route::patch('/{id}/read', [APIMobileController::class, 'markNotifikasiAsRead'])->name('mark_read');
+    });
     // Dokter & jadwal
     Route::get('/data-dokter', [APIMobileController::class, 'getDataDokter'])->name('dokter.data');
     Route::get('/dokter-by-poli-jadwal', [APIMobileController::class, 'getDokterByPoliJadwal'])->name('dokter.by_poli_jadwal');
@@ -203,9 +208,8 @@ Route::middleware(['auth:sanctum', 'role:Dokter'])->prefix('dokter')->name('dokt
     Route::get('/master-lab', [APIMobileController::class, 'dokterMasterLab'])->name('master_lab.index');
     Route::post('/create-order-lab', [APIMobileController::class, 'dokterCreateOrderLab'])->name('order_lab.create');
     Route::get('/order-lab/{orderLabId}', [APIMobileController::class, 'dokterDetailOrderLab'])->name('order_lab.detail');
-    Route::get('/notifikasi', [APIMobileController::class, 'pasienGetNotifikasi']);
-    Route::patch('/notifikasi/{id}/read', [APIMobileController::class, 'pasienMarkNotifAsRead']);
-    Route::patch('/notifikasi/read-all', [APIMobileController::class, 'pasienMarkAllNotifAsRead']);
+    Route::get('/riwayat-lab/pasien/{pasien_id}', [APIMobileController::class, 'dokterRiwayatLabPasien'])->name('riwayat_lab.pasien');
+    Route::get('/riwayat-lab/detail/{order_lab_id}', [APIMobileController::class, 'dokterDetailRiwayatLab'])->name('riwayat_lab.detail');
     Route::post('/hasil-lab', [APIMobileController::class, 'dokterCreateHasilLab'])->name('hasil_lab.store');
 });
 
@@ -219,3 +223,5 @@ Route::middleware(['auth:sanctum', 'role:Perawat'])->prefix('perawat')->group(fu
     Route::get('/kunjungan-tugas', [LihatPemeriksaanOlehPerawat::class, 'getKunjunganTugasPerawat']);
     Route::get('/kunjungan-sudah-vital', [LihatPemeriksaanOlehPerawat::class, 'getKunjunganSudahDiisiVitalPerawat']);
 });
+Route::post('/test/kirim-notifikasi-simple', [APIMobileController::class, 'testKirimNotifikasiSimple'])
+    ->middleware('auth:sanctum');

@@ -19,4 +19,9 @@ class OrderLabDetail extends Model
     {
         return $this->belongsTo(JenisPemeriksaanLab::class);
     }
+
+    public function hasilLab()
+    {
+        return $this->hasOne(HasilLab::class, 'order_lab_detail_id');
+    }
 }

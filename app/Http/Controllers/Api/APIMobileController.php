@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Helpers\NotificationHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Dokter;
 use App\Models\EMR;
@@ -1039,7 +1040,7 @@ class APIMobileController extends Controller
     public function saveEMR(Request $request)
     {
         try {
-            // ✅ Validasi data dari dokter
+            // ✅ Validasi data dari dokter (TAMBAHKAN lab_tests)
             $request->validate([
                 'kunjungan_id' => 'required|exists:kunjungan,id',
                 'diagnosis' => 'required|string',
@@ -1061,6 +1062,10 @@ class APIMobileController extends Controller
                 'layanan' => 'nullable|array',
                 'layanan.*.layanan_id' => 'required_with:layanan|exists:layanan,id',
                 'layanan.*.jumlah' => 'required_with:layanan|integer|min:1',
+
+                // ✅ TAMBAHAN: Validasi lab tests
+                'lab_tests' => 'nullable|array',
+                'lab_tests.*.lab_test_id' => 'required_with:lab_tests|exists:jenis_pemeriksaan_lab,id',
             ]);
 
             $user_id = Auth::id();
@@ -1094,8 +1099,6 @@ class APIMobileController extends Controller
             ]);
 
             // ✅ 2. Definisi "pemeriksaan perawat sudah dilakukan"
-            //    → BUKAN lagi pakai perawat_id,
-            //    → tapi ada isian vital/anamnesis yang diisi di form perawat.
             $sudahDiperiksaPerawat = (
                 ! empty($emr->tekanan_darah) ||
                 ! empty($emr->suhu_tubuh) ||
@@ -1144,6 +1147,7 @@ class APIMobileController extends Controller
                 'diagnosis' => $request->diagnosis,
                 'keluhan_utama_updated' => $request->filled('keluhan_utama'),
                 'vital_signs_updated' => $request->filled('tekanan_darah') || $request->filled('suhu_tubuh'),
+                'lab_tests_count' => count($request->lab_tests ?? []),
             ]);
 
             $result = DB::transaction(function () use ($request, $kunjungan, $dokter, $emr) {
@@ -1236,6 +1240,38 @@ class APIMobileController extends Controller
                     }
                 }
 
+                // ===== 🧪 LAB TESTS (ORDER LAB) =====
+                if (! empty($request->lab_tests)) {
+                    // Generate nomor order lab
+                    $noOrderLab = 'LAB-'.date('Ymd').'-'.strtoupper(Str::random(6));
+
+                    // Buat order lab
+                    $orderLab = \App\Models\OrderLab::create([
+                        'no_order_lab' => $noOrderLab,
+                        'dokter_id' => $dokter->id,
+                        'pasien_id' => $kunjungan->pasien_id,
+                        'tanggal_order' => now()->toDateString(),
+                        'tanggal_pemeriksaan' => now()->toDateString(),
+                        'jam_pemeriksaan' => now()->format('H:i'),
+                        'status' => 'Pending',
+                    ]);
+
+                    // Buat detail order lab
+                    foreach ($request->lab_tests as $labTest) {
+                        \App\Models\OrderLabDetail::create([
+                            'order_lab_id' => $orderLab->id,
+                            'jenis_pemeriksaan_lab_id' => $labTest['lab_test_id'],
+                            'status_pemeriksaan' => 'Pending',
+                        ]);
+                    }
+
+                    Log::info('✅ Lab tests ordered', [
+                        'order_lab_id' => $orderLab->id,
+                        'no_order_lab' => $noOrderLab,
+                        'total_tests' => count($request->lab_tests),
+                    ]);
+                }
+
                 // ===== STATUS KUNJUNGAN & PEMBAYARAN =====
                 $kunjungan->update(['status' => 'Payment']);
 
@@ -1264,6 +1300,7 @@ class APIMobileController extends Controller
                         'total_tagihan' => $totalTagihan,
                         'layanan_count' => count($request->layanan ?? []),
                         'resep_count' => count($request->resep ?? []),
+                        'lab_tests_count' => count($request->lab_tests ?? []),
                     ],
                 ];
             });
@@ -1795,6 +1832,229 @@ class APIMobileController extends Controller
             ]);
         });
     }
+    // Di section: punya dokter
+    // Setelah method dokterCreateOrderLab()
+
+    /**
+     * ✅ RIWAYAT LAB - List order lab yang sudah selesai untuk pasien tertentu
+     * GET /api/dokter/riwayat-lab/pasien/{pasien_id}
+     */
+    public function dokterRiwayatLabPasien(Request $request, $pasienId)
+    {
+        $user = $request->user();
+        $dokter = \App\Models\Dokter::where('user_id', $user->id)->first();
+
+        if (! $dokter) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dokter tidak ditemukan untuk user ini.',
+            ], 404);
+        }
+
+        // Ambil data pasien
+        $pasien = \App\Models\Pasien::find($pasienId);
+        if (! $pasien) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Pasien tidak ditemukan.',
+            ], 404);
+        }
+
+        // Ambil order lab yang SELESAI untuk pasien ini
+        $riwayat = \App\Models\OrderLab::with([
+            'dokter:id,nama_dokter',
+            'orderLabDetail.jenisPemeriksaanLab:id,kode_pemeriksaan,nama_pemeriksaan',
+        ])
+            ->where('pasien_id', $pasienId)
+            ->where('status', 'Selesai')
+            ->orderByDesc('tanggal_pemeriksaan')
+            ->get()
+            ->map(function ($order) {
+                $jumlahPemeriksaan = $order->orderLabDetail->count();
+                $previewPemeriksaan = $order->orderLabDetail->first()?->jenisPemeriksaanLab->nama_pemeriksaan ?? '-';
+
+                return [
+                    'id' => $order->id,
+                    'no_order_lab' => $order->no_order_lab,
+                    'tanggal_pemeriksaan' => $order->tanggal_pemeriksaan,
+                    'status' => $order->status,
+                    'dokter' => $order->dokter ? [
+                        'id' => $order->dokter->id,
+                        'nama_dokter' => $order->dokter->nama_dokter,
+                    ] : null,
+                    'jumlah_pemeriksaan' => $jumlahPemeriksaan,
+                    'preview_pemeriksaan' => $previewPemeriksaan,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'pasien' => [
+                    'id' => $pasien->id,
+                    'nama_pasien' => $pasien->nama_pasien,
+                    'no_emr' => $pasien->no_emr,
+                ],
+                'riwayat' => $riwayat,
+            ],
+        ]);
+    }
+
+    public function dokterDetailRiwayatLab(Request $request, $orderLabId)
+    {
+        try {
+            $user = $request->user();
+            $dokter = \App\Models\Dokter::where('user_id', $user->id)->first();
+
+            if (! $dokter) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Dokter tidak ditemukan untuk user ini.',
+                ], 404);
+            }
+
+            // ✅ LOAD SEMUA RELASI YANG DIPERLUKAN
+            $order = \App\Models\OrderLab::with([
+                // Data Pasien lengkap
+                'pasien:id,nama_pasien,no_emr,nik,no_bpjs,jenis_kelamin,tanggal_lahir,alamat,no_hp_pasien,golongan_darah,pekerjaan',
+
+                // Data Dokter yang order
+                'dokter:id,nama_dokter,no_hp,foto_dokter',
+                'dokter.jenisSpesialis:id,nama_spesialis',
+                'dokter.poli:id,nama_poli',
+
+                // Detail pemeriksaan lab
+                'orderLabDetail.jenisPemeriksaanLab:id,kode_pemeriksaan,nama_pemeriksaan,nilai_normal,satuan_lab_id,harga_pemeriksaan_lab',
+                'orderLabDetail.jenisPemeriksaanLab.satuanLab:id,nama_satuan',
+
+                // Hasil lab + perawat yang input
+                'orderLabDetail.hasilLab',
+                'orderLabDetail.hasilLab.perawat:id,nama_perawat,no_hp_perawat,foto_perawat',
+            ])
+                ->where('id', $orderLabId)
+                ->where('status', 'Selesai')
+                ->first();
+
+            if (! $order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order lab tidak ditemukan atau belum selesai.',
+                ], 404);
+            }
+
+            // ✅ FORMAT RESPONSE LENGKAP
+            $response = [
+                'success' => true,
+                'data' => [
+                    // INFO ORDER LAB
+                    'order_info' => [
+                        'id' => $order->id,
+                        'no_order_lab' => $order->no_order_lab,
+                        'tanggal_order' => $order->tanggal_order,
+                        'tanggal_pemeriksaan' => $order->tanggal_pemeriksaan,
+                        'jam_pemeriksaan' => $order->jam_pemeriksaan,
+                        'status' => $order->status,
+                    ],
+
+                    // DATA PASIEN LENGKAP
+                    'pasien' => $order->pasien ? [
+                        'id' => $order->pasien->id,
+                        'nama_pasien' => $order->pasien->nama_pasien,
+                        'no_emr' => $order->pasien->no_emr,
+                        'nik' => $order->pasien->nik,
+                        'no_bpjs' => $order->pasien->no_bpjs,
+                        'jenis_kelamin' => $order->pasien->jenis_kelamin,
+                        'tanggal_lahir' => $order->pasien->tanggal_lahir,
+                        'umur' => $order->pasien->tanggal_lahir
+    ? \Carbon\Carbon::parse((string) $order->pasien->tanggal_lahir)->age.' tahun'
+    : null,
+
+                        'alamat' => $order->pasien->alamat,
+                        'no_hp' => $order->pasien->no_hp_pasien,
+                        'golongan_darah' => $order->pasien->golongan_darah,
+                        'pekerjaan' => $order->pasien->pekerjaan,
+                    ] : null,
+
+                    // DATA DOKTER YANG ORDER
+                    'dokter_pemeriksa' => $order->dokter ? [
+                        'id' => $order->dokter->id,
+                        'nama_dokter' => $order->dokter->nama_dokter,
+                        'no_hp' => $order->dokter->no_hp,
+                        'foto_dokter' => $order->dokter->foto_dokter
+                            ? url('storage/'.$order->dokter->foto_dokter)
+                            : null,
+                        'spesialis' => $order->dokter->jenisSpesialis?->nama_spesialis,
+                        'poli' => $order->dokter->poli instanceof \Illuminate\Support\Collection
+    ? ($order->dokter->poli->first()?->nama_poli)
+    : ($order->dokter->poli?->nama_poli),
+
+                    ] : null,
+
+                    // DETAIL PEMERIKSAAN LAB
+                    'pemeriksaan' => $order->orderLabDetail->map(function ($detail) {
+                        $jp = $detail->jenisPemeriksaanLab;
+                        $hasil = $detail->hasilLab;
+
+                        return [
+                            'detail_id' => $detail->id,
+                            'status_pemeriksaan' => $detail->status_pemeriksaan,
+
+                            // Info pemeriksaan
+                            'pemeriksaan' => $jp ? [
+                                'id' => $jp->id,
+                                'kode_pemeriksaan' => $jp->kode_pemeriksaan,
+                                'nama_pemeriksaan' => $jp->nama_pemeriksaan,
+                                'nilai_normal' => $jp->nilai_normal,
+                                'satuan' => $jp->satuanLab?->nama_satuan,
+                                'harga' => $jp->harga_pemeriksaan_lab,
+                            ] : null,
+
+                            // Hasil lab + perawat
+                            'hasil' => $hasil ? [
+                                'id' => $hasil->id,
+                                'nilai_hasil' => $hasil->nilai_hasil,
+                                'nilai_rujukan' => $hasil->nilai_rujukan,
+                                'keterangan' => $hasil->keterangan,
+                                'tanggal_pemeriksaan' => $hasil->tanggal_pemeriksaan,
+                                'jam_pemeriksaan' => $hasil->jam_pemeriksaan,
+
+                                // ✅ PERAWAT YANG INPUT HASIL
+                                'perawat_pemeriksa' => $hasil->perawat ? [
+                                    'id' => $hasil->perawat->id,
+                                    'nama_perawat' => $hasil->perawat->nama_perawat,
+                                    'no_hp' => $hasil->perawat->no_hp_perawat,
+                                    'foto_perawat' => $hasil->perawat->foto_perawat
+                                        ? url('storage/'.$hasil->perawat->foto_perawat)
+                                        : null,
+                                ] : null,
+                            ] : null,
+                        ];
+                    }),
+
+                    // ✅ RINGKASAN
+                    'ringkasan' => [
+                        'total_pemeriksaan' => $order->orderLabDetail->count(),
+                        'pemeriksaan_selesai' => $order->orderLabDetail->where('status_pemeriksaan', 'Selesai')->count(),
+                        'pemeriksaan_pending' => $order->orderLabDetail->where('status_pemeriksaan', 'Pending')->count(),
+                    ],
+                ],
+            ];
+
+            return response()->json($response);
+
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('ERROR dokterDetailRiwayatLab: '.$e->getMessage(), [
+                'order_lab_id' => $orderLabId ?? null,
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memuat detail order lab',
+                'error' => config('app.debug') ? $e->getMessage() : 'Internal server error',
+            ], 500);
+        }
+    }
 
     /**
      * Dokter submit / create hasil lab (upsert) berdasarkan order_lab_detail
@@ -1802,8 +2062,7 @@ class APIMobileController extends Controller
      */
     public function dokterCreateHasilLab(Request $request)
     {
-        $user = $request->user(); // sanctum
-        // ambil dokter dari relasi / mapping milikmu
+        $user = $request->user();
         $dokterId = $user->dokter->id ?? null;
 
         $data = $request->validate([
@@ -1815,24 +2074,129 @@ class APIMobileController extends Controller
             'jam_pemeriksaan' => 'required|string',
         ]);
 
-        $hasil = HasilLab::updateOrCreate(
-            ['order_lab_detail_id' => $data['order_lab_detail_id']],
-            [
-                'dokter_id' => $dokterId,   // ✅ ini kuncinya
-                'perawat_id' => null,       // boleh null
+        try {
+            DB::beginTransaction();
+
+            // ✅ UPSERT hasil lab
+            $hasil = HasilLab::updateOrCreate(
+                ['order_lab_detail_id' => $data['order_lab_detail_id']],
+                [
+                    'dokter_id' => $dokterId,
+                    'perawat_id' => null,
+                    'nilai_hasil' => $data['nilai_hasil'],
+                    'nilai_rujukan' => $data['nilai_rujukan'],
+                    'catatan' => $data['keterangan'],
+                    'tanggal_pemeriksaan' => $data['tanggal_pemeriksaan'],
+                    'jam_pemeriksaan' => $data['jam_pemeriksaan'],
+                ]
+            );
+
+            // ✅ Update status detail jadi "Selesai"
+            DB::table('order_lab_detail')
+                ->where('id', $data['order_lab_detail_id'])
+                ->update([
+                    'status_pemeriksaan' => 'Selesai',
+                    'updated_at' => now(),
+                ]);
+
+            // ✅ Cek apakah semua detail sudah selesai
+            $detail = DB::table('order_lab_detail')
+                ->where('id', $data['order_lab_detail_id'])
+                ->first();
+
+            $orderLabId = $detail->order_lab_id;
+
+            $allCompleted = DB::table('order_lab_detail')
+                ->where('order_lab_id', $orderLabId)
+                ->where('status_pemeriksaan', '!=', 'Selesai')
+                ->doesntExist();
+
+            // ✅ Jika semua selesai, update order lab status + KIRIM NOTIFIKASI
+            if ($allCompleted) {
+                DB::table('order_lab')
+                    ->where('id', $orderLabId)
+                    ->update([
+                        'status' => 'Selesai',
+                        'updated_at' => now(),
+                    ]);
+
+                // ✅✅✅ KIRIM NOTIFIKASI KE PASIEN ✅✅✅
+                $orderLab = \App\Models\OrderLab::find($orderLabId);
+                if ($orderLab) {
+                    NotificationHelper::kirimNotifikasiHasilLab($orderLab, $hasil);
+
+                    Log::info('🔔 Notifikasi hasil lab triggered', [
+                        'order_lab_id' => $orderLabId,
+                        'hasil_lab_id' => $hasil->id,
+                    ]);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Hasil lab berhasil disimpan'.($allCompleted ? ' dan notifikasi terkirim ke pasien' : ''),
+                'data' => $hasil,
+                'notification_sent' => $allCompleted,
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error dokterCreateHasilLab: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan hasil lab',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function updateHasilLab(Request $request, $hasilLabId)
+    {
+        $data = $request->validate([
+            'nilai_hasil' => 'required|string',
+            'nilai_rujukan' => 'nullable|string',
+            'keterangan' => 'nullable|string',
+        ]);
+
+        try {
+            $hasil = HasilLab::findOrFail($hasilLabId);
+            $hasil->update([
                 'nilai_hasil' => $data['nilai_hasil'],
                 'nilai_rujukan' => $data['nilai_rujukan'],
-                'keterangan' => $data['keterangan'],
-                'tanggal_pemeriksaan' => $data['tanggal_pemeriksaan'],
-                'jam_pemeriksaan' => $data['jam_pemeriksaan'],
-            ]
-        );
+                'catatan' => $data['keterangan'],
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Hasil lab tersimpan',
-            'data' => $hasil,
-        ]);
+            // ✅ Ambil order lab untuk notifikasi
+            $detail = DB::table('order_lab_detail')
+                ->where('id', $hasil->order_lab_detail_id)
+                ->first();
+
+            if ($detail) {
+                $orderLab = \App\Models\OrderLab::find($detail->order_lab_id);
+
+                // ✅✅✅ KIRIM NOTIFIKASI UPDATE ✅✅✅
+                if ($orderLab) {
+                    NotificationHelper::kirimNotifikasiUpdateHasilLab($orderLab, $hasil);
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Hasil lab berhasil diperbarui dan notifikasi terkirim',
+                'data' => $hasil,
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error updateHasilLab: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal update hasil lab',
+            ], 500);
+        }
     }
 
     public function getLayananOrderDokter(Request $request)
@@ -2850,6 +3214,7 @@ class APIMobileController extends Controller
     }
 
     // punya pasien
+
     private function getAuthPasien(Request $request): ?\App\Models\Pasien
     {
         $user = $request->user();
@@ -2880,6 +3245,317 @@ class APIMobileController extends Controller
         $p = DB::table('pasien')->where('user_id', $user->id)->first();
 
         return $p?->id ? (int) $p->id : null;
+    }
+
+    public function getNotifikasiPasien(Request $request)
+    {
+        try {
+            $user = $request->user();
+
+            $perPage = (int) $request->get('per_page', 50);
+            $perPage = max(1, min($perPage, 100)); // batasi biar aman
+            $onlyUnread = (int) $request->get('only_unread', 0) === 1;
+
+            // unread_count harus dari DB (jangan dari hasil limit)
+            $unreadCount = DB::table('notifications')
+                ->where('user_id', $user->id)
+                ->whereNull('read_at')
+                ->count();
+
+            $q = DB::table('notifications')
+                ->where('user_id', $user->id)
+                ->orderByDesc('created_at');
+
+            if ($onlyUnread) {
+                $q->whereNull('read_at');
+            }
+
+            // kalau kamu mau pagination:
+            $paginator = $q->paginate($perPage);
+
+            $items = collect($paginator->items())->map(function ($n) {
+                $decoded = [];
+                if (! empty($n->data)) {
+                    $tmp = json_decode($n->data, true);
+                    $decoded = is_array($tmp) ? $tmp : [];
+                }
+
+                return [
+                    'id' => $n->id,
+                    'title' => $n->title ?? '',
+                    'body' => $n->body ?? '',
+                    'data' => $decoded,
+                    'is_read' => ! is_null($n->read_at),
+                    'sent_at' => $n->sent_at ?? null,
+                    'read_at' => $n->read_at,
+                    'created_at' => $n->created_at,
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'items' => $items,
+                    'unread_count' => $unreadCount,
+                    'pagination' => [
+                        'current_page' => $paginator->currentPage(),
+                        'per_page' => $paginator->perPage(),
+                        'total' => $paginator->total(),
+                        'last_page' => $paginator->lastPage(),
+                    ],
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error getNotifikasiPasien: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil notifikasi',
+            ], 500);
+        }
+    }
+
+    public function getHasilLabByKunjungan(Request $request, $kunjunganId)
+    {
+        try {
+            $user = $request->user();
+            if (! $user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized',
+                ], 401);
+            }
+
+            // Dapatkan data pasien dari user yang login
+            $pasien = Pasien::where('user_id', $user->id)->first();
+            if (! $pasien) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data pasien tidak ditemukan',
+                ], 404);
+            }
+
+            // Validasi kunjungan milik pasien ini
+            $kunjungan = Kunjungan::where('id', $kunjunganId)
+                ->where('pasien_id', $pasien->id)
+                ->first();
+
+            if (! $kunjungan) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Kunjungan tidak ditemukan',
+                ], 404);
+            }
+
+            // Ambil hasil lab dari order_lab yang terkait dengan kunjungan ini
+            // SESUAIKAN query ini dengan struktur database Anda!
+            $hasilLab = DB::table('order_lab as ol')
+                ->join('order_lab_detail as old', 'ol.id', '=', 'old.order_lab_id')
+                ->join('jenis_pemeriksaan_lab as jpl', 'old.jenis_pemeriksaan_lab_id', '=', 'jpl.id')
+                ->leftJoin('satuan_lab as sl', 'jpl.satuan_lab_id', '=', 'sl.id')
+                ->leftJoin('hasil_lab as hl', 'old.id', '=', 'hl.order_lab_detail_id')
+                ->where('ol.pasien_id', $pasien->id)
+                ->where('ol.status', 'Selesai')
+                ->whereNotNull('hl.id') // Hanya yang sudah ada hasilnya
+                ->select(
+                    'old.id as order_lab_detail_id',
+                    'old.status_pemeriksaan',
+                    'jpl.id as pemeriksaan_id',
+                    'jpl.kode_pemeriksaan',
+                    'jpl.nama_pemeriksaan',
+                    'jpl.nilai_normal',
+                    'sl.nama_satuan as satuan',
+                    'hl.id as hasil_id',
+                    'hl.nilai_hasil',
+                    'hl.nilai_rujukan',
+                    'hl.catatan as keterangan',
+                    'hl.tanggal_pemeriksaan',
+                    'hl.jam_pemeriksaan',
+                    'ol.tanggal_order',
+                    'ol.no_order_lab'
+                )
+                ->orderByDesc('hl.tanggal_pemeriksaan')
+                ->orderByDesc('hl.jam_pemeriksaan')
+                ->get();
+
+            // Format data untuk response
+            $formattedData = $hasilLab->map(function ($item) {
+                // Tentukan status berdasarkan nilai hasil vs nilai rujukan
+                $status = 'normal';
+                if ($item->nilai_hasil && $item->nilai_rujukan) {
+                    $nilaiHasil = (float) $item->nilai_hasil;
+                    $nilaiRujukan = (string) $item->nilai_rujukan;
+
+                    // Parse nilai rujukan (contoh: "70-100", "<10", ">50")
+                    if (strpos($nilaiRujukan, '-') !== false) {
+                        $range = explode('-', $nilaiRujukan);
+                        $min = (float) trim($range[0]);
+                        $max = (float) trim($range[1]);
+
+                        if ($nilaiHasil < $min) {
+                            $status = 'rendah';
+                        } elseif ($nilaiHasil > $max) {
+                            $status = 'tinggi';
+                        }
+                    } elseif (strpos($nilaiRujukan, '<') !== false) {
+                        $max = (float) str_replace('<', '', $nilaiRujukan);
+                        if ($nilaiHasil >= $max) {
+                            $status = 'tinggi';
+                        }
+                    } elseif (strpos($nilaiRujukan, '>') !== false) {
+                        $min = (float) str_replace('>', '', $nilaiRujukan);
+                        if ($nilaiHasil <= $min) {
+                            $status = 'rendah';
+                        }
+                    }
+                }
+
+                return [
+                    'order_lab_detail_id' => $item->order_lab_detail_id,
+                    'status_pemeriksaan' => $item->status_pemeriksaan,
+                    'no_order_lab' => $item->no_order_lab,
+                    'tanggal_order' => $item->tanggal_order,
+
+                    'pemeriksaan' => [
+                        'id' => $item->pemeriksaan_id,
+                        'kode_pemeriksaan' => $item->kode_pemeriksaan,
+                        'nama_pemeriksaan' => $item->nama_pemeriksaan,
+                        'nilai_normal' => $item->nilai_normal,
+                        'satuan' => $item->satuan,
+                    ],
+
+                    'hasil' => [
+                        'id' => $item->hasil_id,
+                        'nilai_hasil' => $item->nilai_hasil,
+                        'nilai_rujukan' => $item->nilai_rujukan ?? $item->nilai_normal,
+                        'keterangan' => $item->keterangan,
+                        'tanggal_pemeriksaan' => $item->tanggal_pemeriksaan,
+                        'jam_pemeriksaan' => $item->jam_pemeriksaan,
+                        'status' => $status, // normal, tinggi, rendah, kritis
+                    ],
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Hasil lab berhasil diambil',
+                'data' => $formattedData,
+                'total' => $formattedData->count(),
+            ], 200);
+
+        } catch (\Throwable $e) {
+            Log::error('ERROR getHasilLabByKunjungan: '.$e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil hasil lab',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function markNotifikasiAsRead(Request $request, $notifId)
+    {
+        try {
+            $user = $request->user();
+
+            $affected = DB::table('notifications')
+                ->where('id', $notifId)
+                ->where('user_id', $user->id)
+                ->whereNull('read_at') // biar gak spam update
+                ->update([
+                    'read_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+            if ($affected === 0) {
+                // bisa karena tidak ada / bukan milik user / sudah dibaca
+                $exists = DB::table('notifications')
+                    ->where('id', $notifId)
+                    ->where('user_id', $user->id)
+                    ->exists();
+
+                return response()->json([
+                    'success' => false,
+                    'message' => $exists ? 'Notifikasi sudah dibaca.' : 'Notifikasi tidak ditemukan.',
+                ], $exists ? 200 : 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Notifikasi ditandai sudah dibaca',
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Error markNotifikasiAsRead: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal update notifikasi',
+            ], 500);
+        }
+    }
+
+    public function markAllNotifikasiAsRead(Request $request)
+    {
+        try {
+            $user = $request->user();
+
+            DB::table('notifications')
+                ->where('user_id', $user->id)
+                ->whereNull('read_at')
+                ->update([
+                    'read_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Semua notifikasi ditandai sudah dibaca',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error markAllNotifikasiAsRead: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal update semua notifikasi',
+            ], 500);
+        }
+    }
+
+    public function testKirimNotifikasiSimple(Request $request)
+    {
+        try {
+            $user = $request->user();
+
+            DB::table('notifications')->insert([
+                'user_id' => $user->id,
+                'title' => 'TEST: Notifikasi Berhasil',
+                'body' => 'Ini notifikasi test tanpa cek order lab.',
+                'data' => json_encode([
+                    'type' => 'hasil_lab',
+                    'order_lab_id' => 123,
+                ]),
+                'sent_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Notifikasi test berhasil dibuat.',
+            ]);
+        } catch (\Exception $e) {
+            Log::error('testKirimNotifikasiSimple error: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal membuat notifikasi test.',
+            ], 500);
+        }
     }
 
     public function pasienListTestimoni(Request $request)

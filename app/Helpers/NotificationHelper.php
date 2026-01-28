@@ -1,20 +1,33 @@
 <?php
+// app/Helpers/NotificationHelper.php
 
 namespace App\Helpers;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Models\Pasien;
 
 class NotificationHelper
 {
     /**
      * Kirim notifikasi hasil lab ke pasien
      */
-    public static function kirimNotifikasiHasilLab($orderLab, $pasienUserId, $hasilLab = null)
+    public static function kirimNotifikasiHasilLab($orderLab, $hasilLab = null)
     {
         try {
-            DB::table('notifications')->insert([
-                'user_id' => $pasienUserId,
+            // ✅ Ambil user_id dari pasien
+            $pasien = Pasien::find($orderLab->pasien_id);
+            
+            if (!$pasien || !$pasien->user_id) {
+                Log::warning("Pasien tidak memiliki user_id untuk order_lab: {$orderLab->id}");
+                return false;
+            }
+
+            $userId = $pasien->user_id;
+
+            // ✅ Insert notifikasi
+            $notifId = DB::table('notifications')->insertGetId([
+                'user_id' => $userId,
                 'title' => 'Hasil Lab Tersedia',
                 'body' => "Hasil pemeriksaan lab untuk order #{$orderLab->no_order_lab} sudah tersedia. Silakan cek hasil pemeriksaan Anda.",
                 'data' => json_encode([
@@ -22,6 +35,7 @@ class NotificationHelper
                     'order_lab_id' => $orderLab->id,
                     'no_order_lab' => $orderLab->no_order_lab,
                     'hasil_lab_id' => $hasilLab ? $hasilLab->id : null,
+                    'tanggal_pemeriksaan' => $orderLab->tanggal_pemeriksaan,
                 ]),
                 'sent_at' => now(),
                 'read_at' => null,
@@ -29,35 +43,58 @@ class NotificationHelper
                 'updated_at' => now(),
             ]);
 
-            Log::info("Notifikasi hasil lab berhasil dikirim ke user ID: {$pasienUserId}");
+            Log::info("✅ Notifikasi hasil lab berhasil dikirim", [
+                'notif_id' => $notifId,
+                'user_id' => $userId,
+                'order_lab_id' => $orderLab->id,
+                'pasien_id' => $pasien->id,
+            ]);
+
             return true;
 
         } catch (\Exception $e) {
-            Log::error("Gagal mengirim notifikasi hasil lab: " . $e->getMessage());
+            Log::error("❌ Gagal mengirim notifikasi hasil lab: " . $e->getMessage(), [
+                'order_lab_id' => $orderLab->id ?? null,
+                'trace' => $e->getTraceAsString(),
+            ]);
             return false;
         }
     }
 
     /**
-     * Kirim notifikasi umum
+     * Kirim notifikasi update hasil lab
      */
-    public static function kirimNotifikasi($userId, $title, $body, $data = [])
+    public static function kirimNotifikasiUpdateHasilLab($orderLab, $hasilLab)
     {
         try {
+            $pasien = Pasien::find($orderLab->pasien_id);
+            
+            if (!$pasien || !$pasien->user_id) {
+                return false;
+            }
+
             DB::table('notifications')->insert([
-                'user_id' => $userId,
-                'title' => $title,
-                'body' => $body,
-                'data' => json_encode($data),
+                'user_id' => $pasien->user_id,
+                'title' => 'Hasil Lab Diperbarui',
+                'body' => "Hasil pemeriksaan lab untuk order #{$orderLab->no_order_lab} telah diperbarui. Silakan cek kembali hasil pemeriksaan Anda.",
+                'data' => json_encode([
+                    'type' => 'hasil_lab_updated',
+                    'order_lab_id' => $orderLab->id,
+                    'no_order_lab' => $orderLab->no_order_lab,
+                    'hasil_lab_id' => $hasilLab->id,
+                    'updated_at' => now()->toISOString(),
+                ]),
                 'sent_at' => now(),
                 'read_at' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
 
+            Log::info("✅ Notifikasi update hasil lab berhasil dikirim ke user ID: {$pasien->user_id}");
             return true;
+
         } catch (\Exception $e) {
-            Log::error("Gagal mengirim notifikasi: " . $e->getMessage());
+            Log::error("❌ Gagal mengirim notifikasi update hasil lab: " . $e->getMessage());
             return false;
         }
     }
