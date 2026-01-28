@@ -39,25 +39,22 @@ class PengambilanObatController extends Controller
             'kunjungan.poli.dokter',
         ])
             ->where('status', 'waiting')
-            // ->where(function ($q) use ($hariIni) {
-            //     $q->whereHas('kunjungan', function ($kunjungan) use ($hariIni) {
-            //         $kunjungan->whereDate('tanggal_kunjungan', $hariIni);
-            //     });
-            // })
+            ->where(function ($q) use ($hariIni) {
+                $q->whereHas('kunjungan', function ($kunjungan) use ($hariIni) {
+                    $kunjungan->whereDate('tanggal_kunjungan', $hariIni);
+                });
+            })
             ->latest()
             ->get(); // ✅ PENTING: GET
+
+        // return response()->json($data); 
 
         return DataTables::of($data)
             ->addIndexColumn()
 
             // 🔹 Nama Dokter
             ->addColumn('nama_dokter', function ($row) {
-                return optional(
-                    optional($row->kunjungan)
-                        ->poli
-                        ->dokter
-                        ->first()
-                )->nama_dokter ?? '-';
+                return $row->kunjungan?->poli?->dokter?->first()?->nama_dokter ?? '-';
             })
 
             // 🔹 Nama Pasien
@@ -230,7 +227,6 @@ class PengambilanObatController extends Controller
             ->make(true);
     }
 
-
     /**
      * Decrement stok obat secara aman (cek stok cukup + baris dikunci).
      */
@@ -364,7 +360,6 @@ class PengambilanObatController extends Controller
             ], 422);
         }
     }
-
 
     public function searchPasien(Request $request)
     {
@@ -528,8 +523,6 @@ class PengambilanObatController extends Controller
             ], 201);
         });
     }
-
-
 
     public function cetakStikerObat($resepId)
     {
@@ -762,7 +755,6 @@ class PengambilanObatController extends Controller
             ->make(true);
     }
 
-
     public function getDataResepObatById($id)
     {
         $resep = Resep::with([
@@ -874,10 +866,10 @@ class PengambilanObatController extends Controller
         ])
             ->where('status', 'done')
             ->where(function ($q) use ($hariIni) {
-                $q->whereHas('kunjungan', function ($kunjungan) use ($hariIni) {
-                    $kunjungan->whereDate('tanggal_kunjungan', $hariIni);
-                })
-                    ->orWhereDate('created_at', $hariIni);
+                // $q->whereHas('kunjungan', function ($kunjungan) use ($hariIni) {
+                //     $kunjungan->whereDate('tanggal_kunjungan', $hariIni);
+                // })
+                //     ->orWhereDate('created_at', $hariIni);
             })
             ->latest()
             ->get(); // ✅ PENTING: GET

@@ -49,7 +49,7 @@ class PembayaranSeeder extends Seeder
             // 1️⃣ HITUNG TOTAL LAYANAN
             // ==========================
             $totalLayanan = ($kunjungan?->layanan ?? collect())->sum(function ($layanan) {
-                $harga  = (float) ($layanan->harga_layanan ?? 0);
+                $harga  = (float) ($layanan->harga_setelah_diskon ?? 0);
                 $jumlah = (int) ($layanan->pivot->jumlah ?? 1);
                 return $harga * $jumlah;
             });

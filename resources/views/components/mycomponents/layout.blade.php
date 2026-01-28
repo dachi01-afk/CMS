@@ -130,8 +130,8 @@
                                     Overview
                                 </p>
                                 <ul class="space-y-1">
-                                    <x-mycomponents.sidebar_link href="admin.index" class="fa-solid fa-house"
-                                        :active="Request::routeIs('admin.index')">
+                                    <x-mycomponents.sidebar_link href="super.admin.index" class="fa-solid fa-house"
+                                        :active="Request::routeIs('super.admin.index')">
                                         Dashboard Utama
                                     </x-mycomponents.sidebar_link>
                                 </ul>

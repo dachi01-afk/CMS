@@ -43,6 +43,7 @@ use App\Http\Controllers\Admin\KategoriLayananController;
 use App\Http\Controllers\Admin\PengambilanObatController;
 use App\Http\Controllers\Farmasi\KadaluarsaBHPController;
 use App\Http\Controllers\Farmasi\PenggunaanBHPController;
+use App\Http\Controllers\SuperAdmin\SuperAdminController;
 use App\Http\Controllers\Admin\PengaturanKlinikController;
 use App\Http\Controllers\Farmasi\CetakResepObatController;
 use App\Http\Controllers\Farmasi\KadaluarsaObatController;
@@ -128,6 +129,10 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+
+    Route::prefix('super-admin')->group(function () {
+        Route::get('index', [SuperAdminController::class, 'dashboard'])->name('super.admin.index');
+    });
 
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('index');
