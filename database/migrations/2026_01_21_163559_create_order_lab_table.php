@@ -13,7 +13,7 @@ return new class extends Migration
             $table->string('no_order_lab')->unique();
 
            
-            $table->foreignId('kunjungan_id')->nullable()->after('no_order_lab');
+            $table->foreignId('kunjungan_id')->nullable();
 
             // dokter boleh null kalau dokter dihapus (SET NULL)
             $table->foreignId('dokter_id')->nullable();
