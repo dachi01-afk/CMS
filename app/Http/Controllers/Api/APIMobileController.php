@@ -1545,7 +1545,7 @@ class APIMobileController extends Controller
         }
     }
 
-    public function saveEMR(Request $request)
+public function saveEMR(Request $request)
     {
         try {
             // ✅ Validasi data dari dokter (TAMBAHKAN lab_tests + radiologi_tests)
@@ -1796,7 +1796,7 @@ class APIMobileController extends Controller
 
                     $orderRadiologi = DB::table('order_radiologi')->insertGetId([
                         'no_order_radiologi' => $noOrderRadiologi,
-                        'kunjungan_id' => $kunjungan->id,  // ✅ TAMBAHKAN BARIS INI
+                        'kunjungan_id' => $kunjungan->id,
                         'dokter_id' => $dokter->id,
                         'pasien_id' => $kunjungan->pasien_id,
                         'tanggal_order' => now()->toDateString(),
@@ -1829,19 +1829,43 @@ class APIMobileController extends Controller
 
                 $totalTagihan = $this->calculateTotalTagihan($kunjungan, $resepId);
 
+                // ✅ PERBAIKAN: Sesuaikan dengan struktur tabel pembayaran
                 $pembayaran = Pembayaran::updateOrCreate(
                     ['emr_id' => $emr->id],
                     [
                         'total_tagihan' => $totalTagihan,
-                        'uang_yang_diterima' => 0,
-                        'kembalian' => 0,
-                        'kode_transaksi' => strtoupper(uniqid('TRX_')),
+                        'diskon_tipe' => null,  // ✅ Tambahkan field ini
+                        'diskon_nilai' => 0.00,  // ✅ Default 0
+                        'total_setelah_diskon' => $totalTagihan,  // ✅ Sama dengan total tagihan jika tidak ada diskon
+                        'uang_yang_diterima' => 0.00,  // ✅ Ubah dari 0 ke 0.00
+                        'kembalian' => 0.00,  // ✅ Ubah dari 0 ke 0.00
                         'metode_pembayaran_id' => null,
+                        'kode_transaksi' => strtoupper(uniqid('TRX_')),
                         'tanggal_pembayaran' => null,
-                        'status' => 'Belum Bayar',
+                        'status' => 'Belum Bayar',  // ✅ Sesuai enum di database
+                        'bukti_pembayaran' => null,  // ✅ Tambahkan field ini
                         'catatan' => 'Menunggu pembayaran di kasir - EMR telah dilengkapi dokter dengan perubahan',
                     ]
                 );
+
+                // ✅ PERBAIKAN: Insert ke tabel pembayaran_detail
+                DB::table('pembayaran_detail')->insert([
+                    'pembayaran_id' => $pembayaran->id,
+                    'total_tagihan' => $totalTagihan,
+                    'diskon_tipe' => null,
+                    'diskon_nilai' => 0.00,
+                    'total_setelah_diskon' => $totalTagihan,
+                    'uang_yang_diterima' => 0.00,
+                    'kembalian' => 0.00,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                Log::info('✅ Pembayaran dan pembayaran_detail berhasil dibuat', [
+                    'pembayaran_id' => $pembayaran->id,
+                    'total_tagihan' => $totalTagihan,
+                    'total_setelah_diskon' => $totalTagihan,
+                ]);
 
                 return [
                     'emr' => $emr->fresh(['perawat']),
@@ -1850,6 +1874,9 @@ class APIMobileController extends Controller
                     'pembayaran' => $pembayaran,
                     'billing_info' => [
                         'total_tagihan' => $totalTagihan,
+                        'diskon_tipe' => null,
+                        'diskon_nilai' => 0.00,
+                        'total_setelah_diskon' => $totalTagihan,
                         'layanan_count' => count($request->layanan ?? []),
                         'resep_count' => count($request->resep ?? []),
                         'lab_tests_count' => count($request->lab_tests ?? []),
@@ -1888,7 +1915,6 @@ class APIMobileController extends Controller
             ], 500);
         }
     }
-
     public function getRiwayatPasienDiperiksa()
     {
         try {
