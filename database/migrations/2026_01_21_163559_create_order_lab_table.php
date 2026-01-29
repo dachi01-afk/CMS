@@ -12,6 +12,9 @@ return new class extends Migration
             $table->id();
             $table->string('no_order_lab')->unique();
 
+           
+            $table->foreignId('kunjungan_id')->nullable()->after('no_order_lab');
+
             // dokter boleh null kalau dokter dihapus (SET NULL)
             $table->foreignId('dokter_id')->nullable();
 
@@ -24,6 +27,12 @@ return new class extends Migration
             $table->enum('status', ['Pending', 'Diproses', 'Selesai', 'Dibatalkan']);
             $table->timestamps();
 
+            // ✅ FK kunjungan
+            $table->foreign('kunjungan_id', 'order_lab_kunjungan_id')
+                ->references('id')->on('kunjungan')
+                ->cascadeOnUpdate()
+                ->nullOnDelete();
+
             // FK dokter
             $table->foreign('dokter_id', 'order_lab_dokter_id')
                 ->references('id')->on('dokter')
@@ -35,6 +44,9 @@ return new class extends Migration
                 ->references('id')->on('pasien')
                 ->cascadeOnUpdate()
                 ->nullOnDelete();
+
+            // optional index biar query cepat
+            $table->index('kunjungan_id', 'idx_order_lab_kunjungan_id');
         });
     }
 
