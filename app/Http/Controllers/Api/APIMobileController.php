@@ -571,7 +571,515 @@ class APIMobileController extends Controller
         }
     }
 
-    // punya dokter
+    public function dokterMasterRadiologi()
+    {
+        $rows = DB::table('jenis_pemeriksaan_radiologi')
+            ->where('status', 'Active') // hanya yang aktif
+            ->select(
+                'id',
+                'kode_pemeriksaan',
+                'nama_pemeriksaan',
+                'harga_pemeriksaan_radiologi'
+            )
+            ->orderBy('nama_pemeriksaan')
+            ->get()
+            ->map(function ($r) {
+                return [
+                    'id' => $r->id,
+                    'nama' => $r->nama_pemeriksaan, // WAJIB "nama" (konsisten dengan lab)
+                    'kode_pemeriksaan' => $r->kode_pemeriksaan,
+                    'harga' => $r->harga_pemeriksaan_radiologi,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $rows,
+        ]);
+    }
+
+    /**
+     * ✅ DOKTER - Create Order Radiologi (sama seperti order lab)
+     * POST /api/dokter/order-radiologi
+     *
+     * Body:
+     * {
+     *   "pasien_id": 1,
+     *   "kunjungan_id": 10,        // opsional, kalau ada kunjungan
+     *   "dokter_id": 5,             // auto dari auth
+     *   "tanggal_pemeriksaan": "2024-01-29",
+     *   "jam_pemeriksaan": "14:30",
+     *   "jenis_pemeriksaan_radiologi_ids": [1, 2, 3]  // array ID pemeriksaan
+     * }
+     */
+    public function dokterCreateOrderRadiologi(Request $request)
+    {
+        $data = $request->all();
+
+        // 1) AUTO isi dokter_id dari auth
+        $user = $request->user();
+        $dokter = \App\Models\Dokter::where('user_id', $user->id)->first();
+        if (! $dokter) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dokter tidak ditemukan untuk user ini.',
+            ], 404);
+        }
+
+        $data['dokter_id'] = $dokter->id;
+
+        // 2) Jika ada kunjungan_id, isi pasien_id otomatis
+        if (! empty($data['kunjungan_id'])) {
+            $k = DB::table('kunjungan')->where('id', $data['kunjungan_id'])->first();
+            if ($k && empty($data['pasien_id'])) {
+                $data['pasien_id'] = (int) $k->pasien_id;
+            }
+        }
+
+        // 3) Parse jenis_pemeriksaan_radiologi_ids (mirip lab)
+        $jenisIds = [];
+
+        if (isset($data['jenis_pemeriksaan_radiologi_ids']) && is_array($data['jenis_pemeriksaan_radiologi_ids'])) {
+            foreach ($data['jenis_pemeriksaan_radiologi_ids'] as $v) {
+                if (is_numeric($v)) {
+                    $jenisIds[] = (int) $v;
+                } elseif (is_string($v) && preg_match('/(\d+)/', $v, $m)) {
+                    $jenisIds[] = (int) $m[1];
+                }
+            }
+        }
+
+        if (empty($jenisIds) && isset($data['items']) && is_array($data['items'])) {
+            foreach ($data['items'] as $it) {
+                if (is_numeric($it)) {
+                    $jenisIds[] = (int) $it;
+
+                    continue;
+                }
+
+                if (is_array($it)) {
+                    $raw = $it['id']
+                        ?? $it['radiologi_test_id']
+                        ?? $it['jenis_pemeriksaan_radiologi_id']
+                        ?? $it['value']
+                        ?? null;
+
+                    if ($raw === null) {
+                        continue;
+                    }
+
+                    if (is_numeric($raw)) {
+                        $jenisIds[] = (int) $raw;
+                    } elseif (is_string($raw) && preg_match('/(\d+)/', $raw, $m)) {
+                        $jenisIds[] = (int) $m[1];
+                    }
+                }
+            }
+        }
+
+        $data['jenis_pemeriksaan_radiologi_ids'] = array_values(array_unique(array_filter($jenisIds, fn ($x) => (int) $x > 0)));
+
+        // 4) AUTO isi tanggal & jam kalau kosong
+        if (empty($data['tanggal_pemeriksaan'])) {
+            $data['tanggal_pemeriksaan'] = now()->toDateString();
+        }
+        if (empty($data['jam_pemeriksaan'])) {
+            $data['jam_pemeriksaan'] = now()->format('H:i');
+        }
+
+        // 5) Validasi
+        $v = Validator::make($data, [
+            'dokter_id' => 'required|exists:dokter,id',
+            'pasien_id' => 'required|exists:pasien,id',
+            'tanggal_pemeriksaan' => 'required|date',
+            'jam_pemeriksaan' => ['required', function ($attr, $value, $fail) {
+                if (! preg_match('/^\d{2}:\d{2}(:\d{2})?$/', (string) $value)) {
+                    $fail('Format jam_pemeriksaan harus HH:MM atau HH:MM:SS');
+                }
+            }],
+            'jenis_pemeriksaan_radiologi_ids' => 'required|array|min:1',
+            'jenis_pemeriksaan_radiologi_ids.*' => 'required|exists:jenis_pemeriksaan_radiologi,id',
+        ]);
+
+        if ($v->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $v->errors(),
+                'debug_received' => $data,
+            ], 422);
+        }
+
+        // 6) Simpan ke database
+        return DB::transaction(function () use ($data) {
+
+            $no = 'RAD-'.date('Ymd').'-'.strtoupper(Str::random(6));
+
+            $orderId = DB::table('order_radiologi')->insertGetId([
+                'no_order_radiologi' => $no,
+                'dokter_id' => (int) $data['dokter_id'],
+                'pasien_id' => (int) $data['pasien_id'],
+                'tanggal_order' => now()->toDateString(),
+                'tanggal_pemeriksaan' => $data['tanggal_pemeriksaan'],
+                'jam_pemeriksaan' => $data['jam_pemeriksaan'],
+                'status' => 'Pending', // ✅ STATUS AWAL
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $details = [];
+            foreach ($data['jenis_pemeriksaan_radiologi_ids'] as $jpId) {
+                $details[] = [
+                    'order_radiologi_id' => $orderId,
+                    'jenis_pemeriksaan_radiologi_id' => (int) $jpId,
+                    'status_pemeriksaan' => 'Pending', // ✅ STATUS AWAL
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ];
+            }
+            DB::table('order_radiologi_detail')->insert($details);
+
+            $order = DB::table('order_radiologi')->where('id', $orderId)->first();
+
+            // Ambil detail dengan join
+            $detailRows = DB::table('order_radiologi_detail as d')
+                ->join('jenis_pemeriksaan_radiologi as j', 'j.id', '=', 'd.jenis_pemeriksaan_radiologi_id')
+                ->where('d.order_radiologi_id', $orderId)
+                ->select(
+                    'd.id as order_radiologi_detail_id',
+                    'd.status_pemeriksaan',
+                    'j.id as jenis_id',
+                    'j.kode_pemeriksaan',
+                    'j.nama_pemeriksaan',
+                    'j.deskripsi',
+                    'j.harga_pemeriksaan_radiologi'
+                )
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order radiologi berhasil dibuat',
+                'data' => [
+                    'order' => $order,
+                    'details' => $detailRows,
+                ],
+            ]);
+        });
+    }
+
+    /**
+     * ✅ DOKTER - List order radiologi milik dokter yang login
+     * GET /api/dokter/order-radiologi
+     */
+    public function dokterListOrderRadiologi(Request $request)
+    {
+        $user = $request->user();
+
+        $dokter = \App\Models\Dokter::where('user_id', $user->id)->first();
+        if (! $dokter) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dokter tidak ditemukan untuk user ini.',
+            ], 404);
+        }
+
+        $data = DB::table('order_radiologi as o')
+            ->where('o.dokter_id', $dokter->id)
+            ->leftJoin('pasien as p', 'p.id', '=', 'o.pasien_id')
+            ->select(
+                'o.id',
+                'o.no_order_radiologi',
+                'o.tanggal_order',
+                'o.tanggal_pemeriksaan',
+                'o.jam_pemeriksaan',
+                'o.status',
+                'p.nama_pasien',
+                'p.no_emr'
+            )
+            ->orderByDesc('o.id')
+            ->get()
+            ->map(function ($o) {
+                // Hitung progress
+                $total = DB::table('order_radiologi_detail')
+                    ->where('order_radiologi_id', $o->id)
+                    ->count();
+
+                $done = DB::table('order_radiologi_detail')
+                    ->where('order_radiologi_id', $o->id)
+                    ->where('status_pemeriksaan', 'Selesai')
+                    ->count();
+
+                return [
+                    'id' => $o->id,
+                    'no_order_radiologi' => $o->no_order_radiologi,
+                    'tanggal_order' => $o->tanggal_order,
+                    'tanggal_pemeriksaan' => $o->tanggal_pemeriksaan,
+                    'jam_pemeriksaan' => $o->jam_pemeriksaan,
+                    'status' => $o->status,
+                    'progress' => [
+                        'total' => $total,
+                        'selesai' => $done,
+                    ],
+                    'pasien' => [
+                        'nama_pasien' => $o->nama_pasien,
+                        'no_emr' => $o->no_emr,
+                    ],
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+        ]);
+    }
+
+    /**
+     * ✅ DOKTER - Detail order radiologi (lihat hasil jika sudah ada)
+     * GET /api/dokter/order-radiologi/{id}
+     */
+    public function dokterDetailOrderRadiologi(Request $request, $orderRadiologiId)
+    {
+        $user = $request->user();
+
+        $dokter = \App\Models\Dokter::where('user_id', $user->id)->first();
+        if (! $dokter) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dokter tidak ditemukan untuk user ini.',
+            ], 404);
+        }
+
+        $order = DB::table('order_radiologi as o')
+            ->where('o.id', $orderRadiologiId)
+            ->where('o.dokter_id', $dokter->id)
+            ->leftJoin('pasien as p', 'p.id', '=', 'o.pasien_id')
+            ->leftJoin('dokter as d', 'd.id', '=', 'o.dokter_id')
+            ->select(
+                'o.*',
+                'p.nama_pasien',
+                'p.no_emr',
+                'p.jenis_kelamin',
+                'p.tanggal_lahir',
+                'd.nama_dokter'
+            )
+            ->first();
+
+        if (! $order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order radiologi tidak ditemukan / bukan milik dokter ini.',
+            ], 404);
+        }
+
+        // Ambil detail + hasil (jika ada)
+        $details = DB::table('order_radiologi_detail as d')
+            ->join('jenis_pemeriksaan_radiologi as j', 'j.id', '=', 'd.jenis_pemeriksaan_radiologi_id')
+            ->leftJoin('hasil_radiologi as h', 'h.order_radiologi_detail_id', '=', 'd.id')
+            ->leftJoin('perawat as pr', 'pr.id', '=', 'h.perawat_id')
+            ->leftJoin('dokter as dr', 'dr.id', '=', 'h.dokter_radiologi_id')
+            ->where('d.order_radiologi_id', $orderRadiologiId)
+            ->select(
+                'd.id as order_radiologi_detail_id',
+                'd.status_pemeriksaan',
+
+                'j.id as jenis_id',
+                'j.kode_pemeriksaan',
+                'j.nama_pemeriksaan',
+                'j.deskripsi',
+                'j.harga_pemeriksaan_radiologi',
+
+                'h.id as hasil_id',
+                'h.foto_hasil_radiologi',
+                'h.keterangan as interpretasi',
+                'h.tanggal_pemeriksaan',
+                'h.jam_pemeriksaan',
+
+                'pr.nama_perawat as radiografer_nama',
+                'dr.nama_dokter as dokter_radiologi_nama'
+            )
+            ->get()
+            ->map(function ($d) {
+                return [
+                    'order_radiologi_detail_id' => $d->order_radiologi_detail_id,
+                    'status_pemeriksaan' => $d->status_pemeriksaan,
+
+                    'pemeriksaan' => [
+                        'id' => $d->jenis_id,
+                        'kode_pemeriksaan' => $d->kode_pemeriksaan,
+                        'nama_pemeriksaan' => $d->nama_pemeriksaan,
+                        'deskripsi' => $d->deskripsi,
+                        'harga' => $d->harga_pemeriksaan_radiologi,
+                    ],
+
+                    'hasil' => $d->hasil_id ? [
+                        'id' => $d->hasil_id,
+                        'foto_url' => $d->foto_hasil_radiologi
+                            ? asset('storage/'.$d->foto_hasil_radiologi)
+                            : null,
+                        'interpretasi' => $d->interpretasi,
+                        'tanggal_pemeriksaan' => $d->tanggal_pemeriksaan,
+                        'jam_pemeriksaan' => $d->jam_pemeriksaan,
+                        'radiografer' => $d->radiografer_nama,
+                        'dokter_radiologi' => $d->dokter_radiologi_nama,
+                    ] : null,
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $order->id,
+                'no_order_radiologi' => $order->no_order_radiologi,
+                'tanggal_order' => $order->tanggal_order,
+                'tanggal_pemeriksaan' => $order->tanggal_pemeriksaan,
+                'jam_pemeriksaan' => $order->jam_pemeriksaan,
+                'status' => $order->status,
+                'dokter' => [
+                    'nama_dokter' => $order->nama_dokter,
+                ],
+                'pasien' => [
+                    'nama_pasien' => $order->nama_pasien,
+                    'no_emr' => $order->no_emr,
+                    'jenis_kelamin' => $order->jenis_kelamin,
+                    'tanggal_lahir' => $order->tanggal_lahir,
+                ],
+                'detail' => $details,
+            ],
+        ]);
+    }
+
+    /**
+     * ✅ PERAWAT/RADIOGRAFER - Upload hasil radiologi
+     * POST /api/perawat/hasil-radiologi/upload
+     *
+     * Body (multipart/form-data):
+     * - order_radiologi_detail_id: 1
+     * - foto: (file) image/jpeg, image/png, atau .dcm
+     * - keterangan: "Interpretasi dokter radiologi" (nullable)
+     * - dokter_radiologi_id: 5 (nullable, ID dokter spesialis radiologi yang baca hasil)
+     * - tanggal_pemeriksaan: "2024-01-29"
+     * - jam_pemeriksaan: "14:30"
+     */
+    public function perawatUploadHasilRadiologi(Request $request)
+    {
+        $request->validate([
+            'order_radiologi_detail_id' => 'required|exists:order_radiologi_detail,id',
+            'foto' => 'required|file|mimes:jpg,jpeg,png,dcm|max:10240', // max 10MB
+            'keterangan' => 'nullable|string',
+            'dokter_radiologi_id' => 'nullable|exists:dokter,id',
+            'tanggal_pemeriksaan' => 'required|date',
+            'jam_pemeriksaan' => 'required',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Upload foto
+            $path = $request->file('foto')->store('radiologi/'.date('Y/m/d'), 'public');
+
+            // Ambil perawat yang login
+            $user = $request->user();
+            $perawat = \App\Models\Perawat::where('user_id', $user->id)->first();
+
+            // Insert hasil radiologi
+            $hasilId = DB::table('hasil_radiologi')->insertGetId([
+                'order_radiologi_detail_id' => $request->order_radiologi_detail_id,
+                'foto_hasil_radiologi' => $path,
+                'perawat_id' => $perawat ? $perawat->id : null,
+                'dokter_radiologi_id' => $request->dokter_radiologi_id,
+                'keterangan' => $request->keterangan,
+                'tanggal_pemeriksaan' => $request->tanggal_pemeriksaan,
+                'jam_pemeriksaan' => $request->jam_pemeriksaan,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Update status detail jadi "Selesai"
+            DB::table('order_radiologi_detail')
+                ->where('id', $request->order_radiologi_detail_id)
+                ->update([
+                    'status_pemeriksaan' => 'Selesai',
+                    'updated_at' => now(),
+                ]);
+
+            // Cek apakah semua detail sudah selesai
+            $detail = DB::table('order_radiologi_detail')
+                ->where('id', $request->order_radiologi_detail_id)
+                ->first();
+
+            $orderRadiologiId = $detail->order_radiologi_id;
+
+            $allCompleted = DB::table('order_radiologi_detail')
+                ->where('order_radiologi_id', $orderRadiologiId)
+                ->where('status_pemeriksaan', '!=', 'Selesai')
+                ->doesntExist();
+
+            // Jika semua selesai, update order radiologi status
+            if ($allCompleted) {
+                DB::table('order_radiologi')
+                    ->where('id', $orderRadiologiId)
+                    ->update([
+                        'status' => 'Selesai',
+                        'updated_at' => now(),
+                    ]);
+            }
+
+            DB::commit();
+
+            $hasil = DB::table('hasil_radiologi')->where('id', $hasilId)->first();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Hasil radiologi berhasil diupload',
+                'data' => $hasil,
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Error perawatUploadHasilRadiologi: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengupload hasil radiologi',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ✅ PERAWAT - List order radiologi yang perlu diinput (status Pending)
+     * GET /api/perawat/order-radiologi/pending
+     */
+    public function perawatListOrderRadiologiPending()
+    {
+        $data = DB::table('order_radiologi_detail as d')
+            ->join('order_radiologi as o', 'o.id', '=', 'd.order_radiologi_id')
+            ->join('jenis_pemeriksaan_radiologi as j', 'j.id', '=', 'd.jenis_pemeriksaan_radiologi_id')
+            ->join('pasien as p', 'p.id', '=', 'o.pasien_id')
+            ->leftJoin('dokter as dok', 'dok.id', '=', 'o.dokter_id')
+            ->where('d.status_pemeriksaan', 'Pending')
+            ->select(
+                'd.id as detail_id',
+                'o.id as order_id',
+                'o.no_order_radiologi',
+                'o.tanggal_pemeriksaan',
+                'o.jam_pemeriksaan',
+                'j.nama_pemeriksaan',
+                'j.kode_pemeriksaan',
+                'p.nama_pasien',
+                'p.no_emr',
+                'dok.nama_dokter'
+            )
+            ->orderBy('o.tanggal_pemeriksaan')
+            ->orderBy('o.jam_pemeriksaan')
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $data,
+            'total_pending' => $data->count(),
+        ]);
+    }
 
     public function dokterDetailOrderLab(Request $request, $orderLabId)
     {
@@ -1040,7 +1548,7 @@ class APIMobileController extends Controller
     public function saveEMR(Request $request)
     {
         try {
-            // ✅ Validasi data dari dokter (TAMBAHKAN lab_tests)
+            // ✅ Validasi data dari dokter (TAMBAHKAN lab_tests + radiologi_tests)
             $request->validate([
                 'kunjungan_id' => 'required|exists:kunjungan,id',
                 'diagnosis' => 'required|string',
@@ -1066,6 +1574,10 @@ class APIMobileController extends Controller
                 // ✅ TAMBAHAN: Validasi lab tests
                 'lab_tests' => 'nullable|array',
                 'lab_tests.*.lab_test_id' => 'required_with:lab_tests|exists:jenis_pemeriksaan_lab,id',
+
+                // ✅ TAMBAHAN: Validasi radiologi tests
+                'radiologi_tests' => 'nullable|array',
+                'radiologi_tests.*.jenis_radiologi_id' => 'required_with:radiologi_tests|exists:jenis_pemeriksaan_radiologi,id',
             ]);
 
             $user_id = Auth::id();
@@ -1139,6 +1651,14 @@ class APIMobileController extends Controller
                 ], 400);
             }
 
+            Log::info('📋 saveEMR called', [
+                'kunjungan_id' => $request->kunjungan_id,
+                'has_radiologi_tests' => ! empty($request->radiologi_tests),
+                'radiologi_count' => count($request->radiologi_tests ?? []),
+                'has_lab_tests' => ! empty($request->lab_tests),
+                'lab_count' => count($request->lab_tests ?? []),
+            ]);
+
             Log::info('Update EMR dengan diagnosis dokter dan data yang diedit:', [
                 'kunjungan_id' => $request->kunjungan_id,
                 'emr_id' => $emr->id,
@@ -1148,6 +1668,7 @@ class APIMobileController extends Controller
                 'keluhan_utama_updated' => $request->filled('keluhan_utama'),
                 'vital_signs_updated' => $request->filled('tekanan_darah') || $request->filled('suhu_tubuh'),
                 'lab_tests_count' => count($request->lab_tests ?? []),
+                'radiologi_tests_count' => count($request->radiologi_tests ?? []),
             ]);
 
             $result = DB::transaction(function () use ($request, $kunjungan, $dokter, $emr) {
@@ -1242,10 +1763,8 @@ class APIMobileController extends Controller
 
                 // ===== 🧪 LAB TESTS (ORDER LAB) =====
                 if (! empty($request->lab_tests)) {
-                    // Generate nomor order lab
                     $noOrderLab = 'LAB-'.date('Ymd').'-'.strtoupper(Str::random(6));
 
-                    // Buat order lab
                     $orderLab = \App\Models\OrderLab::create([
                         'no_order_lab' => $noOrderLab,
                         'dokter_id' => $dokter->id,
@@ -1256,7 +1775,6 @@ class APIMobileController extends Controller
                         'status' => 'Pending',
                     ]);
 
-                    // Buat detail order lab
                     foreach ($request->lab_tests as $labTest) {
                         \App\Models\OrderLabDetail::create([
                             'order_lab_id' => $orderLab->id,
@@ -1269,6 +1787,40 @@ class APIMobileController extends Controller
                         'order_lab_id' => $orderLab->id,
                         'no_order_lab' => $noOrderLab,
                         'total_tests' => count($request->lab_tests),
+                    ]);
+                }
+
+                // ===== 🔬 RADIOLOGI TESTS (ORDER RADIOLOGI) =====
+                if (! empty($request->radiologi_tests)) {
+                    $noOrderRadiologi = 'RAD-'.date('Ymd').'-'.strtoupper(Str::random(6));
+
+                    $orderRadiologi = DB::table('order_radiologi')->insertGetId([
+                        'no_order_radiologi' => $noOrderRadiologi,
+                        'kunjungan_id' => $kunjungan->id,  // ✅ TAMBAHKAN BARIS INI
+                        'dokter_id' => $dokter->id,
+                        'pasien_id' => $kunjungan->pasien_id,
+                        'tanggal_order' => now()->toDateString(),
+                        'tanggal_pemeriksaan' => now()->toDateString(),
+                        'jam_pemeriksaan' => now()->format('H:i'),
+                        'status' => 'Pending',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+
+                    foreach ($request->radiologi_tests as $radiologiTest) {
+                        DB::table('order_radiologi_detail')->insert([
+                            'order_radiologi_id' => $orderRadiologi,
+                            'jenis_pemeriksaan_radiologi_id' => $radiologiTest['jenis_radiologi_id'],
+                            'status_pemeriksaan' => 'Pending',
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+
+                    Log::info('✅ Radiologi tests ordered', [
+                        'order_radiologi_id' => $orderRadiologi,
+                        'no_order_radiologi' => $noOrderRadiologi,
+                        'total_tests' => count($request->radiologi_tests),
                     ]);
                 }
 
@@ -1301,6 +1853,7 @@ class APIMobileController extends Controller
                         'layanan_count' => count($request->layanan ?? []),
                         'resep_count' => count($request->resep ?? []),
                         'lab_tests_count' => count($request->lab_tests ?? []),
+                        'radiologi_tests_count' => count($request->radiologi_tests ?? []),
                     ],
                 ];
             });

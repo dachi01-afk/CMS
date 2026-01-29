@@ -211,6 +211,19 @@ Route::middleware(['auth:sanctum', 'role:Dokter'])->prefix('dokter')->name('dokt
     Route::get('/riwayat-lab/pasien/{pasien_id}', [APIMobileController::class, 'dokterRiwayatLabPasien'])->name('riwayat_lab.pasien');
     Route::get('/riwayat-lab/detail/{order_lab_id}', [APIMobileController::class, 'dokterDetailRiwayatLab'])->name('riwayat_lab.detail');
     Route::post('/hasil-lab', [APIMobileController::class, 'dokterCreateHasilLab'])->name('hasil_lab.store');
+    Route::prefix('order-radiologi')->name('order_radiologi.')->group(function () {
+        // Get master jenis pemeriksaan radiologi
+        Route::get('/master', [APIMobileController::class, 'dokterMasterRadiologi']);
+
+        // List order radiologi
+        Route::get('/', [APIMobileController::class, 'dokterListOrderRadiologi']);
+
+        // Create order radiologi
+        Route::post('/', [APIMobileController::class, 'dokterCreateOrderRadiologi']);
+
+        // Detail order radiologi
+        Route::get('/{id}', [APIMobileController::class, 'dokterDetailOrderRadiologi']);
+    });
 });
 
 /*
