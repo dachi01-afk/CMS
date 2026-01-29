@@ -224,9 +224,13 @@ class KunjunganController extends Controller
     // Stub: halaman khusus vital sign (nanti kamu isi)
     public function formPengisianVitalSign($id)
     {
-        $dataEMR = EMR::with('pasien', 'dokter', 'poli', 'pasien')->where('id', $id)->firstOrFail();
-
+        $dataEMR = EMR::with('pasien', 'dokter', 'poli')->findOrFail($id);
         $dataPasien = $dataEMR->pasien;
+        $emrTerakhir = EMR::where('pasien_id', $dataPasien->id)
+            ->where('id', '<', $id)
+            ->orderBy('created_at', 'desc')
+            ->first();
+        $riwayatPenyakitDahulu = $emrTerakhir ? $emrTerakhir->riwayat_penyakit_dahulu : 'Tidak ada riwayat sebelumnya';
         $dataPoliPasien = $dataEMR->poli;
         $dataDokterPasien = $dataEMR->dokter;
         $dataIdEMR = $dataEMR->id;
@@ -239,6 +243,7 @@ class KunjunganController extends Controller
             'dataDokterPasien',
             'dataIdEMR',
             'urlBack',
+            'riwayatPenyakitDahulu' 
         ));
     }
 

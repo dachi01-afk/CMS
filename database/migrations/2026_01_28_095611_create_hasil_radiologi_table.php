@@ -34,22 +34,9 @@ return new class extends Migration
             $table->foreignId('perawat_id')
                 ->nullable()
                 ->constrained('perawat', 'id', 'hasil_radiologi_perawat_id')
-                ->cascadeOnUpdate()
-                ->nullOnDelete();
-            
-            // ✅ TAMBAHAN: Dokter radiologi yang membaca/menginterpretasi hasil
-            // Biasanya dokter spesialis radiologi (Sp.Rad)
-            $table->foreignId('dokter_radiologi_id')
-                ->nullable()
-                ->constrained('dokter', 'id', 'hasil_radiologi_dokter_radiologi_id')
-                ->cascadeOnUpdate()
-                ->nullOnDelete();
-            
-            // ✅ Interpretasi/pembacaan hasil oleh dokter radiologi
-            // Contoh: "Tampak infiltrat di lapangan paru kanan bawah, curiga pneumonia"
-            $table->text('keterangan')->nullable();
-            
-            // Waktu pemeriksaan dilakukan
+                ->casCadeOnUpdate()->cascadeOnDelete();
+            $table->string('hasil_foto');
+            $table->text('keterangan');
             $table->date('tanggal_pemeriksaan');
             $table->time('jam_pemeriksaan');
             

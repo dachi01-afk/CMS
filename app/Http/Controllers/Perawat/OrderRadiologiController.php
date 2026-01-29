@@ -3,10 +3,14 @@
 namespace App\Http\Controllers\Perawat;
 
 use App\Http\Controllers\Controller;
+use App\Models\EMR;
+use App\Models\HasilRadiologi;
 use App\Models\OrderRadiologi;
+use App\Models\OrderRadiologiDetail;
 use App\Models\Perawat;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
 
 class OrderRadiologiController extends Controller
@@ -36,6 +40,8 @@ class OrderRadiologiController extends Controller
             ->filterByPerawat($perawatId->id) // Filter Logic Dokter-Perawat
             // ->today()
             ->latest('tanggal_order'); // Urutkan terbaru
+
+        // dd($data);
 
         // 3. Return ke DataTables
         return DataTables::of($data)
@@ -69,11 +75,76 @@ class OrderRadiologiController extends Controller
             })
             ->addColumn('action', function ($row) {
                 // Arahkan ke route yang baru kita buat
-                $url = route('input.hasil.order.lab', $row->id);
+                $url = route('input.hasil.order.radiologi', $row->id);
 
                 return '<a href="' . $url . '" class="btn btn-sm btn-primary">Input Hasil</a>';
             })
             ->rawColumns(['status_badge', 'action']) // Izinkan render HTML
             ->make(true);
+    }
+
+    public function inputHasil($id)
+    {
+        $order = OrderRadiologi::getDataById($id);
+
+        return view('perawat.kunjungan.data-input-hasil-radiologi', compact('order'));
+    }
+
+    public function simpanHasil(Request $request)
+    {
+        $request->validate([
+            'hasil.*' => 'required|numeric',
+            'keterangan.*' => 'nullable|string',
+            'order_lab_id' => 'required|exists:order_lab,id'
+        ]);
+
+        try {
+            DB::transaction(function () use ($request) {
+                $order = OrderRadiologi::findOrFail($request->order_lab_id);
+                $userId = Auth::user()->id;
+                $perawat = Perawat::where('user_id', $userId)->first();
+
+                $summaryHasil = [];
+
+                foreach ($request->hasil as $detailId => $nilaiHasil) {
+                    $detail = OrderRadiologiDetail::with('jenisPemeriksaanRadiologi')->findOrFail($detailId);
+
+                    // 1. Simpan ke tabel hasil_lab
+                    HasilRadiologi::create([
+                        'order_radiologi_detail_id' => $detailId,
+                        'perawat_id'          => $perawat->id,
+                        // 'nilai_hasil'         => $nilaiHasil,
+                        // 'nilai_rujukan'       => $detail->jenisPemeriksaanLab->nilai_normal, // Dari tabel jenis_pemeriksaan_lab
+                        'keterangan'          => $request->keterangan[$detailId] ?? '-',
+                        'tanggal_pemeriksaan' => now()->format('Y-m-d'),
+                        'jam_pemeriksaan'     => now()->format('H:i:s'),
+                    ]);
+
+                    // Kumpulkan teks untuk EMR (Contoh: Gula Darah: 110 mg/dL)
+                    $summaryHasil[] = $detail->jenisPemeriksaanRadiologi->nama_pemeriksaan . ": " . $nilaiHasil;
+                }
+
+                // 2. Update status OrderLab menjadi Selesai
+                $order->update(['status' => 'Selesai']);
+
+                // 3. Masukkan ke tabel EMR (image_b9976c.png)
+                // Kita cari EMR berdasarkan kunjungan_id yang ada di order_lab
+                // Asumsi: Di order_lab kamu ada kolom kunjungan_id
+                EMR::updateOrCreate(
+                    ['kunjungan_id' => $order->kunjungan_id],
+                    [
+                        'pasien_id'  => $order->pasien_id,
+                        'dokter_id'  => $order->dokter_id,
+                        'perawat_id' => $perawat->id,
+                        'diagnosis'  => "Hasil Lab: " . implode(', ', $summaryHasil)
+                        // ^ Sesuaikan kolom diagnosis atau buat kolom baru jika perlu
+                    ]
+                );
+            }); 
+
+            return response()->json(['success' => true, 'message' => 'Data berhasil disimpan dan diteruskan ke EMR!']);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Gagal: ' . $e->getMessage()], 500);
+        }
     }
 }
