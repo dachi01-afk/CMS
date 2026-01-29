@@ -19,8 +19,7 @@ return new class extends Migration
             $table->foreignId('perawat_id')
                 ->constrained('perawat', 'id', 'hasil_radiologi_perawat_id')
                 ->casCadeOnUpdate()->cascadeOnDelete();
-            $table->decimal('nilai_hasil', 15, 2);
-            $table->string('nilai_rujukan');
+            $table->string('hasil_foto');
             $table->text('keterangan');
             $table->date('tanggal_pemeriksaan');
             $table->time('jam_pemeriksaan');

@@ -23,7 +23,7 @@ class OrderRadiologi extends Model
         return $this->belongsTo(Pasien::class);
     }
 
-    public function kunjugan()
+    public function kunjungan()
     {
         return $this->belongsTo(Kunjungan::class);
     }

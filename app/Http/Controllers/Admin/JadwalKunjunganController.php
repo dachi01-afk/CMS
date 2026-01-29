@@ -360,7 +360,6 @@ class JadwalKunjunganController extends Controller
         // Cari data kunjungan
         $kunjungan = Kunjungan::findOrFail($id);
 
-        // Validasi hanya bisa ubah dari Pending ke Engaged
         if ($kunjungan->status !== 'Pending') {
             return response()->json([
                 'success' => false,

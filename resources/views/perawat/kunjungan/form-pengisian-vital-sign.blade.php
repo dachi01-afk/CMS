@@ -267,14 +267,14 @@
                             Ini)</label>
                         <textarea name="keluhan_utama" rows="3"
                             class="w-full rounded-lg border-slate-300 text-sm focus:ring-teal-500 focus:border-teal-500"
-                            placeholder="Apa yang dirasakan pasien saat ini?"></textarea>
+                            placeholder="Apa yang dirasakan pasien saat ini?">{{ $dataEMR->keluhan_utama }}</textarea>
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Riwayat Penyakit
                             Dahulu</label>
                         <textarea name="riwayat_penyakit_dahulu" rows="3"
                             class="w-full rounded-lg border-slate-300 text-sm focus:ring-teal-500 focus:border-teal-500"
-                            placeholder="{{ old('riwayat_penyakit_dahulu', $dataEMR->riwayat_penyakit_dahulu ?? '-') }}"></textarea>
+                            placeholder="{{ old('riwayat_penyakit_dahulu', $dataEMR->riwayat_penyakit_dahulu ?? '-') }}">{{ $riwayatPenyakitDahulu }}</textarea>
                     </div>
                 </div>
             </div>
