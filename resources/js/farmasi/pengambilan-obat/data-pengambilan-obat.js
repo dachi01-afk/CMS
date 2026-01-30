@@ -32,8 +32,6 @@ $(function () {
             day: "2-digit",
             month: "long",
             year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
         });
     };
 
@@ -53,7 +51,7 @@ $(function () {
 
         window.open(
             `/farmasi/pengambilan-obat/cetak-stiker-obat/${resepId}`,
-            "_blank"
+            "_blank",
         );
     });
 
@@ -88,9 +86,6 @@ $(function () {
                 name: "tanggal_kunjungan",
                 render: (data) => formatTanggalID(data),
             },
-            { data: "nama_obat", name: "nama_obat" },
-            { data: "jumlah", name: "jumlah" },
-            { data: "keterangan", name: "keterangan" },
             { data: "status", name: "status" },
             {
                 data: "action",
@@ -103,7 +98,7 @@ $(function () {
         dom: "t",
         rowCallback: function (row) {
             $(row).addClass(
-                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600",
             );
             $("td", row).addClass("px-6 py-4 text-gray-900 dark:text-white");
         },
@@ -131,7 +126,7 @@ $(function () {
         $info.text(
             `Menampilkan ${info.start + 1}–${info.end} dari ${
                 info.recordsDisplay
-            } data (Halaman ${currentPage} dari ${totalPages})`
+            } data (Halaman ${currentPage} dari ${totalPages})`,
         );
 
         $pagination.empty();
@@ -257,10 +252,10 @@ $(function () {
                     return `
                       <div class="py-1 px-2">
                         <div class="font-medium text-sm">${escape(
-                            item.nama_pasien || ""
+                            item.nama_pasien || "",
                         )}</div>
                         <div class="text-xs text-slate-500">RM: ${escape(
-                            item.no_rm ?? "-"
+                            item.no_rm ?? "-",
                         )}</div>
                       </div>
                     `;
@@ -298,10 +293,10 @@ $(function () {
                     return `
                       <div class="py-1 px-2">
                         <div class="font-medium text-sm">${escape(
-                            item.nama_dokter || ""
+                            item.nama_dokter || "",
                         )}</div>
                         <div class="text-xs text-slate-500">${escape(
-                            item.nama_spesialis ?? ""
+                            item.nama_spesialis ?? "",
                         )}</div>
                       </div>
                     `;
@@ -511,7 +506,7 @@ $(function () {
 
     function initTomSelectObatRow(idx) {
         const $select = $(
-            `${obatRowsId} .obat-row[data-index="${idx}"] .obat-select`
+            `${obatRowsId} .obat-row[data-index="${idx}"] .obat-select`,
         );
 
         if (tomObatInstances[idx]) {
@@ -545,23 +540,23 @@ $(function () {
                       <div class="py-2 px-2">
                         <div class="flex items-center justify-between gap-3">
                           <div class="text-sm font-semibold">${escape(
-                              item.nama_obat || ""
+                              item.nama_obat || "",
                           )}</div>
                           <div class="text-[11px] text-slate-500">Kode: ${escape(
-                              item.kode_obat || "-"
+                              item.kode_obat || "-",
                           )}</div>
                         </div>
                         <div class="mt-1 flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
                           <span>Stok: <b>${escape(
-                              String(item.stok_tersedia ?? 0)
+                              String(item.stok_tersedia ?? 0),
                           )}</b></span>
                           <span>•</span>
                           <span>Satuan: <b>${escape(
-                              item.satuan || "-"
+                              item.satuan || "-",
                           )}</b></span>
                           <span>•</span>
                           <span>Harga: <b>${escape(
-                              formatRupiah(item.harga_umum || 0)
+                              formatRupiah(item.harga_umum || 0),
                           )}</b></span>
                         </div>
                       </div>
@@ -597,13 +592,13 @@ $(function () {
 
                 $row.find(".obat-kode").text(`Kode: ${obat.kode_obat || "-"}`);
                 $row.find(".obat-stok").text(
-                    `Stok: ${obat.stok_tersedia ?? 0}`
+                    `Stok: ${obat.stok_tersedia ?? 0}`,
                 );
                 $row.find(".satuan-input").val(obat.satuan || "-");
 
                 $row.find(".harga-raw").val(Number(obat.harga_umum || 0));
                 $row.find(".harga-input").val(
-                    formatRupiah(obat.harga_umum || 0)
+                    formatRupiah(obat.harga_umum || 0),
                 );
 
                 // ✅ ambil depot via endpoint by obat_id
@@ -675,23 +670,23 @@ $(function () {
 
             $row.find('input[name*="[satuan]"]').attr(
                 "name",
-                `obat[${newIdx}][satuan]`
+                `obat[${newIdx}][satuan]`,
             );
             $row.find('input[name*="[harga_umum]"]').attr(
                 "name",
-                `obat[${newIdx}][harga_umum]`
+                `obat[${newIdx}][harga_umum]`,
             );
             $row.find('input[name*="[total]"]').attr(
                 "name",
-                `obat[${newIdx}][total]`
+                `obat[${newIdx}][total]`,
             );
             $row.find('input[name*="[dosis]"]').attr(
                 "name",
-                `obat[${newIdx}][dosis]`
+                `obat[${newIdx}][dosis]`,
             );
             $row.find('input[name*="[keterangan]"]').attr(
                 "name",
-                `obat[${newIdx}][keterangan]`
+                `obat[${newIdx}][keterangan]`,
             );
         });
 
@@ -718,7 +713,7 @@ $(function () {
         "#btnCloseModalCreateResepTop, #btnCloseModalCreateResepBottom",
         function () {
             closeModal();
-        }
+        },
     );
 
     // Click backdrop close
@@ -825,7 +820,7 @@ $(function () {
             })
             .finally(() => {
                 $btn.prop("disabled", false).removeClass(
-                    "opacity-70 cursor-not-allowed"
+                    "opacity-70 cursor-not-allowed",
                 );
             });
     });
@@ -1065,7 +1060,7 @@ $(function () {
 
     function initTomSelectObatRowUpdate(idx) {
         const $select = $(
-            `${obatRowsUpdateId} .obat-row[data-index="${idx}"] .obat-select-update`
+            `${obatRowsUpdateId} .obat-row[data-index="${idx}"] .obat-select-update`,
         );
 
         if (tomObatInstancesUpdate[idx]) {
@@ -1110,12 +1105,12 @@ $(function () {
 
                 $row.find(".obat-kode").text(`Kode: ${obat.kode_obat || "-"}`);
                 $row.find(".obat-stok").text(
-                    `Stok: ${obat.stok_tersedia ?? 0}`
+                    `Stok: ${obat.stok_tersedia ?? 0}`,
                 );
                 $row.find(".satuan-input").val(obat.satuan || "-");
                 $row.find(".harga-raw").val(Number(obat.harga_umum || 0));
                 $row.find(".harga-input").val(
-                    formatRupiah(obat.harga_umum || 0)
+                    formatRupiah(obat.harga_umum || 0),
                 );
 
                 recalcRowTotalUpdate(idx);
@@ -1156,7 +1151,7 @@ $(function () {
             $row.find(".satuan-input").val(prefill.satuan || "-");
             $row.find(".harga-raw").val(Number(prefill.harga_umum || 0));
             $row.find(".harga-input").val(
-                formatRupiah(prefill.harga_umum || 0)
+                formatRupiah(prefill.harga_umum || 0),
             );
 
             recalcRowTotalUpdate(idx);
@@ -1241,7 +1236,7 @@ $(function () {
         "#btnCloseModalUpdateResepTop, #btnCloseModalUpdateResepBottom",
         function () {
             closeModalUpdate();
-        }
+        },
     );
 
     // click backdrop
@@ -1303,8 +1298,86 @@ $(function () {
             })
             .finally(() => {
                 $btn.prop("disabled", false).removeClass(
-                    "opacity-70 cursor-not-allowed"
+                    "opacity-70 cursor-not-allowed",
                 );
             });
     });
+});
+
+$(document).on("click", ".btnLihatDetail", function () {
+    const resepId = $(this).data("resep-id");
+
+    // Reset dan Tampilkan Modal
+    $("#resep_id_display").text(resepId);
+    $("#resep_obat_list").html(`
+        <tr>
+            <td colspan="4" class="text-center py-10">
+                <i class="fa-solid fa-spinner fa-spin text-teal-500 text-2xl"></i>
+                <p class="text-gray-500 mt-2 text-xs font-medium">Mengambil data resep...</p>
+            </td>
+        </tr>
+    `);
+    $("#modalDetailResep").removeClass("hidden");
+
+    $.ajax({
+        url: `/farmasi/pengambilan-obat/get-data-resep-obat-detail/${resepId}`,
+        method: "GET",
+        success: function (response) {
+            let html = "";
+
+            // Akses data obat sesuai struktur JSON kamu
+            const dataObat = response.data.obat;
+
+            if (dataObat && dataObat.length > 0) {
+                dataObat.forEach((item) => {
+                    // Gunakan data dari pivot agar akurat sesuai resep tersebut
+                    const nama = item.nama_obat || "-";
+                    const jml = item.pivot
+                        ? item.pivot.jumlah
+                        : item.jumlah || 0;
+                    const dss = item.pivot
+                        ? item.pivot.dosis
+                        : item.dosis || "-";
+                    const ket = item.pivot
+                        ? item.pivot.keterangan
+                        : item.keterangan || "-";
+
+                    html += `
+                        <tr class="hover:bg-teal-50/30 transition-colors">
+                            <td class="px-4 py-3">
+                                <div class="font-bold text-gray-800">${nama}</div>
+                                <div class="text-[10px] text-gray-500">${item.kode_obat}</div>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="inline-block bg-teal-100 text-teal-700 px-2 py-0.5 rounded font-bold">
+                                    ${jml}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-gray-700 font-medium">${dss}</td>
+                            <td class="px-4 py-3 text-gray-500 italic">${ket}</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                html =
+                    '<tr><td colspan="4" class="text-center py-10 text-gray-400 font-medium">Tidak ada rincian obat ditemukan.</td></tr>';
+            }
+
+            $("#resep_obat_list").html(html);
+        },
+        error: function () {
+            $("#resep_obat_list").html(
+                '<tr><td colspan="4" class="text-center py-10 text-red-500 font-bold">Gagal mengambil data dari server.</td></tr>',
+            );
+        },
+    });
+});
+
+// Fungsi untuk menutup modal
+function closeModalDetail() {
+    $("#modalDetailResep").addClass("hidden");
+}
+
+$(document).on("click", "#btnCloseModal", function () {
+    closeModalDetail();
 });

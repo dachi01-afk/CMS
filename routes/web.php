@@ -487,6 +487,8 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('/get-data-resep-obat-id/{id}', [FarmasiPengambilanObatController::class, 'getDataResepObatById'])->name('pengambilan.obat.get.data.resep.obat.by.id');
             Route::post('/update-data-resep-obat/{id}', [FarmasiPengambilanObatController::class, 'updateResepObat'])->name('pengambilan.obat.update.data.resep.obat');
 
+            Route::get('get-data-resep-obat-detail/{id}', [FarmasiPengambilanObatController::class, 'getDataResepObatDetail'])->name('pengambilan.obat.get.data.resep.obat.detail');
+
             // Route Antrian Hari Ini Yang Sudah Selesai 
             Route::get('/get-data-resep-obat-selesai', [FarmasiPengambilanObatController::class, 'getDataResepObatYangSudahSelesai'])->name('pengambilan.obat.get.data.resep.obat.selesai');
         });

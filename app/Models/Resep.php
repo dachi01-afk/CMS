@@ -28,4 +28,13 @@ class Resep extends Model
     {
         return $this->belongsToMany(Obat::class, 'resep_obat', 'resep_id', 'obat_id')->withPivot(['jumlah', 'dosis', 'keterangan']);
     }
+
+    public static function getDataResepObat($id)
+    {
+        $resep = self::with(['obat' => function ($obat) {
+            $obat->select();
+        }])->find($id);
+
+        return $resep;
+    }
 }
