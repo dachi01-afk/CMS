@@ -592,11 +592,11 @@
                                         <option value="{{ $layanan->id }}"
                                             data-kategori-id="{{ $layanan->kategori_layanan_id }}"
                                             data-kategori-nama="{{ $layanan->kategoriLayanan->nama_kategori ?? '' }}"
-                                            data-harga="{{ $layanan->getRawOriginal('harga_setelah_diskon') ?? 0 }}">
+                                            data-harga="{{ $layanan->getRawOriginal('harga_setelah_diskon') ?? 0 }}"
+                                            data-is-global="{{ $layanan->is_global ? 'true' : 'false' }}">
                                             {{ $layanan->nama_layanan }}
                                         </option>
                                     @endforeach
-
                                 </select>
                             </div>
 

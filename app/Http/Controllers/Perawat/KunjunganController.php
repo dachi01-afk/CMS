@@ -243,7 +243,7 @@ class KunjunganController extends Controller
             'dataDokterPasien',
             'dataIdEMR',
             'urlBack',
-            'riwayatPenyakitDahulu' 
+            'riwayatPenyakitDahulu'
         ));
     }
 

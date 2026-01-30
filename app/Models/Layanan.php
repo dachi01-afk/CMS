@@ -20,20 +20,20 @@ class Layanan extends Model
         // 1. harga_setelah_diskon (kalau ada diskon)
         // 2. harga_sebelum_diskon (harga asli)
         // 3. Default 0
-        
+
         $hargaSetelah = $this->attributes['harga_setelah_diskon'] ?? null;
         $hargaSebelum = $this->attributes['harga_sebelum_diskon'] ?? null;
-        
+
         // Pakai harga setelah diskon kalau > 0, kalau tidak pakai harga sebelum diskon
         if ($hargaSetelah !== null && $hargaSetelah > 0) {
             return (float) $hargaSetelah;
         }
-        
+
         return (float) ($hargaSebelum ?? 0);
     }
 
     // ===== RELASI =====
-    
+
     public function kunjungan()
     {
         return $this->belongsToMany(
@@ -67,7 +67,7 @@ class Layanan extends Model
 
     public function layananPoli()
     {
-        return $this->belongsToMany(Poli::class, 'layanan_poli', 'layanan_id', 'poli_id');
+        return $this->belongsToMany(Poli::class, 'layanan_poli', 'layanan_id', 'poli_id')->withTimestamps();
     }
 
     public function polis()

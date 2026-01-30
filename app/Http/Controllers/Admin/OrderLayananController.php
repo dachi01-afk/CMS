@@ -13,6 +13,8 @@ use App\Models\KategoriLayanan;
 use App\Models\PenjualanLayanan;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Models\OrderLayanan;
+use App\Models\OrderLayananDetail;
 use Yajra\DataTables\Facades\DataTables;
 use Illuminate\Validation\ValidationException;
 
@@ -28,126 +30,112 @@ class OrderLayananController extends Controller
 
     public function getDataOrderLayanan()
     {
-        // Query digroup per kode_transaksi
-        $query = PenjualanLayanan::query()
-            ->join('pasien', 'penjualan_layanan.pasien_id', '=', 'pasien.id')
-            ->join('layanan', 'penjualan_layanan.layanan_id', '=', 'layanan.id')
-            ->join(
-                'kategori_layanan',
-                'penjualan_layanan.kategori_layanan_id',
-                '=',
-                'kategori_layanan.id'
-            )
-            ->selectRaw('
-            MIN(penjualan_layanan.id) as id,
-            penjualan_layanan.kode_transaksi,
-            penjualan_layanan.pasien_id,
-            pasien.nama_pasien,
-
-            MIN(penjualan_layanan.tanggal_transaksi) as tanggal_transaksi,
-            MIN(penjualan_layanan.status) as status,
-
-            SUM(penjualan_layanan.jumlah) as jumlah,
-            SUM(penjualan_layanan.total_tagihan) as total_tagihan,
-
-            GROUP_CONCAT(DISTINCT layanan.nama_layanan
-                ORDER BY layanan.nama_layanan SEPARATOR ", ") as nama_layanan,
-
-            GROUP_CONCAT(DISTINCT kategori_layanan.nama_kategori
-                ORDER BY kategori_layanan.nama_kategori SEPARATOR ", ") as kategori_layanan
-        ')
-            ->groupBy(
-                'penjualan_layanan.kode_transaksi',
-                'penjualan_layanan.pasien_id',
-                'pasien.nama_pasien'
-            )
-            ->orderByDesc(DB::raw('MIN(penjualan_layanan.tanggal_transaksi)'));
+        // Sekarang kita query langsung ke tabel Header (order_layanan)
+        // Jauh lebih ringan karena 1 baris = 1 transaksi
+        $query = OrderLayanan::query()
+            ->join('pasien', 'order_layanan.pasien_id', '=', 'pasien.id')
+            ->select([
+                'order_layanan.id',
+                'order_layanan.kode_transaksi',
+                'order_layanan.pasien_id',
+                'order_layanan.tanggal_order', // Gunakan tanggal_order dari tabel baru
+                'order_layanan.status_order_layanan', // Gunakan kolom status yang baru
+                'order_layanan.total_bayar',
+                'pasien.nama_pasien',
+            ])
+            ->orderByDesc('order_layanan.tanggal_order');
 
         return DataTables::of($query)
             ->addIndexColumn()
 
-            // Nama Pasien
-            ->addColumn('nama_pasien', function ($order) {
-                return $order->nama_pasien ?? '-';
-            })
-
-            // Nama Layanan (sudah hasil GROUP_CONCAT)
-            ->addColumn('nama_layanan', function ($order) {
-                return $order->nama_layanan ?? '-';
-            })
-
-            // Kategori (bisa "Pemeriksaan", "Non Pemeriksaan", atau gabungan)
-            ->addColumn('kategori_layanan', function ($order) {
-                return $order->kategori_layanan ?? '-';
-            })
-
-            // Jumlah (total jumlah semua layanan)
-            ->addColumn('jumlah', function ($order) {
-                return $order->jumlah ?? 1;
-            })
-
-            // Total Tagihan (total semua layanan dalam transaksi)
-            ->addColumn('total_tagihan', function ($order) {
-                $total = $order->total_tagihan ?? 0;
-                return 'Rp ' . number_format($total, 0, ',', '.');
-            })
-
-            // Status (pakai MIN(status) → asumsi semua item status-nya sama)
-            ->addColumn('status', function ($order) {
-                $status = $order->status ?? 'Belum Bayar';
-
-                $color = $status === 'Sudah Bayar'
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-yellow-100 text-yellow-700';
-
-                return '<span class="text-center py-1 rounded-lg text-xs font-semibold ' . $color . '">' . $status . '</span>';
-            })
-
-            // Tanggal Transaksi (MIN dari semua baris dalam transaksi)
-            ->addColumn('tanggal_transaksi', function ($order) {
-                return $order->tanggal_transaksi
-                    ? date('d M Y H:i', strtotime($order->tanggal_transaksi))
-                    : '-';
-            })
-
-            // Kode Transaksi
             ->addColumn('kode_transaksi', function ($order) {
                 return $order->kode_transaksi ?? '-';
             })
 
-            // Tombol Action (pakai MIN(id) sebagai "id transaksi" wakil)
+            // 1. Nama Pasien
+            ->addColumn('nama_pasien', function ($order) {
+                return $order->nama_pasien ?? '-';
+            })
+
+            // 2. Nama Layanan (Ambil dari Relasi Detail) dalam bentuk List
+            ->addColumn('nama_layanan', function ($order) {
+                // Ambil semua nama layanan unik
+                $layananArray = $order->details->map(function ($detail) {
+                    return $detail->layanan->nama_layanan ?? '-';
+                })->unique();
+
+                if ($layananArray->isEmpty()) {
+                    return '-';
+                }
+
+                // Susun menjadi HTML List
+                $html = '<ul class="list-disc list-inside text-[11px] space-y-0.5">';
+                foreach ($layananArray as $nama) {
+                    $html .= '<li>' . $nama . '</li>';
+                }
+                $html .= '</ul>';
+
+                return $html;
+            })
+
+            // 3. Kategori (Ambil dari Relasi Detail -> Layanan -> Kategori)
+            ->addColumn('kategori_layanan', function ($order) {
+                $kategoriNames = $order->details->map(function ($detail) {
+                    return $detail->layanan->kategori->nama_kategori ?? '-';
+                })->unique()->implode(', ');
+
+                return $kategoriNames ?: '-';
+            })
+
+            // 4. Jumlah (Total Qty dalam satu order)
+            ->addColumn('jumlah', function ($order) {
+                return $order->details->sum('qty') . ' Item';
+            })
+
+            // 5. Total Tagihan
+            ->addColumn('total_tagihan', function ($order) {
+                return 'Rp ' . number_format($order->total_bayar, 0, ',', '.');
+            })
+
+            // 6. Status (Warna Label)
+            ->addColumn('status', function ($order) {
+                $status = $order->status_order_layanan ?? 'Belum Bayar';
+
+                $color = ($status === 'Sudah Bayar')
+                    ? 'bg-green-100 text-green-700'
+                    : 'bg-yellow-100 text-yellow-700';
+
+                return '<span class="px-2 py-1 rounded-lg text-xs font-semibold ' . $color . '">' . $status . '</span>';
+            })
+
+            // 7. Tanggal Transaksi
+            ->addColumn('tanggal_transaksi', function ($order) {
+                if (!$order->tanggal_order) {
+                    return '-';
+                }
+
+                // Menggunakan translatedFormat agar bulan menjadi Bahasa Indonesia (Januari, dsb)
+                // 'd F Y' -> d (tgl), F (Bulan Panjang), Y (Tahun 4 digit)
+                return Carbon::parse($order->tanggal_order)->translatedFormat('d F Y');
+            })
+
+            // 8. Action
             ->addColumn('action', function ($order) {
                 return '
-        <div class="flex items-center justify-center gap-1">
-            <button 
-                type="button"
-                data-kode-transaksi="' . $order->kode_transaksi . '"
-                class="btn-update-order-layanan inline-flex items-center gap-1
-                       px-3 py-1.5 rounded-lg text-[11px] font-semibold
-                       bg-sky-50 text-sky-700 border border-sky-200
-                       hover:bg-sky-100 hover:text-sky-900
-                       focus:outline-none focus:ring-1 focus:ring-sky-400
-                       transition-colors duration-150">
-                <i class="fa-solid fa-pen-to-square text-[10px]"></i>
-                <span>Edit</span>
+                <div class="flex items-center justify-center gap-1">
+                    <button type="button" 
+                data-id="' . $order->id . '" 
+                data-kode-transaksi="' . $order->kode_transaksi . '" 
+                class="btn-update-order-layanan px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 transition-colors">
+                <i class="fa-solid fa-pen-to-square"></i> Edit
             </button>
-
-            <button 
-                type="button"
-                data-kode-transaksi="' . $order->kode_transaksi . '"
-                class="btn-delete-order-layanan inline-flex items-center gap-1
-                       px-3 py-1.5 rounded-lg text-[11px] font-semibold
-                       bg-rose-50 text-rose-700 border border-rose-200
-                       hover:bg-rose-100 hover:text-rose-900
-                       focus:outline-none focus:ring-1 focus:ring-rose-400
-                       transition-colors duration-150">
-                <i class="fa-solid fa-trash-can text-[10px]"></i>
-                <span>Hapus</span>
-            </button>
-        </div>
-    ';
+                    <button type="button" data-id="' . $order->id . '" data-kode="' . $order->kode_transaksi . '"
+                        class="btn-delete-order-layanan px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition-colors">
+                        <i class="fa-solid fa-trash-can"></i> Hapus
+                    </button>
+                </div>';
             })
-            ->rawColumns(['status', 'action'])
+            ->rawColumns(['status', 'action', 'nama_layanan'])
             ->make(true);
     }
 
@@ -189,7 +177,7 @@ class OrderLayananController extends Controller
 
     public function createDataOrderLayanan(Request $request)
     {
-        // 1) Validasi umum + array items
+        // 1) Validasi input dasar
         $validated = $request->validate([
             'pasien_id'      => 'required|exists:pasien,id',
             'total_tagihan'  => 'required|numeric|min:0',
@@ -202,20 +190,20 @@ class OrderLayananController extends Controller
         ], [
             'required' => 'Field ini wajib diisi.',
             'exists'   => 'Data tidak valid.',
-            'integer'  => 'Harus berupa angka.',
-            'numeric'  => 'Harus berupa angka.',
-            'array'    => 'Format data tidak sesuai.',
             'min'      => 'Nilai minimal tidak terpenuhi.',
         ]);
 
-        // Ambil kategori yang kepakai -> cek apakah ada "Pemeriksaan"
-        $kategoriIds  = collect($validated['items'])->pluck('kategori_layanan_id')->unique()->values();
-        $kategoriList = KategoriLayanan::whereIn('id', $kategoriIds)->get(['id', 'nama_kategori']);
+        // dd($validated['items']);
 
-        $kategoriMap = $kategoriList->pluck('nama_kategori', 'id'); // [id => nama]
+        // Identifikasi Kategori
+        $kategoriIds   = collect($validated['items'])->pluck('kategori_layanan_id')->unique()->values();
+        $kategoriList  = KategoriLayanan::whereIn('id', $kategoriIds)->get(['id', 'nama_kategori']);
+        $kategoriMap   = $kategoriList->pluck('nama_kategori', 'id');
+
+        // Cek apakah ada item dengan kategori "Pemeriksaan"
         $isPemeriksaan = $kategoriList->contains(fn($k) => $k->nama_kategori === 'Pemeriksaan');
 
-        // 2) Validasi tambahan kalau ada Pemeriksaan
+        // 2) Validasi tambahan khusus jika ada layanan Pemeriksaan
         if ($isPemeriksaan) {
             $request->validate([
                 'poli_id'          => 'required|exists:poli,id',
@@ -230,60 +218,57 @@ class OrderLayananController extends Controller
 
         try {
             $kunjunganId = null;
+            $orderId = null;
+            $message = "";
 
-            // ✅ Jika ada pemeriksaan, pastikan poli yang dipilih valid untuk semua layanan pemeriksaan (is_global/pivot)
             if ($isPemeriksaan) {
+                /**
+                 * ALUR 1: HANYA BUAT KUNJUNGAN
+                 * (Pembayaran & Detail akan diurus Dokter/EMR nanti)
+                 */
                 $poliId = (int) $request->poli_id;
 
-                // ambil layanan yang kategori-nya "Pemeriksaan"
+                // Validasi relasi Layanan - Poli (untuk layanan non-global)
                 $pemeriksaanItems = collect($validated['items'])->filter(function ($it) use ($kategoriMap) {
-                    $nama = $kategoriMap[(int)$it['kategori_layanan_id']] ?? null;
-                    return $nama === 'Pemeriksaan';
+                    return ($kategoriMap[(int)$it['kategori_layanan_id']] ?? null) === 'Pemeriksaan';
                 });
+                $layananPemeriksaanIds = $pemeriksaanItems->pluck('layanan_id')->unique();
+                $layanans = Layanan::with('layananPoli:id')->whereIn('id', $layananPemeriksaanIds)->get();
 
-                $layananPemeriksaanIds = $pemeriksaanItems->pluck('layanan_id')->unique()->values();
-
-                $layanans = Layanan::with('layananPoli:id')
-                    ->whereIn('id', $layananPemeriksaanIds)
-                    ->get(['id', 'is_global']);
-
-                // cek: layanan restricted harus mengandung poliId di pivot
                 foreach ($layanans as $l) {
                     if ((int)$l->is_global === 0) {
-                        $ok = $l->layananPoli->pluck('id')->contains($poliId);
-                        if (!$ok) {
+                        if (!$l->layananPoli->pluck('id')->contains($poliId)) {
                             throw ValidationException::withMessages([
-                                'poli_id' => ['Poli yang dipilih tidak diizinkan untuk salah satu layanan pemeriksaan.'],
+                                'poli_id' => ['Poli tidak sesuai dengan layanan pemeriksaan yang dipilih.'],
                             ]);
                         }
                     }
                 }
 
-                // 3) Kalau Pemeriksaan → validasi jadwal sesuai poli + hari ini
-                $hariIni = Carbon::now()->locale('id')->dayName;
+                // Validasi Jadwal Dokter
+                $hariIni = \Carbon\Carbon::now()->locale('id')->dayName;
                 $jadwal = JadwalDokter::where('id', $request->jadwal_dokter_id)
                     ->where('poli_id', $poliId)
                     ->where('hari', $hariIni)
                     ->first();
 
                 if (!$jadwal) {
-                    throw ValidationException::withMessages([
-                        'jadwal_dokter_id' => ['Jadwal dokter tidak valid untuk poli ini / hari ini.'],
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'jadwal_dokter_id' => ['Jadwal dokter tidak ditemukan atau tidak aktif hari ini.'],
                     ]);
                 }
 
-                // 4) Buat kunjungan + no antrian (lock)
+                // Generate No Antrian
                 $tanggal = today();
-
                 $lastRow = Kunjungan::where('poli_id', $poliId)
                     ->whereDate('tanggal_kunjungan', $tanggal)
                     ->orderByRaw('CAST(no_antrian AS UNSIGNED) DESC')
                     ->lockForUpdate()
                     ->first();
 
-                $lastNumber  = $lastRow ? (int) $lastRow->no_antrian : 0;
-                $formattedNo = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
+                $formattedNo = str_pad(($lastRow ? (int)$lastRow->no_antrian : 0) + 1, 3, '0', STR_PAD_LEFT);
 
+                // Buat Data Kunjungan
                 $kunjungan = Kunjungan::create([
                     'jadwal_dokter_id'  => $jadwal->id,
                     'dokter_id'         => $jadwal->dokter_id,
@@ -291,64 +276,64 @@ class OrderLayananController extends Controller
                     'pasien_id'         => $validated['pasien_id'],
                     'tanggal_kunjungan' => $tanggal,
                     'no_antrian'        => $formattedNo,
-                    'keluhan_awal'      => null,
                     'status'            => 'Pending',
+                    'keluhan_awal'      => null,
                 ]);
 
                 $kunjunganId = $kunjungan->id;
-            }
+                $message = "Kunjungan berhasil dibuat. Silakan pasien menuju poli.";
+            } else {
+                /**
+                 * ALUR 2: BUAT ORDER LAYANAN (Murni Non-Pemeriksaan / Ritel)
+                 */
+                $kodeTransaksi = 'TRX-' . strtoupper(uniqid());
 
-            // 5) Kode transaksi untuk semua item
-            $kodeTransaksi = 'TRX-' . strtoupper(uniqid());
-
-            $orders = [];
-            $grandTotal = 0;
-
-            foreach ($validated['items'] as $item) {
-                $subtotal = (float) $item['total_tagihan'];
-                $grandTotal += $subtotal;
-
-                $orders[] = PenjualanLayanan::create([
-                    'pasien_id'            => $validated['pasien_id'],
-                    'layanan_id'           => $item['layanan_id'],
-                    'kategori_layanan_id'  => $item['kategori_layanan_id'],
-                    'kunjungan_id'         => $kunjunganId,
-                    'metode_pembayaran_id' => null,
-                    'jumlah'               => (int)$item['jumlah'],
-                    'total_tagihan'        => $subtotal,
-                    'sub_total'            => $subtotal,
-                    'kode_transaksi'       => $kodeTransaksi,
-                    'tanggal_transaksi'    => now(),
-                    'status'               => 'Belum Bayar',
+                $order = OrderLayanan::create([
+                    'kode_transaksi' => $kodeTransaksi,
+                    'pasien_id'      => $validated['pasien_id'],
+                    'total_bayar'    => $validated['total_tagihan'],
+                    'potongan_pesanan'         => $request->diskon ?? 0, // Ambil dari input diskon global
+                    'tanggal_order'  => now(),
+                    'status_order_layanan'         => 'Belum Bayar',
                 ]);
+
+                foreach ($validated['items'] as $item) {
+                    // Hitung harga satuan agar benar jika qty > 1
+                    $qty = (int)$item['jumlah'];
+                    $totalTagihanItem = (float)$item['total_tagihan'];
+                    $hargaSatuan = $totalTagihanItem / $qty;
+
+                    OrderLayananDetail::create([
+                        'order_layanan_id' => $order->id,
+                        'layanan_id'       => $item['layanan_id'],
+                        'qty'              => $qty,
+                        'harga_satuan'     => $hargaSatuan,
+                        'total_harga_item' => $totalTagihanItem,
+                    ]);
+                }
+
+                $orderId = $order->id;
+                $message = "Order layanan berhasil dibuat.";
             }
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => $isPemeriksaan
-                    ? 'Order Layanan + Kunjungan Berhasil Dibuat!'
-                    : 'Order Layanan Berhasil Dibuat!',
+                'message' => $message,
                 'data'    => [
-                    'kode_transaksi' => $kodeTransaksi,
-                    'total_tagihan'  => $grandTotal,
-                    'orders'         => $orders,
                     'kunjungan_id'   => $kunjunganId,
+                    'order_id'       => $orderId,
+                    'is_pemeriksaan' => $isPemeriksaan
                 ],
             ], 201);
         } catch (\Throwable $e) {
             DB::rollBack();
-
-            // kalau ini ValidationException, Laravel sudah kirim 422 otomatis,
-            // tapi kita tetap amanin kalau terlempar manual
-            if ($e instanceof ValidationException) {
-                throw $e;
-            }
+            if ($e instanceof ValidationException) throw $e;
 
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat menyimpan data.',
+                'message' => 'Gagal memproses permintaan.',
                 'error'   => $e->getMessage(),
             ], 500);
         }
@@ -372,133 +357,109 @@ class OrderLayananController extends Controller
 
     public function getDataOrderLayananById($kodeTransaksi)
     {
-        $orders = PenjualanLayanan::with([
+        // Query ke tabel Header, lalu Eager Load relasi detailnya
+        $order = OrderLayanan::with([
             'pasien',
-            'layanan',
-            'kategoriLayanan',
-            'kunjungan.poli',
-            'kunjungan.jadwalDokter',
+            'orderLayananDetail.layanan.kategoriLayanan', // Ambil data layanan & kategori lewat detail
         ])
             ->where('kode_transaksi', $kodeTransaksi)
-            ->get();
+            ->first();
 
-        if ($orders->isEmpty()) {
+        if (!$order) {
             return response()->json([
                 'success' => false,
                 'message' => 'Data order layanan tidak ditemukan.',
             ], 404);
         }
 
-        $first = $orders->first();
-
-        $tanggalTransaksi = $first->tanggal_transaksi
-            ? Carbon::parse($first->tanggal_transaksi)->format('Y-m-d\TH:i')
+        // Format tanggal untuk input type="datetime-local" (Y-m-d\TH:i)
+        $tanggalOrder = $order->tanggal_order
+            ? \Carbon\Carbon::parse($order->tanggal_order)->format('Y-m-d\TH:i')
             : null;
 
-        // Ambil kunjungan utk header
-        $kunjungan = $first->kunjungan;
-        $poli      = optional($kunjungan)->poli;
-        $jadwal    = optional($kunjungan)->jadwalDokter;
-
-        // Mapping setiap baris menjadi item layanan
-        $items = $orders->map(function ($row) {
-            $kunjunganRow = $row->kunjungan;
-            $poliRow      = optional($kunjunganRow)->poli;
-            $jadwalRow    = optional($kunjunganRow)->jadwalDokter;
-
+        // Mapping item dari tabel order_layanan_detail
+        $items = $order->details->map(function ($detail) {
             return [
-                'id'                     => $row->id, // id penjualan_layanan
-                'layanan_id'             => $row->layanan_id,
-                'nama_layanan'           => optional($row->layanan)->nama_layanan,
-                'kategori_layanan_id'    => $row->kategori_layanan_id,
-                'kategori_layanan_nama'  => optional($row->kategoriLayanan)->nama_kategori,
-                'jumlah'                 => $row->jumlah,
-                'total_tagihan'          => $row->total_tagihan,
-
-                // info poli / jadwal per transaksi (biasanya sama utk semua items)
-                'poli_id'                => optional($kunjunganRow)->poli_id,
-                'nama_poli'              => optional($poliRow)->nama_poli,
-                'jadwal_dokter_id'       => optional($kunjunganRow)->jadwal_dokter_id,
-                'jadwal_dokter'          => $jadwalRow
-                    ? $jadwalRow->jam_awal . ' - ' . $jadwalRow->jam_selesai
-                    : null,
+                'id'                    => $detail->id, // id detail
+                'layanan_id'            => $detail->layanan_id,
+                'nama_layanan'          => optional($detail->layanan)->nama_layanan,
+                'kategori_layanan_id'   => optional($detail->layanan)->kategori_layanan_id,
+                'kategori_layanan_nama' => optional($detail->layanan->kategori)->nama_kategori,
+                'jumlah'                => $detail->qty,
+                'harga_satuan'          => $detail->harga_satuan,
+                'total_tagihan'         => $detail->total_harga_item,
             ];
-        })->values();
+        });
+
+        // Cek apakah ada layanan "Pemeriksaan" di dalam item
+        // Ini penting untuk JS kamu menentukan apakah section Poli harus muncul
+        $isPemeriksaan = $items->contains(function ($item) {
+            return strtolower($item['kategori_layanan_nama'] ?? '') === 'pemeriksaan';
+        });
 
         return response()->json([
             'success' => true,
             'data' => [
-                // header transaksi
-                'kode_transaksi'    => $first->kode_transaksi,
-                'tanggal_transaksi' => $tanggalTransaksi,
-                'status'            => $first->status,
+                // Header Transaksi
+                'id'                   => $order->id,
+                'kode_transaksi'       => $order->kode_transaksi,
+                'tanggal_transaksi'    => $tanggalOrder,
+                'status'               => $order->status_order_layanan,
+                'potongan_pesanan'     => $order->potongan_pesanan,
+                'total_tagihan'        => $order->total_bayar,
 
-                // ==> TAMBAH INI
-                'order_layanan_id'  => $items->first()->id ?? null,
-
-                // data pasien
+                // Data Pasien
                 'pasien' => [
-                    'id'            => $first->pasien_id,
-                    'nama_pasien'   => optional($first->pasien)->nama_pasien,
-                    'no_emr'        => optional($first->pasien)->no_emr,
-                    'jenis_kelamin' => optional($first->pasien)->jenis_kelamin,
+                    'id'            => $order->pasien_id,
+                    'nama_pasien'   => optional($order->pasien)->nama_pasien,
+                    'no_emr'        => optional($order->pasien)->no_emr,
+                    'jenis_kelamin' => optional($order->pasien)->jenis_kelamin,
                 ],
 
-                // header poli / jadwal
-                'poli_id'          => optional($kunjungan)->poli_id,
-                'nama_poli'        => optional($poli)->nama_poli,
-                'jadwal_dokter_id' => optional($kunjungan)->jadwal_dokter_id,
-                'jadwal_dokter'    => $jadwal
-                    ? $jadwal->jam_awal . ' - ' . $jadwal->jam_selesai
-                    : null,
-
-                // daftar item layanan
+                // Daftar Item Layanan (Detail)
                 'items' => $items,
 
-                // total keseluruhan
-                'total_tagihan' => $items->sum('total_tagihan'),
+                // Flag untuk JS (opsional tapi membantu)
+                'has_pemeriksaan' => $isPemeriksaan,
             ],
         ]);
     }
 
     public function getDataPoli(Request $request)
     {
+        // 1. Buat layanan_id jadi optional (nullable)
         $request->validate([
-            'layanan_id'   => 'required|array|min:1',
+            'layanan_id'   => 'nullable|array',
             'layanan_id.*' => 'integer|exists:layanan,id',
         ]);
 
+        // 2. Jika tidak ada layanan yang dipilih, kembalikan semua poli
+        if (!$request->has('layanan_id') || empty($request->layanan_id)) {
+            $allPoli = Poli::select('id', 'nama_poli')->orderBy('nama_poli')->get();
+            return response()->json(['success' => true, 'data' => $allPoli, 'mode' => 'all']);
+        }
+
+        // 3. Logika filter tetap sama seperti yang kamu buat
         $layanans = Layanan::with('layananPoli:id,nama_poli')
             ->whereIn('id', $request->layanan_id)
             ->get(['id', 'is_global']);
 
-        // Ambil yang spesifik poli saja (is_global = 0)
         $restricted = $layanans->filter(fn($l) => (int)$l->is_global === 0);
 
-        // Jika semua global => boleh semua poli
         if ($restricted->isEmpty()) {
             $allPoli = Poli::select('id', 'nama_poli')->orderBy('nama_poli')->get();
             return response()->json(['success' => true, 'data' => $allPoli, 'mode' => 'all']);
         }
 
-        // Intersection poli_id dari semua layanan restricted
         $allowedIds = null;
         foreach ($restricted as $l) {
+            // Asumsi relasi di model Layanan bernama 'layananPoli' (BelongsToMany ke Poli)
             $ids = $l->layananPoli->pluck('id')->toArray();
             $allowedIds = is_null($allowedIds) ? $ids : array_values(array_intersect($allowedIds, $ids));
         }
 
-        if (empty($allowedIds)) {
-            return response()->json([
-                'success' => true,
-                'data' => [],
-                'mode' => 'empty',
-                'message' => 'Tidak ada poli yang cocok untuk semua layanan pemeriksaan yang dipilih.'
-            ]);
-        }
-
         $allowedPoli = Poli::select('id', 'nama_poli')
-            ->whereIn('id', $allowedIds)
+            ->whereIn('id', $allowedIds ?: [])
             ->orderBy('nama_poli')
             ->get();
 
@@ -510,174 +471,105 @@ class OrderLayananController extends Controller
      */
     public function updateDataOrderLayanan(Request $request)
     {
-        // ==============
-        // VALIDASI DASAR
-        // ==============
+        // 1. VALIDASI DASAR
         $validated = $request->validate([
-            'order_layanan_id'        => 'required|exists:penjualan_layanan,id',
-            'pasien_id'               => 'required|exists:pasien,id',
-
-            'items'                   => 'required|array|min:1',
-            'items.*.layanan_id'      => 'required|exists:layanan,id',
+            'order_layanan_id'            => 'required|exists:order_layanan,id',
+            'pasien_id'                   => 'required|exists:pasien,id',
+            'items'                       => 'required|array|min:1',
+            'items.*.layanan_id'          => 'required|exists:layanan,id',
             'items.*.kategori_layanan_id' => 'required|exists:kategori_layanan,id',
-            'items.*.jumlah'          => 'required|integer|min:1',
-            'items.*.total_tagihan'   => 'required|numeric|min:0',
-
-            'total_tagihan'           => 'required|numeric|min:0',
-        ], [
-            'required' => 'Field ini wajib diisi.',
-            'exists'   => 'Data tidak valid.',
-            'integer'  => 'Harus berupa angka.',
-            'numeric'  => 'Harus berupa angka.',
-            'array'    => 'Format data tidak valid.',
-            'min'      => 'Nilai minimal tidak valid.',
+            'items.*.jumlah'              => 'required|integer|min:1',
+            'items.*.total_tagihan'       => 'required|numeric|min:0',
+            'total_tagihan'               => 'required|numeric|min:0',
         ]);
+
+        // dd($validated);
 
         $itemsInput = collect($validated['items']);
 
-        // ==================================
-        // CEK APAKAH ADA KATEGORI PEMERIKSAAN
-        // ==================================
+        // 2. CEK KATEGORI PEMERIKSAAN
         $kategoriIds = $itemsInput->pluck('kategori_layanan_id')->unique()->all();
-
-        $kategoriList = KategoriLayanan::whereIn('id', $kategoriIds)
-            ->get()
-            ->keyBy('id');
+        $kategoriList = KategoriLayanan::whereIn('id', $kategoriIds)->get()->keyBy('id');
 
         $hasPemeriksaan = $kategoriList->contains(function ($kat) {
-            return $kat->nama_kategori === 'Pemeriksaan';
+            return strtolower($kat->nama_kategori) === 'pemeriksaan';
         });
 
-        // VALIDASI TAMBAHAN JIKA ADA PEMERIKSAAN
-        if ($hasPemeriksaan) {
-            $request->validate([
-                'poli_id'          => 'required|exists:poli,id',
-                'jadwal_dokter_id' => 'required|exists:jadwal_dokter,id',
-            ], [
-                'poli_id.required'          => 'Poli harus dipilih untuk layanan pemeriksaan.',
-                'jadwal_dokter_id.required' => 'Jadwal dokter hari ini harus dipilih.',
-            ]);
-        }
-
         DB::beginTransaction();
-
         try {
-            /** @var PenjualanLayanan $firstOrder */
-            $firstOrder = PenjualanLayanan::lockForUpdate()
-                ->with('kunjungan')
-                ->findOrFail($validated['order_layanan_id']);
+            // Ambil data order lama
+            $oldOrder = OrderLayanan::lockForUpdate()->findOrFail($validated['order_layanan_id']);
+            $kodeTransaksi = $oldOrder->kode_transaksi;
 
-            $kodeTransaksi    = $firstOrder->kode_transaksi;
-            $statusTransaksi  = $firstOrder->status;
-            $tanggalTransaksi = $firstOrder->tanggal_transaksi ?? Carbon::now();
-            $kunjunganId      = $firstOrder->kunjungan_id;
-
-            // =====================================================
-            // JIKA ADA PEMERIKSAAN → UPDATE / BUAT KUNJUNGAN SEKALI
-            // (dipakai bersama utk semua item Pemeriksaan)
-            // =====================================================
             if ($hasPemeriksaan) {
-                $poliId  = (int) $request->poli_id;
-                $jadwalId = (int) $request->jadwal_dokter_id;
-
-                // pastikan jadwal valid utk poli tsb
-                $jadwal = JadwalDokter::where('id', $jadwalId)
-                    ->where('poli_id', $poliId)
-                    ->first();
-
-                if (!$jadwal) {
-                    throw ValidationException::withMessages([
-                        'jadwal_dokter_id' => 'Jadwal dokter tidak valid untuk poli ini.',
-                    ]);
-                }
-
-                if ($kunjunganId) {
-                    // sudah punya kunjungan → update poli/jadwal/dokter
-                    $kunjungan = Kunjungan::lockForUpdate()->find($kunjunganId);
-                    if ($kunjungan) {
-                        $kunjungan->poli_id          = $jadwal->poli_id;
-                        $kunjungan->dokter_id        = $jadwal->dokter_id;
-                        $kunjungan->jadwal_dokter_id = $jadwal->id;
-                        // no_antrian & tanggal_kunjungan dibiarkan
-                        $kunjungan->save();
-                    }
-                } else {
-                    // belum ada kunjungan → buat antrian baru utk hari ini
-                    $tanggal = today();
-
-                    $lastRow = Kunjungan::where('poli_id', $poliId)
-                        ->whereDate('tanggal_kunjungan', $tanggal)
-                        ->orderByRaw('CAST(no_antrian AS UNSIGNED) DESC')
-                        ->lockForUpdate()
-                        ->first();
-
-                    $lastNumber  = $lastRow ? (int) $lastRow->no_antrian : 0;
-                    $formattedNo = str_pad($lastNumber + 1, 3, '0', STR_PAD_LEFT);
-
-                    $kunjungan = Kunjungan::create([
-                        'jadwal_dokter_id'  => $jadwal->id,
-                        'dokter_id'         => $jadwal->dokter_id,
-                        'poli_id'           => $jadwal->poli_id,
-                        'pasien_id'         => $validated['pasien_id'],
-                        'tanggal_kunjungan' => $tanggal,
-                        'no_antrian'        => $formattedNo,
-                        'keluhan_awal'      => null,
-                        'status'            => 'Pending',
-                    ]);
-
-                    $kunjunganId = $kunjungan->id;
-                }
-            } else {
-                // Kalau sebelumnya punya kunjungan tapi sekarang SEMUA layanan bukan Pemeriksaan,
-                // bisa pilih: mau dibiarkan / di-null-kan. Di sini kita biarkan saja.
-            }
-
-            // ==========================
-            // HAPUS SEMUA ITEM LAMA
-            // ==========================
-            PenjualanLayanan::where('kode_transaksi', $kodeTransaksi)
-                ->lockForUpdate()
-                ->delete();
-
-            // ==========================
-            // INSERT ULANG ITEM BARU
-            // ==========================
-            foreach ($itemsInput as $item) {
-                $kategoriId = (int) $item['kategori_layanan_id'];
-                $kat        = $kategoriList->get($kategoriId);
-                $isPemeriksaanItem = $kat && $kat->nama_kategori === 'Pemeriksaan';
-
-                PenjualanLayanan::create([
-                    'kode_transaksi'      => $kodeTransaksi,
-                    'pasien_id'           => $validated['pasien_id'],
-                    'layanan_id'          => (int) $item['layanan_id'],
-                    'kategori_layanan_id' => $kategoriId,
-                    'jumlah'              => (int) $item['jumlah'],
-                    'total_tagihan'       => (float) $item['total_tagihan'],
-                    'sub_total'           => (float) $item['total_tagihan'],
-                    'tanggal_transaksi'   => $tanggalTransaksi,
-                    'status'              => $statusTransaksi,
-                    'kunjungan_id'        => $isPemeriksaanItem ? $kunjunganId : null,
+                /**
+                 * SKENARIO A: BERUBAH MENJADI PEMERIKSAAN
+                 * (Hapus data di order_layanan, pindah ke kunjungan)
+                 */
+                $request->validate([
+                    'poli_id'          => 'required|exists:poli,id',
+                    'jadwal_dokter_id' => 'required|exists:jadwal_dokter,id',
                 ]);
+
+                $jadwal = JadwalDokter::findOrFail($request->jadwal_dokter_id);
+
+                // 1. Buat Kunjungan (Alur Medis)
+                $tanggal = today();
+                $lastRow = Kunjungan::where('poli_id', $request->poli_id)
+                    ->whereDate('tanggal_kunjungan', $tanggal)
+                    ->orderByRaw('CAST(no_antrian AS UNSIGNED) DESC')
+                    ->lockForUpdate()->first();
+
+                $noAntrian = str_pad(($lastRow ? (int)$lastRow->no_antrian : 0) + 1, 3, '0', STR_PAD_LEFT);
+
+                $kunjungan = Kunjungan::create([
+                    'jadwal_dokter_id'  => $jadwal->id,
+                    'dokter_id'         => $jadwal->dokter_id,
+                    'poli_id'           => $request->poli_id,
+                    'pasien_id'         => $validated['pasien_id'],
+                    'tanggal_kunjungan' => $tanggal,
+                    'no_antrian'        => $noAntrian,
+                    'status'            => 'Pending',
+                    'kode_transaksi'    => $kodeTransaksi, // Keep track kodenya
+                ]);
+
+                // 2. HAPUS data lama di order_layanan karena sudah pindah jalur ke Medis
+                $oldOrder->details()->delete();
+                $oldOrder->delete();
+
+                $msg = "Order diubah menjadi Kunjungan Pemeriksaan.";
+            } else {
+                /**
+                 * SKENARIO B: TETAP / BERUBAH MENJADI NON-PEMERIKSAAN
+                 * (Update table order_layanan & order_layanan_detail)
+                 */
+                $oldOrder->update([
+                    'pasien_id'     => $validated['pasien_id'],
+                    'total_tagihan' => $validated['total_tagihan'],
+                    'tanggal_order' => now(),
+                ]);
+
+                // Sync Detail: Hapus yang lama, insert yang baru
+                $oldOrder->details()->delete();
+
+                foreach ($itemsInput as $item) {
+                    OrderLayananDetail::create([
+                        'order_layanan_id'    => $oldOrder->id,
+                        'layanan_id'          => $item['layanan_id'],
+                        'kategori_layanan_id' => $item['kategori_layanan_id'],
+                        'jumlah'              => $item['jumlah'],
+                        'harga_satuan'        => (float)$item['total_tagihan'] / $item['jumlah'],
+                        'subtotal'            => $item['total_tagihan'],
+                    ]);
+                }
+                $msg = "Order Layanan berhasil diperbarui.";
             }
 
             DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Order Layanan berhasil diperbarui!',
-            ]);
-        } catch (ValidationException $e) {
+            return response()->json(['success' => true, 'message' => $msg]);
+        } catch (\Exception $e) {
             DB::rollBack();
-            throw $e; // biar tetap balik sebagai 422 ke front-end
-        } catch (\Throwable $e) {
-            DB::rollBack();
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Terjadi kesalahan saat mengupdate data.',
-                'error'   => $e->getMessage(),
-            ], 500);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
     }
 

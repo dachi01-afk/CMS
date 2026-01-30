@@ -17,6 +17,7 @@ class OrderLabFactory extends Factory
 
         return [
             'no_order_lab' => 'LAB-'.$tanggalPemeriksaan->format('Ymd').'-'.$this->faker->unique()->numerify('####'),
+            'kunjungan_id' => $kunjungan->id,
 
             'pasien_id' => $kunjungan?->pasien_id,
             'dokter_id' => $kunjungan?->dokter_id,
