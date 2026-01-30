@@ -118,7 +118,6 @@
         {{-- Card --}}
         <div
             class="relative flex flex-col bg-white rounded-2xl shadow-2xl dark:bg-gray-900 border border-gray-100 dark:border-gray-700 max-h-[90vh]">
-
             {{-- Header (sticky) --}}
             <div
                 class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-900 z-10 rounded-t-2xl">
@@ -321,408 +320,601 @@
                     </div>
                 </div>
 
-                {{-- Section: Rincian Item (OBAT / BHP) --}}
+                {{-- Section: Rincian Item + Sidebar Rincian (layout 2 kolom) --}}
                 <div class="mt-5 border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
 
-                    {{-- Tabs --}}
-                    <div class="flex items-center gap-6 text-xs font-semibold uppercase tracking-wide">
-                        <button type="button" id="tab-obat" data-tab="obat"
-                            class="pb-2 border-b-2 border-pink-500 text-gray-900 dark:text-white">
-                            Obat
-                        </button>
+                        {{-- LEFT: Form Rincian Item --}}
+                        <div class="lg:col-span-8">
+                            {{-- Tabs + Action --}}
+                            <div class="flex items-center justify-between gap-4">
+                                <div class="flex items-center gap-6 text-xs font-semibold uppercase tracking-wide">
+                                    <button type="button" id="tab-obat" data-tab="obat"
+                                        class="pb-2 border-b-2 border-pink-500 text-gray-900 dark:text-white">
+                                        Obat
+                                    </button>
 
-                        <button type="button" id="tab-bhp" data-tab="bhp"
-                            class="pb-2 border-b-2 border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
-                            Bahan Habis Pakai
-                        </button>
-                    </div>
-
-                    <div class="mt-4">
-
-                        {{-- ========================= PANEL: OBAT (sesuai foto) ========================= --}}
-                        <div id="panel-obat" data-panel="obat">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                                {{-- Nama Obat --}}
-                                <div>
-                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                        Nama Obat <span class="text-red-500">*</span>
-                                    </label>
-                                    <select name="obat_id" id="obat_id" required class="mt-1">
-                                        <option value="">Pilih obat...</option>
-                                    </select>
-                                    <div class="text-red-600 text-[11px] mt-1" data-error="obat_id"></div>
+                                    <button type="button" id="tab-bhp" data-tab="bhp"
+                                        class="pb-2 border-b-2 border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
+                                        Bahan Habis Pakai
+                                    </button>
                                 </div>
 
-                                {{-- Total Stok Item (HANYA MUNCUL SAAT RETURN) --}}
-                                <div id="wrapper_total_stok" class="hidden">
-                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                        Total Stok Item <span class="text-red-500">*</span>
-                                    </label>
-                                    <input type="text" id="total_stok_item" readonly
-                                        class="mt-1 block w-full text-sm bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                                        value="0">
-                                    <p class="text-[10px] text-gray-500 mt-1">* Stok saat ini di depot tujuan</p>
-                                </div>
-
-                                {{-- Kategori Obat --}}
-                                <div>
-                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                        Kategori Obat <span class="text-red-500">*</span>
-                                    </label>
-                                    <input name="kategori_obat_id" id="kategori_obat_id"
-                                        class="mt-1 block w-full text-sm bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                                        disabled>
-                                    <div class="text-red-600 text-[11px] mt-1" data-error="kategori_obat_id"></div>
-                                </div>
-
-                                {{-- Satuan --}}
-                                <div>
-                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                        Satuan <span class="text-red-500">*</span>
-                                    </label>
-                                    <input name="satuan_obat_id" id="satuan_obat_id"
-                                        class="mt-1 block w-full text-sm bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                                        disabled>
-                                    <div class="text-red-600 text-[11px] mt-1" data-error="satuan_obat_id"></div>
-                                </div>
-
-                                {{-- Expired Date --}}
-                                <div>
-                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                        Expired Date <span class="text-red-500">*</span>
-                                    </label>
-                                    <input type="date" name="expired_date_obat" id="expired_date_obat"
-                                        class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
-                                    <div class="text-red-600 text-[11px] mt-1" data-error="expired_date_obat"></div>
-                                </div>
-
-                                {{-- Batch --}}
-                                <div>
-                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                        Batch <span class="text-red-500">*</span>
-                                    </label>
-                                    <input name="batch_obat" id="batch_obat"
-                                        class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                                        required>
-                                    <div class="text-red-600 text-[11px] mt-1" data-error="batch_obat"></div>
-                                </div>
-
-                                {{-- Jumlah Obat --}}
-                                <div class="md:col-span-2">
-                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                        Jumlah Obat <span class="text-red-500">*</span>
-                                    </label>
-                                    <input type="number" min="0" name="jumlah_obat" id="jumlah_obat"
-                                        value="0"
-                                        class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                                        required>
-                                    <div class="text-red-600 text-[11px] mt-1" data-error="jumlah_obat"></div>
-                                </div>
-
-                                {{-- Harga beli lama (kiri) --}}
-                                <div>
-                                    <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
-                                        Harga Beli Satuan Obat Lama
-                                    </label>
-                                    <input type="text" name="harga_beli_satuan_obat_lama"
-                                        id="harga_beli_satuan_obat_lama" readonly
-                                        class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                                </div>
-
-                                {{-- Harga satuan obat (kanan) --}}
-                                <div>
-                                    <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
-                                        Harga Beli Satuan Obat Baru <span class="text-red-500">*</span>
-                                    </label>
-                                    <input type="text" name="harga_satuan_obat_baru" id="harga_satuan_obat_baru"
-                                        class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                                        required>
-                                    <div class="text-red-600 text-[11px] mt-1" data-error="harga_satuan_obat"></div>
-                                </div>
-
-                                {{-- Harga jual satuan obat lama --}}
-                                <div>
-                                    <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
-                                        Harga Jual Satuan Obat Lama
-                                    </label>
-                                    <input type="text" name="harga_jual_lama_obat" id="harga_jual_lama_obat"
-                                        readonly
-                                        class="input-rupiah mt-1 input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                                </div>
-
-                                {{-- Harga jual satuan obat baru --}}
-                                <div>
-                                    <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
-                                        Harga Jual Satuan Obat Baru
-                                    </label>
-                                    <input type="text" name="harga_jual_baru_obat" id="harga_jual_baru_obat"
-                                        class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                                </div>
-
-                                {{-- Harga jual OTC lama --}}
-                                <div>
-                                    <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
-                                        Harga Jual OTC Lama
-                                    </label>
-                                    <input type="text" name="harga_jual_otc_lama_obat"
-                                        id="harga_jual_otc_lama_obat" readonly
-                                        class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                                </div>
-
-                                {{-- Harga jual OTC baru --}}
-                                <div>
-                                    <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
-                                        Harga Jual OTC Baru
-                                    </label>
-                                    <input type="text" name="harga_jual_otc_baru_obat"
-                                        id="harga_jual_otc_baru_obat"
-                                        class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                                </div>
-
-                                {{-- Harga Total Awal --}}
-                                <div class="md:col-span-2">
-                                    <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
-                                        Harga Total Awal <span class="text-red-500">*</span>
-                                    </label>
-                                    <input type="text" name="harga_total_awal_obat" id="harga_total_awal_obat"
-                                        readonly
-                                        class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                                        required>
-                                    <div class="text-red-600 text-[11px] mt-1" data-error="harga_total_awal_obat">
-                                    </div>
-                                </div>
-
-                                {{-- Depot Tujuan --}}
-                                <div class="md:col-span-2">
-                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                        Depot Tujuan
-                                    </label>
-                                    <select name="depot_id" id="depot_id" class="mt-1"></select>
-
-                                    <div id="info-stok-depot"
-                                        class="mt-2 text-[11px] text-blue-600 font-medium hidden">
-                                        Stok di depot ini: <span id="nilai-stok">0</span>
-                                    </div>
-
-                                    <div class="text-red-600 text-[11px] mt-1" data-error="depot_id"></div>
-                                </div>
-                            </div>
-
-                            {{-- Button: Tambah Rincian --}}
-                            <div class="mt-4 flex justify-end">
-                                <button type="button" id="btn-tambah-rincian-obat"
-                                    class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold border border-blue-500 text-blue-600 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30">
+                                <button type="button" id="btn-tambah-rincian"
+                                    class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold border border-blue-500 text-blue-600 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 whitespace-nowrap">
                                     Tambah Rincian <i class="fa-solid fa-angle-right text-[10px]"></i>
                                 </button>
                             </div>
-                        </div>
 
-                        {{-- ========================= PANEL: BHP (sesuai foto) ========================= --}}
-                        <div id="panel-bhp" data-panel="bhp" class="hidden">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="mt-4 space-y-6">
+                                {{-- PANEL OBAT --}}
+                                <div id="panel-obat" data-panel="obat">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
 
-                                {{-- Bahan Habis Pakai --}}
-                                <div class="md:col-span-2">
-                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                        Bahan Habis Pakai <span class="text-red-500">*</span>
-                                    </label>
+                                        {{-- Nama Obat --}}
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                                Nama Obat <span class="text-red-500">*</span>
+                                            </label>
+                                            <select name="obat_id" id="obat_id" required class="mt-1">
+                                                <option value="">Pilih obat...</option>
+                                            </select>
+                                            <div class="text-red-600 text-[11px] mt-1" data-error="obat_id"></div>
+                                        </div>
 
-                                    <select name="bhp_id" id="bhp_id" required class="mt-1">
-                                        <option value="">Pilih BHP...</option>
-                                    </select>
-                                    <div class="text-red-600 text-[11px] mt-1" data-error="bhp_id"></div>
-                                </div>
+                                        {{-- Total Stok Item (HANYA MUNCUL SAAT RETURN) --}}
+                                        <div id="wrapper_total_stok" class="hidden">
+                                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                                Total Stok Item <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="text" id="total_stok_item" readonly
+                                                class="mt-1 block w-full text-sm bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                                value="0">
+                                            <p class="text-[10px] text-gray-500 mt-1">* Stok saat ini di depot tujuan
+                                            </p>
+                                        </div>
 
-                                {{-- Kategori Bahan --}}
-                                <div>
-                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                        Kategori Bahan <span class="text-red-500">*</span>
-                                    </label>
-                                    <input name="kategori_bhp_id" id="kategori_bhp_id"
-                                        class="mt-1 block w-full text-sm bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                                        disabled>
-                                    <div class="text-red-600 text-[11px] mt-1" data-error="kategori_bhp_id"></div>
-                                </div>
+                                        {{-- Kategori Obat --}}
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                                Kategori Obat <span class="text-red-500">*</span>
+                                            </label>
+                                            <input name="kategori_obat_id" id="kategori_obat_id"
+                                                class="mt-1 block w-full text-sm bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                                disabled>
+                                            <div class="text-red-600 text-[11px] mt-1" data-error="kategori_obat_id">
+                                            </div>
+                                        </div>
 
-                                {{-- Transaksi --}}
-                                <div>
-                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                        Transaksi <span class="text-red-500">*</span>
-                                    </label>
-                                    <select name="transaksi_bhp" id="transaksi_bhp" required
-                                        class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
-                       focus:border-blue-500 focus:ring-1 focus:ring-blue-500
-                       dark:border-gray-700 dark:bg-gray-900 dark:text-white">
-                                        <option value="">-- Pilih --</option>
-                                        <option value="restock">Restock</option>
-                                        <option value="return">Return</option>
-                                    </select>
-                                    <div class="text-red-600 text-[11px] mt-1" data-error="transaksi_bhp"></div>
-                                </div>
+                                        {{-- Satuan --}}
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                                Satuan <span class="text-red-500">*</span>
+                                            </label>
+                                            <input name="satuan_obat_id" id="satuan_obat_id"
+                                                class="mt-1 block w-full text-sm bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                                disabled>
+                                            <div class="text-red-600 text-[11px] mt-1" data-error="satuan_obat_id">
+                                            </div>
+                                        </div>
 
-                                {{-- Expired Date --}}
-                                <div>
-                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                        Expired Date <span class="text-red-500">*</span>
-                                    </label>
-                                    <input type="date" name="expired_date_bhp" id="expired_date_bhp"
-                                        class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
-                       focus:border-blue-500 focus:ring-1 focus:ring-blue-500
-                       dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                                        required>
-                                    <div class="text-red-600 text-[11px] mt-1" data-error="expired_date_bhp"></div>
-                                </div>
+                                        {{-- Expired Date --}}
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                                Expired Date <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="date" name="expired_date_obat" id="expired_date_obat"
+                                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                                            <div class="text-red-600 text-[11px] mt-1" data-error="expired_date_obat">
+                                            </div>
+                                        </div>
 
-                                {{-- Batch --}}
-                                <div>
-                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                        Batch <span class="text-red-500">*</span>
-                                    </label>
-                                    <input name="batch_bhp" id="batch_bhp"
-                                        class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
-                       focus:border-blue-500 focus:ring-1 focus:ring-blue-500
-                       dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                                        required>
-                                    <div class="text-red-600 text-[11px] mt-1" data-error="batch_bhp"></div>
-                                </div>
+                                        {{-- Batch --}}
+                                        <div>
+                                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                                Batch <span class="text-red-500">*</span>
+                                            </label>
+                                            <input name="batch_obat" id="batch_obat"
+                                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                                required>
+                                            <div class="text-red-600 text-[11px] mt-1" data-error="batch_obat"></div>
+                                        </div>
 
-                                {{-- Jumlah Bahan --}}
-                                <div class="md:col-span-2">
-                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                        Jumlah Bahan <span class="text-red-500">*</span>
-                                    </label>
-                                    <input type="number" min="0" name="jumlah_bhp" id="jumlah_bhp"
-                                        value="0"
-                                        class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
-                       focus:border-blue-500 focus:ring-1 focus:ring-blue-500
-                       dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                                        required>
-                                    <div class="text-red-600 text-[11px] mt-1" data-error="jumlah_bhp"></div>
-                                </div>
+                                        {{-- Jumlah Obat --}}
+                                        <div class="md:col-span-2">
+                                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                                Jumlah Obat <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="number" min="0" name="jumlah_obat" id="jumlah_obat"
+                                                value="0"
+                                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                                required>
+                                            <div class="text-red-600 text-[11px] mt-1" data-error="jumlah_obat"></div>
+                                        </div>
 
-                                {{-- Harga beli satuan BHP lama --}}
-                                <div>
-                                    <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
-                                        Harga Beli Satuan BHP Lama
-                                    </label>
-                                    <input type="text" name="harga_beli_satuan_bhp_lama"
-                                        id="harga_beli_satuan_bhp_lama" readonly
-                                        class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
-                       focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5
-                       dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                                </div>
+                                        {{-- Harga beli lama (kiri) --}}
+                                        <div>
+                                            <label
+                                                class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                                                Harga Beli Satuan Obat Lama
+                                            </label>
+                                            <input type="text" name="harga_beli_satuan_obat_lama"
+                                                id="harga_beli_satuan_obat_lama" readonly
+                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                                        </div>
 
-                                {{-- Harga satuan BHP baru --}}
-                                <div>
-                                    <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
-                                        Harga Satuan BHP <span class="text-red-500">*</span>
-                                    </label>
-                                    <input type="text" name="harga_satuan_bhp" id="harga_satuan_bhp"
-                                        class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
-                       focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5
-                       dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                        required>
-                                    <div class="text-red-600 text-[11px] mt-1" data-error="harga_satuan_bhp"></div>
-                                </div>
+                                        {{-- Harga satuan obat (kanan) --}}
+                                        <div>
+                                            <label
+                                                class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                                                Harga Beli Satuan Obat Baru <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="text" name="harga_satuan_obat_baru"
+                                                id="harga_satuan_obat_baru"
+                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                                                required>
+                                            <div class="text-red-600 text-[11px] mt-1" data-error="harga_satuan_obat">
+                                            </div>
+                                        </div>
 
-                                {{-- Harga jual satuan BHP lama --}}
-                                <div>
-                                    <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
-                                        Harga Jual Satuan BHP Lama
-                                    </label>
-                                    <input type="text" name="harga_jual_satuan_bhp_lama"
-                                        id="harga_jual_satuan_bhp_lama" readonly
-                                        class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
-                       focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5
-                       dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                                </div>
+                                        {{-- Harga jual satuan obat lama --}}
+                                        <div>
+                                            <label
+                                                class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                                                Harga Jual Satuan Obat Lama
+                                            </label>
+                                            <input type="text" name="harga_jual_lama_obat"
+                                                id="harga_jual_lama_obat" readonly
+                                                class="input-rupiah input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                                        </div>
 
-                                {{-- Satuan --}}
-                                <div>
-                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                        Satuan <span class="text-red-500">*</span>
-                                    </label>
-                                    <input name="satuan_bhp_id" id="satuan_bhp_id"
-                                        class="mt-1 block w-full text-sm bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                                        disabled>
-                                    <div class="text-red-600 text-[11px] mt-1" data-error="satuan_bhp_id"></div>
-                                </div>
+                                        {{-- Harga jual satuan obat baru --}}
+                                        <div>
+                                            <label
+                                                class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                                                Harga Jual Satuan Obat Baru
+                                            </label>
+                                            <input type="text" name="harga_jual_baru_obat"
+                                                id="harga_jual_baru_obat"
+                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                                        </div>
 
-                                {{-- Harga Total Awal --}}
-                                <div class="md:col-span-2">
-                                    <label class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
-                                        Harga Total Awal <span class="text-red-500">*</span>
-                                    </label>
-                                    <input type="text" name="harga_total_awal_bhp" id="harga_total_awal_bhp"
-                                        readonly required
-                                        class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
-                       focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5
-                       dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                                    <div class="text-red-600 text-[11px] mt-1" data-error="harga_total_awal_bhp">
+                                        {{-- Harga jual OTC lama --}}
+                                        <div>
+                                            <label
+                                                class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                                                Harga Jual OTC Lama
+                                            </label>
+                                            <input type="text" name="harga_jual_otc_lama_obat"
+                                                id="harga_jual_otc_lama_obat" readonly
+                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                                        </div>
+
+                                        {{-- Harga jual OTC baru --}}
+                                        <div>
+                                            <label
+                                                class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                                                Harga Jual OTC Baru
+                                            </label>
+                                            <input type="text" name="harga_jual_otc_baru_obat"
+                                                id="harga_jual_otc_baru_obat"
+                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                                        </div>
+
+                                        {{-- Harga Total Awal --}}
+                                        <div class="md:col-span-2">
+                                            <label
+                                                class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                                                Harga Total Awal <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="text" name="harga_total_awal_obat"
+                                                id="harga_total_awal_obat" readonly
+                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                                                required>
+                                            <div class="text-red-600 text-[11px] mt-1"
+                                                data-error="harga_total_awal_obat">
+                                            </div>
+                                        </div>
+
+                                        {{-- Depot Tujuan --}}
+                                        <div class="md:col-span-2">
+                                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                                Depot Tujuan
+                                            </label>
+                                            <select name="depot_id" id="depot_id" class="mt-1"></select>
+
+                                            <div id="info-stok-depot"
+                                                class="mt-2 text-[11px] text-blue-600 font-medium hidden">
+                                                Stok di depot ini: <span id="nilai-stok">0</span>
+                                            </div>
+
+                                            <div class="text-red-600 text-[11px] mt-1" data-error="depot_id"></div>
+                                        </div>
+                                    </div>
+
+                                    {{-- Button: Tambah Rincian --}}
+                                    <div class="mt-4 flex justify-end">
+                                        <button type="button" id="btn-tambah-rincian-obat"
+                                            class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold border border-blue-500 text-blue-600 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30">
+                                            Tambah Rincian <i class="fa-solid fa-angle-right text-[10px]"></i>
+                                        </button>
                                     </div>
                                 </div>
 
-                                {{-- Depot Tujuan --}}
-                                <div class="md:col-span-2">
-                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                        Depot Tujuan
-                                    </label>
-                                    <select name="depot_id_bhp" id="depot_id_bhp" class="mt-1"></select>
+                                {{-- PANEL BHP --}}
+                                <div id="panel-bhp" data-panel="bhp" class="hidden">
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
 
-                                    <div id="info-stok-depot-bhp"
-                                        class="mt-2 text-[11px] text-blue-600 font-medium hidden">
-                                        Stok di depot ini: <span id="nilai-stok-bhp">0</span>
+                                        {{-- Bahan Habis Pakai --}}
+                                        <div class="md:col-span-2">
+                                            <label
+                                                class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
+                                                Bahan Habis Pakai <span class="text-red-500">*</span>
+                                            </label>
+
+                                            <select name="bhp_id" id="bhp_id" required
+                                                class="mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                                <option value="">Pilih BHP...</option>
+                                            </select>
+                                            <div class="text-red-600 text-[11px] mt-1" data-error="bhp_id"></div>
+                                        </div>
+
+                                        {{-- Kategori Bahan --}}
+                                        <div>
+                                            <label
+                                                class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
+                                                Kategori Bahan <span class="text-red-500">*</span>
+                                            </label>
+                                            <input name="kategori_bhp_id" id="kategori_bhp_id" disabled
+                                                class="mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                            <div class="text-red-600 text-[11px] mt-1" data-error="kategori_bhp_id">
+                                            </div>
+                                        </div>
+
+                                        {{-- Satuan --}}
+                                        <div>
+                                            <label
+                                                class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
+                                                Satuan <span class="text-red-500">*</span>
+                                            </label>
+                                            <input name="satuan_bhp_id" id="satuan_bhp_id" disabled
+                                                class="mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                            <div class="text-red-600 text-[11px] mt-1" data-error="satuan_bhp_id">
+                                            </div>
+                                        </div>
+
+                                        {{-- Transaksi --}}
+                                        <div>
+                                            <label
+                                                class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
+                                                Transaksi <span class="text-red-500">*</span>
+                                            </label>
+                                            <select name="transaksi_bhp" id="transaksi_bhp" required
+                                                class="mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                                <option value="">-- Pilih --</option>
+                                                <option value="restock">Restock</option>
+                                                <option value="return">Return</option>
+                                            </select>
+                                            <div class="text-red-600 text-[11px] mt-1" data-error="transaksi_bhp">
+                                            </div>
+                                        </div>
+
+                                        {{-- Jumlah Bahan --}}
+                                        <div class="md:col-span-2">
+                                            <label
+                                                class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
+                                                Jumlah Bahan <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="number" min="0" name="jumlah_bhp" id="jumlah_bhp"
+                                                value="0" required
+                                                class="mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                            <div class="text-red-600 text-[11px] mt-1" data-error="jumlah_bhp"></div>
+                                        </div>
+
+                                        {{-- Harga Beli Satuan BHP Lama --}}
+                                        <div>
+                                            <label
+                                                class="block text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                                                Harga Beli Satuan BHP Lama
+                                            </label>
+                                            <input type="text" name="harga_beli_satuan_bhp_lama"
+                                                id="harga_beli_satuan_bhp_lama" readonly
+                                                class="input-rupiah mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0">
+                                        </div>
+
+                                        {{-- Harga Beli Satuan BHP Baru --}}
+                                        <div>
+                                            <label
+                                                class="block text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                                                Harga Beli Satuan BHP Baru <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="text" name="harga_satuan_bhp" id="harga_satuan_bhp"
+                                                required
+                                                class="input-rupiah mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                            <div class="text-red-600 text-[11px] mt-1" data-error="harga_satuan_bhp">
+                                            </div>
+                                        </div>
+
+                                        {{-- Harga Jual Satuan BHP Lama --}}
+                                        <div>
+                                            <label
+                                                class="block text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                                                Harga Jual Satuan BHP Lama
+                                            </label>
+                                            <input type="text" name="harga_jual_satuan_bhp_lama"
+                                                id="harga_jual_satuan_bhp_lama" readonly
+                                                class="input-rupiah mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0">
+                                        </div>
+
+                                        {{-- Harga Jual Satuan BHP Baru (pakai field yg kamu punya kalau ada) --}}
+                                        <div>
+                                            <label
+                                                class="block text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                                                Harga Jual Satuan BHP Baru
+                                            </label>
+                                            <input type="text" name="harga_jual_satuan_bhp_baru"
+                                                id="harga_jual_satuan_bhp_baru"
+                                                class="input-rupiah mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                        </div>
+
+                                        {{-- Expired Date --}}
+                                        <div>
+                                            <label
+                                                class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
+                                                Expired Date <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="date" name="expired_date_bhp" id="expired_date_bhp"
+                                                required
+                                                class="mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                            <div class="text-red-600 text-[11px] mt-1" data-error="expired_date_bhp">
+                                            </div>
+                                        </div>
+
+                                        {{-- Batch --}}
+                                        <div>
+                                            <label
+                                                class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
+                                                Batch <span class="text-red-500">*</span>
+                                            </label>
+                                            <input name="batch_bhp" id="batch_bhp" required
+                                                class="mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                            <div class="text-red-600 text-[11px] mt-1" data-error="batch_bhp"></div>
+                                        </div>
+
+                                        {{-- Harga Total Awal --}}
+                                        <div class="md:col-span-2">
+                                            <label
+                                                class="block text-[10px] font-medium text-gray-500 dark:text-gray-400">
+                                                Harga Total Awal <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="text" name="harga_total_awal_bhp"
+                                                id="harga_total_awal_bhp" readonly required
+                                                class="input-rupiah mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0">
+                                            <div class="text-red-600 text-[11px] mt-1"
+                                                data-error="harga_total_awal_bhp"></div>
+                                        </div>
+
+                                        {{-- Depot Tujuan --}}
+                                        <div class="md:col-span-2">
+                                            <label
+                                                class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
+                                                Depot Tujuan
+                                            </label>
+
+                                            <select name="depot_id_bhp" id="depot_id_bhp"
+                                                class="mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500"></select>
+
+                                            <div id="info-stok-depot-bhp"
+                                                class="mt-2 text-[11px] text-blue-600 font-medium hidden">
+                                                Stok di depot ini: <span id="nilai-stok-bhp">0</span>
+                                            </div>
+
+                                            <div class="text-red-600 text-[11px] mt-1" data-error="depot_id_bhp">
+                                            </div>
+                                        </div>
+
+                                        {{-- Keterangan --}}
+                                        <div class="md:col-span-2">
+                                            <label
+                                                class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
+                                                Keterangan
+                                            </label>
+                                            <textarea name="keterangan_bhp" id="keterangan_bhp" rows="2"
+                                                class="mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500"
+                                                placeholder="Opsional"></textarea>
+                                        </div>
+
                                     </div>
-
-                                    <div class="text-red-600 text-[11px] mt-1" data-error="depot_id_bhp"></div>
                                 </div>
-
-                                {{-- Keterangan --}}
-                                <div class="md:col-span-2">
-                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                        Keterangan
-                                    </label>
-                                    <textarea name="keterangan_bhp" id="keterangan_bhp" rows="2"
-                                        class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
-                       focus:border-blue-500 focus:ring-1 focus:ring-blue-500
-                       dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                                        placeholder="Opsional"></textarea>
-                                </div>
-                            </div>
-
-                            {{-- Button: Tambah Rincian --}}
-                            <div class="mt-4 flex justify-end">
-                                <button type="button" id="btn-tambah-rincian-bhp"
-                                    class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold border border-blue-500 text-blue-600 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30">
-                                    Tambah Rincian <i class="fa-solid fa-angle-right text-[10px]"></i>
-                                </button>
                             </div>
                         </div>
 
+                        {{-- RIGHT: Sidebar Rincian --}}
+                        <div class="lg:col-span-4">
+                            <div class="lg:sticky lg:top-24 space-y-4">
+
+                                <div
+                                    class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
+                                    <div class="text-sm font-semibold text-sky-600">Rincian</div>
+
+                                    <div class="mt-4 space-y-3 text-sm">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-gray-600 dark:text-gray-300 font-medium">Subtotal</span>
+                                            <span id="sum-subtotal"
+                                                class="font-semibold text-gray-900 dark:text-white">Rp. 0</span>
+                                        </div>
+
+                                        <div class="flex items-center justify-between gap-4">
+                                            <span class="text-gray-600 dark:text-gray-300 font-medium">Pajak</span>
+                                            <div class="w-40">
+                                                <div class="relative">
+                                                    <input type="number" min="0" max="100"
+                                                        step="1" id="sum-pajak"
+                                                        class="w-full text-right text-sm bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 focus:ring-0 focus:border-sky-500 pr-6 py-1"
+                                                        value="0">
+                                                    <span class="absolute right-0 top-1 text-gray-500 text-sm">%</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-6 text-sm font-semibold text-sky-600">Biaya Lainnya</div>
+
+                                    <div class="mt-3 space-y-3 text-sm">
+                                        <div class="flex items-center justify-between gap-4">
+                                            <span class="text-gray-600 dark:text-gray-300 font-medium">Biaya
+                                                Lainnya</span>
+                                            <div class="w-40">
+                                                <input type="text" id="sum-biaya-lainnya"
+                                                    class="input-rupiah w-full text-right text-sm bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 focus:ring-0 focus:border-sky-500 py-1"
+                                                    value="Rp. 0">
+                                            </div>
+                                        </div>
+
+                                        <div
+                                            class="pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                                            <span class="text-gray-700 dark:text-gray-200 font-semibold">Total
+                                                Transaksi</span>
+                                            <span id="sum-total" class="font-bold text-gray-900 dark:text-white">Rp.
+                                                0</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Buttons (pakai ID yang lama biar JS gak perlu diubah) --}}
+                                <div class="flex items-center justify-end gap-2">
+                                    <button type="button" id="btn-cancel-modal-create"
+                                        class="px-4 py-2.5 text-xs font-medium text-red-600 bg-white rounded-lg hover:bg-red-50 border border-red-300 dark:bg-gray-900 dark:border-red-700/60 dark:hover:bg-red-900/20">
+                                        Batal
+                                    </button>
+
+                                    <button type="submit" id="btn-submit-create"
+                                        class="px-4 py-2.5 text-xs font-semibold text-white bg-rose-500 rounded-lg hover:bg-rose-600 shadow-sm">
+                                        Simpan Transaksi
+                                    </button>
+                                </div>
+
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400">
+                                    * Subtotal diambil dari “Harga Total Awal” item aktif (Obat/BHP). Pajak & Biaya
+                                    Lainnya auto dihitung.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
-                {{-- Footer Buttons (sticky gradient) --}}
-                <div
-                    class="sticky bottom-0 -mx-6 pt-3 pb-4 px-6 bg-gradient-to-t from-white via-white/95 to-white/40
-                           dark:from-gray-900 dark:via-gray-900/95 dark:to-gray-900/40
-                           border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2">
-                    <button type="button" id="btn-cancel-modal-create"
-                        class="px-4 md:px-5 py-2.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200
-                               border border-gray-200 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:hover:bg-gray-700">
-                        Batal
-                    </button>
+                <!-- Section: Depot -->
+                <div class="space-y-4 pb-1 mt-6">
+                    <div class="text-center">
+                        <p class="text-[11px] font-semibold text-blue-600 uppercase tracking-[0.16em]">
+                            Set Ketersediaan Obat Pada Depot
+                        </p>
+                        <p class="text-[11px] text-gray-500 mt-1 dark:text-gray-400">
+                            Atur distribusi stok ke Apotek / Gudang yang berbeda.
+                        </p>
+                    </div>
 
-                    <button type="submit" id="btn-submit-create"
-                        class="px-4 md:px-5 py-2.5 text-xs font-semibold text-white bg-emerald-600 rounded-lg hover:bg-emerald-700
-                               shadow-sm shadow-emerald-300/60">
-                        Simpan
-                    </button>
+                    <!-- WRAPPER DEPOT -->
+                    <div id="depot-container-restock" class="space-y-3">
+
+                        <!-- ROW DEPOT (TEMPLATE PERTAMA) -->
+                        <div
+                            class="depot-row grid grid-cols-12 gap-4 items-center bg-gray-50/60 dark:bg-gray-800/60 
+      rounded-xl px-4 py-4 border border-dashed border-gray-200 dark:border-gray-700">
+
+                            <!-- NAMA DEPOT -->
+                            <div class="col-span-12 md:col-span-4">
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                    Nama Depot <span class="text-red-500">*</span>
+                                </label>
+
+                                <div class="relative mt-1">
+                                    <select name="depot_id[]"
+                                        class="select-nama-depot block w-full text-sm bg-transparent dark:bg-gray-900
+            border border-gray-200 rounded-lg pl-3 pr-7 py-2 focus:border-blue-500 
+            focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:text-white"
+                                        data-url-index="{{ route('get.data.depot') }}"
+                                        data-url-store="{{ route('create.data.depot') }}"
+                                        data-url-delete="{{ route('delete.data.depot') }}">
+                                        <option value="">Pilih / ketik nama depot</option>
+                                    </select>
+
+                                    <button type="button"
+                                        class="btn-clear-depot hidden absolute right-2 top-1/2 -translate-y-1/2 
+            text-gray-400 hover:text-red-500 text-base font-bold">
+                                        ×
+                                    </button>
+                                </div>
+
+                                <div class="depot_id-error text-red-600 text-[11px] mt-1"></div>
+                            </div>
+
+                            <!-- TIPE DEPOT -->
+                            <div class="col-span-12 md:col-span-3">
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                    Tipe Depot <span class="text-red-500">*</span>
+                                </label>
+
+                                <div class="relative mt-1">
+                                    <select name="tipe_depot[]"
+                                        class="select-tipe-depot block w-full text-sm bg-transparent dark:bg-gray-900
+            border border-gray-200 rounded-lg pl-3 pr-7 py-2 focus:border-blue-500 
+            focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:text-white"
+                                        data-url-index="{{ route('get.data.tipe.depot') }}"
+                                        data-url-store="{{ route('create.data.tipe.depot') }}"
+                                        data-url-delete="{{ route('delete.data.tipe.depot') }}">
+                                        <option value="">Pilih / ketik tipe depot</option>
+                                    </select>
+
+                                    <button type="button"
+                                        class="btn-clear-tipe-depot hidden absolute right-2 top-1/2 -translate-y-1/2 
+            flex items-center justify-center text-gray-400 hover:text-red-500">
+                                        <i class="fa-solid fa-xmark text-xs"></i>
+                                    </button>
+                                </div>
+
+                                <div class="tipe_depot-error text-red-600 text-[11px]"></div>
+                            </div>
+
+                            <!-- STOK DEPOT -->
+                            <div class="col-span-12 md:col-span-3">
+                                <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                    Stok Depot
+                                </label>
+                                <input type="number" name="stok_depot[]"
+                                    class="input-stok-depot mt-1 block w-full text-sm bg-transparent dark:bg-gray-900
+          border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 
+          focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:text-white"
+                                    value="0">
+                            </div>
+
+                            <!-- BUTTON HAPUS -->
+                            <div class="col-span-12 md:col-span-2 flex md:justify-center justify-end">
+                                <button type="button"
+                                    class="btn-remove-depot w-full md:w-9 h-9 flex items-center justify-center 
+          rounded-lg bg-red-50 text-red-600 text-xs hover:bg-red-100 border border-red-100">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-start">
+                        <button type="button" id="btn-add-depot-restock"
+                            class="inline-flex items-center text-[11px] font-medium text-blue-600 hover:text-blue-700 hover:underline">
+                            <i class="fa-solid fa-plus-circle mr-1 text-xs"></i>
+                            Tambah Depot
+                        </button>
+                    </div>
                 </div>
+
             </form>
         </div>
+
+
     </div>
+
+
 </div>
 
 @vite(['resources/js/farmasi/restock-dan-return-obat-dan-bhp/data-restock-dan-return-obat-dan-bhp.js'])
