@@ -82,12 +82,12 @@ return new class extends Migration
                 $table->foreignId('layanan_id')->nullable()->constrained('layanan', 'id', 'pembayaran_detail_layanan_id')->nullOnDelete();
             }
 
-            if (!Schema::hasColumn('pembayaran_detail', 'resep_id')) {
-                $table->foreignId('resep_id')->nullable()->constrained('resep', 'id', 'pembayaran_detail_resep_id')->nullOnDelete();
+            if (!Schema::hasColumn('pembayaran_detail', 'resep_obat_id')) {
+                $table->foreignId('resep_obat_id')->nullable()->constrained('resep_obat', 'id', 'pembayaran_detail_resep_obat_id')->nullOnDelete();
             }
 
-            if (!Schema::hasColumn('pembayaran_detail', 'hasil_lab_id')) {
-                $table->foreignId('hasil_lab_id')->nullable()->constrained('hasil_lab', 'id', 'pembayaran_detail_hasil_lab_id')->nullOnDelete();
+            if (!Schema::hasColumn('pembayaran_detail', 'order_lab_detail_id')) {
+                $table->foreignId('order_lab_detail_id')->nullable()->constrained('order_lab_detail', 'id', 'pembayaran_detail_order_lab_detail')->nullOnDelete();
             }
 
             if (!Schema::hasColumn('pembayaran_detail', 'hasil_radiologi_id')) {
