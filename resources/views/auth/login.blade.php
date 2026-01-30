@@ -55,12 +55,12 @@
 
             <!-- Email Address -->
             <div class="mb-4">
-                <label for="email" class="block font-medium text-sm text-gray-700 mb-1">Email</label>
-                <input id="email" type="email" name="email" value="{{ old('email') }}" required autofocus
+                <label for="login" class="block font-medium text-sm text-gray-700 mb-1">Username / Email</label>
+                <input id="login" type="text" name="login" value="{{ old('login') }}" required autofocus
                     autocomplete="username"
                     class="w-full border-gray-300 focus:border-sky-500 focus:ring-sky-500 rounded-lg shadow-sm p-3"
-                    placeholder="nama@kliniksehat.com">
-                @error('email')
+                    placeholder="username atau nama@gmail.com">
+                @error('login')
                     <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
                 @enderror
             </div>
