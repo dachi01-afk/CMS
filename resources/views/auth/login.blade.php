@@ -68,9 +68,35 @@
             <!-- Password -->
             <div class="mb-6">
                 <label for="password" class="block font-medium text-sm text-gray-700 mb-1">Password</label>
-                <input id="password" type="password" name="password" required autocomplete="current-password"
-                    class="w-full border-gray-300 focus:border-sky-500 focus:ring-sky-500 rounded-lg shadow-sm p-3"
-                    placeholder="Masukkan password Anda">
+
+                <div class="relative">
+                    <input id="password" type="password" name="password" required autocomplete="current-password"
+                        class="w-full border-gray-300 focus:border-sky-500 focus:ring-sky-500 rounded-lg shadow-sm p-3 pr-12"
+                        placeholder="Masukkan password Anda">
+
+                    <button type="button" id="togglePassword"
+                        class="absolute inset-y-0 right-0 flex items-center px-3 text-gray-500 hover:text-sky-600 focus:outline-none"
+                        aria-label="Tampilkan password" aria-pressed="false">
+                        <!-- icon mata (simple SVG) -->
+                        <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24"
+                            fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round">
+                            <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path>
+                            <circle cx="12" cy="12" r="3"></circle>
+                        </svg>
+
+                        <svg id="eyeOffIcon" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 hidden"
+                            viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M17.94 17.94A10.94 10.94 0 0 1 12 19c-6.5 0-10-7-10-7a21.6 21.6 0 0 1 5.06-6.88">
+                            </path>
+                            <path d="M1 1l22 22"></path>
+                            <path d="M9.9 4.24A10.94 10.94 0 0 1 12 5c6.5 0 10 7 10 7a21.6 21.6 0 0 1-4.2 5.94"></path>
+                            <path d="M14.12 14.12A3 3 0 0 1 9.88 9.88"></path>
+                        </svg>
+                    </button>
+                </div>
+
                 @error('password')
                     <p class="text-sm text-red-600 mt-2">{{ $message }}</p>
                 @enderror
