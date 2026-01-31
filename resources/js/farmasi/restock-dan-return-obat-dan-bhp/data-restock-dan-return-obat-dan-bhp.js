@@ -1,13 +1,16 @@
 import $ from "jquery";
 import { Modal } from "flowbite";
 
-// TomSelect & Swal diasumsikan sudah tersedia global (seperti di project kamu)
-// window.TomSelect, window.Swal
+// Assumptions:
+// - TomSelect is global: window.TomSelect
+// - axios is global (used in depot section)
+// - DataTables is loaded globally
+// - Your Blade uses INPUT for expired_date_obat & batch_obat (NOT select)
 
-// =====================================================
-// 1) DATATABLES
-// =====================================================
 $(function () {
+    // =====================================================
+    // GLOBAL AJAX SETUP
+    // =====================================================
     $.ajaxSetup({
         headers: {
             "X-Requested-With": "XMLHttpRequest",
@@ -15,6 +18,9 @@ $(function () {
         },
     });
 
+    // =====================================================
+    // 1) DATATABLES
+    // =====================================================
     const table = $("#table-restock-return").DataTable({
         processing: true,
         serverSide: true,
@@ -82,7 +88,7 @@ $(function () {
         const totalPages = info.pages || 1;
 
         $info.text(
-            `Menampilkan ${info.start + 1}–${info.end} dari ${info.recordsDisplay} data (Halaman ${currentPage} dari ${totalPages})`,
+            `Showing ${info.start + 1}–${info.end} of ${info.recordsDisplay} (Page ${currentPage} / ${totalPages})`,
         );
 
         $pagination.empty();
@@ -147,12 +153,10 @@ $(function () {
 
     table.on("draw", updatePagination);
     updatePagination();
-});
 
-// =====================================================
-// 2) MODAL + FORM + SIDEBAR HITUNG
-// =====================================================
-$(function () {
+    // =====================================================
+    // 2) MODAL + FORM
+    // =====================================================
     const elModal = document.getElementById("modalCreateRestockReturn");
     const modalCreate = elModal
         ? new Modal(elModal, { backdrop: "static", closable: false })
@@ -161,38 +165,27 @@ $(function () {
     const $form = $("#formCreateRestockReturn");
     const $btnSubmit = $("#btn-submit-create");
 
-    // -----------------------------
-    // Helpers format angka
-    // -----------------------------
-
-    // Ia mengubah string seperti "Rp. 10.000" menjadi angka murni 10000 agar bisa dipakai berhitung.
+    // =====================================================
+    // HELPERS: number & currency
+    // =====================================================
     function toNumber(v) {
         if (!v) return 0;
         if (typeof v === "number") return v;
-
-        // jika string ada Rp
         const s = String(v);
-        if (s.includes("Rp")) {
-            return parseFloat(s.replace(/[^\d]/g, "")) || 0;
-        }
+        if (s.includes("Rp")) return parseFloat(s.replace(/[^\d]/g, "")) || 0;
         return parseFloat(v) || 0;
     }
 
-    // Kebalikan dari toNumber. Ia mengubah angka murni menjadi format cantik "Rp. 10.000" menggunakan Regular Expression.
     function rupiah(n) {
         const x = Math.round(toNumber(n));
         return "Rp. " + x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     }
 
-    // Setiap kali user mengetik di field rupiah, script otomatis menambahkan "Rp." dan titik ribuan secara real-time.
     $(document).on("input", ".input-rupiah", function () {
-        let val = $(this).val();
-        $(this).val(rupiah(val));
-        // setiap rupiah berubah => recalc sidebar
+        $(this).val(rupiah($(this).val()));
         recalcSummary();
     });
 
-    // Menjaga agar kursor user tidak masuk ke dalam tulisan "Rp. ", jadi user dipaksa mengetik setelah simbol mata uang.
     $(document).on("click focus keyup", ".input-rupiah", function () {
         if (this.selectionStart < 4) this.setSelectionRange(4, 4);
     });
@@ -201,9 +194,9 @@ $(function () {
         $form.find("[data-error]").text("");
     }
 
-    // -----------------------------
-    // Sidebar Summary
-    // -----------------------------
+    // =====================================================
+    // SIDEBAR SUMMARY
+    // =====================================================
     let activeTab = "obat";
 
     function getActiveSubtotal() {
@@ -212,10 +205,6 @@ $(function () {
         return toNumber($("#harga_total_awal_bhp").val());
     }
 
-    // mengambil subtotal (dari obat atau BHP)
-    // menghitung nominal pajak (%)
-    // menambahkan biaya lainnya
-    // lalu menampilkan Total Akhir di sidebar secara otomatis.
     function recalcSummary() {
         const subtotal = getActiveSubtotal();
         const pajakPct = parseFloat($("#sum-pajak").val() || "0") || 0;
@@ -231,57 +220,45 @@ $(function () {
     $("#sum-pajak").on("input", recalcSummary);
     $("#sum-biaya-lainnya").on("input", recalcSummary);
 
-    // -----------------------------
-    // Kalkulasi total awal OBAT
-    // -----------------------------
+    // =====================================================
+    // TOTAL OBAT
+    // =====================================================
     function calcTotalObat() {
-        const hargaSatuanObatBaru =
-            $("#harga_satuan_obat_baru").val() || "Rp. 0";
-        $("#harga_total_awal_obat").val(hargaSatuanObatBaru);
+        const hargaSatuan = $("#harga_satuan_obat_baru").val() || "Rp. 0";
+        $("#harga_total_awal_obat").val(hargaSatuan);
         recalcSummary();
     }
     $("#harga_satuan_obat_baru").on("input keyup", calcTotalObat);
 
-    // -----------------------------
-    // Kalkulasi total awal BHP
-    // -----------------------------
-    const jumlahBhp = document.getElementById("jumlah_bhp");
-    const hargaSatuanBhp = document.getElementById("harga_satuan_bhp");
-    const hargaTotalAwalBhp = document.getElementById("harga_total_awal_bhp");
-
-    // Khusus untuk tab BHP.
-    // Ia mengalikan Jumlah BHP * Harga Satuan dan memasukkan hasilnya ke field Total Awal BHP.
+    // =====================================================
+    // TOTAL BHP
+    // =====================================================
     function recalcBhpTotal() {
-        const qty = Number(jumlahBhp?.value || 0);
-        const price = toNumber(hargaSatuanBhp?.value);
+        const qty = Number($("#jumlah_bhp").val() || 0);
+        const price = toNumber($("#harga_satuan_bhp").val());
         const total = qty * price;
-        if (hargaTotalAwalBhp) hargaTotalAwalBhp.value = rupiah(total);
+        $("#harga_total_awal_bhp").val(rupiah(total));
         recalcSummary();
     }
-    jumlahBhp?.addEventListener("input", recalcBhpTotal);
-    hargaSatuanBhp?.addEventListener("input", recalcBhpTotal);
+    $("#jumlah_bhp").on("input", recalcBhpTotal);
+    $("#harga_satuan_bhp").on("input", recalcBhpTotal);
 
-    // -----------------------------
-    // Tabs logic (SINGLE SOURCE OF TRUTH)
-    // -----------------------------
-    // Mengubah teks tombol utama di bagian bawah/header mengikuti tab yang sedang dibuka
-    // (contoh: "Tambah Rincian Obat" berubah jadi "Tambah Rincian BHP").
+    // =====================================================
+    // TABS (Obat / BHP)
+    // =====================================================
     function updateTambahRincianButton() {
         const $btn = $("#btn-tambah-rincian");
         if (activeTab === "obat") {
             $btn.html(
-                `Tambah Rincian Obat <i class="fa-solid fa-angle-right text-[10px]"></i>`,
+                `Tambah Rincian <i class="fa-solid fa-angle-right text-[10px]"></i>`,
             );
         } else {
             $btn.html(
-                `Tambah Rincian BHP <i class="fa-solid fa-angle-right text-[10px]"></i>`,
+                `Tambah Rincian <i class="fa-solid fa-angle-right text-[10px]"></i>`,
             );
         }
     }
 
-    // Mengatur tampilan.
-    // Jika klik tab "Obat", maka panel BHP disembunyikan dan panel Obat ditampilkan.
-    // Script ini juga mengganti warna border tab agar user tahu mana yang aktif.
     function setActiveTab(tab) {
         activeTab = tab;
 
@@ -319,53 +296,45 @@ $(function () {
     $("#tab-obat").on("click", () => setActiveTab("obat"));
     $("#tab-bhp").on("click", () => setActiveTab("bhp"));
 
-    // tombol global trigger tombol panel lama
     $("#btn-tambah-rincian").on("click", function () {
         if (activeTab === "obat")
             $("#btn-tambah-rincian-obat").trigger("click");
         else $("#btn-tambah-rincian-bhp").trigger("click");
     });
 
-    // hide tombol bawah panel biar gak dobel (kamu minta tombol di header)
     function hideDuplicatePanelButtons() {
         $("#btn-tambah-rincian-obat").closest("div").addClass("hidden");
         $("#btn-tambah-rincian-bhp").closest("div").addClass("hidden");
     }
 
-    // -----------------------------
-    // Jenis transaksi toggle stok return
-    // -----------------------------
+    // =====================================================
+    // PURCHASE ORDER TOGGLE
+    // =====================================================
+    function initPurchaseOrderToggle() {
+        const toggle = document.getElementById("togglePurchaseOrder");
+        const label = document.getElementById("labelPurchaseOrder");
+        const fields = document.getElementById("purchaseOrderFields");
+        const tempo = document.getElementById("tempo_pembayaran");
+        const tgl = document.getElementById("tanggal_pengiriman");
 
-    // Jika user memilih jenis transaksi "Return", maka field "Total Stok Sekarang" akan muncul.
-    // Jika pilih "Restock", field stok tersebut akan disembunyikan karena dianggap menambah barang baru.
-    function toggleTransactionMode() {
-        const jenisTransaksi = $("#jenis_transaksi").val() || "";
-        const isReturn = jenisTransaksi.toLowerCase().includes("return");
-        const $wrapperStok = $("#total_stok_item").closest("div");
-        const $labelJumlah = $("label[for='jumlah_obat']");
+        if (!toggle || !label || !fields || !tempo || !tgl) return;
 
-        if (isReturn) {
-            $wrapperStok.removeClass("hidden").addClass("md:col-span-2");
-            $("#total_stok_item")
-                .prop("readonly", true)
-                .prop("disabled", false);
-            $labelJumlah.text("Jumlah Return *");
-        } else {
-            $wrapperStok.addClass("hidden");
-            $("#total_stok_item").val("");
-            $labelJumlah.text("Jumlah Obat / Restock *");
+        function syncPurchaseOrderUI() {
+            const on = toggle.checked;
+            fields.classList.toggle("hidden", !on);
+            tempo.required = on;
+            tgl.required = on;
+            label.classList.toggle("text-gray-400", !on);
+            label.classList.toggle("text-blue-600", on);
         }
+
+        toggle.addEventListener("change", syncPurchaseOrderUI);
+        syncPurchaseOrderUI();
     }
 
-    $("#jenis_transaksi").on("change", function () {
-        toggleTransactionMode();
-        const obatId = $("#obat_id").val();
-        if (obatId) fillObatMeta(obatId);
-    });
-
-    // -----------------------------
-    // Load Meta (jenis transaksi, satuan, default depot)
-    // -----------------------------
+    // =====================================================
+    // FORM META LOAD
+    // =====================================================
     let DEFAULT_DEPOT_ID = null;
 
     function loadFormMeta(done) {
@@ -373,45 +342,36 @@ $(function () {
             .done(function (meta) {
                 DEFAULT_DEPOT_ID = meta.default_depot_id || null;
 
+                // Jenis transaksi header
                 const $jtSelect = $("#jenis_transaksi");
                 $jtSelect
                     .empty()
-                    .append('<option value="">-- Pilih --</option>');
+                    .append('<option value="">-- Select --</option>');
                 (meta.jenis_transaksi || []).forEach((item) => {
                     $jtSelect.append(
                         `<option value="${item.value}">${item.label}</option>`,
                     );
                 });
 
-                const satuanOpt = [`<option value="">Pilih satuan...</option>`]
-                    .concat(
-                        (meta.satuan || []).map(
-                            (s) => `<option value="${s.id}">${s.nama}</option>`,
-                        ),
-                    )
-                    .join("");
-                $("#satuan_obat_id").html(satuanOpt);
-
                 done && done();
             })
             .fail(function (xhr) {
-                console.error("Gagal load meta", xhr);
+                console.error("Failed load meta", xhr);
                 done && done();
             });
     }
 
-    // -----------------------------
-    // TomSelect Obat + Depot
-    // -----------------------------
+    // =====================================================
+    // TomSelect Obat / Depot / BHP
+    // =====================================================
     let obatSelect = null;
     let depotSelect = null;
     let bhpSelect = null;
 
-    // Mengubah dropdown biasa menjadi kolom pencarian yang mengambil data dari server secara live.
     function initObatSelect() {
         if (obatSelect) return;
 
-        obatSelect = new TomSelect("#obat_id", {
+        obatSelect = new window.TomSelect("#obat_id", {
             valueField: "id",
             labelField: "nama_obat",
             searchField: "nama_obat",
@@ -424,29 +384,20 @@ $(function () {
             },
             onChange: function (value) {
                 if (!value) {
-                    $(
-                        "#kategori_obat_id, #satuan_obat_id, #total_stok_item",
-                    ).val("");
-                    $(
-                        "#harga_beli_satuan_obat_lama, #harga_jual_lama_obat, #harga_jual_otc_lama_obat",
-                    ).val("");
-                    $("#batch_obat, #expired_date_obat").html(
-                        `<option value="">Pilih...</option>`,
-                    );
-                    $("#harga_total_awal_obat").val("Rp. 0");
-                    recalcSummary();
+                    clearObatMeta();
+                    syncTransaksiObatUI(); // disables transaksi select
                     return;
                 }
+                syncTransaksiObatUI(); // enable transaksi select & set default Restock
                 fillObatMeta(value);
             },
         });
     }
 
-    // Mengubah dropdown biasa menjadi kolom pencarian yang mengambil data dari server secara live.
     function initDepotSelect() {
         if (depotSelect) return;
 
-        depotSelect = new TomSelect("#depot_id", {
+        depotSelect = new window.TomSelect("#depot_id", {
             valueField: "id",
             labelField: "nama_depot",
             searchField: "nama_depot",
@@ -469,15 +420,18 @@ $(function () {
                 } else {
                     $("#info-stok-depot").addClass("hidden");
                 }
+
+                // refresh meta when depot changes
+                const id = $("#obat_id").val();
+                if (id) fillObatMeta(id);
             },
         });
     }
 
-    // Mengubah dropdown biasa menjadi kolom pencarian yang mengambil data dari server secara live.
     function initBhpSelect() {
         if (bhpSelect) return;
 
-        bhpSelect = new TomSelect("#bhp_id", {
+        bhpSelect = new window.TomSelect("#bhp_id", {
             valueField: "id",
             labelField: "nama_barang",
             searchField: "nama_barang",
@@ -490,42 +444,73 @@ $(function () {
                     .done((res) => callback(res))
                     .fail(() => callback());
             },
-            onChange: function (value) {
-                if (!value) {
-                    $(
-                        "#kategori_obat_id, #satuan_obat_id, #total_stok_item",
-                    ).val("");
-                    $(
-                        "#harga_beli_satuan_obat_lama, #harga_jual_lama_obat, #harga_jual_otc_lama_obat",
-                    ).val("");
-                    $("#batch_obat, #expired_date_obat").html(
-                        `<option value="">Pilih...</option>`,
-                    );
-                    $("#harga_total_awal_obat").val("Rp. 0");
-                    recalcSummary();
-                    return;
-                }
-                fillObatMeta(value);
-            },
         });
     }
 
-    // Saat user memilih satu obat,
-    // fungsi ini langsung menarik data
-    // harga beli lama, harga jual, stok, nomor batch, dan tanggal kadaluarsa obat tersebut dari database untuk mengisi form secara otomatis.
+    // =====================================================
+    // OBAT UI LOGIC: Restock/Return toggle (SINGLE TRUTH)
+    // =====================================================
+    function syncTransaksiObatUI() {
+        const obatId = $("#obat_id").val();
+        const $trx = $("#transaksi_obat");
+
+        // disable if no drug selected
+        $trx.prop("disabled", !obatId);
+
+        // default Restock when enabled
+        if (obatId && !$trx.val()) $trx.val("Restock");
+
+        const mode = ($trx.val() || "").trim(); // "Restock" / "Return"
+
+        $("#return_only_fields").toggleClass("hidden", mode !== "Return");
+        $("#restock_only_fields").toggleClass("hidden", mode !== "Restock");
+
+        // required only on Return
+        $("#expired_date_obat").prop("required", mode === "Return");
+        $("#batch_obat").prop("required", mode === "Return");
+    }
+
+    // change transaksi_obat
+    $(document).on("change", "#transaksi_obat", function () {
+        syncTransaksiObatUI();
+        const id = $("#obat_id").val();
+        if (id) fillObatMeta(id);
+    });
+
+    function clearObatMeta() {
+        $("#kategori_obat_id").val("");
+        $("#satuan_obat_id").val("");
+        $("#satuan_obat_id_restock").val("");
+
+        $("#harga_beli_satuan_obat_lama").val("");
+        $("#harga_jual_lama_obat").val("");
+        $("#harga_jual_otc_lama_obat").val("");
+
+        $("#batch_obat").val("");
+        $("#expired_date_obat").val("");
+        $("#total_stok_item").val("");
+
+        $("#harga_total_awal_obat").val("Rp. 0");
+        recalcSummary();
+    }
+
+    // =====================================================
+    // Fill Meta Drug (MATCHES YOUR BLADE INPUTS)
+    // =====================================================
     function fillObatMeta(id) {
         if (!id) return;
 
         const depotId = $("#depot_id").val() || DEFAULT_DEPOT_ID;
-        const jenisTransaksi = $("#jenis_transaksi").val() || "";
-        const isReturn = jenisTransaksi.toLowerCase().includes("return");
+        const mode = ($("#transaksi_obat").val() || "Restock").trim();
+        const isReturn = mode === "Return";
 
         $.get(`/farmasi/restock-return/obat/${id}/meta`, { depot_id: depotId })
             .done(function (res) {
                 $("#kategori_obat_id").val(res.nama_kategori || "");
-                $("#satuan_obat_id")
-                    .val(res.nama_satuan || "")
-                    .trigger("change");
+
+                // Blade uses INPUT for satuan
+                $("#satuan_obat_id").val(res.nama_satuan || "");
+                $("#satuan_obat_id_restock").val(res.nama_satuan || "");
 
                 $("#harga_beli_satuan_obat_lama").val(
                     rupiah(res.harga_beli_satuan_obat_lama || 0),
@@ -537,38 +522,28 @@ $(function () {
                     rupiah(res.harga_jual_otc_obat_lama || 0),
                 );
 
-                $("#batch_obat")
-                    .empty()
-                    .append(`<option value="">Pilih batch...</option>`);
-                if (res.batch_lama)
-                    $("#batch_obat").append(
-                        `<option value="${res.batch_lama}" selected>${res.batch_lama}</option>`,
-                    );
-
-                $("#expired_date_obat")
-                    .empty()
-                    .append(`<option value="">Pilih expired...</option>`);
-                if (res.expired_lama)
-                    $("#expired_date_obat").append(
-                        `<option value="${res.expired_lama}" selected>${res.expired_lama}</option>`,
-                    );
-
                 if (isReturn) {
-                    const stok = res.stok_sekarang || res.jumlah || 0;
-                    $("#total_stok_item").val(stok);
+                    $("#expired_date_obat").val(res.expired_lama || "");
+                    $("#batch_obat").val(res.batch_lama || "");
+                    $("#total_stok_item").val(
+                        res.stok_sekarang ?? res.jumlah ?? 0,
+                    );
                 } else {
+                    // Restock mode: keep return-only fields empty
+                    $("#expired_date_obat").val("");
+                    $("#batch_obat").val("");
                     $("#total_stok_item").val("");
                 }
 
                 calcTotalObat();
                 recalcSummary();
             })
-            .fail((xhr) => console.error("Gagal ambil meta obat", xhr));
+            .fail((xhr) => console.error("Failed get meta", xhr));
     }
 
-    // -----------------------------
-    // Supplier TomSelect (create / update detail)
-    // -----------------------------
+    // =====================================================
+    // SUPPLIER TomSelect (Create / Detail)
+    // =====================================================
     let supplierSelect = null;
     let supplierJustCreatedId = null;
 
@@ -609,7 +584,7 @@ $(function () {
         const { el, urlIndex, urlStore, urlShowTpl } = getSupplierDataset();
         if (!el || supplierSelect) return;
 
-        supplierSelect = new TomSelect(el, {
+        supplierSelect = new window.TomSelect(el, {
             valueField: "id",
             labelField: "nama_supplier",
             searchField: "nama_supplier",
@@ -623,7 +598,7 @@ $(function () {
                         showSupplierDetailCreate(res);
                     })
                     .fail(function () {
-                        alert("Gagal menambahkan supplier");
+                        alert("Failed to add supplier");
                         callback();
                     });
             },
@@ -662,13 +637,9 @@ $(function () {
         });
     }
 
-    // -----------------------------
-    // Reset form + open/close modal
-    // -----------------------------
-
-    // Membersihkan semua isi input
-    // mengosongkan pilihan supplier/obat
-    // dan mengembalikan tampilan ke kondisi awal (default tab Obat).
+    // =====================================================
+    // RESET FORM
+    // =====================================================
     function resetForm() {
         $form[0].reset();
         resetErrors();
@@ -677,37 +648,41 @@ $(function () {
         supplierJustCreatedId = null;
         clearSupplierDetailCreate();
 
-        // reset totals
         $("#sum-pajak").val("0");
         $("#sum-biaya-lainnya").val("Rp. 0");
         $("#harga_total_awal_obat").val("Rp. 0");
         $("#harga_total_awal_bhp").val("Rp. 0");
 
-        $("#batch_obat, #expired_date_obat").html(
-            `<option value="">Pilih...</option>`,
-        );
-        $(
-            "#harga_beli_satuan_obat_lama, #harga_jual_lama_obat, #harga_jual_otc_lama_obat, #total_stok_item",
-        ).val("");
+        clearObatMeta();
 
-        toggleTransactionMode();
+        // reset transaksi_obat UI
+        $("#transaksi_obat").val("").prop("disabled", true);
+        $("#return_only_fields").addClass("hidden");
+        $("#restock_only_fields").addClass("hidden");
+
+        // reset depot info
+        $("#info-stok-depot").addClass("hidden");
+
         setActiveTab("obat");
         hideDuplicatePanelButtons();
         recalcSummary();
     }
 
-    // Saat tombol buka modal diklik,
-    // script memicu resetForm dulu,
-    // baru kemudian menjalankan TomSelect (pencarian otomatis) dan memuat meta data dari server.
+    // =====================================================
+    // OPEN/CLOSE MODAL
+    // =====================================================
     $("#btn-open-modal-create").on("click", function () {
         resetForm();
         modalCreate?.show();
 
         setTimeout(() => {
+            initPurchaseOrderToggle();
             initSupplierSelectCreate();
-            loadFormMeta(() => initObatSelect());
-            loadFormMeta(() => initDepotSelect());
-            loadFormMeta(() => initBhpSelect());
+            loadFormMeta(() => {
+                initObatSelect();
+                initDepotSelect();
+                initBhpSelect();
+            });
         }, 50);
     });
 
@@ -719,88 +694,98 @@ $(function () {
         },
     );
 
+    // =====================================================
+    // ADD DETAIL: OBAT (sidebar card)
+    // =====================================================
     $("#btn-tambah-rincian-obat").on("click", function () {
-        // 1. Ambil Data dari Input
-        const namaObat =
-            document.getElementById("obat_id").options[
-                document.getElementById("obat_id").selectedIndex
-            ].text;
-        const jumlah = document.getElementById("jumlah_obat").value;
-        const satuan = document.getElementById("satuan_obat_id").value;
-        const hargaBeli = document.getElementById(
-            "harga_satuan_obat_baru",
-        ).value;
-        const totalAwal = document.getElementById(
-            "harga_total_awal_obat",
-        ).value;
-        const expDate = document.getElementById("expired_date_obat").value;
-        const jenisTransaksi =
-            document.getElementById("jenis_transaksi")?.value || "Restock"; // Contoh ambil dari header
-
-        // Validasi sederhana
-        if (!jumlah || jumlah == 0) {
-            alert("Jumlah obat harus diisi!");
+        const obatId = $("#obat_id").val();
+        if (!obatId) {
+            alert("Please select a drug first.");
             return;
         }
 
-        // 2. Buat Template HTML untuk Rincian (Sesuai Gambar Kamu)
+        const mode = ($("#transaksi_obat").val() || "").trim();
+        if (!mode) {
+            alert("Please select transaction mode: Restock or Return.");
+            return;
+        }
+
+        const namaObat = $("#obat_id option:selected").text();
+
+        let jumlah = 0;
+        if (mode === "Return") jumlah = Number($("#jumlah_obat").val() || 0);
+        else jumlah = Number($("#jumlah_obat_restock").val() || 0);
+
+        if (!jumlah || jumlah <= 0) {
+            alert("Quantity must be greater than 0.");
+            return;
+        }
+
+        const satuan =
+            $("#satuan_obat_id").val() ||
+            $("#satuan_obat_id_restock").val() ||
+            "-";
+        const hargaBeli = $("#harga_satuan_obat_baru").val() || "Rp. 0";
+        const totalAwal = $("#harga_total_awal_obat").val() || "Rp. 0";
+        const expDate = $("#expired_date_obat").val() || "-";
+        const batch = $("#batch_obat").val() || "-";
+
+        const extraInfo =
+            mode === "Return"
+                ? `<p class="text-[10px] text-gray-500 italic">Exp. ${expDate}</p>
+                   <p class="text-[10px] text-gray-500 italic">Batch: ${batch}</p>`
+                : `<p class="text-[10px] text-gray-500 italic">Restock item</p>`;
+
         const rincianHTML = `
         <div class="rincian-item bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm relative mb-3">
             <button type="button" class="btn-hapus-rincian absolute top-2 right-2 text-pink-500 hover:text-pink-700">
                 <i class="fa-solid fa-circle-xmark text-lg"></i>
             </button>
-            
+
             <div class="flex justify-between items-start">
                 <div>
                     <h4 class="text-blue-500 font-bold text-sm">${namaObat}</h4>
-                    <p class="text-xs text-gray-700 dark:text-gray-300 font-medium">${jenisTransaksi}</p>
+                    <p class="text-xs text-gray-700 dark:text-gray-300 font-medium">${mode}</p>
                     <div class="mt-2">
-                        <p class="text-[10px] text-gray-500 italic">Harga beli rata-rata</p>
-                        <p class="text-[10px] text-gray-500 italic">Exp. ${expDate}</p>
+                        <p class="text-[10px] text-gray-500 italic">Avg purchase price</p>
+                        ${extraInfo}
                     </div>
                 </div>
-                
+
                 <div class="text-right pt-4">
-                    <p class="text-xs text-gray-600 dark:text-gray-400">${jumlah} ${satuan} &nbsp; @ Rp. ${hargaBeli}</p>
-                    <p class="text-sm font-bold text-gray-800 dark:text-white">Rp. ${totalAwal}</p>
-                    <p class="text-[10px] text-gray-500">@ Rp. ${hargaBeli}</p>
+                    <p class="text-xs text-gray-600 dark:text-gray-400">${jumlah} ${satuan}</p>
+                    <p class="text-sm font-bold text-gray-800 dark:text-white">${totalAwal}</p>
+                    <p class="text-[10px] text-gray-500">@ ${hargaBeli}</p>
                 </div>
             </div>
         </div>
-    `;
+        `;
 
-        // 3. Masukkan ke Container
         $("#container-rincian").append(rincianHTML);
 
-        // 4. Reset Form Input di dalam panel obat
-        // Cari semua input & select di dalam panel-obat lalu kosongkan
-        $("#panel-obat")
-            .find("input, select")
-            .each(function () {
-                $(this).val("");
-            });
+        // reset detail fields (don’t nuke header)
+        // clear return fields
+        $("#expired_date_obat").val("");
+        $("#batch_obat").val("");
+        $("#jumlah_obat").val("0");
+        $("#jumlah_obat_restock").val("0");
+        $("#harga_satuan_obat_baru").val("Rp. 0");
+        $("#harga_total_awal_obat").val("Rp. 0");
 
-        // Khusus untuk yang tipenya angka/number, set ke 0
-        $("#jumlah_obat, #harga_total_awal_obat").val(0);
-
-        $("#depot_id").val("").trigger("change");
-
-        // Sembunyikan info stok jika ada
-        $("#info-stok-depot").addClass("hidden");
+        calcTotalObat();
+        recalcSummary();
     });
 
-    // Fungsi untuk menghapus rincian jika salah input
     $(document).on("click", ".btn-hapus-rincian", function () {
         $(this).closest(".rincian-item").remove();
+        recalcSummary();
     });
 
-    // -----------------------------
-    // Submit
-    // -----------------------------
+    // =====================================================
+    // SUBMIT TRANSACTION
+    // =====================================================
     $form.on("submit", function (e) {
-        // Mencegah halaman refresh
         e.preventDefault();
-
         resetErrors();
 
         const urlTransaksi = $form.data("url");
@@ -808,25 +793,39 @@ $(function () {
         const depotId = $("#depot_id").val() || DEFAULT_DEPOT_ID;
         const { urlUpdate } = getSupplierDataset();
 
-        $btnSubmit.prop("disabled", true).text("Menyimpan...");
+        $btnSubmit.prop("disabled", true).text("Saving...");
 
         const items = [];
         const tabAktif = activeTab;
 
         if (tabAktif === "obat") {
+            const mode = ($("#transaksi_obat").val() || "Restock").trim();
+
+            const jumlah =
+                mode === "Return"
+                    ? parseInt($("#jumlah_obat").val() || "0", 10)
+                    : parseInt($("#jumlah_obat_restock").val() || "0", 10);
+
             items.push({
                 type: "obat",
+                transaksi_obat: mode, // <--- IMPORTANT
                 obat_id: $("#obat_id").val(),
-                batch: $("#batch_obat").val() || null,
-                expired_date: $("#expired_date_obat").val() || null,
-                jumlah: parseInt($("#jumlah_obat").val() || "0", 10),
-                satuan_id: $("#satuan_obat_id").val() || null,
+                batch:
+                    mode === "Return" ? $("#batch_obat").val() || null : null,
+                expired_date:
+                    mode === "Return"
+                        ? $("#expired_date_obat").val() || null
+                        : null,
+                jumlah,
+                satuan:
+                    $("#satuan_obat_id").val() ||
+                    $("#satuan_obat_id_restock").val() ||
+                    null,
                 harga_beli: toNumber($("#harga_satuan_obat_baru").val()),
                 depot_id: depotId,
-                keterangan: $("#keterangan_item_obat").val() || null,
+                keterangan: $("#keterangan_obat").val() || null,
             });
         } else {
-            // kalau BHP sudah siap endpointnya, tinggal isi mapping di sini
             items.push({
                 type: "bhp",
                 bhp_id: $("#bhp_id").val(),
@@ -839,7 +838,6 @@ $(function () {
             });
         }
 
-        // Mengumpulkan semua data (Header + Item Obat/BHP + Summary) ke dalam satu objek besar bernama payload.
         const payload = {
             tanggal_transaksi: $form.find('[name="tanggal_transaksi"]').val(),
             jenis_transaksi: $form.find('[name="jenis_transaksi"]').val(),
@@ -847,14 +845,12 @@ $(function () {
             nomor_faktur: $form.find('[name="nomor_faktur"]').val() || null,
             keterangan: $form.find('[name="keterangan"]').val() || null,
 
-            // optional: kalau mau kirim summary:
             pajak_persen: parseFloat($("#sum-pajak").val() || "0") || 0,
             biaya_lainnya: toNumber($("#sum-biaya-lainnya").val()),
 
             items,
         };
 
-        // Mengirimkan data tersebut ke backend menggunakan AJAX POST dalam format JSON.
         const doCreateTransaksi = function () {
             $.ajax({
                 url: urlTransaksi,
@@ -874,19 +870,16 @@ $(function () {
                     if (res?.redirect_url)
                         window.location.href = res.redirect_url;
                 })
-                // Jika server menolak (error 422/validasi gagal),
-                // script akan mencari elemen [data-error] dan menampilkan pesan kesalahan tepat di bawah input yang bermasalah
-                // (misal: "Jumlah tidak boleh kosong").
                 .fail(function (xhr) {
                     if (xhr.status === 422) {
                         const errors = xhr.responseJSON?.errors || {};
                         Object.keys(errors).forEach((key) => {
                             $form
                                 .find(`[data-error="${key}"]`)
-                                .text(errors[key][0] ?? "Tidak valid");
+                                .text(errors[key][0] ?? "Invalid");
                         });
                     } else {
-                        alert("Terjadi kesalahan saat menyimpan transaksi.");
+                        alert("Error saving transaction.");
                         console.error(xhr);
                     }
                 })
@@ -895,8 +888,6 @@ $(function () {
                 });
         };
 
-        // Jika user mengisi detail supplier baru
-        // script akan menyimpan data supplier dulu ($.post(urlUpdate)), baru kemudian menyimpan transaksi utamanya.
         if (supplierId) {
             const payloadSupplier = {
                 id: supplierId,
@@ -915,17 +906,19 @@ $(function () {
         }
     });
 
-    // default
+    // defaults on load
     setActiveTab("obat");
     hideDuplicatePanelButtons();
     recalcSummary();
 });
 
+// =====================================================
+// 3) DEPOT REPEATER (your code kept, just cleaned slightly)
+// =====================================================
 $(function () {
     const $depotContainer = $("#depot-container-restock");
     if (!$depotContainer.length) return;
 
-    // clone template row pertama
     const $depotTemplate = $depotContainer
         .find(".depot-row")
         .first()
@@ -938,17 +931,16 @@ $(function () {
 
         const urlIndex = el.dataset.urlIndex;
         const urlStore = el.dataset.urlStore;
-        const urlDelete = el.dataset.urlDelete;
 
         if (el.tomselect) el.tomselect.destroy();
 
-        const ts = new TomSelect(el, {
+        const ts = new window.TomSelect(el, {
             valueField: "id",
             labelField: "nama_depot",
             searchField: "nama_depot",
             preload: true,
             maxItems: 1,
-            placeholder: "Pilih / ketik nama depot",
+            placeholder: "Select / type depot name",
 
             load: function (query, callback) {
                 axios
@@ -974,9 +966,6 @@ $(function () {
             btnClear.onclick = function () {
                 const value = ts.getValue();
                 if (!value) return btnClear.classList.add("hidden");
-
-                // kalau kamu mau delete dari DB, aktifkan axios delete di sini.
-                // kalau gak mau delete DB, cukup clear doang.
                 ts.clear();
                 btnClear.classList.add("hidden");
             };
@@ -990,17 +979,16 @@ $(function () {
 
         const urlIndex = el.dataset.urlIndex;
         const urlStore = el.dataset.urlStore;
-        const urlDelete = el.dataset.urlDelete;
 
         if (el.tomselect) el.tomselect.destroy();
 
-        const ts = new TomSelect(el, {
+        const ts = new window.TomSelect(el, {
             valueField: "id",
             labelField: "nama_tipe_depot",
             searchField: "nama_tipe_depot",
             preload: true,
             maxItems: 1,
-            placeholder: "Pilih / ketik tipe depot",
+            placeholder: "Select / type depot type",
 
             load: function (query, callback) {
                 axios
@@ -1026,23 +1014,20 @@ $(function () {
             btnClear.onclick = function () {
                 const value = ts.getValue();
                 if (!value) return btnClear.classList.add("hidden");
-
                 ts.clear();
                 btnClear.classList.add("hidden");
             };
         }
     }
 
-    // init row pertama
+    // init first row
     const $firstRow = $depotContainer.find(".depot-row").first();
     initNamaDepotSelect($firstRow);
     initTipeDepotSelect($firstRow);
 
-    // tambah depot
     $("#btn-add-depot-restock").on("click", function () {
         const $newRow = $depotTemplate.clone(false);
 
-        // reset value
         $newRow.find(".select-nama-depot").val("");
         $newRow.find(".btn-clear-depot").addClass("hidden");
         $newRow.find(".select-tipe-depot").val("");
@@ -1055,22 +1040,18 @@ $(function () {
         initTipeDepotSelect($newRow);
     });
 
-    // hapus row
     $(document).on(
         "click",
         "#depot-container-restock .btn-remove-depot",
         function () {
             const $rows = $depotContainer.find(".depot-row");
             if ($rows.length <= 1) {
-                // kalau cuma satu, reset aja (biar gak kosong total)
                 const $row = $rows.first();
+                const depotEl = $row.find(".select-nama-depot")[0] || null;
+                depotEl?.tomselect?.clear?.();
 
-                // clear tomselect
-                const depotEl = $row.find(".select-nama-depot")[0];
-                if (depotEl?.tomselect) depotEl.tomselect.clear();
-
-                const tipeEl = $row.find(".select-tipe-depot")[0];
-                if (tipeEl?.tomselect) tipeEl.tomselect.clear();
+                const tipeEl = $row.find(".select-tipe-depot")[0] || null;
+                tipeEl?.tomselect?.clear?.();
 
                 $row.find(".btn-clear-depot").addClass("hidden");
                 $row.find(".btn-clear-tipe-depot").addClass("hidden");
@@ -1083,41 +1064,308 @@ $(function () {
     );
 });
 
-$(function () {
-    $("#togglePurchaseOrder").on("change", function () {
-        const isTrue = $(this).is(":checked");
-        const $label = $("#labelPurchaseOrder");
+function toNumber(v) {
+    if (!v) return 0;
+    if (typeof v === "number") return v;
+    const s = String(v);
+    if (s.includes("Rp")) return parseFloat(s.replace(/[^\d]/g, "")) || 0;
+    return parseFloat(v) || 0;
+}
 
-        if (isTrue) {
-            $label.addClass("text-blue-600").removeClass("text-gray-400");
-        } else {
-            $label.addClass("text-gray-400").removeClass("text-blue-600");
-        }
-    });
+function rupiah(n) {
+    const x = Math.round(toNumber(n));
+    return "Rp. " + x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+// Format rupiah realtime
+$(document).on("input", ".input-rupiah", function () {
+    $(this).val(rupiah($(this).val()));
+    calcHargaTotalAwal();
+    calcDiskon();
 });
 
-document.addEventListener("DOMContentLoaded", () => {
-    const toggle = document.getElementById("togglePurchaseOrder");
-    const label = document.getElementById("labelPurchaseOrder");
-    const fields = document.getElementById("purchaseOrderFields");
+function calcHargaTotalAwal() {
+    // kamu bisa ubah ini kalau total awal = qty * harga baru.
+    // Tapi screenshot kamu menunjukkan total awal seperti field sendiri.
+    // Aku bikin default: total = qty * harga beli satuan baru.
+    const qty = parseInt($("#jumlah_obat").val() || "0", 10) || 0;
+    const hargaBaru = toNumber($("#harga_satuan_obat_baru").val());
+    const total = qty * hargaBaru;
 
-    const tempo = document.getElementById("tempo_pembayaran");
-    const tgl = document.getElementById("tanggal_pengiriman");
+    $("#harga_total_awal_obat").val(rupiah(total));
+}
 
-    function syncPurchaseOrderUI() {
-        const on = toggle.checked;
+function calcDiskon() {
+    const totalAwal = toNumber($("#harga_total_awal_obat").val());
+    const diskonPct = parseFloat($("#diskon_obat_persen").val() || "0") || 0;
+    const diskonNominal = (totalAwal * diskonPct) / 100;
 
-        fields.classList.toggle("hidden", !on);
+    $("#harga_total_diskon_obat").val(rupiah(diskonNominal));
+}
 
-        // kalau mau wajib saat PO aktif:
-        tempo.required = on;
-        tgl.required = on;
+$("#jumlah_obat").on("input", function () {
+    calcHargaTotalAwal();
+    calcDiskon();
+});
 
-        // styling label biar gak kayak "mati"
-        label.classList.toggle("text-gray-400", !on);
-        label.classList.toggle("text-blue-600", on);
+$("#diskon_obat_persen").on("input", function () {
+    calcDiskon();
+});
+
+// SINGLE SOURCE OF TRUTH
+function syncTransaksiObatUI() {
+    const val = ($("#transaksi_obat").val() || "").trim();
+    const isReturn = val === "Return";
+
+    // Return-only: total stok item
+    $("#wrapper_total_stok").toggleClass("hidden", !isReturn);
+
+    // Required rules: expired & batch kamu mau wajib untuk Restock juga
+    const mustRequire = val === "Return" || val === "Restock";
+    $("#expired_date_obat").prop("required", mustRequire);
+    $("#batch_obat").prop("required", mustRequire);
+
+    // Label jumlah
+    $("#label_jumlah_obat").text(
+        isReturn ? "Jumlah Return *" : "Jumlah Obat *",
+    );
+}
+
+$(document).on("change", "#transaksi_obat", function () {
+    syncTransaksiObatUI();
+
+    const obatId = $("#obat_id").val();
+    if (obatId) window.fillObatMeta?.(obatId);
+});
+
+$(document).on("change", "#obat_id", function () {
+    const obatId = $(this).val();
+
+    $("#transaksi_obat").prop("disabled", !obatId);
+
+    // default: Restock saat pilih obat
+    if (obatId && !$("#transaksi_obat").val()) {
+        $("#transaksi_obat").val("Restock");
     }
 
-    toggle.addEventListener("change", syncPurchaseOrderUI);
-    syncPurchaseOrderUI(); // init
+    syncTransaksiObatUI();
+
+    if (obatId) window.fillObatMeta?.(obatId);
+});
+
+// Pastikan init
+syncTransaksiObatUI();
+calcHargaTotalAwal();
+calcDiskon();
+
+/* =========================================================
+   BHP UI: Transaksi Restock/Return (NEW)
+========================================================= */
+function syncTransaksiBhpUI() {
+    const val = ($("#transaksi_bhp").val() || "").trim();
+
+    $("#bhp_return_only_fields").toggleClass("hidden", val !== "Return");
+    $("#bhp_restock_only_fields").toggleClass("hidden", val !== "Restock");
+
+    // Return requires expired + batch (like your design)
+    $("#expired_date_bhp").prop("required", val === "Return");
+    $("#batch_bhp").prop("required", val === "Return");
+}
+
+// When bhp changes: enable transaksi + default Restock
+$(document).on("change", "#bhp_id", function () {
+    const bhpId = $(this).val();
+
+    if (!bhpId) {
+        $("#transaksi_bhp").val("").prop("disabled", true);
+        syncTransaksiBhpUI();
+        return;
+    }
+
+    $("#transaksi_bhp").prop("disabled", false);
+
+    if (!$("#transaksi_bhp").val()) {
+        $("#transaksi_bhp").val("Restock").trigger("change");
+    } else {
+        syncTransaksiBhpUI();
+    }
+});
+
+$(document).on("change", "#transaksi_bhp", function () {
+    syncTransaksiBhpUI();
+
+    // optional: refresh meta like obat
+    const bhpId = $("#bhp_id").val();
+    if (bhpId && window.fillBhpMeta) window.fillBhpMeta(bhpId);
+});
+
+/* =========================================================
+   MODAL INIT SAFE
+========================================================= */
+$(function () {
+    const elModal = document.getElementById("modalCreateRestockReturn");
+    const modalCreate = elModal
+        ? new Modal(elModal, { backdrop: "static", closable: false })
+        : null;
+
+    $("#btn-open-modal-create").on("click", function () {
+        modalCreate?.show();
+
+        // Default states when modal opens
+        $("#transaksi_obat").val("").prop("disabled", true);
+        $("#transaksi_bhp").val("").prop("disabled", true);
+
+        syncTransaksiObatUI();
+        syncTransaksiBhpUI();
+    });
+
+    $("#btn-close-modal-create, #btn-cancel-modal-create").on(
+        "click",
+        function () {
+            modalCreate?.hide();
+        },
+    );
+});
+
+/* =========================================================
+   DEPOT (FIX tomselect null crash)
+========================================================= */
+$(function () {
+    const $depotContainer = $("#depot-container-restock");
+    if (!$depotContainer.length) return;
+
+    const $depotTemplate = $depotContainer
+        .find(".depot-row")
+        .first()
+        .clone(false);
+
+    function initNamaDepotSelect($row) {
+        const el = $row.find(".select-nama-depot")[0];
+        const btnClear = $row.find(".btn-clear-depot")[0];
+        if (!el) return; // ✅ prevents null crash
+
+        if (el.tomselect) el.tomselect.destroy(); // ✅ safe destroy
+
+        const urlIndex = el.dataset.urlIndex;
+        const urlStore = el.dataset.urlStore;
+
+        const ts = new TomSelect(el, {
+            valueField: "id",
+            labelField: "nama_depot",
+            searchField: "nama_depot",
+            preload: true,
+            maxItems: 1,
+            placeholder: "Pilih / ketik nama depot",
+            load: function (query, callback) {
+                axios
+                    .get(urlIndex, { params: { q: query } })
+                    .then((res) => callback(res.data || []))
+                    .catch(() => callback([]));
+            },
+            create: function (input, callback) {
+                axios
+                    .post(urlStore, { nama_depot: input })
+                    .then((res) => callback(res.data))
+                    .catch(() => callback());
+            },
+            onChange: function (value) {
+                if (btnClear) btnClear.classList.toggle("hidden", !value);
+            },
+        });
+
+        if (btnClear) {
+            btnClear.onclick = function () {
+                ts.clear();
+                btnClear.classList.add("hidden");
+            };
+        }
+    }
+
+    function initTipeDepotSelect($row) {
+        const el = $row.find(".select-tipe-depot")[0];
+        const btnClear = $row.find(".btn-clear-tipe-depot")[0];
+        if (!el) return; // ✅ prevents null crash
+
+        if (el.tomselect) el.tomselect.destroy(); // ✅ safe destroy
+
+        const urlIndex = el.dataset.urlIndex;
+        const urlStore = el.dataset.urlStore;
+
+        const ts = new TomSelect(el, {
+            valueField: "id",
+            labelField: "nama_tipe_depot",
+            searchField: "nama_tipe_depot",
+            preload: true,
+            maxItems: 1,
+            placeholder: "Pilih / ketik tipe depot",
+            load: function (query, callback) {
+                axios
+                    .get(urlIndex, { params: { q: query } })
+                    .then((res) => callback(res.data || []))
+                    .catch(() => callback([]));
+            },
+            create: function (input, callback) {
+                axios
+                    .post(urlStore, { nama_tipe_depot: input })
+                    .then((res) => callback(res.data))
+                    .catch(() => callback());
+            },
+            onChange: function (value) {
+                if (btnClear) btnClear.classList.toggle("hidden", !value);
+            },
+        });
+
+        if (btnClear) {
+            btnClear.onclick = function () {
+                ts.clear();
+                btnClear.classList.add("hidden");
+            };
+        }
+    }
+
+    // init first row
+    const $firstRow = $depotContainer.find(".depot-row").first();
+    initNamaDepotSelect($firstRow);
+    initTipeDepotSelect($firstRow);
+
+    // add row
+    $("#btn-add-depot-restock").on("click", function () {
+        const $newRow = $depotTemplate.clone(false);
+
+        $newRow.find(".select-nama-depot").val("");
+        $newRow.find(".btn-clear-depot").addClass("hidden");
+        $newRow.find(".select-tipe-depot").val("");
+        $newRow.find(".btn-clear-tipe-depot").addClass("hidden");
+        $newRow.find(".input-stok-depot").val(0);
+
+        $depotContainer.append($newRow);
+
+        initNamaDepotSelect($newRow);
+        initTipeDepotSelect($newRow);
+    });
+
+    // remove row
+    $(document).on(
+        "click",
+        "#depot-container-restock .btn-remove-depot",
+        function () {
+            const $rows = $depotContainer.find(".depot-row");
+            if ($rows.length <= 1) {
+                // reset instead of delete last row
+                const $row = $rows.first();
+                const depotEl = $row.find(".select-nama-depot")[0];
+                if (depotEl && depotEl.tomselect) depotEl.tomselect.clear();
+
+                const tipeEl = $row.find(".select-tipe-depot")[0];
+                if (tipeEl && tipeEl.tomselect) tipeEl.tomselect.clear();
+
+                $row.find(".btn-clear-depot").addClass("hidden");
+                $row.find(".btn-clear-tipe-depot").addClass("hidden");
+                $row.find(".input-stok-depot").val(0);
+                return;
+            }
+
+            $(this).closest(".depot-row").remove();
+        },
+    );
 });

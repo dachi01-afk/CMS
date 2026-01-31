@@ -403,51 +403,67 @@
                                         {{-- Kategori Obat --}}
                                         <div>
                                             <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                                Kategori Obat <span class="text-red-500">*</span>
+                                                Kategori Obat
                                             </label>
-                                            <input name="kategori_obat_id" id="kategori_obat_id"
+                                            <input id="kategori_obat_id"
                                                 class="mt-1 block w-full text-sm bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                                                 disabled>
-                                            <div class="text-red-600 text-[11px] mt-1" data-error="kategori_obat_id">
+                                        </div>
+
+                                        {{-- Transaksi --}}
+                                        <div class="md:col-span-2">
+                                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                                Transaksi <span class="text-red-500">*</span>
+                                            </label>
+                                            <select id="transaksi_obat" name="transaksi_obat"
+                                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
+                       disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed
+                       focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                                                <option value="">-- Pilih --</option>
+                                                <option value="Restock">Restock</option>
+                                                <option value="Return">Return</option>
+                                            </select>
+                                            <div class="text-red-600 text-[11px] mt-1" data-error="transaksi_obat">
                                             </div>
                                         </div>
 
                                         {{-- Satuan --}}
-                                        <div>
+                                        <div class="md:col-span-2">
                                             <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
                                                 Satuan <span class="text-red-500">*</span>
                                             </label>
-                                            <input name="satuan_obat_id" id="satuan_obat_id"
+                                            <input id="satuan_obat_id"
                                                 class="mt-1 block w-full text-sm bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                                                 disabled>
                                             <div class="text-red-600 text-[11px] mt-1" data-error="satuan_obat_id">
                                             </div>
                                         </div>
 
-                                        {{-- Expired Date --}}
+                                        {{-- Expired Date (COMMON: Restock & Return) --}}
                                         <div>
                                             <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
                                                 Expired Date <span class="text-red-500">*</span>
                                             </label>
                                             <input type="date" name="expired_date_obat" id="expired_date_obat"
-                                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
+                       focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
                                             <div class="text-red-600 text-[11px] mt-1" data-error="expired_date_obat">
                                             </div>
                                         </div>
 
-                                        {{-- Batch --}}
+                                        {{-- Batch (COMMON: Restock & Return) --}}
                                         <div>
                                             <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
                                                 Batch <span class="text-red-500">*</span>
                                             </label>
                                             <input name="batch_obat" id="batch_obat"
-                                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                                                required>
+                                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
+                       focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
                                             <div class="text-red-600 text-[11px] mt-1" data-error="batch_obat"></div>
                                         </div>
 
-                                        {{-- Total Stok Item (HANYA MUNCUL SAAT RETURN) --}}
-                                        <div id="wrapper_total_stok" class="hidden ">
+                                        {{-- Total Stok Item (RETURN ONLY) --}}
+                                        <div id="wrapper_total_stok" class="hidden md:col-span-2">
                                             <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
                                                 Total Stok Item <span class="text-red-500">*</span>
                                             </label>
@@ -460,28 +476,30 @@
 
                                         {{-- Jumlah Obat --}}
                                         <div class="md:col-span-2">
-                                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                            <label for="jumlah_obat" id="label_jumlah_obat"
+                                                class="block text-xs font-medium text-gray-600 dark:text-gray-300">
                                                 Jumlah Obat <span class="text-red-500">*</span>
                                             </label>
                                             <input type="number" min="0" name="jumlah_obat" id="jumlah_obat"
                                                 value="0"
-                                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
+                       focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
                                                 required>
                                             <div class="text-red-600 text-[11px] mt-1" data-error="jumlah_obat"></div>
                                         </div>
 
-                                        {{-- Harga beli lama (kiri) --}}
+                                        {{-- Harga Beli Satuan Lama --}}
                                         <div>
                                             <label
                                                 class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
                                                 Harga Beli Satuan Obat Lama
                                             </label>
-                                            <input type="text" name="harga_beli_satuan_obat_lama"
-                                                id="harga_beli_satuan_obat_lama" readonly
-                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                                            <input type="text" id="harga_beli_satuan_obat_lama" readonly
+                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5
+                       dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                                         </div>
 
-                                        {{-- Harga satuan obat (kanan) --}}
+                                        {{-- Harga Beli Satuan Baru --}}
                                         <div>
                                             <label
                                                 class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
@@ -489,46 +507,77 @@
                                             </label>
                                             <input type="text" name="harga_satuan_obat_baru"
                                                 id="harga_satuan_obat_baru"
-                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5
+                       dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                                                 required>
-                                            <div class="text-red-600 text-[11px] mt-1" data-error="harga_satuan_obat">
-                                            </div>
+                                            <div class="text-red-600 text-[11px] mt-1"
+                                                data-error="harga_satuan_obat_baru"></div>
                                         </div>
 
-                                        {{-- Harga jual satuan obat lama --}}
+                                        {{-- Harga Beli Rata-Rata Lama --}}
+                                        <div>
+                                            <label
+                                                class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                                                Harga Beli Rata-Rata Lama
+                                            </label>
+                                            <input type="text" id="harga_beli_rata_lama_obat" readonly
+                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5
+                       dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                        </div>
+
+                                        {{-- Harga Beli Rata-Rata Baru --}}
+                                        <div>
+                                            <label
+                                                class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                                                Harga Beli Rata-Rata Baru <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="text" name="harga_beli_rata_baru_obat"
+                                                id="harga_beli_rata_baru_obat"
+                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5
+                       dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                                required>
+                                            <div class="text-red-600 text-[11px] mt-1"
+                                                data-error="harga_beli_rata_baru_obat"></div>
+                                        </div>
+
+                                        {{-- Harga Jual Satuan Lama --}}
                                         <div>
                                             <label
                                                 class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
                                                 Harga Jual Satuan Obat Lama
                                             </label>
-                                            <input type="text" name="harga_jual_lama_obat"
-                                                id="harga_jual_lama_obat" readonly
-                                                class="input-rupiah input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                                            <input type="text" id="harga_jual_lama_obat" readonly
+                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5
+                       dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                                         </div>
 
-                                        {{-- Harga jual satuan obat baru --}}
+                                        {{-- Harga Jual Satuan Baru --}}
                                         <div>
                                             <label
                                                 class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
-                                                Harga Jual Satuan Obat Baru
+                                                Harga Jual Satuan Obat Baru <span class="text-red-500">*</span>
                                             </label>
                                             <input type="text" name="harga_jual_baru_obat"
                                                 id="harga_jual_baru_obat"
-                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5
+                       dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                                required>
+                                            <div class="text-red-600 text-[11px] mt-1"
+                                                data-error="harga_jual_baru_obat"></div>
                                         </div>
 
-                                        {{-- Harga jual OTC lama --}}
+                                        {{-- Harga Jual OTC Lama --}}
                                         <div>
                                             <label
                                                 class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
                                                 Harga Jual OTC Lama
                                             </label>
-                                            <input type="text" name="harga_jual_otc_lama_obat"
-                                                id="harga_jual_otc_lama_obat" readonly
-                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                                            <input type="text" id="harga_jual_otc_lama_obat" readonly
+                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5
+                       dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                                         </div>
 
-                                        {{-- Harga jual OTC baru --}}
+                                        {{-- Harga Jual OTC Baru --}}
                                         <div>
                                             <label
                                                 class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
@@ -536,7 +585,10 @@
                                             </label>
                                             <input type="text" name="harga_jual_otc_baru_obat"
                                                 id="harga_jual_otc_baru_obat"
-                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
+                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5
+                       dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                            <div class="text-red-600 text-[11px] mt-1"
+                                                data-error="harga_jual_otc_baru_obat"></div>
                                         </div>
 
                                         {{-- Harga Total Awal --}}
@@ -547,27 +599,55 @@
                                             </label>
                                             <input type="text" name="harga_total_awal_obat"
                                                 id="harga_total_awal_obat" readonly
-                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                                                required>
+                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5
+                       dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                                value="Rp. 0">
                                             <div class="text-red-600 text-[11px] mt-1"
-                                                data-error="harga_total_awal_obat">
-                                            </div>
+                                                data-error="harga_total_awal_obat"></div>
                                         </div>
 
-                                        {{-- Depot Tujuan --}}
+                                        {{-- Diskon Obat (%) --}}
+                                        <div>
+                                            <label
+                                                class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                                                Diskon Obat <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="number" min="0" max="100" step="1"
+                                                name="diskon_obat_persen" id="diskon_obat_persen" value="0"
+                                                class="mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5
+                       dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                            <div class="text-red-600 text-[11px] mt-1"
+                                                data-error="diskon_obat_persen"></div>
+                                        </div>
+
+                                        {{-- Harga Total Diskon --}}
+                                        <div>
+                                            <label
+                                                class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                                                Harga Total Diskon <span class="text-red-500">*</span>
+                                            </label>
+                                            <input type="text" name="harga_total_diskon_obat"
+                                                id="harga_total_diskon_obat" readonly
+                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5
+                       dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                                value="Rp. 0">
+                                            <div class="text-red-600 text-[11px] mt-1"
+                                                data-error="harga_total_diskon_obat"></div>
+                                        </div>
+
+                                        {{-- Keterangan --}}
                                         <div class="md:col-span-2">
                                             <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                                Depot Tujuan
+                                                Keterangan
                                             </label>
-                                            <select name="depot_id" id="depot_id" class="mt-1"></select>
-
-                                            <div id="info-stok-depot"
-                                                class="mt-2 text-[11px] text-blue-600 font-medium hidden">
-                                                Stok di depot ini: <span id="nilai-stok">0</span>
-                                            </div>
-
-                                            <div class="text-red-600 text-[11px] mt-1" data-error="depot_id"></div>
+                                            <textarea name="keterangan_item_obat" id="keterangan_item_obat" rows="3"
+                                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
+                       focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                                placeholder="Opsional..."></textarea>
+                                            <div class="text-red-600 text-[11px] mt-1"
+                                                data-error="keterangan_item_obat"></div>
                                         </div>
+
                                     </div>
 
                                     {{-- Button: Tambah Rincian --}}
@@ -579,7 +659,9 @@
                                     </div>
                                 </div>
 
+
                                 {{-- PANEL BHP --}}
+                            
                                 <div id="panel-bhp" data-panel="bhp" class="hidden">
                                     <div class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
 
@@ -597,128 +679,134 @@
                                             <div class="text-red-600 text-[11px] mt-1" data-error="bhp_id"></div>
                                         </div>
 
-                                        {{-- Kategori Bahan --}}
-                                        <div>
-                                            <label
-                                                class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
-                                                Kategori Bahan <span class="text-red-500">*</span>
-                                            </label>
-                                            <input name="kategori_bhp_id" id="kategori_bhp_id" disabled
-                                                class="mt-1 w-full bg-transparent border border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
-                                            <div class="text-red-600 text-[11px] mt-1" data-error="kategori_bhp_id">
-                                            </div>
-                                        </div>
-
-                                        {{-- Satuan --}}
-                                        <div>
-                                            <label
-                                                class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
-                                                Satuan <span class="text-red-500">*</span>
-                                            </label>
-                                            <input name="satuan_bhp_id" id="satuan_bhp_id" disabled
-                                                class="mt-1 w-full bg-transparent border border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
-                                            <div class="text-red-600 text-[11px] mt-1" data-error="satuan_bhp_id">
-                                            </div>
-                                        </div>
-
-
-                                        {{-- Expired Date --}}
-                                        <div>
-                                            <label
-                                                class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
-                                                Expired Date <span class="text-red-500">*</span>
-                                            </label>
-                                            <input type="date" name="expired_date_bhp" id="expired_date_bhp"
-                                                required
-                                                class="mt-1 w-full bg-transparent border border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
-                                            <div class="text-red-600 text-[11px] mt-1" data-error="expired_date_bhp">
-                                            </div>
-                                        </div>
-
-                                        {{-- Batch --}}
-                                        <div>
-                                            <label
-                                                class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
-                                                Batch <span class="text-red-500">*</span>
-                                            </label>
-                                            <input name="batch_bhp" id="batch_bhp" required
-                                                class="mt-1 w-full bg-transparent border border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
-                                            <div class="text-red-600 text-[11px] mt-1" data-error="batch_bhp"></div>
-                                        </div>
-
-                                        {{-- Jumlah Bahan --}}
+                                        {{-- Transaksi BHP (FULL WIDTH) --}}
                                         <div class="md:col-span-2">
-                                            <label
-                                                class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
-                                                Jumlah Bahan <span class="text-red-500">*</span>
+                                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                                Transaksi <span class="text-red-500">*</span>
                                             </label>
-                                            <input type="number" min="0" name="jumlah_bhp" id="jumlah_bhp"
-                                                value="0" required
-                                                class="mt-1 w-full bg-transparent border border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
-                                            <div class="text-red-600 text-[11px] mt-1" data-error="jumlah_bhp"></div>
-                                        </div>
-
-                                        {{-- Harga Beli Satuan BHP Lama (kiri) --}}
-                                        <div>
-                                            <label
-                                                class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
-                                                Harga Beli Satuan BHP Lama
-                                            </label>
-                                            <input type="text" name="harga_beli_satuan_bhp_lama"
-                                                id="harga_beli_satuan_bhp_lama" readonly
-                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                                        </div>
-
-                                        {{-- Harga Beli Satuan BHP Baru (kanan) --}}
-                                        <div>
-                                            <label
-                                                class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
-                                                Harga Beli Satuan BHP Baru <span class="text-red-500">*</span>
-                                            </label>
-                                            <input type="text" name="harga_satuan_bhp" id="harga_satuan_bhp"
-                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                                                required>
-                                            <div class="text-red-600 text-[11px] mt-1" data-error="harga_satuan_obat">
+                                            <select id="transaksi_bhp" name="transaksi_bhp"
+                                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 disabled:bg-gray-100 disabled:text-gray-400 disabled:cursor-not-allowed focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                                                <option value="">-- Pilih --</option>
+                                                <option value="Restock">Restock</option>
+                                                <option value="Return">Return</option>
+                                            </select>
+                                            <div class="text-red-600 text-[11px] mt-1" data-error="transaksi_bhp">
                                             </div>
                                         </div>
 
+                                        {{-- ========================= --}}
+                                        {{-- BHP RESTOCK ONLY (gambar 1) --}}
+                                        {{-- ========================= --}}
+                                        <div id="bhp_restock_only_fields" class="hidden md:col-span-2">
+                                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
-                                        {{-- Harga Jual Satuan BHP Lama (kiri) --}}
-                                        <div>
-                                            <label
-                                                class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
-                                                Harga Jual Satuan BHP Lama
-                                            </label>
-                                            <input type="text" name="harga_jual_satuan_bhp_lama"
-                                                id="harga_jual_satuan_bhp_lama" readonly
-                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500">
-                                        </div>
+                                                <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    {{-- Kategori --}}
+                                                    <div>
+                                                        <label
+                                                            class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
+                                                            Kategori Bahan <span class="text-red-500">*</span>
+                                                        </label>
+                                                        <input id="kategori_bhp_id" disabled
+                                                            class="mt-1 w-full bg-transparent border border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                                    </div>
 
-                                        {{-- Harga Jual Satuan BHP Baru (kanan) --}}
-                                        <div>
-                                            <label
-                                                class="block text-[11px] font-medium text-gray-500 dark:text-gray-400">
-                                                Harga Jual Satuan BHP Baru <span class="text-red-500">*</span>
-                                            </label>
-                                            <input type="text" name="harga_jual_satuan_bhp_baru"
-                                                id="harga_jual_satuan_bhp_baru"
-                                                class="input-rupiah mt-1 bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                                                required>
-                                            <div class="text-red-600 text-[11px] mt-1" data-error="harga_satuan_obat">
+                                                    {{-- Satuan --}}
+                                                    <div>
+                                                        <label
+                                                            class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
+                                                            Satuan <span class="text-red-500">*</span>
+                                                        </label>
+                                                        <input id="satuan_bhp_id" disabled
+                                                            class="mt-1 w-full bg-transparent border border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                                    </div>
+                                                </div>
+
+                                                {{-- Expired (optional, restock boleh ada tapi tidak wajib jika kamu mau) --}}
+                                                <div>
+                                                    <label
+                                                        class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
+                                                        Expired Date
+                                                    </label>
+                                                    <input type="date" name="expired_date_bhp"
+                                                        id="expired_date_bhp"
+                                                        class="mt-1 w-full bg-transparent border border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                                </div>
+
+                                                {{-- Batch --}}
+                                                <div>
+                                                    <label
+                                                        class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
+                                                        Batch
+                                                    </label>
+                                                    <input name="batch_bhp" id="batch_bhp"
+                                                        class="mt-1 w-full bg-transparent border border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                                </div>
+
+                                                {{-- Jumlah --}}
+                                                <div>
+                                                    <label
+                                                        class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
+                                                        Jumlah Bahan <span class="text-red-500">*</span>
+                                                    </label>
+                                                    <input type="number" min="0" name="jumlah_bhp"
+                                                        id="jumlah_bhp" value="0"
+                                                        class="mt-1 w-full bg-transparent border border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                                </div>
+
+                                                {{-- (tambahkan field restock lain sesuai kebutuhan kamu) --}}
                                             </div>
                                         </div>
 
-                                        {{-- Harga Total Awal --}}
-                                        <div class="md:col-span-2">
-                                            <label
-                                                class="block text-[10px] font-medium text-gray-500 dark:text-gray-400">
-                                                Harga Total Awal <span class="text-red-500">*</span>
-                                            </label>
-                                            <input type="text" name="harga_total_awal_bhp"
-                                                id="harga_total_awal_bhp" readonly required
-                                                class="input-rupiah mt-1 w-full bg-transparent border border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0">
-                                            <div class="text-red-600 text-[11px] mt-1"
-                                                data-error="harga_total_awal_bhp"></div>
+                                        {{-- ========================= --}}
+                                        {{-- BHP RETURN ONLY (gambar 2) --}}
+                                        {{-- ========================= --}}
+                                        <div id="bhp_return_only_fields" class="hidden md:col-span-2">
+                                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+
+                                                {{-- Total stok --}}
+                                                <div>
+                                                    <label
+                                                        class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
+                                                        Total Stok Item <span class="text-red-500">*</span>
+                                                    </label>
+                                                    <input type="text" id="total_stok_bhp" readonly
+                                                        class="mt-1 w-full bg-gray-100 border border-gray-200 rounded-lg px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                                                        value="0">
+                                                </div>
+
+                                                {{-- Expired wajib saat Return --}}
+                                                <div>
+                                                    <label
+                                                        class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
+                                                        Expired Date <span class="text-red-500">*</span>
+                                                    </label>
+                                                    <input type="date" name="expired_date_bhp"
+                                                        id="expired_date_bhp"
+                                                        class="mt-1 w-full bg-transparent border border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                                </div>
+
+                                                {{-- Batch wajib saat Return --}}
+                                                <div>
+                                                    <label
+                                                        class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
+                                                        Batch <span class="text-red-500">*</span>
+                                                    </label>
+                                                    <input name="batch_bhp" id="batch_bhp"
+                                                        class="mt-1 w-full bg-transparent border border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                                </div>
+
+                                                {{-- Jumlah --}}
+                                                <div class="md:col-span-3">
+                                                    <label
+                                                        class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
+                                                        Jumlah Return <span class="text-red-500">*</span>
+                                                    </label>
+                                                    <input type="number" min="0" name="jumlah_bhp"
+                                                        id="jumlah_bhp" value="0"
+                                                        class="mt-1 w-full bg-transparent border border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                                </div>
+                                            </div>
                                         </div>
 
                                         {{-- Keterangan --}}
@@ -727,13 +815,13 @@
                                                 class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
                                                 Keterangan
                                             </label>
-                                            <textarea name="keterangan_bhp" id="keterangan_bhp" rows="6"
+                                            <textarea name="keterangan_bhp" id="keterangan_bhp" rows="4"
                                                 class="mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500"
                                                 placeholder="Opsional"></textarea>
                                         </div>
-
                                     </div>
                                 </div>
+
                             </div>
                         </div>
 
