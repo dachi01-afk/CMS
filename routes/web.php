@@ -419,6 +419,7 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('/bhp/{id}/meta', [RestockDanReturnController::class, 'getMetaBhp'])->name('farmasi.restock_return.bhp_meta');
 
             Route::get('/get-data-depot', [RestockDanReturnController::class, 'getDataDepot'])->name('farmasi.restock_return.get.data.depot');
+            Route::get('/get-data-depot-bhp', [RestockDanReturnController::class, 'getDataDepotBhp'])->name('farmasi.restock_return.get.data.depot.bhp');
 
             // ✅ store
             Route::post('/store', [RestockDanReturnController::class, 'store'])->name('create.data.restock.dan.return');

@@ -409,6 +409,30 @@ class RestockDanReturnController extends Controller
         return response()->json($dataDepot);
     }
 
+    public function getDataDepotBhp(Request $request)
+    {
+        $search = $request->get('q');
+        $bhpId = $request->get('bhp_id'); // Ambil ID obat dari request
+
+        $dataDepotBhp = Depot::where('nama_depot', 'like', "%{$search}%")
+            ->get()
+            ->map(function ($depot) use ($bhpId) {
+                // Cari stok di tabel pivot/relasi depot_obat
+                $stok = DB::table('depot_bhp')
+                    ->where('depot_id', $depot->id)
+                    ->where('bahan_habis_pakai_id', $bhpId)
+                    ->value('stok_barang') ?? 0;
+
+                return [
+                    'id' => $depot->id,
+                    'nama_barang' => $depot->nama_barang,
+                    'stok_barang' => $stok // Tambahkan info stok ke response
+                ];
+            });
+
+        return response()->json($dataDepotBhp);
+    }
+
     // public function store(Request $request)
     // {
     //     // 1. Validasi Input
