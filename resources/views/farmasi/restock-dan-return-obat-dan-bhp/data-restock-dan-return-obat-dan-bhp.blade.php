@@ -183,16 +183,13 @@
 
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
                         {{-- Tanggal transaksi --}}
                         <div>
                             <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
                                 Tanggal Transaksi <span class="text-red-500">*</span>
                             </label>
                             <input type="date" name="tanggal_transaksi"
-                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
-                                       focus:border-blue-500 focus:ring-1 focus:ring-blue-500
-                                       dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
                                 required>
                             <div class="text-red-600 text-[11px] mt-1" data-error="tanggal_transaksi"></div>
                         </div>
@@ -203,9 +200,7 @@
                                 Jenis Transaksi <span class="text-red-500">*</span>
                             </label>
                             <select id="jenis_transaksi" name="jenis_transaksi"
-                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
-                                       focus:border-blue-500 focus:ring-1 focus:ring-blue-500
-                                       dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
                                 required>
                                 <option value="">-- Pilih --</option>
                             </select>
@@ -225,16 +220,13 @@
                                     data-url-delete="{{ route('delete.data.supplier') }}"
                                     data-url-update="{{ route('update.data.supplier') }}"
                                     data-url-show="{{ route('get.data.supplier.by.id', ['id' => '__ID__']) }}"
-                                    class="block w-full pr-9 text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
-                                           focus:border-blue-500 focus:ring-1 focus:ring-blue-500
-                                           dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                                    class="block w-full pr-9 text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
                                     <option value="">Ketik untuk cari / tambah supplier</option>
                                 </select>
 
                                 {{-- Tombol X (clear & delete supplier) --}}
                                 <button type="button" id="btn-clear-supplier"
-                                    class="hidden absolute inset-y-0 right-2 my-auto w-5 h-5 rounded-full flex items-center justify-center
-                                           text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/40">
+                                    class="hidden absolute inset-y-0 right-2 my-auto w-5 h-5 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/40">
                                     <i class="fa-solid fa-xmark text-[10px]"></i>
                                 </button>
                             </div>
@@ -248,9 +240,7 @@
                                 Nomor Faktur
                             </label>
                             <input type="text" name="nomor_faktur"
-                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
-                                       focus:border-blue-500 focus:ring-1 focus:ring-blue-500
-                                       dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
                                 placeholder="Opsional" autocomplete="off">
                             <div class="text-red-600 text-[11px] mt-1" data-error="nomor_faktur"></div>
                         </div>
@@ -261,11 +251,35 @@
                                 Keterangan
                             </label>
                             <textarea name="keterangan" rows="2"
-                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
-                                       focus:border-blue-500 focus:ring-1 focus:ring-blue-500
-                                       dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
                                 placeholder="Opsional"></textarea>
                             <div class="text-red-600 text-[11px] mt-1" data-error="keterangan"></div>
+                        </div>
+
+                        {{-- Purchase Order Fields (muncul saat toggle ON) --}}
+                        <div id="purchaseOrderFields" class="md:col-span-2 hidden">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+                                {{-- Tempo Pembayaran (DATE) --}}
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                        Tempo Pembayaran
+                                    </label>
+                                    <input type="date" name="tempo_pembayaran" id="tempo_pembayaran"
+                                        class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                                    <div class="text-red-600 text-[11px] mt-1" data-error="tempo_pembayaran"></div>
+                                </div>
+
+                                {{-- Tanggal Pengiriman --}}
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                        Tanggal Pengiriman
+                                    </label>
+                                    <input type="date" name="tanggal_pengiriman" id="tanggal_pengiriman"
+                                        class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 selection:focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                                    <div class="text-red-600 text-[11px] mt-1" data-error="tanggal_pengiriman"></div>
+                                </div>
+                            </div>
                         </div>
 
                     </div>
@@ -575,7 +589,7 @@
                                             </label>
 
                                             <select name="bhp_id" id="bhp_id" required
-                                                class="mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                                class="mt-1 w-full bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
                                                 <option value="">Pilih BHP...</option>
                                             </select>
                                             <div class="text-red-600 text-[11px] mt-1" data-error="bhp_id"></div>
@@ -588,7 +602,7 @@
                                                 Kategori Bahan <span class="text-red-500">*</span>
                                             </label>
                                             <input name="kategori_bhp_id" id="kategori_bhp_id" disabled
-                                                class="mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                                class="mt-1 w-full bg-transparent border border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
                                             <div class="text-red-600 text-[11px] mt-1" data-error="kategori_bhp_id">
                                             </div>
                                         </div>
@@ -600,7 +614,7 @@
                                                 Satuan <span class="text-red-500">*</span>
                                             </label>
                                             <input name="satuan_bhp_id" id="satuan_bhp_id" disabled
-                                                class="mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                                class="mt-1 w-full bg-transparent border border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
                                             <div class="text-red-600 text-[11px] mt-1" data-error="satuan_bhp_id">
                                             </div>
                                         </div>
@@ -614,7 +628,7 @@
                                             </label>
                                             <input type="date" name="expired_date_bhp" id="expired_date_bhp"
                                                 required
-                                                class="mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                                class="mt-1 w-full bg-transparent border border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
                                             <div class="text-red-600 text-[11px] mt-1" data-error="expired_date_bhp">
                                             </div>
                                         </div>
@@ -626,7 +640,7 @@
                                                 Batch <span class="text-red-500">*</span>
                                             </label>
                                             <input name="batch_bhp" id="batch_bhp" required
-                                                class="mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                                class="mt-1 w-full bg-transparent border border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
                                             <div class="text-red-600 text-[11px] mt-1" data-error="batch_bhp"></div>
                                         </div>
 
@@ -638,7 +652,7 @@
                                             </label>
                                             <input type="number" min="0" name="jumlah_bhp" id="jumlah_bhp"
                                                 value="0" required
-                                                class="mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                                class="mt-1 w-full bg-transparent border border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
                                             <div class="text-red-600 text-[11px] mt-1" data-error="jumlah_bhp"></div>
                                         </div>
 
@@ -700,28 +714,9 @@
                                             </label>
                                             <input type="text" name="harga_total_awal_bhp"
                                                 id="harga_total_awal_bhp" readonly required
-                                                class="input-rupiah mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0">
+                                                class="input-rupiah mt-1 w-full bg-transparent border border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0">
                                             <div class="text-red-600 text-[11px] mt-1"
                                                 data-error="harga_total_awal_bhp"></div>
-                                        </div>
-
-                                        {{-- Depot Tujuan --}}
-                                        <div class="md:col-span-2">
-                                            <label
-                                                class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
-                                                Depot Tujuan
-                                            </label>
-
-                                            <select name="depot_id_bhp" id="depot_id_bhp"
-                                                class="mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500"></select>
-
-                                            <div id="info-stok-depot-bhp"
-                                                class="mt-2 text-[11px] text-blue-600 font-medium hidden">
-                                                Stok di depot ini: <span id="nilai-stok-bhp">0</span>
-                                            </div>
-
-                                            <div class="text-red-600 text-[11px] mt-1" data-error="depot_id_bhp">
-                                            </div>
                                         </div>
 
                                         {{-- Keterangan --}}
@@ -730,7 +725,7 @@
                                                 class="block text-[11px] font-medium text-gray-600 dark:text-gray-300">
                                                 Keterangan
                                             </label>
-                                            <textarea name="keterangan_bhp" id="keterangan_bhp" rows="2"
+                                            <textarea name="keterangan_bhp" id="keterangan_bhp" rows="6"
                                                 class="mt-1 w-full bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500"
                                                 placeholder="Opsional"></textarea>
                                         </div>
@@ -798,7 +793,7 @@
                                                 <div class="relative">
                                                     <input type="number" min="0" max="100"
                                                         step="1" id="sum-pajak"
-                                                        class="w-full text-right text-sm bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 focus:ring-0 focus:border-sky-500 pr-6 py-1"
+                                                        class="w-full text-right text-sm bg-transparent border-0 border-gray-300 dark:border-gray-700 focus:ring-0 focus:border-sky-500 pr-6 py-1"
                                                         value="0">
                                                     <span class="absolute right-0 top-1 text-gray-500 text-sm">%</span>
                                                 </div>
@@ -812,7 +807,7 @@
                                                 Lainnya</span>
                                             <div class="w-40">
                                                 <input type="text" id="sum-biaya-lainnya"
-                                                    class="input-rupiah w-full text-right text-sm bg-transparent border-0 border-b border-gray-300 dark:border-gray-700 focus:ring-0 focus:border-sky-500 py-1"
+                                                    class="input-rupiah w-full text-right text-sm bg-transparent border-0 border-gray-300 dark:border-gray-700 focus:ring-0 focus:border-sky-500 py-1"
                                                     value="Rp. 0">
                                             </div>
                                         </div>
