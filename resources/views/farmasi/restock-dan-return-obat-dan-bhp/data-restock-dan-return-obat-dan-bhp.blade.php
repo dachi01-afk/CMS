@@ -259,29 +259,28 @@
                         {{-- Purchase Order Fields (muncul saat toggle ON) --}}
                         <div id="purchaseOrderFields" class="md:col-span-2 hidden">
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                {{-- Tempo Pembayaran --}}
+
+                                {{-- Tempo Pembayaran (DATE) --}}
                                 <div>
-                                    <label class="block ml-3 text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
                                         Tempo Pembayaran
                                     </label>
-                                    <input type="text" name="tempo_pembayaran" id="tempo_pembayaran"
-                                        placeholder="Contoh: 30 hari / Net 30"
-                                        class="mt-1 w-full bg-transparent border border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                    <input type="date" name="tempo_pembayaran" id="tempo_pembayaran"
+                                        class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
                                     <div class="text-red-600 text-[11px] mt-1" data-error="tempo_pembayaran"></div>
                                 </div>
 
                                 {{-- Tanggal Pengiriman --}}
                                 <div>
-                                    <label class="block ml-3 text-[11px] font-medium text-gray-500 dark:text-gray-400">
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
                                         Tanggal Pengiriman
                                     </label>
                                     <input type="date" name="tanggal_pengiriman" id="tanggal_pengiriman"
-                                        class="mt-1 w-full bg-transparent border border-gray-300 dark:border-gray-700 text-sm text-gray-900 dark:text-white px-0 py-2 focus:ring-0 focus:border-blue-500">
+                                        class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 selection:focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
                                     <div class="text-red-600 text-[11px] mt-1" data-error="tanggal_pengiriman"></div>
                                 </div>
                             </div>
                         </div>
-
 
                     </div>
                 </div>
