@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('batch_obats', function (Blueprint $table) {
+        Schema::create('batch_obat', function (Blueprint $table) {
             $table->id();
             $table->timestamps();
         });
@@ -22,6 +22,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('batch_obats');
+        Schema::dropIfExists('batch_obat');
     }
 };
