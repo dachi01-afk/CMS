@@ -62,4 +62,9 @@ class Obat extends Model
     {
         return $this->hasMany(MutasiStokObatDetail::class);
     }
+
+    public function batchObat()
+    {
+        return $this->hasMany(BatchObat::class);
+    }
 }

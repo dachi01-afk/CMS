@@ -317,15 +317,41 @@ $(function () {
         const tempo = document.getElementById("tempo_pembayaran");
         const tgl = document.getElementById("tanggal_pengiriman");
 
-        if (!toggle || !label || !fields || !tempo || !tgl) return;
+// <<<<<<< HEAD
+//         if (!toggle || !label || !fields || !tempo || !tgl) return;
 
-        function syncPurchaseOrderUI() {
-            const on = toggle.checked;
-            fields.classList.toggle("hidden", !on);
-            tempo.required = on;
-            tgl.required = on;
-            label.classList.toggle("text-gray-400", !on);
-            label.classList.toggle("text-blue-600", on);
+//         function syncPurchaseOrderUI() {
+//             const on = toggle.checked;
+//             fields.classList.toggle("hidden", !on);
+//             tempo.required = on;
+//             tgl.required = on;
+//             label.classList.toggle("text-gray-400", !on);
+//             label.classList.toggle("text-blue-600", on);
+// =======
+    // Jika user memilih jenis transaksi "Return", maka field "Total Stok Sekarang" akan muncul.
+    // Jika pilih "Restock", field stok tersebut akan disembunyikan karena dianggap menambah barang baru.
+    function toggleTransactionMode() {
+        const jenisTransaksi = $("#jenis_transaksi").val() || "";
+        const isReturn = jenisTransaksi.toLowerCase().includes("return");
+        const $wrapperStok = $("#total_stok_item").closest("div");
+        const $labelJumlah = $("label[for='jumlah_obat']");
+        const $selectEDReturn = $("#expired_date_obat_return");
+        const $selectEDRestock = $("#expired_date_obat_restock");
+
+        if (isReturn) {
+            $wrapperStok.removeClass("hidden").addClass('md:col-span-2');
+            $selectEDReturn.removeClass("hidden");
+            $selectEDRestock.addClass("hidden");
+            $("#total_stok_item")
+                .prop("readonly", true)
+                .prop("disabled", false);
+            $labelJumlah.text("Jumlah Return *");
+        } else {
+            $wrapperStok.addClass("hidden");
+            $selectEDRestock.removeClass("hidden");
+            $("#total_stok_item").val("");
+            $labelJumlah.text("Jumlah Obat / Restock *");
+// >>>>>>> b4a6960a24898a0e8c39141f0e3d2b146bac4f2b
         }
 
         toggle.addEventListener("change", syncPurchaseOrderUI);
