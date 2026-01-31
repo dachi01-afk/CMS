@@ -345,7 +345,7 @@ $(function () {
         const $labelJumlah = $("label[for='jumlah_obat']");
 
         if (isReturn) {
-            $wrapperStok.removeClass("hidden").addClass('md:col-span-2');
+            $wrapperStok.removeClass("hidden").addClass("md:col-span-2");
             $("#total_stok_item")
                 .prop("readonly", true)
                 .prop("disabled", false);
@@ -484,7 +484,9 @@ $(function () {
             maxItems: 1,
             preload: true,
             load: function (query, callback) {
-                $.get("/farmasi/restock-return/get-data-depot-bhp", { q: query || "" })
+                $.get("/farmasi/restock-return/get-data-depot-bhp", {
+                    q: query || "",
+                })
                     .done((res) => callback(res))
                     .fail(() => callback());
             },
@@ -1092,4 +1094,30 @@ $(function () {
             $label.addClass("text-gray-400").removeClass("text-blue-600");
         }
     });
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    const toggle = document.getElementById("togglePurchaseOrder");
+    const label = document.getElementById("labelPurchaseOrder");
+    const fields = document.getElementById("purchaseOrderFields");
+
+    const tempo = document.getElementById("tempo_pembayaran");
+    const tgl = document.getElementById("tanggal_pengiriman");
+
+    function syncPurchaseOrderUI() {
+        const on = toggle.checked;
+
+        fields.classList.toggle("hidden", !on);
+
+        // kalau mau wajib saat PO aktif:
+        tempo.required = on;
+        tgl.required = on;
+
+        // styling label biar gak kayak "mati"
+        label.classList.toggle("text-gray-400", !on);
+        label.classList.toggle("text-blue-600", on);
+    }
+
+    toggle.addEventListener("change", syncPurchaseOrderUI);
+    syncPurchaseOrderUI(); // init
 });
