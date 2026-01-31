@@ -411,6 +411,9 @@ class RestockDanReturnController extends Controller
 
     public function getDataDepotBhp(Request $request)
     {
+        $batchId = 
+        $stokItem = BatchDepotObat::where('batch_obat_id', $batchId)->firstOrFail();
+
         $search = $request->get('q');
         $bhpId = $request->get('bhp_id'); // Ambil ID obat dari request
 

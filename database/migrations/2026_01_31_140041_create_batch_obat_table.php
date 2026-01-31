@@ -13,6 +13,11 @@ return new class extends Migration
     {
         Schema::create('batch_obat', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('obat_id')
+                ->constrained('obat', 'id', 'batch_obat_obat_id')
+                ->cascadeOnDelete()->cascadeOnUpdate();
+            $table->string('nama_batch');
+            $table->date('tanggal_kadaluarsa_obat');
             $table->timestamps();
         });
     }

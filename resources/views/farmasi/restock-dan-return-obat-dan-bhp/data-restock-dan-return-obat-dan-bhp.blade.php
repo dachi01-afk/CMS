@@ -410,13 +410,25 @@
                                             </div>
                                         </div>
 
-                                        {{-- Expired Date --}}
-                                        <div>
+                                        {{-- Expired Date Restock --}}
+                                        <div id="expired_date_obat_restock">
                                             <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
                                                 Expired Date <span class="text-red-500">*</span>
                                             </label>
                                             <input type="date" name="expired_date_obat" id="expired_date_obat"
                                                 class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                                            <div class="text-red-600 text-[11px] mt-1" data-error="expired_date_obat">
+                                            </div>
+                                        </div>
+
+                                        {{-- Expired Date Return --}}
+                                        <div id="expired_date_obat_return" class="hidden">
+                                            <label class="text-xs font-medium text-gray-600 dark:text-gray-300">
+                                                Expired Date <span class="text-red-500">*</span>
+                                            </label>
+                                            <select type="date" id="select_expired_date_obat_restock"
+                                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                                            </select>
                                             <div class="text-red-600 text-[11px] mt-1" data-error="expired_date_obat">
                                             </div>
                                         </div>
@@ -540,20 +552,6 @@
                                             </div>
                                         </div>
 
-                                        {{-- Depot Tujuan --}}
-                                        <div class="md:col-span-2">
-                                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                                Depot Tujuan
-                                            </label>
-                                            <select name="depot_id" id="depot_id" class="mt-1"></select>
-
-                                            <div id="info-stok-depot"
-                                                class="mt-2 text-[11px] text-blue-600 font-medium hidden">
-                                                Stok di depot ini: <span id="nilai-stok">0</span>
-                                            </div>
-
-                                            <div class="text-red-600 text-[11px] mt-1" data-error="depot_id"></div>
-                                        </div>
                                     </div>
 
                                     {{-- Button: Tambah Rincian --}}

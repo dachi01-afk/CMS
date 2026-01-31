@@ -343,15 +343,20 @@ $(function () {
         const isReturn = jenisTransaksi.toLowerCase().includes("return");
         const $wrapperStok = $("#total_stok_item").closest("div");
         const $labelJumlah = $("label[for='jumlah_obat']");
+        const $selectEDReturn = $("#expired_date_obat_return");
+        const $selectEDRestock = $("#expired_date_obat_restock");
 
         if (isReturn) {
             $wrapperStok.removeClass("hidden").addClass('md:col-span-2');
+            $selectEDReturn.removeClass("hidden");
+            $selectEDRestock.addClass("hidden");
             $("#total_stok_item")
                 .prop("readonly", true)
                 .prop("disabled", false);
             $labelJumlah.text("Jumlah Return *");
         } else {
             $wrapperStok.addClass("hidden");
+            $selectEDRestock.removeClass("hidden");
             $("#total_stok_item").val("");
             $labelJumlah.text("Jumlah Obat / Restock *");
         }
