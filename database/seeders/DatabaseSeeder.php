@@ -37,7 +37,7 @@ class DatabaseSeeder extends Seeder
             JenisObatSeeder::class,
             SatuanObatSeeder::class,
             // ObatSeeder::class,
-            BahanHabisPakaiSeeder::class,
+            // BahanHabisPakaiSeeder::class,
             JadwalDokterSeeder::class,
             // KunjunganSeeder::class,
             // KunjunganLayananSeeder::class,

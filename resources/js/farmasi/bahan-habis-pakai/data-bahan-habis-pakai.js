@@ -1217,27 +1217,26 @@ $(function () {
 
                 if (status === 422) {
                     const errors = data?.errors || {};
+
+                    // 1. Tetap highlight semua input yang merah agar user tahu mana yang salah
                     for (const field in errors) {
                         $(`#${field}_create`).addClass("is-invalid");
                         $(`#${field}_create-error`).html(errors[field][0]);
                     }
 
+                    // 2. Ambil pesan error pertama dari field pertama yang error
+                    // Object.values(errors) mengambil semua array pesan, [0][0] mengambil pesan pertama di baris pertama
+                    const firstErrorMessage = Object.values(errors)[0][0];
+
                     Swal.fire({
                         icon: "error",
                         title: "Validasi Gagal!",
-                        text: data.message || "Periksa kembali inputan Anda.",
+                        text:
+                            firstErrorMessage ||
+                            "Periksa kembali inputan Anda.",
                     });
                     return;
                 }
-
-                Swal.fire({
-                    icon: "error",
-                    title:
-                        status === 400 ? "Input tidak valid" : "Error Server!",
-                    text:
-                        data?.message ||
-                        "Terjadi kesalahan pada server. Silahkan coba lagi nanti",
-                });
             });
     });
 });
@@ -1277,15 +1276,12 @@ $(function () {
 
     function hitungTotalStokDepotUpdate() {
         let total = 0;
+        const inputs = $(".input-stok-depot-update");
 
-        if ($depotContainerUpdate.length) {
-            $depotContainerUpdate
-                .find(".input-stok-depot-update")
-                .each(function () {
-                    const v = toIntSafe($(this).val());
-                    total += v > 0 ? v : 0;
-                });
-        }
+        inputs.each(function () {
+            const v = toIntSafe($(this).val());
+            total += v;
+        });
 
         $("#stok_barang_update").val(total);
         return total;
@@ -2145,13 +2141,11 @@ $(function () {
 
                             // ========== STOK DEPOT (ambil dari pivot depot_bhp.stok) ==========
                             let stok = 0;
-
-                            // pivot biasanya ada sebagai `pivot`
                             if (
                                 depotItem.pivot &&
-                                depotItem.pivot.stok != null
+                                depotItem.pivot.stok_barang != null
                             ) {
-                                stok = Number(depotItem.pivot.stok);
+                                stok = Number(depotItem.pivot.stok_barang); // Pastikan nama kolomnya 'stok_barang' sesuai pivot
                             }
 
                             $row.find(".input-stok-depot-update").val(stok);
@@ -2291,9 +2285,6 @@ $(function () {
 
             // ✅ [REVISI] kirim total sum depot, bukan nilai manual
             stok_barang: totalStok,
-
-            tanggal_kadaluarsa_bhp: $("#tanggal_kadaluarsa_bhp_update").val(),
-            no_batch: $("#no_batch_update").val(),
 
             harga_beli_satuan_bhp: parseRupiahNumberUpdate(
                 $("#harga_beli_satuan_bhp_update").val(),
