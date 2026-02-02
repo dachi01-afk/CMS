@@ -1940,6 +1940,44 @@ $(function () {
         }
     });
 
+    function disableDepotSectionBHP() {
+        // 1. Target Wrapper utama Depot BHP
+        const $container = $("#depot-container-update-bhp");
+
+        // 2. Disable input angka (stok) dan tombol hapus
+        $container
+            .find(".input-stok-depot-update")
+            .prop("disabled", true)
+            .addClass("bg-gray-100 cursor-not-allowed");
+        $container.find(".btn-remove-depot-update").addClass("hidden");
+
+        // 3. Matikan TomSelect (Nama Depot & Tipe Depot)
+        $container
+            .find(".select-nama-depot-update, .select-tipe-depot-update")
+            .each(function () {
+                if (this.tomselect) {
+                    this.tomselect.disable();
+                    // Menambahkan style visual agar terlihat terkunci
+                    $(this.nextElementSibling).addClass(
+                        "bg-gray-100 cursor-not-allowed opacity-75",
+                    );
+                }
+            });
+
+        // 4. Sembunyikan tombol "X" (Clear Field) di samping select
+        $container
+            .find(".btn-clear-depot-update, .btn-clear-tipe-depot-update")
+            .addClass("hidden");
+
+        // 5. Sembunyikan tombol utama "Tambah Depot"
+        $("#btn-add-depot-update").hide();
+
+        // 6. Opsional: Tambahkan info visual pada row template agar user paham ini Read-Only
+        $container
+            .find(".depot-row-template-update-bhp")
+            .addClass("border-solid bg-gray-50/100");
+    }
+
     // ==========================
     // EVENT: BUKA / TUTUP MODAL UPDATE
     // ==========================
@@ -2154,6 +2192,7 @@ $(function () {
                         // ✅ [BARU] setelah semua row depot di-set, hitung totalnya
                         hitungTotalStokDepotUpdate();
                     }
+                    disableDepotSectionBHP();
                 }
 
                 if (modalUpdate) modalUpdate.show();

@@ -15,6 +15,7 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreObatRequest;
+use App\Http\Requests\UpdateObatRequest;
 use Maatwebsite\Excel\Facades\Excel;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -230,154 +231,29 @@ class ObatController extends Controller
         ]);
     }
 
-    public function updateObat(Request $request, $id)
+
+    public function updateObat(UpdateObatRequest $request, $id)
     {
         $obat = Obat::findOrFail($id);
-
-        // ==============================
-        // Helper parse angka rupiah/number
-        // ==============================
-        $parseNumber = function ($value) {
-            if ($value === null || $value === '') {
-                return 0;
-            }
-
-            // "100.000" -> "100000"
-            // "1.234,56" -> "1234.56"
-            $value = str_replace(['.', ','], ['', '.'], $value);
-
-            return (float) $value;
-        };
-
-        // ==============================
-        // Hitung total stok dari semua depot
-        // ==============================
-        $stokDepotCollection = collect($request->input('stok_depot', []))
-            ->map(fn($v) => (int) $v)
-            ->filter(fn($v) => $v > 0);
-
-        $totalStok = $stokDepotCollection->sum();
-
-        // fallback ke stok_obat kalau stok_depot kosong / semua 0
-        if ($totalStok <= 0) {
-            $totalStok = (int) $request->input('stok_obat', 0);
-        }
-
-        // ==============================
-        // Parse harga
-        // ==============================
-        $hargaBeli = $parseNumber($request->input('harga_beli_satuan'));
-        $hargaJual = $parseNumber($request->input('harga_jual_umum'));
-        $hargaOtc  = $parseNumber($request->input('harga_otc'));
-
-        // ==============================
-        // Kode obat: pakai barcode kalau diisi, kalau tidak pakai yang lama
-        // ==============================
-        $kodeObat = $request->input('barcode') ?: $obat->kode_obat;
-
-        // ==============================
-        // VALIDASI
-        // ==============================
-        $validated = $request->validate([
-            'barcode'          => ['nullable', 'string', 'max:255'],
-            'nama_obat'        => ['required', 'string', 'max:255'],
-
-            'brand_farmasi_id' => ['nullable', 'exists:brand_farmasi,id'],
-            'kategori_obat'    => ['required', 'exists:kategori_obat,id'],
-            'jenis'            => ['nullable', 'exists:jenis_obat,id'],
-            'satuan'           => ['required', 'exists:satuan_obat,id'],
-
-            'dosis'            => ['required', 'numeric', 'min:0'],
-            'kandungan'        => ['nullable', 'string', 'max:255'],
-
-            'stok_obat'        => ['required', 'integer', 'min:0'],
-
-            'harga_beli_satuan' => ['nullable'],
-            'harga_jual_umum'   => ['nullable'],
-            'harga_otc'         => ['nullable'],
-
-            // array depot
-            'depot_id'          => ['required', 'array', 'min:1'],
-            'depot_id.*'        => ['nullable', 'exists:depot,id'],
-
-            'stok_depot'        => ['required', 'array', 'min:1'],
-            'stok_depot.*'      => ['nullable', 'integer', 'min:0'],
-
-            'tipe_depot'        => ['nullable', 'array'],
-            'tipe_depot.*'      => ['nullable', 'exists:tipe_depot,id'],
-        ]);
-
-        $depotIds  = (array) $request->input('depot_id', []);
-        $tipeDepot = (array) $request->input('tipe_depot', []);
-        $stokDepot = (array) $request->input('stok_depot', []);
 
         DB::beginTransaction();
 
         try {
-            // ==============================
-            // UPDATE DATA OBAT
-            // ==============================
-            $obat->update([
-                'kode_obat'               => $kodeObat,
-                'brand_farmasi_id'        => $request->input('brand_farmasi_id'),
-                'kategori_obat_id'        => $request->input('kategori_obat'),
-                'jenis_obat_id'           => $request->input('jenis'),
-                'satuan_obat_id'          => $request->input('satuan'),
-                'nama_obat'               => $request->input('nama_obat'),
-                'kandungan_obat'          => $request->input('kandungan'),
-                'jumlah'                  => $totalStok,
-                'dosis'                   => $request->input('dosis'),
-                'total_harga'             => $hargaBeli,
-                'harga_jual_obat'         => $hargaJual,
-                'harga_otc_obat'          => $hargaOtc,
-            ]);
-
-            // 1. Siapkan array untuk sync yang berisi data pivot
-            $syncData = [];
-
-            foreach ($depotIds as $index => $depotId) {
-                if (empty($depotId)) continue;
-
-                // Ambil stok dari input berdasarkan index yang sama
-                $stokUntukPivot = (int) ($stokDepot[$index] ?? 0);
-
-                // Masukkan ke array sync: [id_depot => ['nama_kolom_pivot' => nilai]]
-                $syncData[$depotId] = [
-                    'stok_obat' => $stokUntukPivot
-                ];
-
-                // (Opsional) Jika kamu tetap ingin mengupdate Master Depot:
-                $tipeId = $tipeDepot[$index] ?? null;
-                $updateMaster = ['jumlah_stok_depot' => $stokUntukPivot];
-                if (!empty($tipeId)) {
-                    $updateMaster['tipe_depot_id'] = (int) $tipeId;
-                }
-
-                DB::table('depot')->where('id', (int) $depotId)->update($updateMaster);
-            }
-
-            // 2. Jalankan sync dengan data pivot lengkap
-            $obat->depotObat()->sync($syncData);
+            // Menggunakan method yang kita buat di model
+            $obat->updateDataObat($request->validated());
 
             DB::commit();
 
             return response()->json([
                 'status'  => 200,
-                'data'    => $obat->fresh([
-                    'brandFarmasi',
-                    'kategoriObat',
-                    'jenisObat',
-                    'satuanObat',
-                    'depot',
-                ]),
+                'data'    => $obat->fresh(['brandFarmasi', 'kategoriObat', 'jenisObat', 'satuanObat']),
                 'message' => 'Berhasil Mengupdate Data Obat!',
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();
-
             return response()->json([
                 'status'  => 500,
-                'message' => 'Gagal mengupdate data obat & depot',
+                'message' => 'Gagal mengupdate data obat',
                 'error'   => $e->getMessage(),
             ], 500);
         }

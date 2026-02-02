@@ -55,6 +55,17 @@ $(function () {
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
 
+                if (!data.length) {
+                    $tbody.append(`
+                        <tr>
+                            <td colspan="3" class="px-3 py-3 text-center text-[11px] md:text-xs text-emerald-600">
+                                Tidak ada barang yang mendekati tanggal kadaluarsa 🎉
+                            </td>
+                        </tr>
+                    `);
+                    return;
+                }
+
                 data.forEach(function (item) {
                     let listTanggal = "";
                     let listBatch = "";
@@ -128,6 +139,16 @@ $(function () {
         </tr>
     `);
                 });
+            })
+            .catch(function (error) {
+                console.error("ERROR WARNING KADALUARSA", error);
+                $tbody.html(`
+                    <tr>
+                        <td colspan="3" class="px-3 py-3 text-center text-[11px] md:text-xs text-red-500">
+                            Gagal memuat data warning kadaluarsa.
+                        </td>
+                    </tr>
+                `);
             });
     }
 

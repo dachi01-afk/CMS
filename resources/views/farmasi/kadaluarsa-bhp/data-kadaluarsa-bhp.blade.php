@@ -40,8 +40,9 @@
                 class="min-w-full text-xs md:text-sm border border-slate-100 dark:border-slate-800 rounded-xl overflow-hidden">
                 <thead class="bg-slate-50 dark:bg-slate-800/60">
                     <tr class="text-[11px] md:text-xs text-slate-600 dark:text-slate-300">
-                        <th class="px-3 py-2 text-left font-semibold w-[40%]">Nama Obat</th>
-                        <th class="px-3 py-2 text-left font-semibold w-[35%]">Tanggal Kadaluarsa</th>
+                        <th class="px-3 py-2 text-left font-semibold w-[25%]">Nama Obat</th>
+                        <th class="px-3 py-2 text-left font-semibold w-[25%]">Tanggal Kadaluarsa</th>
+                        <th class="px-3 py-2 text-left font-semibold w-[25%]">No Batch</th>
                         <th class="px-3 py-2 text-left font-semibold w-[25%]">Stok</th>
                     </tr>
                 </thead>

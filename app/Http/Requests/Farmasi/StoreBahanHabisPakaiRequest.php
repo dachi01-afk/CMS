@@ -14,14 +14,16 @@ class StoreBahanHabisPakaiRequest extends FormRequest
         return true;
     }
 
-    protected function parseRupiah()
+    protected function prepareForValidation()
     {
         $parse = fn($v) => $v ? (float) str_replace(['.', ','], ['', '.'], $v) : 0;
 
         $this->merge([
             'harga_beli_satuan_bhp' => $parse($this->harga_beli_satuan_bhp),
-            'harga_jual_satuan_bhp' => $parse($this->harga_jual_satuan_bhp),
-            'harga_otc_bhp' => $parse($this->harga_otc_bhp),
+            // Perhatikan nama field di rules adalah 'harga_jual_umum_bhp' 
+            // tapi di parseRupiah kamu tulis 'harga_jual_satuan_bhp'. Samakan!
+            'harga_jual_umum_bhp'   => $parse($this->harga_jual_umum_bhp),
+            'harga_otc_bhp'         => $parse($this->harga_otc_bhp),
         ]);
     }
 

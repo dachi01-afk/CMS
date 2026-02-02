@@ -203,4 +203,21 @@ class Obat extends Model
             return $obat;
         });
     }
+
+    public function updateDataObat(array $data)
+    {
+        return $this->update([
+            'kode_obat'        => $data['kode_obat'] ?? $this->kode_obat,
+            'brand_farmasi_id' => $data['brand_farmasi_id'],
+            'kategori_obat_id' => $data['kategori_obat'],
+            'jenis_obat_id'    => $data['jenis'],
+            'satuan_obat_id'   => $data['satuan'],
+            'nama_obat'        => $data['nama_obat'],
+            'kandungan_obat'   => $data['kandungan'],
+            'dosis'            => $data['dosis'],
+            'total_harga'      => $data['harga_beli_satuan'],
+            'harga_jual_obat'  => $data['harga_jual_umum'],
+            'harga_otc_obat'   => $data['harga_otc'],
+        ]);
+    }
 }
