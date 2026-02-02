@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreObatRequest;
 use Maatwebsite\Excel\Facades\Excel;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -146,162 +147,69 @@ class ObatController extends Controller
             ->toJson();
     }
 
-    public function createObat(Request $request)
+    public function createObat(StoreObatRequest $request)
     {
-        $parseNumber = function ($value) {
-            if ($value === null || $value === '') {
-                return 0;
-            }
-            $value = str_replace(['.', ','], ['', '.'], $value);
-            return (float) $value;
-        };
-
-        // Hitung total stok dari semua input depot (untuk field 'jumlah' di tabel obat)
-        $stokDepotCollection = collect($request->input('stok_depot', []))
-            ->map(fn($v) => (int) $v)
-            ->filter(fn($v) => $v > 0);
-
-        $totalStok = $stokDepotCollection->sum();
-
-        if ($totalStok <= 0) {
-            $totalStok = (int) $request->input('stok_obat', 0);
-        }
-
-        // Parse harga
-        $hargaBeli = $parseNumber($request->input('harga_beli_satuan'));
-        $hargaJual = $parseNumber($request->input('harga_jual_umum'));
-        $hargaOtc  = $parseNumber($request->input('harga_otc'));
-
-        // ==============================
-        // VALIDASI
-        // ==============================
-        $request->validate([
-            'barcode'           => ['nullable', 'string', 'max:255'],
-            'nama_obat'         => ['required', 'string', 'max:255'],
-            'brand_farmasi_id'  => ['nullable', 'exists:brand_farmasi,id'],
-            'kategori_obat'     => ['required', 'exists:kategori_obat,id'],
-            'jenis'             => ['nullable', 'exists:jenis_obat,id'],
-            'satuan'            => ['required', 'exists:satuan_obat,id'],
-            'dosis'             => ['required', 'numeric', 'min:0'],
-            'expired_date'      => ['required', 'date'],
-            'nomor_batch'       => ['required', 'string', 'max:255'],
-            'kandungan'         => ['nullable', 'string', 'max:255'],
-            'stok_obat'         => ['required', 'integer', 'min:0'],
-            'depot_id'          => ['required', 'array', 'min:1'],
-            'depot_id.*'        => ['nullable', 'exists:depot,id'],
-            'tipe_depot'        => ['nullable', 'array'],
-            'tipe_depot.*'      => ['nullable', 'exists:tipe_depot,id'],
-        ]);
-
-        // return response()->json($request->all());
-
-        // ==============================
-        // GENERATE KODE OBAT
-        // ==============================
-        $kodeObat = $request->input('barcode');
-
-        if (!$kodeObat) {
-            $jenisId      = $request->input('jenis');
-            $kategoriId   = $request->input('kategori_obat');
-            $jenis        = JenisObat::find($jenisId);
-            $kategori     = KategoriObat::findOrFail($kategoriId);
-            $kodeJenis    = $jenis ? strtoupper(substr($jenis->nama_jenis_obat, 0, 3)) : 'UNK';
-            $kodeKategori = strtoupper(substr($kategori->nama_kategori_obat, 0, 3));
-
-            $lastKode = Obat::where('jenis_obat_id', $jenisId)
-                ->where('kategori_obat_id', $kategoriId)
-                ->orderBy('kode_obat', 'desc')
-                ->value('kode_obat');
-
-            $newNumber = $lastKode ? ((int) substr($lastKode, -3)) + 1 : 1;
-            $urutan    = str_pad($newNumber, 3, '0', STR_PAD_LEFT);
-            $kodeObat  = "{$kodeJenis}-{$kodeKategori}-{$urutan}";
-        }
-
-        // ==============================
-        // PROSES SIMPAN (DATABASE TRANSACTION)
-        // ==============================
         try {
-            $obat = DB::transaction(function () use ($request, $kodeObat, $totalStok, $hargaBeli, $hargaJual, $hargaOtc) {
+            $inputs = $request->validated(); // Data bersih dari Form Request
 
-                // 1. Simpan ke tabel 'obats'
-                $obat = Obat::create([
-                    'kode_obat'               => $kodeObat,
-                    'brand_farmasi_id'        => $request->input('brand_farmasi_id'),
-                    'kategori_obat_id'        => $request->input('kategori_obat'),
-                    'jenis_obat_id'           => $request->input('jenis'),
-                    'satuan_obat_id'          => $request->input('satuan'),
-                    'nama_obat'               => $request->input('nama_obat'),
-                    'kandungan_obat'          => $request->input('kandungan'),
-                    // 'tanggal_kadaluarsa_obat' => $request->input('expired_date'),
-                    // 'nomor_batch_obat'        => $request->input('nomor_batch'),
-                    'jumlah'                  => $totalStok,
-                    'dosis'                   => $request->input('dosis'),
-                    'total_harga'             => $hargaBeli,
-                    'harga_jual_obat'         => $hargaJual,
-                    'harga_otc_obat'          => $hargaOtc,
-                ]);
+            // 1. Generate Kode Otomatis
+            $kodeGenerated = $this->generateKodeObat($inputs);
 
-                BatchObat::create([
-                    'obat_id'                 => $obat->id,
-                    'nama_batch'              => $request->input('nomor_batch'),
-                    'tanggal_kadaluarsa_obat' => $request->input('expired_date'),
-                ]);
+            // 2. Siapkan data lainnya
+            $parsePrice = fn($v) => (float) str_replace(['.', ','], ['', '.'], $v ?? 0);
 
-                $depotIds     = $request->input('depot_id', []);
-                $tipeDepotIds = $request->input('tipe_depot', []);
-                $stokDepot    = $request->input('stok_depot', []);
+            $dataToStore = array_merge($inputs, [
+                'kode_obat'  => $kodeGenerated,
+                'total_stok' => array_sum($inputs['stok_depot'] ?? []),
+                'harga_beli' => $parsePrice($request->harga_beli_satuan),
+                'harga_jual' => $parsePrice($request->harga_jual_umum),
+                'harga_otc'  => $parsePrice($request->harga_otc),
+            ]);
 
-                $syncData = [];
-                foreach ($depotIds as $index => $depId) {
-                    if (!$depId) continue;
-
-                    // 2. Siapkan data untuk tabel pivot 'depot_obat'
-                    // HANYA simpan 'stok_obat' di sini karena 'tipe_depot_id' tidak ada di tabel ini
-                    $syncData[$depId] = [
-                        'stok_obat' => (int) ($stokDepot[$index] ?? 0)
-                    ];
-
-                    // 3. Update data langsung ke tabel 'depots'
-                    // Update 'tipe_depot_id' sesuai input
-                    $tipeId = $tipeDepotIds[$index] ?? null;
-                    if ($tipeId) {
-                        Depot::where('id', $depId)->update(['tipe_depot_id' => $tipeId]);
-                    }
-                }
-
-                if (!empty($syncData)) {
-                    // Jalankan sync untuk tabel pivot
-                    $obat->depotObat()->sync($syncData);
-
-                    // 4. Hitung Akumulasi dan Update 'jumlah_stok_depot' di tabel 'depots'
-                    foreach ($depotIds as $depId) {
-                        if (!$depId) continue;
-
-                        $totalSeluruhObatDiDepot = DB::table('depot_obat')
-                            ->where('depot_id', $depId)
-                            ->sum('stok_obat');
-
-                        Depot::where('id', $depId)->update([
-                            'jumlah_stok_depot' => $totalSeluruhObatDiDepot
-                        ]);
-                    }
-                }
-
-                return $obat->load('brandFarmasi', 'kategoriObat', 'jenisObat', 'satuanObat', 'depotObat');
-            });
+            // 3. Simpan via Model (Logika transaksi yang kita buat tadi)
+            $obat = Obat::simpanData($dataToStore);
 
             return response()->json([
                 'status'  => 200,
-                'data'    => $obat,
-                'message' => 'Berhasil menambahkan data obat dan memperbarui stok depot!',
+                'data'    => $obat->load('batchObat', 'depotObat'),
+                'message' => 'Berhasil menambahkan data!',
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status'  => 500,
-                'message' => 'Terjadi kesalahan: ' . $e->getMessage(),
+                'message' => 'Gagal: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    // Pisahkan generator kode ke fungsi tersendiri agar rapi
+    private function generateKodeObat($inputs)
+    {
+        // Jika ada barcode manual, gunakan itu
+        if (!empty($inputs['barcode'])) {
+            return $inputs['barcode'];
+        }
+
+        $jenisId    = $inputs['jenis'];
+        $kategoriId = $inputs['kategori_obat'];
+
+        $jenis    = \App\Models\JenisObat::find($jenisId);
+        $kategori = \App\Models\KategoriObat::findOrFail($kategoriId);
+
+        $kodeJenis    = $jenis ? strtoupper(substr($jenis->nama_jenis_obat, 0, 3)) : 'UNK';
+        $kodeKategori = strtoupper(substr($kategori->nama_kategori_obat, 0, 3));
+
+        // Cari kode terakhir berdasarkan kategori & jenis yang sama
+        $lastKode = \App\Models\Obat::where('jenis_obat_id', $jenisId)
+            ->where('kategori_obat_id', $kategoriId)
+            ->orderBy('kode_obat', 'desc')
+            ->value('kode_obat');
+
+        // Ambil 3 digit terakhir, lalu tambah 1
+        $newNumber = $lastKode ? ((int) substr($lastKode, -3)) + 1 : 1;
+        $urutan    = str_pad($newNumber, 3, '0', STR_PAD_LEFT);
+
+        return "{$kodeJenis}-{$kodeKategori}-{$urutan}";
     }
 
     public function getObatById($id)
