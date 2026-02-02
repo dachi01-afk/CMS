@@ -14,6 +14,7 @@ class HasilLabTersedia
     public $pasien;
     public $orderLab;
 
+    // ✅ FIXED: Typo di constructor
     public function __construct($hasilLab, $pasien, $orderLab)
     {
         $this->hasilLab = $hasilLab;

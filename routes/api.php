@@ -204,6 +204,8 @@ Route::middleware(['auth:sanctum', 'role:Dokter'])->prefix('dokter')->name('dokt
     Route::post('/emr/{emrId}/resume', [ResumeDokterController::class, 'store'])->name('resume.store');
 
     // Lab orders
+    Route::put('/order-lab/{orderLabId}/schedule', [APIMobileController::class, 'updateJadwalOrderLab'])->name('order_lab.update_schedule');
+
     Route::get('/order-lab', [APIMobileController::class, 'dokterListOrderLab'])->name('order_lab.index');
     Route::get('/master-lab', [APIMobileController::class, 'dokterMasterLab'])->name('master_lab.index');
     Route::post('/create-order-lab', [APIMobileController::class, 'dokterCreateOrderLab'])->name('order_lab.create');
@@ -220,6 +222,7 @@ Route::middleware(['auth:sanctum', 'role:Dokter'])->prefix('dokter')->name('dokt
 
         // Create order radiologi
         Route::post('/', [APIMobileController::class, 'dokterCreateOrderRadiologi']);
+        Route::put('/{id}/schedule', [APIMobileController::class, 'updateJadwalOrderRadiologi'])->name('update_schedule');
 
         // Detail order radiologi
         Route::get('/{id}', [APIMobileController::class, 'dokterDetailOrderRadiologi']);

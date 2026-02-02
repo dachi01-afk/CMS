@@ -42,7 +42,7 @@ class DatabaseSeeder extends Seeder
             KunjunganLayananSeeder::class,
             ResepSeeder::class,
             ResepObatSeeder::class,
-            EMRSeeder::class,
+            // EMRSeeder::class,
             MetodePembayaranSeeder::class,
             PerawatDokterPoliSeeder::class,
             PembayaranSeeder::class,
@@ -52,8 +52,8 @@ class DatabaseSeeder extends Seeder
             SatuanLabSeeder::class,
             JenisPemeriksaanLabSeeder::class,
             JenisPemeriksaanRadiologiSeeder::class,
-            OrderLabSeeder::class,
-            OrderRadiologiSeeder::class,
+            // OrderLabSeeder::class,
+            // OrderRadiologiSeeder::class,
         ]);
     }
 }
