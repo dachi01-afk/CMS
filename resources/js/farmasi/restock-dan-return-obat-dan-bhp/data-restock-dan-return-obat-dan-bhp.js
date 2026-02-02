@@ -353,7 +353,7 @@ $(function () {
             $("#total_stok_item")
                 .prop("readonly", true)
                 .prop("disabled", false);
-            $labelJumlah.text("Jumlah Return *");
+            $labelJumlah.text("Jumlah Obat *");
         } else {
             $wrapperStok.addClass("hidden");
             $selectEDRestock.removeClass("hidden");
@@ -362,11 +362,37 @@ $(function () {
         }
     }
 
+    // ubah form berdasarkan jenis transaksi
     $("#jenis_transaksi").on("change", function () {
-        toggleTransactionMode();
-        const obatId = $("#obat_id").val();
-        if (obatId) fillObatMeta(obatId);
-    });
+
+    toggleTransactionMode();
+
+    const obatId = $("#obat_id").val();
+    if (obatId) fillObatMeta(obatId);
+
+
+    let jenis = $(this).val() || "";
+    let isReturn = jenis.toLowerCase().includes("return");
+
+    // ===== OBAT =====
+    if (isReturn) {
+        $("#form-obat-restock").addClass("hidden");
+        $("#form-obat-return").removeClass("hidden");
+
+        $("#form-bhp-restock").addClass("hidden");
+        $("#form-bhp-return").removeClass("hidden");
+    } else {
+        $("#form-obat-return").addClass("hidden");
+        $("#form-obat-restock").removeClass("hidden");
+
+        $("#form-bhp-return").addClass("hidden");
+        $("#form-bhp-restock").removeClass("hidden");
+    }
+
+
+
+});
+
 
     // -----------------------------
     // Load Meta (jenis transaksi, satuan, default depot)
