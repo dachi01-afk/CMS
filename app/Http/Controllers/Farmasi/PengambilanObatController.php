@@ -78,95 +78,6 @@ class PengambilanObatController extends Controller
                     ?? $row->created_at->format('Y-m-d');
             })
 
-            ->addColumn('nama_obat', function ($row) {
-                if ($row->obat->isEmpty()) {
-                    return '<span class="text-gray-400 italic">Tidak ada</span>';
-                }
-
-                $html = '<div class="space-y-1.5">';
-                foreach ($row->obat as $i => $obat) {
-                    $no = $i + 1;
-
-                    $html .= '
-            <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg
-                        border border-slate-200 bg-white
-                        shadow-sm hover:bg-slate-50 transition">
-                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full
-                             bg-sky-100 text-sky-700 text-[11px] font-bold">
-                    ' . $no . '
-                </span>
-                <span class="text-xs font-semibold text-slate-700 leading-tight">
-                    ' . e($obat->nama_obat) . '
-                </span>
-            </div>
-        ';
-                }
-                $html .= '</div>';
-
-                return $html;
-            })
-
-            ->addColumn('jumlah', function ($row) {
-                if ($row->obat->isEmpty()) return '<span class="text-gray-400 italic">-</span>';
-
-                $html = '<div class="space-y-1.5">';
-                foreach ($row->obat as $i => $obat) {
-                    $no     = $i + 1;
-                    $jumlah = $obat->pivot->jumlah ?? '-';
-                    $satuan = optional($obat->satuanObat)->nama_satuan_obat ?? '';
-
-                    $label = trim($jumlah . ' ' . $satuan);
-
-                    $html .= '
-            <div class="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg
-                        border border-slate-200 bg-white shadow-sm">
-                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full
-                             bg-slate-100 text-slate-600 text-[11px] font-bold">
-                    ' . $no . '
-                </span>
-
-                <span class="ml-auto inline-flex items-center justify-center
-                             px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700
-                             text-xs font-bold border border-emerald-200">
-                    ' . e($label) . '
-                </span>
-            </div>
-        ';
-                }
-                $html .= '</div>';
-
-                return $html;
-            })
-
-
-
-            ->addColumn('keterangan', function ($row) {
-                if ($row->obat->isEmpty()) return '<span class="text-gray-400 italic">-</span>';
-
-                $html = '<div class="space-y-1.5">';
-                foreach ($row->obat as $i => $obat) {
-                    $no  = $i + 1;
-                    $val = $obat->pivot->keterangan ?? '-';
-
-                    $html .= '
-            <div class="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white shadow-sm">
-                <div class="flex items-start gap-2">
-                    <span class="mt-[1px] inline-flex items-center justify-center w-5 h-5 rounded-full
-                                 bg-amber-100 text-amber-700 text-[11px] font-bold">
-                        ' . $no . '
-                    </span>
-                    <span class="text-xs text-slate-700 leading-snug">
-                        ' . e($val) . '
-                    </span>
-                </div>
-            </div>
-        ';
-                }
-                $html .= '</div>';
-
-                return $html;
-            })
-
             // 🔹 Status
             ->addColumn('status', function ($row) {
                 return ucfirst($row->status);
@@ -187,8 +98,15 @@ class PengambilanObatController extends Controller
 
                 return '
         <div class="flex flex-col items-start gap-2">
+            
+            <button type="button"
+                class="btnLihatDetail inline-flex items-center gap-1 text-xs font-semibold text-indigo-700 hover:text-indigo-900"
+                data-resep-id="' . $row->id . '"
+                title="Lihat Detail Resep">
+                <i class="fa-solid fa-eye text-[11px]"></i>
+                Lihat Detail
+            </button>
 
-            <!-- Update Status -->
             <button type="button"
                 class="btnUpdateStatus inline-flex items-center gap-1 text-xs font-semibold text-sky-700 hover:text-sky-900"
                 data-resep-id="' . $row->id . '"
@@ -199,7 +117,6 @@ class PengambilanObatController extends Controller
                 Update Status
             </button>
 
-            <!-- Update Resep Obat -->
             <button type="button"
                 class="btnUpdateResepObat inline-flex items-center gap-1 text-xs font-semibold text-sky-700 hover:text-sky-900"
                 data-resep-id="' . $row->id . '"
@@ -209,7 +126,6 @@ class PengambilanObatController extends Controller
                 Update Resep Obat
             </button>
 
-            <!-- Cetak Stiker Obat -->
             <button type="button"
                 class="btnCetakStikerObat inline-flex items-center gap-1 text-xs font-semibold text-emerald-700 hover:text-emerald-900"
                 data-resep-id="' . $row->id . '"
@@ -866,25 +782,17 @@ class PengambilanObatController extends Controller
         ])
             ->where('status', 'done')
             ->where(function ($q) use ($hariIni) {
-                // $q->whereHas('kunjungan', function ($kunjungan) use ($hariIni) {
-                //     $kunjungan->whereDate('tanggal_kunjungan', $hariIni);
-                // })
-                //     ->orWhereDate('created_at', $hariIni);
-            })
-            ->latest()
-            ->get(); // ✅ PENTING: GET
+                $q->whereHas('kunjungan', function ($kunjungan) use ($hariIni) {
+                    $kunjungan->whereDate('tanggal_kunjungan', $hariIni);
+                })->orWhereDate('created_at', $hariIni);
+            })->get(); // ✅ PENTING: GET
 
         return DataTables::of($data)
             ->addIndexColumn()
 
             // 🔹 Nama Dokter
             ->addColumn('nama_dokter', function ($row) {
-                return optional(
-                    optional($row->kunjungan)
-                        ->poli
-                        ->dokter
-                        ->first()
-                )->nama_dokter ?? '-';
+                return $row->kunjungan?->poli?->dokter?->first()?->nama_dokter ?? '-';
             })
 
             // 🔹 Nama Pasien
@@ -908,93 +816,6 @@ class PengambilanObatController extends Controller
                     ?? $row->created_at->format('Y-m-d');
             })
 
-            ->addColumn('nama_obat', function ($row) {
-                if ($row->obat->isEmpty()) {
-                    return '<span class="text-gray-400 italic">Tidak ada</span>';
-                }
-
-                $html = '<div class="space-y-1.5">';
-                foreach ($row->obat as $i => $obat) {
-                    $no = $i + 1;
-
-                    $html .= '
-            <div class="flex items-center gap-2 px-2.5 py-1.5 rounded-lg
-                        border border-slate-200 bg-white
-                        shadow-sm hover:bg-slate-50 transition">
-                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full
-                             bg-sky-100 text-sky-700 text-[11px] font-bold">
-                    ' . $no . '
-                </span>
-                <span class="text-xs font-semibold text-slate-700 leading-tight">
-                    ' . e($obat->nama_obat) . '
-                </span>
-            </div>
-        ';
-                }
-                $html .= '</div>';
-
-                return $html;
-            })
-
-            ->addColumn('jumlah', function ($row) {
-                if ($row->obat->isEmpty()) return '<span class="text-gray-400 italic">-</span>';
-
-                $html = '<div class="space-y-1.5">';
-                foreach ($row->obat as $i => $obat) {
-                    $no     = $i + 1;
-                    $jumlah = $obat->pivot->jumlah ?? '-';
-                    $satuan = optional($obat->satuanObat)->nama_satuan_obat ?? '';
-
-                    $label = trim($jumlah . ' ' . $satuan);
-
-                    $html .= '
-            <div class="flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg
-                        border border-slate-200 bg-white shadow-sm">
-                <span class="inline-flex items-center justify-center w-5 h-5 rounded-full
-                             bg-slate-100 text-slate-600 text-[11px] font-bold">
-                    ' . $no . '
-                </span>
-
-                <span class="ml-auto inline-flex items-center justify-center
-                             px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700
-                             text-xs font-bold border border-emerald-200">
-                    ' . e($label) . '
-                </span>
-            </div>
-        ';
-                }
-                $html .= '</div>';
-
-                return $html;
-            })
-
-            ->addColumn('keterangan', function ($row) {
-                if ($row->obat->isEmpty()) return '<span class="text-gray-400 italic">-</span>';
-
-                $html = '<div class="space-y-1.5">';
-                foreach ($row->obat as $i => $obat) {
-                    $no  = $i + 1;
-                    $val = $obat->pivot->keterangan ?? '-';
-
-                    $html .= '
-            <div class="px-2.5 py-1.5 rounded-lg border border-slate-200 bg-white shadow-sm">
-                <div class="flex items-start gap-2">
-                    <span class="mt-[1px] inline-flex items-center justify-center w-5 h-5 rounded-full
-                                 bg-amber-100 text-amber-700 text-[11px] font-bold">
-                        ' . $no . '
-                    </span>
-                    <span class="text-xs text-slate-700 leading-snug">
-                        ' . e($val) . '
-                    </span>
-                </div>
-            </div>
-        ';
-                }
-                $html .= '</div>';
-
-                return $html;
-            })
-
             // 🔹 Status
             ->addColumn('status', function ($row) {
                 return ucfirst($row->status);
@@ -1002,12 +823,40 @@ class PengambilanObatController extends Controller
 
             // 🔹 Action
             ->addColumn('action', function ($row) {
+                if ($row->obat->isEmpty()) {
+                    return '<span class="text-gray-400 italic">Tidak ada tindakan</span>';
+                }
+
+                $dataObat = $row->obat->map(fn($ob) => [
+                    'id'     => $ob->id,
+                    'jumlah' => $ob->pivot->jumlah,
+                ])->values();
+
+                $jsonObat = e(json_encode($dataObat));
+                $status   = e($row->status ?? 'waiting');
+
                 return '
-                <button class="text-sky-600">Update</button>
-            ';
+        <div class="flex flex-col items-start gap-2">
+            <button type="button"
+                class="inline-flex items-center gap-1 text-xs font-semibold text-indigo-700 hover:text-indigo-900"
+                data-resep-id="' . $row->id . '"
+                id="btn-lihat-detail-selesai"
+                title="Lihat Detail Resep">
+                <i class="fa-solid fa-eye text-[11px]"></i>
+                Lihat Detail
+            </button>
+        </div>
+    ';
             })
 
-            ->rawColumns(['nama_obat', 'jumlah', 'keterangan', 'action', 'status'])
+            ->rawColumns(['action', 'status'])
             ->make(true);
+    }
+
+    public function getDataResepObatDetail($id)
+    {
+        $data = Resep::getDataResepObat($id);
+
+        return response()->json(['data' => $data]);
     }
 }

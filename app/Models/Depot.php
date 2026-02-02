@@ -26,6 +26,16 @@ class Depot extends Model
         return $this->hasMany(StokTransaksiDetail::class);
     }
 
+    public function batchObatDepot()
+    {
+        return $this->hasMany(BatchObatDepot::class);
+    }
+
+    public function batchBahanHabisPakaiDepot()
+    {
+        return $this->hasMany(BatchBahanHabisPakaiDepot::class);
+    }
+
     public function tipeDepot()
     {
         return $this->belongsTo(TipeDepot::class);

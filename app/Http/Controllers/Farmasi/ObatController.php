@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Farmasi;
 
 use App\Models\Obat;
 use App\Models\Depot;
+use App\Models\BatchObat;
 use App\Models\JenisObat;
 use App\Exports\ObatExport;
 use App\Imports\ObatImport;
@@ -192,7 +193,7 @@ class ObatController extends Controller
             'tipe_depot.*'      => ['nullable', 'exists:tipe_depot,id'],
         ]);
 
-        return response()->json($request->all());
+        // return response()->json($request->all());
 
         // ==============================
         // GENERATE KODE OBAT
@@ -232,13 +233,19 @@ class ObatController extends Controller
                     'satuan_obat_id'          => $request->input('satuan'),
                     'nama_obat'               => $request->input('nama_obat'),
                     'kandungan_obat'          => $request->input('kandungan'),
-                    'tanggal_kadaluarsa_obat' => $request->input('expired_date'),
-                    'nomor_batch_obat'        => $request->input('nomor_batch'),
+                    // 'tanggal_kadaluarsa_obat' => $request->input('expired_date'),
+                    // 'nomor_batch_obat'        => $request->input('nomor_batch'),
                     'jumlah'                  => $totalStok,
                     'dosis'                   => $request->input('dosis'),
                     'total_harga'             => $hargaBeli,
                     'harga_jual_obat'         => $hargaJual,
                     'harga_otc_obat'          => $hargaOtc,
+                ]);
+
+                BatchObat::create([
+                    'obat_id'                 => $obat->id,
+                    'nama_batch'              => $request->input('nomor_batch'),
+                    'tanggal_kadaluarsa_obat' => $request->input('expired_date'),
                 ]);
 
                 $depotIds     = $request->input('depot_id', []);
@@ -283,8 +290,6 @@ class ObatController extends Controller
 
                 return $obat->load('brandFarmasi', 'kategoriObat', 'jenisObat', 'satuanObat', 'depotObat');
             });
-
-            // dd($obat);
 
             return response()->json([
                 'status'  => 200,
@@ -375,8 +380,6 @@ class ObatController extends Controller
             'satuan'           => ['required', 'exists:satuan_obat,id'],
 
             'dosis'            => ['required', 'numeric', 'min:0'],
-            'expired_date'     => ['required', 'date'],
-            'nomor_batch'      => ['required', 'string', 'max:255'],
             'kandungan'        => ['nullable', 'string', 'max:255'],
 
             'stok_obat'        => ['required', 'integer', 'min:0'],
@@ -400,9 +403,6 @@ class ObatController extends Controller
         $tipeDepot = (array) $request->input('tipe_depot', []);
         $stokDepot = (array) $request->input('stok_depot', []);
 
-        // filter depot yg bener2 ada isi id (buat sync pivot)
-        $validDepotIds = array_values(array_filter($depotIds, fn($id) => !empty($id)));
-
         DB::beginTransaction();
 
         try {
@@ -415,52 +415,41 @@ class ObatController extends Controller
                 'kategori_obat_id'        => $request->input('kategori_obat'),
                 'jenis_obat_id'           => $request->input('jenis'),
                 'satuan_obat_id'          => $request->input('satuan'),
-
                 'nama_obat'               => $request->input('nama_obat'),
                 'kandungan_obat'          => $request->input('kandungan'),
-
-                'tanggal_kadaluarsa_obat' => $request->input('expired_date'),
-                'nomor_batch_obat'        => $request->input('nomor_batch'),
-
                 'jumlah'                  => $totalStok,
                 'dosis'                   => $request->input('dosis'),
-
                 'total_harga'             => $hargaBeli,
                 'harga_jual_obat'         => $hargaJual,
                 'harga_otc_obat'          => $hargaOtc,
             ]);
 
-            // ==============================
-            // UPDATE TIPE DEPOT DI TABEL DEPOT
-            // (berdasarkan pasangan depot_id[] & tipe_depot[] yang sejajar index)
-            // ==============================
+            // 1. Siapkan array untuk sync yang berisi data pivot
+            $syncData = [];
+
             foreach ($depotIds as $index => $depotId) {
                 if (empty($depotId)) continue;
 
+                // Ambil stok dari input berdasarkan index yang sama
+                $stokUntukPivot = (int) ($stokDepot[$index] ?? 0);
+
+                // Masukkan ke array sync: [id_depot => ['nama_kolom_pivot' => nilai]]
+                $syncData[$depotId] = [
+                    'stok_obat' => $stokUntukPivot
+                ];
+
+                // (Opsional) Jika kamu tetap ingin mengupdate Master Depot:
                 $tipeId = $tipeDepot[$index] ?? null;
-                $stok   = $stokDepot[$index] ?? 0;
-
-                $updateData = [];
-
+                $updateMaster = ['jumlah_stok_depot' => $stokUntukPivot];
                 if (!empty($tipeId)) {
-                    $updateData['tipe_depot_id'] = (int) $tipeId;
+                    $updateMaster['tipe_depot_id'] = (int) $tipeId;
                 }
 
-                $updateData['jumlah_stok_depot'] = (int) $stok;
-
-                DB::table('depot')
-                    ->where('id', (int) $depotId)
-                    ->update($updateData);
+                DB::table('depot')->where('id', (int) $depotId)->update($updateMaster);
             }
 
-            // ==============================
-            // SYNC PIVOT depot_obat (tetap seperti semula)
-            // ==============================
-            if (!empty($validDepotIds)) {
-                $obat->depotObat()->sync($validDepotIds);
-            } else {
-                $obat->depotObat()->detach();
-            }
+            // 2. Jalankan sync dengan data pivot lengkap
+            $obat->depotObat()->sync($syncData);
 
             DB::commit();
 

@@ -21,7 +21,7 @@
                     Pengambilan Resep Obat
                 </h2>
                 <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                    Daftar resep pasien yang perlu diproses pengambilan obat.
+                    Daftar resep pasien yang telah mengambil resep obat.
                     <span class="hidden sm:inline">
                         Gunakan pencarian untuk mempercepat monitoring.
                     </span>
@@ -98,10 +98,8 @@
                         <th class="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap">Nama Dokter</th>
                         <th class="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap">Nomor Antrian</th>
                         <th class="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap">Tanggal Kunjungan</th>
-                        <th class="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap">Nama Obat</th>
-                        <th class="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap">Jumlah Obat</th>
-                        <th class="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap">Keterangan</th>
                         <th class="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap">Status</th>
+                        <th class="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700"></tbody>
@@ -120,5 +118,58 @@
     </div>
 
 </section>
+
+<div id="modal-detail-resep-selesai" class="fixed inset-0 z-50 hidden overflow-y-auto px-4"
+    style="background: rgba(0, 0, 0, 0.5);">
+    <div class="flex items-center justify-center min-h-screen">
+        <div class="relative bg-white rounded-lg shadow-2xl max-w-2xl w-full overflow-hidden transform transition-all">
+
+            <div class="bg-teal-600 px-5 py-3 flex justify-between items-center">
+                <div class="flex items-center gap-2 text-white">
+                    <i class="fa-solid fa-file-prescription text-lg"></i>
+                    <h3 class="text-sm font-bold uppercase tracking-wider">
+                        Detail Resep Obat #<span id="resep-id-selesai"></span>
+                    </h3>
+                </div>
+                <button type="button" onclick="closeModalDetail()"
+                    class="text-white hover:text-gray-200 transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-6">
+                <div class="overflow-hidden border border-gray-200 rounded-lg shadow-sm">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th
+                                    class="px-4 py-3 text-left text-[11px] font-bold text-gray-600 uppercase tracking-wider">
+                                    Nama Obat</th>
+                                <th
+                                    class="px-4 py-3 text-center text-[11px] font-bold text-gray-600 uppercase tracking-wider">
+                                    Jumlah</th>
+                                <th
+                                    class="px-4 py-3 text-left text-[11px] font-bold text-gray-600 uppercase tracking-wider">
+                                    Dosis</th>
+                                <th
+                                    class="px-4 py-3 text-left text-[11px] font-bold text-gray-600 uppercase tracking-wider">
+                                    Keterangan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resep-obat-selesai" class="bg-white divide-y divide-gray-100 text-[12px]">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 px-6 py-3 flex justify-end">
+                <button type="button" id="btn-close-modal-selesai"
+                    class="px-5 py-2 bg-gray-500 hover:bg-gray-600 text-white text-xs font-bold rounded shadow-sm transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-circle-xmark"></i> Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @vite(['resources/js/farmasi/pengambilan-obat/data-pengambilan-obat-sudah-selesai.js'])

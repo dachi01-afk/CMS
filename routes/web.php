@@ -94,6 +94,8 @@ Route::prefix('/testing-qr-code')->group(function () {
     // Route::get('/emr/generate-no-rm', [EMRController::class, 'generateAll'])->name('emr.generate');
 
     Route::get('/generate-no-emr', [PasienController::class, 'generateNoEmrPasien']);
+
+    Route::get('latihan', [TestingController::class, 'contoh']);
 });
 
 Route::get('/contoh-kuitansi', function () {
@@ -419,6 +421,10 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('/bhp/{id}/meta', [RestockDanReturnController::class, 'getMetaBhp'])->name('farmasi.restock_return.bhp_meta');
 
             Route::get('/get-data-depot', [RestockDanReturnController::class, 'getDataDepot'])->name('farmasi.restock_return.get.data.depot');
+            Route::get('/get-data-depot-bhp', [RestockDanReturnController::class, 'getDataDepotBhp'])->name('farmasi.restock_return.get.data.depot.bhp');
+
+            Route::get('/batch-expired', [RestockDanReturnController::class, 'getBatchExpired']);
+            Route::get('/batch-stock', [RestockDanReturnController::class, 'getBatchDetail']);
 
             // ✅ store
             Route::post('/store', [RestockDanReturnController::class, 'store'])->name('create.data.restock.dan.return');
@@ -486,6 +492,8 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('/cetak-stiker-obat/{id}', [FarmasiPengambilanObatController::class, 'cetakStikerObat']);
             Route::get('/get-data-resep-obat-id/{id}', [FarmasiPengambilanObatController::class, 'getDataResepObatById'])->name('pengambilan.obat.get.data.resep.obat.by.id');
             Route::post('/update-data-resep-obat/{id}', [FarmasiPengambilanObatController::class, 'updateResepObat'])->name('pengambilan.obat.update.data.resep.obat');
+
+            Route::get('get-data-resep-obat-detail/{id}', [FarmasiPengambilanObatController::class, 'getDataResepObatDetail'])->name('pengambilan.obat.get.data.resep.obat.detail');
 
             // Route Antrian Hari Ini Yang Sudah Selesai 
             Route::get('/get-data-resep-obat-selesai', [FarmasiPengambilanObatController::class, 'getDataResepObatYangSudahSelesai'])->name('pengambilan.obat.get.data.resep.obat.selesai');

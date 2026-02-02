@@ -12,8 +12,6 @@ $(function () {
             day: "2-digit",
             month: "long",
             year: "numeric",
-            hour: "2-digit",
-            minute: "2-digit",
         });
     };
 
@@ -44,15 +42,13 @@ $(function () {
                 name: "tanggal_kunjungan",
                 render: (data) => formatTanggalID(data),
             },
-            { data: "nama_obat", name: "nama_obat" },
-            { data: "jumlah", name: "jumlah" },
-            { data: "keterangan", name: "keterangan" },
             { data: "status", name: "status" },
+            { data: "action", name: "action" },
         ],
         dom: "t",
         rowCallback: function (row, data) {
             $(row).addClass(
-                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600",
             );
             $("td", row).addClass("px-6 py-4 text-gray-900 dark:text-white");
         },
@@ -76,7 +72,7 @@ $(function () {
         $info.text(
             `Menampilkan ${info.start + 1}–${info.end} dari ${
                 info.recordsDisplay
-            } data (Halaman ${currentPage} dari ${totalPages})`
+            } data (Halaman ${currentPage} dari ${totalPages})`,
         );
 
         $pagination.empty();
@@ -161,4 +157,82 @@ $(function () {
             table.columns.adjust().draw(false);
         }, 50);
     });
+});
+
+$(document).on("click", "#btn-lihat-detail-selesai", function () {
+    const resepId = $(this).data("resep-id");
+
+    // Reset dan Tampilkan Modal
+    $("#resep-id-selesai").text(resepId);
+    $("#resep-obat-selesai").html(`
+        <tr>
+            <td colspan="4" class="text-center py-10">
+                <i class="fa-solid fa-spinner fa-spin text-teal-500 text-2xl"></i>
+                <p class="text-gray-500 mt-2 text-xs font-medium">Mengambil data resep...</p>
+            </td>
+        </tr>
+    `);
+    $("#modal-detail-resep-selesai").removeClass("hidden");
+
+    $.ajax({
+        url: `/farmasi/pengambilan-obat/get-data-resep-obat-detail/${resepId}`,
+        method: "GET",
+        success: function (response) {
+            let html = "";
+
+            // Akses data obat sesuai struktur JSON kamu
+            const dataObat = response.data.obat;
+
+            if (dataObat && dataObat.length > 0) {
+                dataObat.forEach((item) => {
+                    // Gunakan data dari pivot agar akurat sesuai resep tersebut
+                    const nama = item.nama_obat || "-";
+                    const jml = item.pivot
+                        ? item.pivot.jumlah
+                        : item.jumlah || 0;
+                    const dss = item.pivot
+                        ? item.pivot.dosis
+                        : item.dosis || "-";
+                    const ket = item.pivot
+                        ? item.pivot.keterangan
+                        : item.keterangan || "-";
+
+                    html += `
+                        <tr class="hover:bg-teal-50/30 transition-colors">
+                            <td class="px-4 py-3">
+                                <div class="font-bold text-gray-800">${nama}</div>
+                                <div class="text-[10px] text-gray-500">${item.kode_obat}</div>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="inline-block bg-teal-100 text-teal-700 px-2 py-0.5 rounded font-bold">
+                                    ${jml}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-gray-700 font-medium">${dss}</td>
+                            <td class="px-4 py-3 text-gray-500 italic">${ket}</td>
+                        </tr>
+                    `;
+                });
+            } else {
+                html =
+                    '<tr><td colspan="4" class="text-center py-10 text-gray-400 font-medium">Tidak ada rincian obat ditemukan.</td></tr>';
+            }
+
+            $("#resep-obat-selesai").html(html);
+        },
+        error: function () {
+            $("#resep-obat-selesai").html(
+                '<tr><td colspan="4" class="text-center py-10 text-red-500 font-bold">Gagal mengambil data dari server.</td></tr>',
+            );
+        },
+    });
+});
+
+// Fungsi untuk menutup modal
+function closeModalDetail() {
+    $("#modal-detail-resep-selesai").addClass("hidden");
+}
+
+$(document).on("click", "#btn-close-modal-selesai", function () {
+    closeModalDetail();
 });

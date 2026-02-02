@@ -111,9 +111,6 @@
                         <th class="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap">Nama Dokter</th>
                         <th class="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap">Nomor Antrian</th>
                         <th class="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap">Tanggal Kunjungan</th>
-                        <th class="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap">Nama Obat</th>
-                        <th class="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap">Jumlah Obat</th>
-                        <th class="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap">Keterangan</th>
                         <th class="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap">Status</th>
 
                         {{-- Sticky Action --}}
@@ -294,7 +291,8 @@
                    border border-slate-100 dark:border-slate-700 overflow-hidden flex flex-col max-h-[92vh]">
 
             {{-- Header --}}
-            <div class="bg-gradient-to-r from-sky-500 to-teal-600 px-4 sm:px-5 md:px-6 py-4
+            <div
+                class="bg-gradient-to-r from-sky-500 to-teal-600 px-4 sm:px-5 md:px-6 py-4
                         flex items-start justify-between gap-3">
                 <div class="flex items-center gap-3">
                     <div class="h-10 w-10 rounded-xl bg-white/15 flex items-center justify-center text-white">
@@ -318,7 +316,7 @@
             {{-- Body --}}
             <form id="formUpdateResep" class="px-4 sm:px-5 md:px-6 py-5 overflow-y-auto">
                 @csrf
-                
+
 
                 <input type="hidden" id="update_resep_id" name="resep_id" value="">
 
@@ -373,7 +371,8 @@
 
                 <div id="obatRowsUpdate" class="mt-4 space-y-3"></div>
 
-                <div class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700
+                <div
+                    class="mt-6 pt-4 border-t border-slate-200 dark:border-slate-700
                             flex flex-col sm:flex-row justify-end gap-2 sm:gap-3">
                     <button type="button" id="btnCloseModalUpdateResepBottom"
                         class="w-full sm:w-auto px-5 py-2.5 text-sm font-medium
@@ -391,6 +390,59 @@
                 </div>
             </form>
 
+        </div>
+    </div>
+</div>
+
+<div id="modalDetailResep" class="fixed inset-0 z-50 hidden overflow-y-auto px-4"
+    style="background: rgba(0, 0, 0, 0.5);">
+    <div class="flex items-center justify-center min-h-screen">
+        <div class="relative bg-white rounded-lg shadow-2xl max-w-2xl w-full overflow-hidden transform transition-all">
+
+            <div class="bg-teal-600 px-5 py-3 flex justify-between items-center">
+                <div class="flex items-center gap-2 text-white">
+                    <i class="fa-solid fa-file-prescription text-lg"></i>
+                    <h3 class="text-sm font-bold uppercase tracking-wider">
+                        Detail Resep Obat #<span id="resep_id_display"></span>
+                    </h3>
+                </div>
+                <button type="button" onclick="closeModalDetail()"
+                    class="text-white hover:text-gray-200 transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="p-6">
+                <div class="overflow-hidden border border-gray-200 rounded-lg shadow-sm">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead>
+                            <tr class="bg-gray-50">
+                                <th
+                                    class="px-4 py-3 text-left text-[11px] font-bold text-gray-600 uppercase tracking-wider">
+                                    Nama Obat</th>
+                                <th
+                                    class="px-4 py-3 text-center text-[11px] font-bold text-gray-600 uppercase tracking-wider">
+                                    Jumlah</th>
+                                <th
+                                    class="px-4 py-3 text-left text-[11px] font-bold text-gray-600 uppercase tracking-wider">
+                                    Dosis</th>
+                                <th
+                                    class="px-4 py-3 text-left text-[11px] font-bold text-gray-600 uppercase tracking-wider">
+                                    Keterangan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resep_obat_list" class="bg-white divide-y divide-gray-100 text-[12px]">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-gray-50 px-6 py-3 flex justify-end">
+                <button type="button" id="btnCloseModal"
+                    class="px-5 py-2 bg-gray-500 hover:bg-gray-600 text-white text-xs font-bold rounded shadow-sm transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-circle-xmark"></i> Tutup
+                </button>
+            </div>
         </div>
     </div>
 </div>

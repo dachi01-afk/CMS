@@ -18,6 +18,7 @@ use App\Exports\BahanHabisPakaiExport;
 use App\Imports\BahanHabisPakaiImport;
 use Illuminate\Support\Facades\Validator;
 use App\Http\Requests\Farmasi\StoreBahanHabisPakaiRequest;
+use App\Http\Requests\updateBahanHabisPakaiRequest;
 
 class BahanHabisPakaiController extends Controller
 {
@@ -91,7 +92,7 @@ class BahanHabisPakaiController extends Controller
             return response()->json([
                 'status'  => 200,
                 'message' => 'Berhasil menambahkan data BHP!',
-                'data'    => $bhp->load('brandFarmasi', 'jenisBHP', 'satuanBHP', 'depotBHP'),
+                'data'    => $bhp->load('brandFarmasi', 'jenisBHP', 'satuanBHP', 'depotBHP', 'batchBahanHabisPakai.batchBahanHabisPakaiDepot'),
             ], 200);
         } catch (\Exception $e) {
             return response()->json([
@@ -103,13 +104,7 @@ class BahanHabisPakaiController extends Controller
 
     public function getDataBahanHabisPakaiById($id)
     {
-        $dataBHP = BahanHabisPakai::with(
-            'brandFarmasi',
-            'jenisBHP',
-            'satuanBHP',
-            // 'depot',
-            'depotBHP.tipeDepot'
-        )->findOrFail($id);
+        $dataBHP = BahanHabisPakai::getDataById($id);
 
         return response()->json([
             'success' => true,
@@ -117,189 +112,23 @@ class BahanHabisPakaiController extends Controller
         ]);
     }
 
-    public function updateDataBahanHabisPakai(Request $request, $id)
+    public function updateDataBahanHabisPakai(updateBahanHabisPakaiRequest $request, $id)
     {
-        $parseNumber = function ($value) {
-            if ($value === null || $value === '') return 0;
-            $value = str_replace(['.', ','], ['', '.'], $value);
-            return (float) $value;
-        };
-
-        // ==============================
-        // VALIDASI
-        // ==============================
-        $validated = $request->validate([
-            // kode boleh divalidasi agar input aman, tapi TIDAK dipakai untuk update
-            'kode'                   => ['nullable', 'string', 'max:255'],
-
-            'nama_barang'            => ['required', 'string', 'max:255'],
-            'brand_farmasi_id'       => ['nullable', 'exists:brand_farmasi,id'],
-            'jenis_id'               => ['nullable', 'exists:jenis_obat,id'],
-            'satuan_id'              => ['required', 'exists:satuan_obat,id'],
-
-            'dosis'                  => ['required', 'numeric', 'min:0'],
-            'tanggal_kadaluarsa_bhp' => ['required', 'date'],
-            'no_batch'               => ['required', 'string', 'max:255'],
-
-            // stok_barang tidak lagi jadi sumber utama, tapi biarkan validasi kalau form kamu masih kirim
-            'stok_barang'            => ['nullable', 'integer', 'min:0'],
-
-            'harga_beli_satuan_bhp'  => ['nullable'],
-            'harga_jual_umum_bhp'    => ['nullable'],
-            'harga_otc_bhp'          => ['nullable'],
-
-            // array depot
-            'depot_id'               => ['nullable', 'array'],
-            'depot_id.*'             => ['nullable', 'exists:depot,id'],
-
-            'stok_depot'             => ['nullable', 'array'],
-            'stok_depot.*'           => ['nullable', 'integer', 'min:0'],
-
-            'tipe_depot'             => ['nullable', 'array'],
-            'tipe_depot.*'           => ['nullable', 'exists:tipe_depot,id'],
-        ]);
-
-        $depotIds  = (array) $request->input('depot_id', []);
-        $tipeDepot = (array) $request->input('tipe_depot', []);
-        $stokDepot = (array) $request->input('stok_depot', []);
-
-        // ==============================
-        // Hitung total stok dari semua depot (TERMASUK 0)
-        // ==============================
-        $stokDepotCollection = collect($stokDepot)
-            ->map(fn($v) => max((int) $v, 0));
-
-        $totalStok = (int) $stokDepotCollection->sum();
-
-        // fallback kalau stok_depot tidak dikirim sama sekali (mis. form lama)
-        if (empty($stokDepot) && $request->filled('stok_barang')) {
-            $totalStok = (int) $request->input('stok_barang', 0);
-        }
-
-        // ==============================
-        // Parse harga
-        // ==============================
-        $hargaBeli = $parseNumber($request->input('harga_beli_satuan_bhp'));
-        $hargaJual = $parseNumber($request->input('harga_jual_umum_bhp'));
-        $hargaOtc  = $parseNumber($request->input('harga_otc_bhp'));
-
-        DB::beginTransaction();
-
         try {
-            // ==============================
-            // Ambil data + lock (aman untuk generate kode)
-            // ==============================
-            $dataBhp = BahanHabisPakai::where('id', $id)
-                ->lockForUpdate()
-                ->firstOrFail();
+            // Data sudah otomatis tervalidasi dan ter-parse harganya di Request Class
+            $result = BahanHabisPakai::updateData($request->validated(), $id);
 
-            // ==============================
-            // KODE: TIDAK DIUBAH.
-            // Jika kode di DB kosong => generate BHP-YYYYMMDD-XXXX
-            // ==============================
-            if ($dataBhp->kode === null || trim($dataBhp->kode) === '') {
-                $ymd    = now()->format('Ymd');     // YYYYMMDD
-                $prefix = "BHP-{$ymd}-";            // BHP-YYYYMMDD-
-
-                $lastKode = BahanHabisPakai::where('kode', 'like', $prefix . '%')
-                    ->lockForUpdate()
-                    ->orderBy('kode', 'desc')
-                    ->value('kode');
-
-                $nextNumber = 1;
-                if ($lastKode) {
-                    $lastSeq = (int) substr($lastKode, -4); // ambil XXXX
-                    $nextNumber = $lastSeq + 1;
-                }
-
-                $dataBhp->kode = $prefix . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
-            }
-            // selain kondisi di atas: kode tetap (abaikan $request->kode)
-
-            // ==============================
-            // UPDATE DATA BHP
-            // ==============================
-            $dataBhp->update([
-                // 'kode' tidak ditaruh di sini agar tidak pernah tertimpa input
-                'brand_farmasi_id'       => $request->input('brand_farmasi_id'),
-                'jenis_id'               => $request->input('jenis_id'),
-                'satuan_id'              => $request->input('satuan_id'),
-
-                'nama_barang'            => $request->input('nama_barang'),
-                'tanggal_kadaluarsa_bhp' => $request->input('tanggal_kadaluarsa_bhp'),
-                'no_batch'               => $request->input('no_batch'),
-
-                'stok_barang'            => $totalStok, // ✅ selalu dari SUM depot (termasuk 0)
-                'dosis'                  => $request->input('dosis'),
-
-                'harga_beli_satuan_bhp'  => $hargaBeli,
-                'harga_jual_umum_bhp'    => $hargaJual,
-                'harga_otc_bhp'          => $hargaOtc,
-            ]);
-
-            // kalau kode baru saja digenerate (di-set langsung ke model), pastikan tersimpan
-            // (update() di atas tidak menyentuh 'kode')
-            if ($dataBhp->isDirty('kode')) {
-                $dataBhp->save();
-            }
-
-            // ==============================
-            // UPDATE TIPE DEPOT DI TABEL DEPOT (tetap seperti punyamu)
-            // ==============================
-            foreach ($depotIds as $index => $depotId) {
-                if (empty($depotId)) continue;
-
-                $tipeId = $tipeDepot[$index] ?? null;
-                if (empty($tipeId)) continue;
-
-                DB::table('depot')
-                    ->where('id', (int) $depotId)
-                    ->update(['tipe_depot_id' => (int) $tipeId]);
-            }
-
-            // ==============================
-            // UPDATE PIVOT depot_bhp.stok (TERMASUK 0)
-            // ==============================
-            $syncData = [];
-
-            foreach ($depotIds as $i => $depotId) {
-                $depotId = (int) ($depotId ?? 0);
-                if ($depotId <= 0) continue;
-
-                $syncData[$depotId] = [
-                    'stok' => max((int) ($stokDepot[$i] ?? 0), 0),
-                ];
-            }
-
-            // kalau depot_id tidak dikirim, biarkan pivot seperti sebelumnya (tidak detach otomatis)
-            // tapi kalau kamu memang mau detach saat kosong, ubah sesuai kebutuhan.
-            if (!empty($depotIds)) {
-                if (empty($syncData)) {
-                    $dataBhp->depotBHP()->detach();
-                } else {
-                    $dataBhp->depotBHP()->sync($syncData);
-                }
-            }
-
-            DB::commit();
+            $bhp = $result[0];
 
             return response()->json([
                 'status'  => 200,
-                'data'    => $dataBhp->fresh([
-                    'brandFarmasi',
-                    'jenisBHP',
-                    'satuanBHP',
-                    'depotBHP',
-                ]),
-                'message' => 'Berhasil Mengupdate Data Bahan Habis Pakai!',
-            ]);
-        } catch (Throwable $e) {
-            DB::rollBack();
-
+                'message' => 'Berhasil update data BHP!',
+                'data'    => $bhp->load('brandFarmasi', 'jenisBHP', 'satuanBHP', 'depotBHP', 'batchBahanHabisPakai.batchBahanHabisPakaiDepot'),
+            ], 200);
+        } catch (\Exception $e) {
             return response()->json([
                 'status'  => 500,
-                'message' => 'Gagal mengupdate data BHP & depot',
-                'error'   => $e->getMessage(),
+                'message' => 'Gagal menyimpan data: ' . $e->getMessage()
             ], 500);
         }
     }

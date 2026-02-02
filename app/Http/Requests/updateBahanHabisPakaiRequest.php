@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Requests\Farmasi;
+namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class StoreBahanHabisPakaiRequest extends FormRequest
+class updateBahanHabisPakaiRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -14,14 +14,14 @@ class StoreBahanHabisPakaiRequest extends FormRequest
         return true;
     }
 
-    protected function parseRupiah()
+    protected function prepareForValidation()
     {
         $parse = fn($v) => $v ? (float) str_replace(['.', ','], ['', '.'], $v) : 0;
 
         $this->merge([
             'harga_beli_satuan_bhp' => $parse($this->harga_beli_satuan_bhp),
-            'harga_jual_satuan_bhp' => $parse($this->harga_jual_satuan_bhp),
-            'harga_otc_bhp' => $parse($this->harga_otc_bhp),
+            'harga_jual_umum_bhp'   => $parse($this->harga_jual_umum_bhp),
+            'harga_otc_bhp'         => $parse($this->harga_otc_bhp),
         ]);
     }
 
@@ -33,24 +33,32 @@ class StoreBahanHabisPakaiRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'kode'             => ['nullable', 'string', 'max:255', 'unique:bahan_habis_pakai,kode'],
-            'nama_barang'      => ['required', 'string', 'max:255'],
-            'brand_farmasi_id' => ['required', 'exists:brand_farmasi,id'],
-            'jenis_id'         => ['required', 'exists:jenis_obat,id'],
-            'satuan_id'        => ['required', 'exists:satuan_obat,id'],
-            'dosis'            => ['required', 'numeric', 'min:0'],
-            'tanggal_kadaluarsa_bhp' => ['required', 'date'],
-            'no_batch'         => ['required', 'string', 'max:255'],
-            'stok_barang'      => ['nullable', 'integer', 'min:0'],
-            'harga_beli_satuan_bhp'  => ['nullable', 'numeric', 'min:0'],
-            'harga_jual_umum_bhp'    => ['nullable', 'numeric', 'min:0'],
-            'harga_otc_bhp'          => ['nullable', 'numeric', 'min:0'],
-            'depot_id'         => ['required', 'array', 'min:1'],
-            'depot_id.*'       => ['required', 'distinct', 'exists:depot,id'],
-            'stok_depot'       => ['required', 'array', 'min:1'],
-            'stok_depot.*'     => ['required', 'integer', 'min:0'],
-            'tipe_depot'       => ['nullable', 'array'],
-            'tipe_depot.*'     => ['nullable', 'exists:tipe_depot,id'],
+            // kode boleh divalidasi agar input aman, tapi TIDAK dipakai untuk update
+            'kode'                   => ['nullable', 'string', 'max:255'],
+
+            'nama_barang'            => ['required', 'string', 'max:255'],
+            'brand_farmasi_id'       => ['nullable', 'exists:brand_farmasi,id'],
+            'jenis_id'               => ['nullable', 'exists:jenis_obat,id'],
+            'satuan_id'              => ['required', 'exists:satuan_obat,id'],
+
+            'dosis'                  => ['required', 'numeric', 'min:0'],
+
+            // stok_barang tidak lagi jadi sumber utama, tapi biarkan validasi kalau form kamu masih kirim
+            'stok_barang'            => ['nullable', 'integer', 'min:0'],
+
+            'harga_beli_satuan_bhp'  => ['nullable'],
+            'harga_jual_umum_bhp'    => ['nullable'],
+            'harga_otc_bhp'          => ['nullable'],
+
+            // array depot
+            'depot_id'               => ['nullable', 'array'],
+            'depot_id.*'             => ['nullable', 'exists:depot,id'],
+
+            'stok_depot'             => ['nullable', 'array'],
+            'stok_depot.*'           => ['nullable', 'integer', 'min:0'],
+
+            'tipe_depot'             => ['nullable', 'array'],
+            'tipe_depot.*'           => ['nullable', 'exists:tipe_depot,id'],
         ];
     }
 
@@ -63,8 +71,6 @@ class StoreBahanHabisPakaiRequest extends FormRequest
             'jenis_id.required'                 => 'Jenis barang wajib dipilih.',
             'satuan_id.required'                => 'Satuan barang wajib dipilih.',
             'dosis.required'                    => 'Dosis barang wajib diisi.',
-            'tanggal_kadaluarsa_bhp.required'   => 'Tanggal kadaluarsa barang wajib diisi.',
-            'no_batch.required'                 => 'Nomor Batch barang wajib diisi.',
 
             // Pesan untuk array depot_id
             'depot_id.required'                 => 'Minimal 1 depot harus dipilih.',

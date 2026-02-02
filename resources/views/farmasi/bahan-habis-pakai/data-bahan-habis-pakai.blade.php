@@ -101,7 +101,7 @@
 <!-- Modal Create Bhp -->
 <div id="modalCreateBhp" aria-hidden="true"
     class="hidden fixed inset-0 z-50 flex items-center justify-center w-full h-full px-4 bg-black/40">
-    <div class="relative w-full max-w-4xl">
+    <div class="relative w-full max-w-6xl">
         <!-- Card -->
         <div
             class="relative flex flex-col bg-white rounded-2xl shadow-2xl dark:bg-gray-900 border border-gray-100 dark:border-gray-700 max-h-[90vh]">
@@ -548,7 +548,7 @@
 {{-- Modal Update Bhp --}}
 <div id="modalUpdateBhp" aria-hidden="true"
     class="hidden fixed inset-0 z-50 flex items-center justify-center w-full h-full bg-black/40 px-4">
-    <div class="relative w-full max-w-4xl">
+    <div class="relative w-full max-w-6xl">
         <!-- Card -->
         <div
             class="relative flex flex-col bg-white rounded-2xl shadow-2xl dark:bg-gray-900 border border-gray-100 dark:border-gray-700 max-h-[90vh]">
@@ -609,29 +609,18 @@
                             <div id="nama_barang_update-error" class="text-red-600 text-[11px] mt-1"></div>
                         </div>
 
+                        <!-- DOSIS -->
                         <div>
-                            <label for="brand_farmasi_id_update"
+                            <label for="dosis_update"
                                 class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                Nama Brand Farmasi
+                                Dosis (mg/ml) <span class="text-red-500">*</span>
                             </label>
-
-                            <div class="relative mt-1">
-                                <select name="brand_farmasi_id_update" id="brand_farmasi_id_update"
-                                    data-url-index="{{ route('get.data.brand.farmasi') }}"
-                                    data-url-store="{{ route('create.data.brand.farmasi') }}"
-                                    data-url-delete="{{ route('delete.data.brand.farmasi') }}"
-                                    class="block w-full pr-9 text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
-                                    <option value="">Ketik untuk mencari / tambah baru</option>
-                                </select>
-
-                                <!-- Tombol X (clear & delete brand) -->
-                                <button type="button" id="btn-clear-brand-update"
-                                    class="hidden absolute inset-y-0 right-2 my-auto w-5 h-5 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/40">
-                                    <i class="fa-solid fa-xmark text-[10px]"></i>
-                                </button>
-                            </div>
-
-                            <div id="brand_farmasi_id_update-error" class="text-red-600 text-[11px] mt-1"></div>
+                            <input type="number" step="0.01" name="dosis_update" id="dosis_update"
+                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 
+                                    focus:border-blue-500 focus:ring-1 focus:ring-blue-500 
+                                    dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                placeholder="Contoh: 500" required>
+                            <div id="dosis_update-error" class="text-red-600 text-[11px] mt-1"></div>
                         </div>
                     </div>
 
@@ -691,18 +680,29 @@
                             <div id="satuan_id_update-error" class="text-red-600 text-[11px] mt-1"></div>
                         </div>
 
-                        <!-- DOSIS -->
                         <div>
-                            <label for="dosis_update"
+                            <label for="brand_farmasi_id_update"
                                 class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                Dosis (mg/ml) <span class="text-red-500">*</span>
+                                Nama Brand Farmasi
                             </label>
-                            <input type="number" step="0.01" name="dosis_update" id="dosis_update"
-                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 
-                                    focus:border-blue-500 focus:ring-1 focus:ring-blue-500 
-                                    dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                                placeholder="Contoh: 500" required>
-                            <div id="dosis_update-error" class="text-red-600 text-[11px] mt-1"></div>
+
+                            <div class="relative mt-1">
+                                <select name="brand_farmasi_id_update" id="brand_farmasi_id_update"
+                                    data-url-index="{{ route('get.data.brand.farmasi') }}"
+                                    data-url-store="{{ route('create.data.brand.farmasi') }}"
+                                    data-url-delete="{{ route('delete.data.brand.farmasi') }}"
+                                    class="block w-full pr-9 text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                                    <option value="">Ketik untuk mencari / tambah baru</option>
+                                </select>
+
+                                <!-- Tombol X (clear & delete brand) -->
+                                <button type="button" id="btn-clear-brand-update"
+                                    class="hidden absolute inset-y-0 right-2 my-auto w-5 h-5 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/40">
+                                    <i class="fa-solid fa-xmark text-[10px]"></i>
+                                </button>
+                            </div>
+
+                            <div id="brand_farmasi_id_update-error" class="text-red-600 text-[11px] mt-1"></div>
                         </div>
                     </div>
                 </div>
@@ -727,7 +727,7 @@
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1 gap-4">
                         <div>
                             <label for="stok_barang_update"
                                 class="block text-xs font-medium text-gray-600 dark:text-gray-300">
@@ -743,28 +743,6 @@
                                 Stok ini otomatis bertambah dari per depot.
                             </p>
                             <div id="stok_barang_update-error" class="text-red-600 text-[11px] mt-1"></div>
-                        </div>
-
-                        <div>
-                            <label for="tanggal_kadaluarsa_bhp_update"
-                                class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                Expired Date <span class="text-red-500">*</span>
-                            </label>
-                            <input type="date" id="tanggal_kadaluarsa_bhp_update"
-                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                                required>
-                            <div id="tanggal_kadaluarsa_bhp_update-error" class="text-red-600 text-[11px] mt-1"></div>
-                        </div>
-
-                        <div>
-                            <label for="no_batch_update"
-                                class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                Nomor Batch <span class="text-red-500">*</span>
-                            </label>
-                            <input type="text" name="nomor_batch" id="no_batch_update"
-                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                                placeholder="Nomor batch produksi" required autocomplete="off">
-                            <div id="no_batch_update-error" class="text-red-600 text-[11px] mt-1"></div>
                         </div>
                     </div>
                 </div>

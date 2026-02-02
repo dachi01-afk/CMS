@@ -94,12 +94,16 @@ class AuthController extends Controller
     public function login(Request $request)
     {
         $request->validate([
-            'username' => ['required', 'string'],
+            'login' => ['required', 'string'],
             'password' => ['required', 'string'],
         ]);
 
         // Cek apakah username ada
-        $user = User::where('username', $request->username)->first();
+        $login = $request->login;
+
+        $user = User::where('username', $login)
+            ->orWhere('email', $login)
+            ->first();
 
         if (! $user) {
             return response()->json([
@@ -177,11 +181,13 @@ class AuthController extends Controller
             }
         }
 
-        return response()->json([
-            'status' => 'success',
-            'message' => 'Login berhasil.',
-            'data' => $responseData,
-        ], 200);
+        if (! $user || ! Hash::check($request->password, $user->password)) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Login gagal. Periksa kembali username/email dan password.',
+                'error_type' => 'invalid_credentials',
+            ], 401);
+        }
     }
 
     // Logout

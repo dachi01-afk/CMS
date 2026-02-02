@@ -39,6 +39,11 @@ class BahanHabisPakai extends Model
         return $this->hasMany(StokTransaksiDetail::class, 'bahan_habis_pakai_id');
     }
 
+    public function batchBahanHabisPakai()
+    {
+        return $this->hasMany(BatchBahanHabisPakai::class);
+    }
+
     public function scopeGetData($query)
     {
         return $query->select(
@@ -50,6 +55,11 @@ class BahanHabisPakai extends Model
         )->with(['satuanBHP' => function ($q) {
             $q->select('id', 'nama_satuan_obat');
         }])->where('stok_barang', '>', 0)->orderBy('nama_barang', 'asc');
+    }
+
+    public static function getDataById($bhpId)
+    {
+        return self::where('id', $bhpId)->with(['jenisBHP', 'satuanBHP', 'brandFarmasi', 'depotBHP.tipeDepot'])->firstOrFail();
     }
 
     public static function simpanData($data)
@@ -65,8 +75,86 @@ class BahanHabisPakai extends Model
                 'jenis_id'               => $data['jenis_id'],
                 'satuan_id'              => $data['satuan_id'],
                 'nama_barang'            => $data['nama_barang'],
-                'tanggal_kadaluarsa_bhp' => $data['tanggal_kadaluarsa_bhp'],
-                'no_batch'               => $data['no_batch'],
+                'stok_barang'            => $totalStokInput,
+                'dosis'                  => $data['dosis'],
+                'harga_beli_satuan_bhp'  => $data['harga_beli_satuan_bhp'],
+                'harga_jual_umum_bhp'    => $data['harga_jual_umum_bhp'],
+                'harga_otc_bhp'          => $data['harga_otc_bhp'],
+            ]);
+
+            // $dataBhpId = $dataBhp->id;
+
+            $dataBatchBhp = BatchBahanHabisPakai::createData($dataBhp->id, $data);
+
+            // $dataBatchBhpId = $dataBatchBhp->id;
+
+            $syncData = [];
+            $depotIds = $data['depot_id'] ?? [];
+            $tipeDepotIds = $data['tipe_depot'] ?? [];
+            $stokDepot = $data['stok_depot'] ?? [];
+
+            // 2. Loop Pertama: Sync Pivot dan Update Tipe Depot
+            foreach ($depotIds as $index => $depId) {
+                if (empty($depId)) continue;
+
+                // Masukkan ke array sync untuk tabel pivot 'depot_bhp'
+                $syncData[$depId] = [
+                    'stok_barang' => (int) ($stokDepot[$index] ?? 0)
+                ];
+
+                // Update Tipe Depot di tabel 'depot'
+                $tipeId = $tipeDepotIds[$index] ?? null;
+                if ($tipeId) {
+                    Depot::where('id', $depId)->update(['tipe_depot_id' => $tipeId]);
+                }
+            }
+
+            if (!empty($syncData)) {
+                // Jalankan sync ke tabel pivot
+                $dataBhp->depotBHP()->sync($syncData);
+
+                // 3. Loop Kedua: Hitung Akumulasi Stok Seluruh Barang di Depot tersebut
+                // Ini agar kolom 'jumlah_stok_depot' adalah total dari SEMUA BHP + Obat yang ada di depot itu
+                foreach ($depotIds as $depId) {
+                    if (empty($depId)) continue;
+
+                    // Hitung total stok dari semua BHP yang ada di depot ini
+                    $totalBhpDiDepot = DB::table('depot_bhp')
+                        ->where('depot_id', $depId)
+                        ->sum('stok_barang');
+
+                    // Jika tabel Obat juga menggunakan depot yang sama, 
+                    // kamu bisa menjumlahkannya juga di sini (Opsional tergantung strukturmu)
+                    // $totalObatDiDepot = DB::table('depot_obat')->where('depot_id', $depId)->sum('stok_obat');
+
+                    $totalSemuaBaru = $totalBhpDiDepot; // + $totalObatDiDepot;
+
+                    Depot::where('id', $depId)->update([
+                        'jumlah_stok_depot' => $totalSemuaBaru
+                    ]);
+                }
+            }
+
+            $dataBatchBhpDepot = BatchBahanHabisPakaiDepot::createData($dataBatchBhp->id, $data);
+
+            return [$dataBhp, $dataBatchBhp, $dataBatchBhpDepot];
+        });
+    }
+
+    public static function updateData($data, $bhpId)
+    {
+        return DB::transaction(function () use ($data, $bhpId) {
+            $dataBhp = self::where('id', $bhpId)->firstOrFail();
+            $kode = $data['kode'] ?? self::buatKodeBHP();
+            $totalStokInput = array_sum($data['stok_depot'] ?? []);
+
+            // 1. Simpan ke tabel bahan_habis_pakai
+            $dataBhp->update([
+                'kode'                   => $kode,
+                'brand_farmasi_id'       => $data['brand_farmasi_id'],
+                'jenis_id'               => $data['jenis_id'],
+                'satuan_id'              => $data['satuan_id'],
+                'nama_barang'            => $data['nama_barang'],
                 'stok_barang'            => $totalStokInput,
                 'dosis'                  => $data['dosis'],
                 'harga_beli_satuan_bhp'  => $data['harga_beli_satuan_bhp'],
@@ -121,7 +209,7 @@ class BahanHabisPakai extends Model
                 }
             }
 
-            return $dataBhp;
+            return [$dataBhp];
         });
     }
 
