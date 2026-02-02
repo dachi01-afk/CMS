@@ -843,7 +843,7 @@
                 <!-- Divider -->
                 <div class="border-t border-dashed border-gray-200 dark:border-gray-700"></div>
 
-                <!-- Section: Stok & Kedaluwarsa -->
+                <!-- Section: Stok -->
                 <div class="space-y-4">
                     <div class="flex items-center gap-2">
                         <div
@@ -852,15 +852,15 @@
                         </div>
                         <div>
                             <h4 class="text-xs font-semibold tracking-wide text-gray-800 uppercase dark:text-gray-200">
-                                Stok & Kedaluwarsa
+                                Stok
                             </h4>
                             <p class="text-[11px] text-gray-500 dark:text-gray-400">
-                                Pantau stok dan tanggal kedaluwarsa untuk mencegah obat kadaluarsa.
+                                Pantau stok untuk mencegah obat kadaluarsa.
                             </p>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="grid grid-cols-1">
                         <div>
                             <label for="edit_stok_obat"
                                 class="block text-xs font-medium text-gray-600 dark:text-gray-300">
@@ -873,28 +873,6 @@
                                 Stok ini otomatis bertambah dari per depot.
                             </p>
                             <div id="edit_stok_obat-error" class="text-red-600 text-[11px] mt-1"></div>
-                        </div>
-
-                        <div>
-                            <label for="edit_expired_date"
-                                class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                Expired Date <span class="text-red-500">*</span>
-                            </label>
-                            <input type="date" name="expired_date" id="edit_expired_date"
-                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                                required>
-                            <div id="edit_expired_date-error" class="text-red-600 text-[11px] mt-1"></div>
-                        </div>
-
-                        <div>
-                            <label for="edit_nomor_batch"
-                                class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                Nomor Batch <span class="text-red-500">*</span>
-                            </label>
-                            <input type="text" name="nomor_batch" id="edit_nomor_batch"
-                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                                placeholder="Nomor batch produksi" required autocomplete="off">
-                            <div id="edit_nomor_batch-error" class="text-red-600 text-[11px] mt-1"></div>
                         </div>
                     </div>
                 </div>

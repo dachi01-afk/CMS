@@ -304,7 +304,11 @@ class TestingController extends Controller
     {
         $search = $request->get('q');
 
-        $dataObat = Obat::with('kategoriObat')->where('nama_obat', 'like', "%{$search}%")->get();
+        $dataObat = Obat::with('kategoriObat', 'satuanObat')->where('nama_obat', 'like', "%{$search}%")->get();
         return response()->json($dataObat);
+    }
+
+    public function contoh() {
+        return view('testing.testing');
     }
 }

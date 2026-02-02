@@ -11,6 +11,8 @@ use App\Models\MutasiStokObat;
 use Illuminate\Support\Facades\DB;
 use App\Models\StokTransaksiDetail;
 use App\Http\Controllers\Controller;
+use App\Models\BatchObat;
+use App\Models\BatchObatDepot;
 use App\Models\Farmasi;
 use App\Models\MutasiStokObatDetail;
 use Illuminate\Support\Facades\Auth;
@@ -411,8 +413,8 @@ class RestockDanReturnController extends Controller
 
     public function getDataDepotBhp(Request $request)
     {
-        $batchId = 
-        $stokItem = BatchDepotObat::where('batch_obat_id', $batchId)->firstOrFail();
+        // $batchId = 
+        // $stokItem = BatchDepotObat::where('batch_obat_id', $batchId)->firstOrFail();
 
         $search = $request->get('q');
         $bhpId = $request->get('bhp_id'); // Ambil ID obat dari request
@@ -434,6 +436,41 @@ class RestockDanReturnController extends Controller
             });
 
         return response()->json($dataDepotBhp);
+    }
+
+    // Di Controller Anda (misal: ObatController atau RestockController)
+
+    // Route: /farmasi/restock-return/batch-expired
+    public function getBatchExpired(Request $request)
+    {
+        // Mengambil data kadaluarsa berdasarkan obat yang dipilih
+        $batches = DB::table('batch_obat')
+            ->where('obat_id', $request->obat_id)
+            ->select('id', 'tanggal_kadaluarsa', 'nama_batch')
+            ->get();
+
+        return response()->json($batches);
+    }
+
+    // Route: /farmasi/restock-return/batch-detail
+    public function getBatchDetail(Request $request)
+    {
+        $batchId = $request->batch_id;
+        $depotId = $request->depot_id;
+
+        // 1. Ambil Nama Batch untuk diisi ke input text
+        $batch = DB::table('batch_obat')->where('id', $batchId)->first();
+
+        // 2. Ambil Stok spesifik di depot tersebut dari tabel batch_obat_depot
+        $stokAtDepot = DB::table('batch_obat_depot')
+            ->where('batch_obat_id', $batchId)
+            ->where('depot_id', $depotId)
+            ->value('stok_obat'); // Mengambil kolom 'stok_obat'
+
+        return response()->json([
+            'nama_batch' => $batch ? $batch->nama_batch : '-',
+            'stok' => $stokAtDepot ?? 0
+        ]);
     }
 
     // public function store(Request $request)

@@ -94,6 +94,8 @@ Route::prefix('/testing-qr-code')->group(function () {
     // Route::get('/emr/generate-no-rm', [EMRController::class, 'generateAll'])->name('emr.generate');
 
     Route::get('/generate-no-emr', [PasienController::class, 'generateNoEmrPasien']);
+
+    Route::get('latihan', [TestingController::class, 'contoh']);
 });
 
 Route::get('/contoh-kuitansi', function () {
@@ -420,6 +422,9 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
 
             Route::get('/get-data-depot', [RestockDanReturnController::class, 'getDataDepot'])->name('farmasi.restock_return.get.data.depot');
             Route::get('/get-data-depot-bhp', [RestockDanReturnController::class, 'getDataDepotBhp'])->name('farmasi.restock_return.get.data.depot.bhp');
+
+            Route::get('/batch-expired', [RestockDanReturnController::class, 'getBatchExpired']);
+            Route::get('/batch-stock', [RestockDanReturnController::class, 'getBatchDetail']);
 
             // ✅ store
             Route::post('/store', [RestockDanReturnController::class, 'store'])->name('create.data.restock.dan.return');
