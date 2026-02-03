@@ -34,7 +34,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
@@ -1927,6 +1926,7 @@ class APIMobileController extends Controller
                 };
 
                 // (A) LAYANAN
+                // (A) LAYANAN
                 $layananRows = DB::table('kunjungan_layanan as kl')
                     ->join('layanan as l', 'l.id', '=', 'kl.layanan_id')
                     ->where('kl.kunjungan_id', $kunjungan->id)
@@ -1946,9 +1946,11 @@ class APIMobileController extends Controller
                         'subtotal' => $subtotal,
                     ]);
 
-                    // ✅ FIX: isi biaya_konsultasi di header dari total layanan
                     $totalLayanan += $subtotal;
                 }
+
+                // ✅ JANGAN tambahkan logika fallback di sini
+                // BIARKAN $totalLayanan = 0 jika memang tidak ada layanan
 
                 // (B) OBAT
                 if (! empty($resepId)) {
@@ -2000,16 +2002,16 @@ class APIMobileController extends Controller
                 }
 
                 // (D) RADIOLOGI
+                // (D) RADIOLOGI
+                // (D) RADIOLOGI
                 if (! empty($orderRadiologiId)) {
                     $radRows = DB::table('order_radiologi_detail as ord')
                         ->join('jenis_pemeriksaan_radiologi as jpr', 'jpr.id', '=', 'ord.jenis_pemeriksaan_radiologi_id')
-                        ->leftJoin('hasil_radiologi as hr', 'hr.order_radiologi_detail_id', '=', 'ord.id')
                         ->where('ord.order_radiologi_id', $orderRadiologiId)
                         ->select(
                             'ord.id as order_radiologi_detail_id',
                             'jpr.nama_pemeriksaan',
-                            'jpr.harga_pemeriksaan_radiologi',
-                            'hr.id as hasil_radiologi_id'
+                            'jpr.harga_pemeriksaan_radiologi'
                         )
                         ->get();
 
@@ -2019,7 +2021,9 @@ class APIMobileController extends Controller
                         $subtotal = $harga * $qty;
 
                         $insertDetail([
-                            'hasil_radiologi_id' => $row->hasil_radiologi_id, // bisa NULL
+                            // ✅ INI YANG WAJIB ADA
+                            'order_radiologi_detail_id' => $row->order_radiologi_detail_id,
+
                             'nama_item' => 'Radiologi: '.$row->nama_pemeriksaan,
                             'qty' => $qty,
                             'harga' => $harga,
@@ -2031,7 +2035,7 @@ class APIMobileController extends Controller
                 // ✅ UPDATE HEADER PEMBAYARAN (INI YANG DIBUTUHKAN FLUTTER)
                 // ✅ Dokter cuma set total_tagihan (yang ada di DB)
                 $pembayaran->update([
-                    'total_tagihan' => $total,
+                    'total_tagihan' => $total, // ← Ini sudah benar, JANGAN tambah fallback
                 ]);
 
                 return [
@@ -4222,7 +4226,6 @@ class APIMobileController extends Controller
                 ], 404);
             }
 
-            // Ambil hasil radiologi yang sudah selesai
             $hasil = DB::table('hasil_radiologi as h')
                 ->join('order_radiologi_detail as od', 'od.id', '=', 'h.order_radiologi_detail_id')
                 ->join('order_radiologi as o', 'o.id', '=', 'od.order_radiologi_id')
@@ -4243,6 +4246,7 @@ class APIMobileController extends Controller
 
                     'j.nama_pemeriksaan',
                     'j.kode_pemeriksaan',
+                    'j.harga_pemeriksaan_radiologi', // ✅ TAMBAHKAN INI
 
                     'd.nama_dokter',
                     'pr.nama_perawat as radiografer_nama'
@@ -4263,6 +4267,7 @@ class APIMobileController extends Controller
                         'pemeriksaan' => [
                             'nama_pemeriksaan' => $h->nama_pemeriksaan,
                             'kode_pemeriksaan' => $h->kode_pemeriksaan,
+                            'harga_pemeriksaan_radiologi' => (float) $h->harga_pemeriksaan_radiologi, // ✅ KIRIM INI
                         ],
 
                         'order' => [
@@ -4514,7 +4519,6 @@ class APIMobileController extends Controller
                 ], 401);
             }
 
-            // Dapatkan data pasien dari user yang login
             $pasien = Pasien::where('user_id', $user->id)->first();
             if (! $pasien) {
                 return response()->json([
@@ -4523,7 +4527,6 @@ class APIMobileController extends Controller
                 ], 404);
             }
 
-            // Validasi kunjungan milik pasien ini
             $kunjungan = Kunjungan::where('id', $kunjunganId)
                 ->where('pasien_id', $pasien->id)
                 ->first();
@@ -4535,8 +4538,6 @@ class APIMobileController extends Controller
                 ], 404);
             }
 
-            // Ambil hasil lab dari order_lab yang terkait dengan kunjungan ini
-            // SESUAIKAN query ini dengan struktur database Anda!
             $hasilLab = DB::table('order_lab as ol')
                 ->join('order_lab_detail as old', 'ol.id', '=', 'old.order_lab_id')
                 ->join('jenis_pemeriksaan_lab as jpl', 'old.jenis_pemeriksaan_lab_id', '=', 'jpl.id')
@@ -4544,7 +4545,7 @@ class APIMobileController extends Controller
                 ->leftJoin('hasil_lab as hl', 'old.id', '=', 'hl.order_lab_detail_id')
                 ->where('ol.pasien_id', $pasien->id)
                 ->where('ol.status', 'Selesai')
-                ->whereNotNull('hl.id') // Hanya yang sudah ada hasilnya
+                ->whereNotNull('hl.id')
                 ->select(
                     'old.id as order_lab_detail_id',
                     'old.status_pemeriksaan',
@@ -4552,6 +4553,7 @@ class APIMobileController extends Controller
                     'jpl.kode_pemeriksaan',
                     'jpl.nama_pemeriksaan',
                     'jpl.nilai_normal',
+                    'jpl.harga_pemeriksaan_lab', // ✅ TAMBAHKAN INI
                     'sl.nama_satuan as satuan',
                     'hl.id as hasil_id',
                     'hl.nilai_hasil',
@@ -4574,7 +4576,6 @@ class APIMobileController extends Controller
                     $nilaiHasil = (float) $item->nilai_hasil;
                     $nilaiRujukan = (string) $item->nilai_rujukan;
 
-                    // Parse nilai rujukan (contoh: "70-100", "<10", ">50")
                     if (strpos($nilaiRujukan, '-') !== false) {
                         $range = explode('-', $nilaiRujukan);
                         $min = (float) trim($range[0]);
@@ -4610,6 +4611,7 @@ class APIMobileController extends Controller
                         'nama_pemeriksaan' => $item->nama_pemeriksaan,
                         'nilai_normal' => $item->nilai_normal,
                         'satuan' => $item->satuan,
+                        'harga_pemeriksaan_lab' => (float) $item->harga_pemeriksaan_lab, // ✅ KIRIM INI
                     ],
 
                     'hasil' => [
@@ -4619,7 +4621,7 @@ class APIMobileController extends Controller
                         'keterangan' => $item->keterangan,
                         'tanggal_pemeriksaan' => $item->tanggal_pemeriksaan,
                         'jam_pemeriksaan' => $item->jam_pemeriksaan,
-                        'status' => $status, // normal, tinggi, rendah, kritis
+                        'status' => $status,
                     ],
                 ];
             });
@@ -5716,9 +5718,7 @@ class APIMobileController extends Controller
         $pasienId = $user->pasien->id;
 
         /**
-         * ✅ Ambil EMR terbaru untuk pasien ini
-         * Prioritas: emr.pasien_id (schema baru)
-         * Fallback: lewat kunjungan (schema lama)
+         * ✅ Ambil EMR terbaru untuk pasien ini YANG SUDAH DIBAYAR
          */
         $latestEmr = Emr::query()
             ->where(function ($q) use ($pasienId) {
@@ -5727,24 +5727,28 @@ class APIMobileController extends Controller
                         $k->where('pasien_id', $pasienId);
                     });
             })
+            // ✅ TAMBAHKAN: Hanya EMR yang pembayarannya sudah lunas
+            ->whereHas('pembayaran', function ($query) {
+                $query->where('status', 'Sudah Bayar');
+            })
             ->orderByDesc('created_at')
             ->first();
 
         if (! $latestEmr) {
             return response()->json([
                 'success' => true,
-                'message' => 'Belum ada data EMR / vital sign untuk pasien ini.',
+                'message' => 'Belum ada data vital sign yang sudah dibayar.',
                 'data' => null,
             ]);
         }
 
-        // ✅ Bungkus data agar rapi dan lengkap (termasuk field terbaru)
+        // ✅ Bungkus data agar rapi dan lengkap
         $data = [
             'emr_id' => $latestEmr->id,
             'kunjungan_id' => $latestEmr->kunjungan_id,
             'resep_id' => $latestEmr->resep_id,
 
-            // ======== Identitas snapshot (kalau ada di tabel emr) ========
+            // ======== Identitas snapshot ========
             'pasien_id' => $latestEmr->pasien_id,
             'dokter_id' => $latestEmr->dokter_id,
             'poli_id' => $latestEmr->poli_id,
@@ -5757,22 +5761,26 @@ class APIMobileController extends Controller
             'diagnosis' => $latestEmr->diagnosis,
 
             // ======== Vital sign (lama) ========
-            'tekanan_darah' => $latestEmr->tekanan_darah,     // "120/80"
-            'suhu_tubuh' => $latestEmr->suhu_tubuh,           // decimal
-            'nadi' => $latestEmr->nadi,                       // int
-            'pernapasan' => $latestEmr->pernapasan,           // int
-            'saturasi_oksigen' => $latestEmr->saturasi_oksigen, // int
+            'tekanan_darah' => $latestEmr->tekanan_darah,
+            'suhu_tubuh' => $latestEmr->suhu_tubuh,
+            'nadi' => $latestEmr->nadi,
+            'pernapasan' => $latestEmr->pernapasan,
+            'saturasi_oksigen' => $latestEmr->saturasi_oksigen,
 
-            // ======== Vital sign (baru dari migration terbaru) ========
-            'tinggi_badan' => $latestEmr->tinggi_badan,       // decimal(5,2)
-            'berat_badan' => $latestEmr->berat_badan,         // decimal(5,2)
-            'imt' => $latestEmr->imt,                         // decimal(5,2)
+            // ======== Vital sign (baru) ========
+            'tinggi_badan' => $latestEmr->tinggi_badan,
+            'berat_badan' => $latestEmr->berat_badan,
+            'imt' => $latestEmr->imt,
 
             // ======== Tanggal & waktu ========
             'tanggal' => optional($latestEmr->created_at)->toDateString(),
             'waktu' => optional($latestEmr->created_at)->format('H:i'),
             'created_at' => $latestEmr->created_at,
             'updated_at' => $latestEmr->updated_at,
+
+            // ✅ TAMBAHAN: Info pembayaran
+            'pembayaran_status' => 'Sudah Bayar',
+            'tanggal_pembayaran' => optional($latestEmr->pembayaran)->tanggal_pembayaran,
         ];
 
         return response()->json([
@@ -5795,12 +5803,17 @@ class APIMobileController extends Controller
 
         $pasienId = $user->pasien->id;
 
+        // ✅ TAMBAHKAN: Filter hanya yang sudah dibayar
         $emrs = Emr::query()
             ->where(function ($q) use ($pasienId) {
                 $q->where('pasien_id', $pasienId)
                     ->orWhereHas('kunjungan', function ($k) use ($pasienId) {
                         $k->where('pasien_id', $pasienId);
                     });
+            })
+            // ✅ Hanya yang pembayarannya sudah lunas
+            ->whereHas('pembayaran', function ($query) {
+                $query->where('status', 'Sudah Bayar');
             })
             ->orderByDesc('created_at')
             ->take(10)
@@ -5811,7 +5824,7 @@ class APIMobileController extends Controller
                     'kunjungan_id' => $emr->kunjungan_id,
                     'resep_id' => $emr->resep_id,
 
-                    // snapshot ids (kalau ada)
+                    // snapshot ids
                     'pasien_id' => $emr->pasien_id,
                     'dokter_id' => $emr->dokter_id,
                     'poli_id' => $emr->poli_id,
@@ -5832,8 +5845,11 @@ class APIMobileController extends Controller
                     'berat_badan' => $emr->berat_badan,
                     'imt' => $emr->imt,
 
-                    // opsional: kalau mau tetap tampilkan ringkas klinis
+                    // opsional: diagnosis
                     'diagnosis' => $emr->diagnosis,
+
+                    // ✅ TAMBAHAN: Info pembayaran
+                    'pembayaran_status' => 'Sudah Bayar',
                 ];
             });
 
@@ -5842,6 +5858,72 @@ class APIMobileController extends Controller
             'message' => 'Riwayat vital sign berhasil diambil.',
             'data' => $emrs,
         ]);
+    }
+
+    /**
+     * Check if patient can view vital signs (payment must be completed)
+     * GET /api/pasien/can-view-vital-signs
+     */
+    public function canViewVitalSigns(Request $request)
+    {
+        try {
+            $user = $request->user();
+
+            if (! $user->pasien) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Akun ini tidak memiliki data pasien.',
+                ], 403);
+            }
+
+            $pasienId = $user->pasien->id;
+
+            // Cek apakah ada EMR yang sudah dibayar
+            $hasCompletedPayment = Emr::query()
+                ->where(function ($q) use ($pasienId) {
+                    $q->where('pasien_id', $pasienId)
+                        ->orWhereHas('kunjungan', function ($k) use ($pasienId) {
+                            $k->where('pasien_id', $pasienId);
+                        });
+                })
+                ->whereHas('pembayaran', function ($query) {
+                    $query->where('status', 'Sudah Bayar');
+                })
+                ->exists();
+
+            // Cek apakah ada pembayaran yang pending
+            $hasPendingPayment = Emr::query()
+                ->where(function ($q) use ($pasienId) {
+                    $q->where('pasien_id', $pasienId)
+                        ->orWhereHas('kunjungan', function ($k) use ($pasienId) {
+                            $k->where('pasien_id', $pasienId);
+                        });
+                })
+                ->whereHas('pembayaran', function ($query) {
+                    $query->where('status', 'Belum Bayar');
+                })
+                ->exists();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'can_view' => $hasCompletedPayment,
+                    'has_pending_payment' => $hasPendingPayment,
+                    'message' => $hasCompletedPayment
+                        ? 'Anda dapat melihat data vital sign'
+                        : ($hasPendingPayment
+                            ? 'Selesaikan pembayaran untuk melihat data vital sign'
+                            : 'Belum ada data vital sign tersedia'),
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('ERROR canViewVitalSigns: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengecek status',
+            ], 500);
+        }
     }
 
     public function getRiwayatDiagnosisPasien($pasienId)
@@ -8757,12 +8839,7 @@ class APIMobileController extends Controller
 
             // If no layanan selected, use default consultation fee
             if ($kunjunganLayanan->isEmpty()) {
-                $biayaKonsultasi = 150000.00; // Fixed default consultation fee
-                $totalTagihan += $biayaKonsultasi;
-
-                Log::info('Using default consultation fee (no layanan selected):', [
-                    'biaya_konsultasi' => $biayaKonsultasi,
-                ]);
+                Log::info('No layanan found - no default consultation fee added');
             }
 
             // ✅ NULLABLE: Add medication costs if resep exists

@@ -15,7 +15,7 @@ use Yajra\DataTables\Facades\DataTables;
 
 class OrderRadiologiController extends Controller
 {
-    public function getDataOrderRadiologi()
+    public function inputHasilgetDataOrderRadiologi()
     {
         // 1. Ambil ID Perawat yang sedang login
         // Asumsi: User login punya relasi ke tabel perawat
