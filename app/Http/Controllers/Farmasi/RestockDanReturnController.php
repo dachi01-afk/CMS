@@ -2,18 +2,20 @@
 
 namespace App\Http\Controllers\Farmasi;
 
+use App\Models\Obat;
 use App\Models\User;
 use App\Models\Depot;
+use App\Models\Farmasi;
 use App\Models\Perawat;
+use App\Models\BatchObat;
 use Illuminate\Http\Request;
 use App\Models\StokTransaksi;
+use App\Models\BatchObatDepot;
 use App\Models\MutasiStokObat;
+use App\Models\BahanHabisPakai;
 use Illuminate\Support\Facades\DB;
 use App\Models\StokTransaksiDetail;
 use App\Http\Controllers\Controller;
-use App\Models\BatchObat;
-use App\Models\BatchObatDepot;
-use App\Models\Farmasi;
 use App\Models\MutasiStokObatDetail;
 use Illuminate\Support\Facades\Auth;
 use Yajra\DataTables\Facades\DataTables;
@@ -154,6 +156,13 @@ class RestockDanReturnController extends Controller
         return response()->json($rows);
     }
 
+    public function getDataBatchObat($id)
+    {
+        $batchObat = BatchObat::where('obat_id', $id)->select('tanggal_kadaluarsa_obat');
+
+        return response()->json(['data' => $batchObat]);
+    }
+
     /**
      * SEARCH BHP untuk select.
      */
@@ -161,33 +170,42 @@ class RestockDanReturnController extends Controller
     {
         $q = trim((string) $request->get('q', ''));
 
-        $rows = DB::table('bahan_habis_pakai as b')
-            ->select([
-                'b.id',
-                'b.kode',
-                'b.nama_barang',
-                'b.jenis_id',
-                'b.satuan_id',
-                'b.stok_barang',
-                'b.tanggal_kadaluarsa_bhp',
-                'b.no_batch',
-                'b.harga_beli_satuan_bhp',
-                'b.harga_jual_umum_bhp',
-                'b.harga_otc_bhp',
-                'b.keterangan',
-            ])
+        // Gunakan Eloquent Model
+        $rows = BahanHabisPakai::with(['satuanBHP', 'jenisBHP', 'batchBahanHabisPakai'])
             ->when($q !== '', function ($query) use ($q) {
-                $query->where(function ($w) use ($q) {
-                    $w->where('b.nama_barang', 'like', "%{$q}%")
-                        ->orWhere('b.kode', 'like', "%{$q}%")
-                        ->orWhere('b.no_batch', 'like', "%{$q}%");
-                });
+                $query->where('nama_barang', 'like', "%{$q}%")
+                    ->orWhere('kode', 'like', "%{$q}%")
+                    // Mencari ke relasi batches
+                    ->orWhereHas('batchBahanHabisPakai', function ($queryBatch) use ($q) {
+                        $queryBatch->where('nama_batch', 'like', "%{$q}%");
+                    });
             })
-            ->orderBy('b.nama_barang')
+            ->orderBy('nama_barang')
             ->limit(50)
             ->get();
 
-        return response()->json($rows);
+        // Transformasi data agar JavaScript mudah membacanya
+        $data = $rows->map(function ($item) {
+            // Ambil batch pertama/terbaru (jika ada)
+            $latestBatch = $item->batchBahanHabisPakai->first();
+
+            return [
+                'id'           => $item->id,
+                'nama_barang'  => $item->nama_barang,
+                'kode'         => $item->kode,
+                'stok_barang'  => $item->stok_barang,
+                'harga_beli'   => $item->harga_beli_satuan_bhp,
+                'harga_jual'   => $item->harga_jual_umum_bhp,
+                // Ambil Nama dari relasi, bukan cuma ID
+                'nama_satuan'  => $item->satuan->nama_satuan ?? '-',
+                'nama_kategori' => $item->jenis->nama_jenis ?? '-',
+                // Data dari batch
+                'no_batch'     => $latestBatch->no_batch ?? '-',
+                'tgl_kadaluarsa' => $latestBatch->tanggal_kadaluarsa_bhp ?? '-',
+            ];
+        });
+
+        return response()->json($data);
     }
 
 
@@ -235,34 +253,28 @@ class RestockDanReturnController extends Controller
         ]);
     }
 
-
     /**
      * META BHP: harga lama + kategori + satuan + batch/expired histori.
      */
-    public function getMetaBhp($id, Request $request)
+    public function getMetaBHP($id, Request $request)
     {
         $depotId = $request->get('depot_id');
 
-        $bhp = DB::table('bahan_habis_pakai')
-            ->select('id', 'nama_barang', 'kategori_bhp_id', 'harga_beli', 'satuan_id')
-            ->where('id', $id)
-            ->first();
+        // Gunakan Eloquent dengan pengaman relasi
+        $bhp = BahanHabisPakai::with(['satuanBHP', 'jenis', 'batchBahanHabisPakai'])
+            ->findOrFail($id);
 
-        if (!$bhp) return response()->json(['message' => 'BHP tidak ditemukan'], 404);
-
-        $histori = DB::table('stok_transaksi_detail')
-            ->select('batch', 'expired_date')
-            ->where('bahan_habis_pakai_id', $id)
-            ->when($depotId, fn($q) => $q->where('depot_id', $depotId))
-            ->whereNotNull('batch')
-            ->groupBy('batch', 'expired_date')
-            ->orderByDesc('expired_date')
-            ->limit(50)
-            ->get();
+        $latestBatch = $bhp->batchBahanHabisPakai ? $bhp->batchBahanHabisPakai->first() : null;
 
         return response()->json([
-            'bhp' => $bhp,
-            'batch_expired' => $histori,
+            'nama_kategori' => $bhp->jenisBHP->nama_jenis_obat ?? '-',
+            'nama_satuan'   => $bhp->satuanBHP->nama_satuan_obat ?? '-',
+            'harga_beli_satuan_bhp_lama' => $bhp->harga_beli_satuan_bhp,
+            'harga_jual_lama' => $bhp->harga_jual_umum_bhp,
+            'harga_jual_otc_bhp_lama' => $bhp->harga_otc_bhp,
+            'batch_lama'    => $latestBatch->no_batch ?? null,
+            'expired_lama'  => $latestBatch->tanggal_kadaluarsa_bhp ?? null,
+            'stok_sekarang' => $bhp->stok_barang, // Atau hitung berdasarkan depot_id jika ada tabel stok per depot
         ]);
     }
 
@@ -537,4 +549,26 @@ class RestockDanReturnController extends Controller
     //         ], 500);
     //     }
     // }
+
+    public function getBatchesByObat(Request $request, $obat_id)
+    {
+        $batches = DB::table('batch_obat')
+            ->where('obat_id', $obat_id)
+            ->select('id', 'nama_batch', 'tanggal_kadaluarsa_obat')
+            ->get();
+
+        return response()->json($batches);
+    }
+
+    public function getStokBatch($batch_id)
+    {
+        // Mengambil stok dari tabel batch_obat_depot berdasarkan id yang dipilih
+        $data = DB::table('batch_obat as bo')
+            ->join('batch_obat_depot as bod', 'bod.batch_obat_id', '=', 'bo.id')
+            ->where('bo.id', $batch_id)
+            ->select('bod.stok_obat', 'bo.nama_batch', 'bo.tanggal_kadaluarsa_obat')
+            ->first();
+
+        return response()->json($data);
+    }
 }

@@ -207,9 +207,25 @@ $(function () {
     let activeTab = "obat";
 
     function getActiveSubtotal() {
-        if (activeTab === "obat")
-            return toNumber($("#harga_total_awal_obat").val());
-        return toNumber($("#harga_total_awal_bhp").val());
+        let totalRincian = 0;
+
+        // 1. Hitung SEMUA item yang sudah ada di list rincian sebelah kanan
+        // Kita cari elemen input hidden atau span yang menyimpan angka total per obat
+        $(".rincian-item-total").each(function () {
+            totalRincian += toNumber($(this).val() || $(this).text());
+        });
+
+        // 2. Jika di rincian kanan masih kosong (belum klik tambah),
+        // baru ambil dari inputan yang sedang aktif di kiri
+        if (totalRincian === 0) {
+            if (activeTab === "obat") {
+                return toNumber($("#harga_total_awal_obat").val());
+            } else {
+                return toNumber($("#harga_total_awal_bhp").val());
+            }
+        }
+
+        return totalRincian;
     }
 
     // mengambil subtotal (dari obat atau BHP)
@@ -217,15 +233,25 @@ $(function () {
     // menambahkan biaya lainnya
     // lalu menampilkan Total Akhir di sidebar secara otomatis.
     function recalcSummary() {
-        const subtotal = getActiveSubtotal();
-        const pajakPct = parseFloat($("#sum-pajak").val() || "0") || 0;
-        const biayaLainnya = toNumber($("#sum-biaya-lainnya").val());
+        // 1. Ambil Subtotal dan pastikan tipenya angka
+        const subtotal = parseFloat(getActiveSubtotal()) || 0;
 
+        // 2. Gunakan fungsi toNumber agar seragam dengan input lainnya
+        // Pastikan ID #sum-pajak ini sama dengan ID di input Pajak (%) sebelah kanan
+        const pajakPct = toNumber($("#sum-pajak").val()) || 0;
+        const biayaLainnya = toNumber($("#sum-biaya-lainnya").val()) || 0;
+
+        // 3. Kalkulasi
         const pajakNominal = (subtotal * pajakPct) / 100;
         const total = subtotal + pajakNominal + biayaLainnya;
 
+        // 4. Update Tampilan (Gunakan .text() atau .val() sesuai jenis elemennya)
         $("#sum-subtotal").text(rupiah(subtotal));
+        $("#sum-pajak-nominal").text(rupiah(pajakNominal)); // Tambahkan ini jika ada label Rp untuk pajak
         $("#sum-total").text(rupiah(total));
+
+        // Debugging singkat di console (tekan F12 untuk lihat)
+        console.log({ subtotal, pajakPct, total });
     }
 
     $("#sum-pajak").on("input", recalcSummary);
@@ -364,35 +390,29 @@ $(function () {
 
     // ubah form berdasarkan jenis transaksi
     $("#jenis_transaksi").on("change", function () {
+        toggleTransactionMode();
 
-    toggleTransactionMode();
+        const obatId = $("#obat_id").val();
+        if (obatId) fillObatMeta(obatId);
 
-    const obatId = $("#obat_id").val();
-    if (obatId) fillObatMeta(obatId);
+        let jenis = $(this).val() || "";
+        let isReturn = jenis.toLowerCase().includes("return");
 
+        // ===== OBAT =====
+        if (isReturn) {
+            $("#form-obat-restock").addClass("hidden");
+            $("#form-obat-return").removeClass("hidden");
 
-    let jenis = $(this).val() || "";
-    let isReturn = jenis.toLowerCase().includes("return");
+            $("#form-bhp-restock").addClass("hidden");
+            $("#form-bhp-return").removeClass("hidden");
+        } else {
+            $("#form-obat-return").addClass("hidden");
+            $("#form-obat-restock").removeClass("hidden");
 
-    // ===== OBAT =====
-    if (isReturn) {
-        $("#form-obat-restock").addClass("hidden");
-        $("#form-obat-return").removeClass("hidden");
-
-        $("#form-bhp-restock").addClass("hidden");
-        $("#form-bhp-return").removeClass("hidden");
-    } else {
-        $("#form-obat-return").addClass("hidden");
-        $("#form-obat-restock").removeClass("hidden");
-
-        $("#form-bhp-return").addClass("hidden");
-        $("#form-bhp-restock").removeClass("hidden");
-    }
-
-
-
-});
-
+            $("#form-bhp-return").addClass("hidden");
+            $("#form-bhp-restock").removeClass("hidden");
+        }
+    });
 
     // -----------------------------
     // Load Meta (jenis transaksi, satuan, default depot)
@@ -413,6 +433,8 @@ $(function () {
                         `<option value="${item.value}">${item.label}</option>`,
                     );
                 });
+
+                $("#jenis_transaksi").val("RESTOCK").trigger("change");
 
                 const satuanOpt = [`<option value="">Pilih satuan...</option>`]
                     .concat(
@@ -473,6 +495,190 @@ $(function () {
         });
     }
 
+    $(document).ready(function () {
+        initReturnObatSelect();
+        initReturnBatchSelect();
+
+        $(document).on(
+            "input",
+            "#return_jumlah_obat, #return_harga_satuan_obat",
+            function () {
+                calcTotalReturn();
+            },
+        );
+    });
+
+    let returnObatSelect;
+    let returnBatchSelect;
+
+    // 1. Inisialisasi TomSelect Obat
+    function initReturnObatSelect() {
+        const el = document.getElementById("return_obat_id");
+        if (!el || el.classList.contains("tomselected")) return;
+
+        returnObatSelect = new TomSelect("#return_obat_id", {
+            valueField: "id",
+            labelField: "nama_obat",
+            searchField: "nama_obat",
+            maxItems: 1,
+            load: function (query, callback) {
+                $.get("/testing-tom-select/data-obat", { q: query || "" })
+                    .done((res) => callback(res))
+                    .fail(() => callback());
+            },
+            onChange: function (value) {
+                if (!value) {
+                    resetFormReturn();
+                    return;
+                }
+                // SINKRONISASI: Bersihkan Batch dan pancing load data baru berdasarkan obat_id
+                returnBatchSelect.clear();
+                returnBatchSelect.clearOptions();
+
+                // Panggil meta obat (Kategori, Satuan, dll)
+                fillObatMetaReturn(value);
+
+                // Minta TomSelect Batch untuk load data berdasarkan obat_id yang baru dipilih
+                returnBatchSelect.load("");
+            },
+        });
+    }
+
+    // 2. Inisialisasi TomSelect Batch (Menerima Parameter secara dinamis)
+    function initReturnBatchSelect() {
+        const el = document.getElementById("return_batch_id");
+        if (!el || el.classList.contains("tomselected")) return;
+
+        returnBatchSelect = new TomSelect("#return_batch_id", {
+            valueField: "id",
+            labelField: "nama_batch",
+            searchField: ["nama_batch", "tanggal_kadaluarsa_obat"],
+            placeholder: "Pilih Batch & Expired...",
+            preload: false, // JANGAN preload, tunggu obat_id terpilih
+            load: function (query, callback) {
+                const obatId = returnObatSelect.getValue(); // Ambil ID obat yang sedang terpilih
+                if (!obatId) return callback();
+
+                // Request data batch berdasarkan obat_id
+                $.get(`/farmasi/restock-return/get-batches-by-obat/${obatId}`, {
+                    q: query,
+                })
+                    .done((res) => callback(res))
+                    .fail(() => callback());
+            },
+            render: {
+                option: function (item, escape) {
+                    return `<div class="py-1 px-2">
+                            <div class="font-medium">Batch: ${escape(item.nama_batch)}</div>
+                            <div class="text-[10px] text-blue-600">Exp: ${escape(item.tanggal_kadaluarsa_obat)}</div>
+                        </div>`;
+                },
+            },
+            onChange: function (batch_id) {
+                if (!batch_id) return;
+                // SINKRONISASI: Ambil stok berdasarkan batch_obat_id yang dipilih
+                fetchStokByBatch(batch_id);
+            },
+        });
+    }
+
+    // 3. Fungsi ambil stok berdasarkan batch_obat_id
+    function fetchStokByBatch(batchId) {
+        $.get(`/farmasi/restock-return/get-stok-batch/${batchId}`).done(
+            function (res) {
+                // Update input Total Stok Item
+                $("#return_total_stok_item").val(res.stok_obat);
+
+                // Isi juga field hidden jika diperlukan
+                $("#return_batch_obat").val(res.nama_batch);
+                $("#return_expired_date_obat").val(res.tanggal_kadaluarsa_obat);
+            },
+        );
+    }
+
+    function fillObatMetaReturn(id) {
+        $.get(`/farmasi/restock-return/obat/${id}/meta`)
+            .done(function (res) {
+                console.log(res);
+                // Isi field kategori & satuan (ID dengan prefix return_)
+                $("#return_kategori_obat_id").val(res.nama_kategori);
+                $("#return_satuan_obat_id").val(res.nama_satuan);
+
+                // Isi Batch & Expired otomatis untuk Return
+                $("#return_batch_obat").val(res.batch_lama);
+                $("#return_expired_date_obat").val(res.expired_lama);
+
+                // Isi data harga & stok
+                $("#return_total_stok_item").val(res.stok_sekarang);
+                $("#return_harga_beli_satuan_obat_lama").val(
+                    rupiah(res.harga_beli_satuan_obat_lama),
+                );
+                $("#return_harga_jual_lama_obat").val(
+                    rupiah(res.harga_jual_lama),
+                ); // Default harga return = harga beli lama
+
+                calcTotalReturn();
+            })
+            .fail((xhr) => console.error("Gagal ambil meta obat", xhr));
+    }
+
+    function calcTotalReturn() {
+        const jumlah = parseFloat($("#return_jumlah_obat").val()) || 0;
+        const harga = toNumber($("#return_harga_satuan_obat").val()) || 0;
+        const total = jumlah * harga;
+
+        $("#return_harga_total_awal_obat").val(rupiah(total));
+
+        // Jika kamu punya fungsi summary di sidebar, panggil di sini
+        if (typeof recalcSummary === "function") recalcSummary();
+    }
+
+    function resetFormReturn() {
+        $(
+            "#return_kategori_obat_id, #return_satuan_obat_id, #return_batch_obat, " +
+                "#return_expired_date_obat, #return_total_stok_item, #return_jumlah_obat, " +
+                "#return_harga_satuan_obat, #return_harga_beli_satuan_obat_lama",
+        ).val("");
+        $("#return_harga_total_awal_obat").val("Rp. 0");
+    }
+
+    // Mengubah dropdown biasa menjadi kolom pencarian yang mengambil data dari server secara live.
+    function initBhpSelect() {
+        if (bhpSelect) return;
+
+        bhpSelect = new TomSelect("#bhp_id", {
+            valueField: "id",
+            labelField: "nama_barang",
+            searchField: "nama_barang",
+            maxItems: 1,
+            preload: true,
+            load: function (query, callback) {
+                $.get("/farmasi/restock-return/bhp", {
+                    q: query || "",
+                })
+                    .done((res) => callback(res))
+                    .fail(() => callback());
+            },
+            onChange: function (value) {
+                if (!value) {
+                    $(
+                        "#kategori_bhp_id, #satuan_obat_id, #total_stok_item",
+                    ).val("");
+                    $(
+                        "#harga_beli_satuan_obat_lama, #harga_jual_lama_obat, #harga_jual_otc_lama_obat",
+                    ).val("");
+                    $("#batch_obat, #expired_date_obat").html(
+                        `<option value="">Pilih...</option>`,
+                    );
+                    $("#harga_total_awal_obat").val("Rp. 0");
+                    recalcSummary();
+                    return;
+                }
+                fillObatMeta(value);
+            },
+        });
+    }
+
     // Mengubah dropdown biasa menjadi kolom pencarian yang mengambil data dari server secara live.
     function initDepotSelect() {
         if (depotSelect) return;
@@ -500,43 +706,6 @@ $(function () {
                 } else {
                     $("#info-stok-depot").addClass("hidden");
                 }
-            },
-        });
-    }
-
-    // Mengubah dropdown biasa menjadi kolom pencarian yang mengambil data dari server secara live.
-    function initBhpSelect() {
-        if (bhpSelect) return;
-
-        bhpSelect = new TomSelect("#bhp_id", {
-            valueField: "id",
-            labelField: "nama_barang",
-            searchField: "nama_barang",
-            maxItems: 1,
-            preload: true,
-            load: function (query, callback) {
-                $.get("/farmasi/restock-return/get-data-depot-bhp", {
-                    q: query || "",
-                })
-                    .done((res) => callback(res))
-                    .fail(() => callback());
-            },
-            onChange: function (value) {
-                if (!value) {
-                    $(
-                        "#kategori_obat_id, #satuan_obat_id, #total_stok_item",
-                    ).val("");
-                    $(
-                        "#harga_beli_satuan_obat_lama, #harga_jual_lama_obat, #harga_jual_otc_lama_obat",
-                    ).val("");
-                    $("#batch_obat, #expired_date_obat").html(
-                        `<option value="">Pilih...</option>`,
-                    );
-                    $("#harga_total_awal_obat").val("Rp. 0");
-                    recalcSummary();
-                    return;
-                }
-                fillObatMeta(value);
             },
         });
     }
@@ -586,7 +755,7 @@ $(function () {
 
                 if (isReturn) {
                     const stok = res.stok_sekarang || res.jumlah || 0;
-                    $("#total_stok_item").val(stok);
+                    $("#total_stok_item").val("");
                 } else {
                     $("#total_stok_item").val("");
                 }
@@ -693,6 +862,44 @@ $(function () {
         });
     }
 
+    $(document).on(
+        "input",
+        "#jumlah_obat, #harga_satuan_obat_baru, #diskon_obat_persen",
+        function () {
+            // 1. Ambil data (Pastikan pakai ID yang benar sesuai file include)
+            let qty = toNumber($("#jumlah_obat").val());
+            let hargaBeliBaru = toNumber($("#harga_satuan_obat_baru").val());
+            let diskonPersen = toNumber($("#diskon_obat_persen").val());
+
+            // 2. Hitung Otomatis Harga Jual Baru (Margin 30%)
+            if (hargaBeliBaru > 0) {
+                let hargaJualSaran = hargaBeliBaru * 1.3;
+                $("#harga_jual_baru_obat").val(rupiah(hargaJualSaran));
+
+                // Bonus: Isi juga Harga Beli Rata-Rata Baru dengan nilai yang sama (biasanya awal sama)
+                $("#harga_beli_rata_baru_obat").val(rupiah(hargaBeliBaru));
+            }
+
+            // 3. Hitung Harga Total Awal (Qty x Harga Beli Baru)
+            let totalAwal = qty * hargaBeliBaru;
+            $("#harga_total_awal_obat").val(rupiah(totalAwal));
+
+            // 4. Hitung Diskon & Total Akhir
+            let nilaiDiskon = (diskonPersen / 100) * totalAwal;
+            let totalSetelahDiskon = totalAwal - nilaiDiskon;
+
+            // ID di HTML kamu adalah harga_total_diskon_obat_return
+            $("#harga_total_diskon_obat_return").val(
+                rupiah(totalSetelahDiskon),
+            );
+
+            // 5. Update Rincian Rincian di Sidebar Kanan (Subtotal, dll)
+            if (typeof recalcSummary === "function") {
+                recalcSummary();
+            }
+        },
+    );
+
     // -----------------------------
     // Reset form + open/close modal
     // -----------------------------
@@ -702,7 +909,15 @@ $(function () {
     // dan mengembalikan tampilan ke kondisi awal (default tab Obat).
     function resetForm() {
         $form[0].reset();
+        $("#jenis_transaksi").val("RESTOCK").trigger("change");
         resetErrors();
+
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+        const $tglInput = $form.find('[name="tanggal_transaksi"]');
+        $tglInput.val(today);
+        $tglInput.attr("min", today); // Ini yang akan memblokir pilihan di UI kalender
 
         if (supplierSelect) supplierSelect.clear(true);
         supplierJustCreatedId = null;
@@ -727,18 +942,40 @@ $(function () {
         recalcSummary();
     }
 
+    // --- Pasang di sini ---
+    $(document).on("change", '[name="tanggal_transaksi"]', function () {
+        const selectedDate = $(this).val();
+
+        // Gunakan logika waktu lokal agar tidak meleset (seperti masalah tanggal 2 vs 3 tadi)
+        const now = new Date();
+        const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+        if (selectedDate && selectedDate < today) {
+            alert("Peringatan: Tidak dapat memilih tanggal yang sudah lewat.");
+            $(this).val(today);
+        }
+    });
+
     // Saat tombol buka modal diklik,
     // script memicu resetForm dulu,
     // baru kemudian menjalankan TomSelect (pencarian otomatis) dan memuat meta data dari server.
     $("#btn-open-modal-create").on("click", function () {
-        resetForm();
+        resetForm(); // Bersihkan form lama
         modalCreate?.show();
 
         setTimeout(() => {
             initSupplierSelectCreate();
-            loadFormMeta(() => initObatSelect());
-            loadFormMeta(() => initDepotSelect());
-            loadFormMeta(() => initBhpSelect());
+
+            // Panggil meta, lalu di dalam 'done' baru kita set default value-nya
+            loadFormMeta(() => {
+                // SET DISINI: Agar data option sudah di-render oleh JS sebelum kita pilih
+                $("#jenis_transaksi").val("RESTOCK").trigger("change");
+
+                initObatSelect();
+                initDepotSelect();
+                initBhpSelect();
+                initReturnObatSelect();
+            });
         }, 50);
     });
 
@@ -766,7 +1003,7 @@ $(function () {
         ).value;
         const expDate = document.getElementById("expired_date_obat").value;
         const jenisTransaksi =
-            document.getElementById("jenis_transaksi")?.value || "Restock"; // Contoh ambil dari header
+            document.getElementById("jenis_transaksi")?.value || "RESTOCK"; // Contoh ambil dari header
 
         // Validasi sederhana
         if (!jumlah || jumlah == 0) {
@@ -774,31 +1011,33 @@ $(function () {
             return;
         }
 
-        // 2. Buat Template HTML untuk Rincian (Sesuai Gambar Kamu)
+        // 2. Buat Template HTML untuk Rincian (Ditambah hidden input untuk hitung total)
         const rincianHTML = `
-        <div class="rincian-item bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm relative mb-3">
-            <button type="button" class="btn-hapus-rincian absolute top-2 right-2 text-pink-500 hover:text-pink-700">
-                <i class="fa-solid fa-circle-xmark text-lg"></i>
-            </button>
-            
-            <div class="flex justify-between items-start">
-                <div>
-                    <h4 class="text-blue-500 font-bold text-sm">${namaObat}</h4>
-                    <p class="text-xs text-gray-700 dark:text-gray-300 font-medium">${jenisTransaksi}</p>
-                    <div class="mt-2">
-                        <p class="text-[10px] text-gray-500 italic">Harga beli rata-rata</p>
-                        <p class="text-[10px] text-gray-500 italic">Exp. ${expDate}</p>
-                    </div>
-                </div>
-                
-                <div class="text-right pt-4">
-                    <p class="text-xs text-gray-600 dark:text-gray-400">${jumlah} ${satuan} &nbsp; @ Rp. ${hargaBeli}</p>
-                    <p class="text-sm font-bold text-gray-800 dark:text-white">Rp. ${totalAwal}</p>
-                    <p class="text-[10px] text-gray-500">@ Rp. ${hargaBeli}</p>
-                </div>
+<div class="rincian-item bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-100 dark:border-gray-700 shadow-sm relative mb-3">
+    <input type="hidden" class="rincian-item-total" value="${toNumber(totalAwal)}">
+
+    <button type="button" class="btn-hapus-rincian absolute top-2 right-2 text-pink-500 hover:text-pink-700">
+        <i class="fa-solid fa-circle-xmark text-lg"></i>
+    </button>
+    
+    <div class="flex justify-between items-start">
+        <div>
+            <h4 class="text-blue-500 font-bold text-sm">${namaObat}</h4>
+            <p class="text-xs text-gray-700 dark:text-gray-300 font-medium">${jenisTransaksi}</p>
+            <div class="mt-2">
+                <p class="text-[10px] text-gray-500 italic">Harga beli rata-rata</p>
+                <p class="text-[10px] text-gray-500 italic">Exp. ${expDate}</p>
             </div>
         </div>
-    `;
+        
+        <div class="text-right pt-4">
+            <p class="text-xs text-gray-600 dark:text-gray-400">${jumlah} ${satuan} &nbsp; @ Rp. ${hargaBeli}</p>
+            <p class="text-sm font-bold text-gray-800 dark:text-white">Rp. ${totalAwal}</p>
+            <p class="text-[10px] text-gray-500">@ Rp. ${hargaBeli}</p>
+        </div>
+    </div>
+</div>
+`;
 
         // 3. Masukkan ke Container
         $("#container-rincian").append(rincianHTML);

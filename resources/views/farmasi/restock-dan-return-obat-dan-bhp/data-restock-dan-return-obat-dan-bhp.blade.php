@@ -1,578 +1,418 @@
 {{-- Header --}}
-<div
-  class="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between"
->
-  <div>
-    <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">
-      Restock dan Return
-    </h1>
-    <p class="text-sm text-slate-500 dark:text-slate-400">
-      Kelola transaksi restock dan return obat & BHP
-    </p>
-  </div>
-
-  <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto md:items-start">
-    {{-- Search --}}
-    <div class="w-full md:w-[360px]">
-      <div class="relative">
-        <span
-          class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none"
-        >
-          <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs"></i>
-        </span>
-
-        <input
-          type="text"
-          id="customSearch"
-          class="block w-full pl-9 pr-3 py-2 text-sm text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 focus:ring-sky-500 focus:border-sky-500"
-          placeholder="Cari kode / supplier / nama item..."
-        />
-      </div>
-
-      <p
-        class="mt-1 text-[11px] text-slate-400 dark:text-slate-500 hidden sm:block"
-      >
-        Contoh: <span class="italic">STK-0001, Kimia Farma, Paracetamol</span>.
-      </p>
+<div class="mb-4 flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+    <div>
+        <h1 class="text-2xl font-bold text-slate-800 dark:text-slate-100">
+            Restock dan Return
+        </h1>
+        <p class="text-sm text-slate-500 dark:text-slate-400">
+            Kelola transaksi restock dan return obat & BHP
+        </p>
     </div>
 
-    {{-- Button open modal --}}
-    <button
-      type="button"
-      id="btn-open-modal-create"
-      class="inline-flex items-center justify-center gap-2 px-4 py-2 h-[42px] bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-sm whitespace-nowrap"
-    >
-      <i class="fa-solid fa-plus text-xs"></i>
-      <span>Restock & Return Obat / Barang</span>
-    </button>
-  </div>
+    <div class="flex flex-col md:flex-row gap-2 w-full md:w-auto md:items-start">
+        {{-- Search --}}
+        <div class="w-full md:w-[360px]">
+            <div class="relative">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs"></i>
+                </span>
+
+                <input type="text" id="customSearch"
+                    class="block w-full pl-9 pr-3 py-2 text-sm text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 focus:ring-sky-500 focus:border-sky-500"
+                    placeholder="Cari kode / supplier / nama item..." />
+            </div>
+
+            <p class="mt-1 text-[11px] text-slate-400 dark:text-slate-500 hidden sm:block">
+                Contoh: <span class="italic">STK-0001, Kimia Farma, Paracetamol</span>.
+            </p>
+        </div>
+
+        {{-- Button open modal --}}
+        <button type="button" id="btn-open-modal-create"
+            class="inline-flex items-center justify-center gap-2 px-4 py-2 h-[42px] bg-emerald-600 text-white rounded-xl hover:bg-emerald-700 shadow-sm whitespace-nowrap">
+            <i class="fa-solid fa-plus text-xs"></i>
+            <span>Restock & Return Obat / Barang</span>
+        </button>
+    </div>
 </div>
 
 {{-- Card: Toolbar + Table --}}
 <div
-  class="bg-white dark:bg-slate-900 rounded-2xl shadow border border-slate-100 dark:border-slate-800 overflow-hidden"
->
-  {{-- Toolbar --}}
-  <div
-    class="px-4 md:px-6 py-3 border-b border-slate-200 dark:border-slate-800"
-  >
-    <div
-      class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between"
-    >
-      <div class="flex items-center gap-2 text-sm">
-        <span class="text-slate-600 dark:text-slate-300 hidden sm:inline"
-          >Tampil</span
-        >
+    class="bg-white dark:bg-slate-900 rounded-2xl shadow border border-slate-100 dark:border-slate-800 overflow-hidden">
+    {{-- Toolbar --}}
+    <div class="px-4 md:px-6 py-3 border-b border-slate-200 dark:border-slate-800">
+        <div class="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div class="flex items-center gap-2 text-sm">
+                <span class="text-slate-600 dark:text-slate-300 hidden sm:inline">Tampil</span>
 
-        <select
-          id="restock_pageLength"
-          class="w-36 border border-slate-200 dark:border-slate-700 text-sm rounded-xl focus:ring-sky-500 focus:border-sky-500 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 px-3 py-2"
-        >
-          <option value="10">10 baris</option>
-          <option value="25">25 baris</option>
-          <option value="50">50 baris</option>
-          <option value="100">100 baris</option>
-        </select>
+                <select id="restock_pageLength"
+                    class="w-36 border border-slate-200 dark:border-slate-700 text-sm rounded-xl focus:ring-sky-500 focus:border-sky-500 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 px-3 py-2">
+                    <option value="10">10 baris</option>
+                    <option value="25">25 baris</option>
+                    <option value="50">50 baris</option>
+                    <option value="100">100 baris</option>
+                </select>
 
-        <span class="text-slate-600 dark:text-slate-300 hidden sm:inline"
-          >/ halaman</span
-        >
-      </div>
+                <span class="text-slate-600 dark:text-slate-300 hidden sm:inline">/ halaman</span>
+            </div>
+        </div>
     </div>
-  </div>
 
-  {{-- Table --}}
-  <div class="overflow-x-auto">
-    <table id="table-restock-return" class="w-full text-sm">
-      <thead
-        class="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200"
-      >
-        <tr>
-          <th class="px-4 py-3">Kode</th>
-          <th class="px-4 py-3">No Faktur</th>
-          <th class="px-4 py-3">Jenis</th>
-          <th class="px-4 py-3">Tgl Pengiriman</th>
-          <th class="px-4 py-3">Tgl Pembuatan</th>
-          <th class="px-4 py-3">Supplier</th>
-          <th class="px-4 py-3">Nama Item</th>
-          <th class="px-4 py-3">Jumlah</th>
-          <th class="px-4 py-3">Diapprove</th>
-          <th class="px-4 py-3">Total Harga</th>
-          <th class="px-4 py-3">Tempo</th>
-          <th class="px-4 py-3 text-right">Aksi</th>
-        </tr>
-      </thead>
-      <tbody class="bg-white dark:bg-slate-900 text-[11px] md:text-xs">
-        {{-- server-side DataTables --}}
-      </tbody>
-    </table>
-  </div>
-  {{-- Footer --}}
-  <div
-    class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-3 sm:px-4 md:px-6 py-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/60 rounded-b-2xl"
-  >
-    <div
-      id="custom_customInfo"
-      class="text-xs md:text-sm text-slate-600 dark:text-slate-300"
-    ></div>
-
-    {{-- Pagination aman di HP --}}
-    <div class="w-full md:w-auto overflow-x-auto">
-      <ul
-        id="custom_Pagination"
-        class="min-w-max inline-flex items-center gap-0 text-sm isolate rounded-lg border border-slate-200 dark:border-slate-600 overflow-hidden"
-      ></ul>
+    {{-- Table --}}
+    <div class="overflow-x-auto">
+        <table id="table-restock-return" class="w-full text-sm">
+            <thead class="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-200">
+                <tr>
+                    <th class="px-4 py-3">Kode</th>
+                    <th class="px-4 py-3">No Faktur</th>
+                    <th class="px-4 py-3">Jenis</th>
+                    <th class="px-4 py-3">Tgl Pengiriman</th>
+                    <th class="px-4 py-3">Tgl Pembuatan</th>
+                    <th class="px-4 py-3">Supplier</th>
+                    <th class="px-4 py-3">Nama Item</th>
+                    <th class="px-4 py-3">Jumlah</th>
+                    <th class="px-4 py-3">Diapprove</th>
+                    <th class="px-4 py-3">Total Harga</th>
+                    <th class="px-4 py-3">Tempo</th>
+                    <th class="px-4 py-3 text-right">Aksi</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white dark:bg-slate-900 text-[11px] md:text-xs">
+                {{-- server-side DataTables --}}
+            </tbody>
+        </table>
     </div>
-  </div>
+    {{-- Footer --}}
+    <div
+        class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 px-3 sm:px-4 md:px-6 py-3 border-t border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800/60 rounded-b-2xl">
+        <div id="custom_customInfo" class="text-xs md:text-sm text-slate-600 dark:text-slate-300"></div>
+
+        {{-- Pagination aman di HP --}}
+        <div class="w-full md:w-auto overflow-x-auto">
+            <ul id="custom_Pagination"
+                class="min-w-max inline-flex items-center gap-0 text-sm isolate rounded-lg border border-slate-200 dark:border-slate-600 overflow-hidden">
+            </ul>
+        </div>
+    </div>
 </div>
 
 {{-- MODAL CREATE RESTOCK/RETURN (STYLE DISAMAKAN DENGAN MODAL OBAT) --}}
-<div
-  id="modalCreateRestockReturn"
-  aria-hidden="true"
-  class="hidden fixed inset-0 z-50 flex items-center justify-center w-full h-full bg-black/40 px-4"
->
-  <div class="relative w-full max-w-7xl">
-    {{-- Card --}}
-    <div
-      class="relative flex flex-col bg-white rounded-2xl shadow-2xl dark:bg-gray-900 border border-gray-100 dark:border-gray-700 max-h-[90vh]"
-    >
-      {{-- Header (sticky) --}}
-      <div
-        class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-900 z-10 rounded-t-2xl"
-      >
-        <div>
-          <h3
-            class="text-base md:text-lg font-semibold text-gray-900 dark:text-white"
-          >
-            Buat Transaksi Restock / Return
-          </h3>
-          <p
-            class="text-[11px] md:text-xs text-gray-500 dark:text-gray-400 mt-1"
-          >
-            Lengkapi header transaksi. Setelah tersimpan, lanjut input detail
-            item.
-          </p>
-        </div>
-
-        <button
-          type="button"
-          id="btn-close-modal-create"
-          class="inline-flex items-center justify-center w-8 h-8 rounded-full border border-gray-200 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
-        >
-          <i class="fa-solid fa-xmark text-sm"></i>
-        </button>
-      </div>
-
-
-      
-      {{-- Body (scrollable) --}}
-      <form
-        id="formCreateRestockReturn"
-        class="px-6 py-5 space-y-7 overflow-y-auto"
-        data-url="{{ route('create.data.restock.dan.return') }}"
-        method="POST"
-      >
-        @csrf {{-- Section: Header Transaksi --}}
-        <div class="space-y-4">
-          <div class="flex items-start justify-between">
-            <div class="flex items-center gap-2">
-              <div
-                class="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600"
-              >
-                <i class="fa-solid fa-clipboard-list text-xs"></i>
-              </div>
-              <div>
-                <h4
-                  class="text-xs font-semibold tracking-wide text-gray-800 uppercase dark:text-gray-200"
-                >
-                  Header Transaksi
-                </h4>
-                <p class="text-[11px] text-gray-500 dark:text-gray-400">
-                  Data utama transaksi restock/return.
-                </p>
-              </div>
-            </div>
-
-            <label class="inline-flex items-center cursor-pointer select-none">
-              <div class="relative mr-3">
-                <input
-                  type="checkbox"
-                  id="togglePurchaseOrder"
-                  class="sr-only peer"
-                />
-
-                <div
-                  class="w-10 h-5 bg-gray-300 rounded-full peer peer-checked:bg-blue-500 transition-colors"
-                ></div>
-                <div
-                  class="absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full shadow-sm transition-transform peer-checked:translate-x-5"
-                ></div>
-              </div>
-
-              <span
-                id="labelPurchaseOrder"
-                class="text-sm font-medium text-gray-400 transition-colors duration-200 leading-tight text-left"
-              >
-                Create Purchase<br />Order
-              </span>
-            </label>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {{-- Tanggal transaksi --}}
-            <div>
-              <label
-                class="block text-xs font-medium text-gray-600 dark:text-gray-300"
-              >
-                Tanggal Transaksi <span class="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                name="tanggal_transaksi"
-                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                required
-              />
-              <div
-                class="text-red-600 text-[11px] mt-1"
-                data-error="tanggal_transaksi"
-              ></div>
-            </div>
-
-            {{-- Jenis transaksi --}}
-            <div>
-              <label
-                class="block text-xs font-medium text-gray-600 dark:text-gray-300"
-              >
-                Jenis Transaksi <span class="text-red-500">*</span>
-              </label>
-              <select
-                id="jenis_transaksi"
-                name="jenis_transaksi"
-                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                required
-              >
-                <option value="">-- Pilih --</option>
-              </select>
-              <div
-                class="text-red-600 text-[11px] mt-1"
-                data-error="jenis_transaksi"
-              ></div>
-            </div>
-
-            {{-- SUPPLIER (TomSelect style seperti modal obat) --}}
-            <div class="md:col-span-2">
-              <label
-                class="block text-xs font-medium text-gray-600 dark:text-gray-300"
-              >
-                Supplier
-              </label>
-
-              <div class="relative mt-1">
-                <select
-                  name="supplier_id"
-                  id="supplier_id"
-                  data-url-index="{{ route('get.data.supplier') }}"
-                  data-url-store="{{ route('create.data.supplier') }}"
-                  data-url-delete="{{ route('delete.data.supplier') }}"
-                  data-url-update="{{ route('update.data.supplier') }}"
-                  data-url-show="{{ route('get.data.supplier.by.id', ['id' => '__ID__']) }}"
-                  class="block w-full pr-9 text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                >
-                  <option value="">Ketik untuk cari / tambah supplier</option>
-                </select>
-
-                {{-- Tombol X (clear & delete supplier) --}}
-                <button
-                  type="button"
-                  id="btn-clear-supplier"
-                  class="hidden absolute inset-y-0 right-2 my-auto w-5 h-5 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/40"
-                >
-                  <i class="fa-solid fa-xmark text-[10px]"></i>
-                </button>
-              </div>
-
-              <div
-                class="text-red-600 text-[11px] mt-1"
-                data-error="supplier_id"
-              ></div>
-            </div>
-
-            {{-- Nomor faktur --}}
-            <div>
-              <label
-                class="block text-xs font-medium text-gray-600 dark:text-gray-300"
-              >
-                Nomor Faktur
-              </label>
-              <input
-                type="text"
-                name="nomor_faktur"
-                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                placeholder="Opsional"
-                autocomplete="off"
-              />
-              <div
-                class="text-red-600 text-[11px] mt-1"
-                data-error="nomor_faktur"
-              ></div>
-            </div>
-
-            {{-- Keterangan --}}
-            <div class="md:col-span-2">
-              <label
-                class="block text-xs font-medium text-gray-600 dark:text-gray-300"
-              >
-                Keterangan
-              </label>
-              <textarea
-                name="keterangan"
-                rows="2"
-                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                placeholder="Opsional"
-              ></textarea>
-              <div
-                class="text-red-600 text-[11px] mt-1"
-                data-error="keterangan"
-              ></div>
-            </div>
-
-            {{-- Purchase Order Fields (muncul saat toggle ON) --}}
-            <div id="purchaseOrderFields" class="md:col-span-2 hidden">
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {{-- Tempo Pembayaran (DATE) --}}
-                <div>
-                  <label
-                    class="block text-xs font-medium text-gray-600 dark:text-gray-300"
-                  >
-                    Tempo Pembayaran
-                  </label>
-                  <input
-                    type="date"
-                    name="tempo_pembayaran"
-                    id="tempo_pembayaran"
-                    class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                  />
-                  <div
-                    class="text-red-600 text-[11px] mt-1"
-                    data-error="tempo_pembayaran"
-                  ></div>
-                </div>
-
-                {{-- Tanggal Pengiriman --}}
-                <div>
-                  <label
-                    class="block text-xs font-medium text-gray-600 dark:text-gray-300"
-                  >
-                    Tanggal Pengiriman
-                  </label>
-                  <input
-                    type="date"
-                    name="tanggal_pengiriman"
-                    id="tanggal_pengiriman"
-                    class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 selection:focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                  />
-                  <div
-                    class="text-red-600 text-[11px] mt-1"
-                    data-error="tanggal_pengiriman"
-                  ></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {{-- Section: Detail Supplier (muncul saat create/pilih) --}}
-        <div id="supplier-detail" class="space-y-4 hidden">
-          <div class="flex items-center gap-2">
+<div id="modalCreateRestockReturn" aria-hidden="true"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center w-full h-full bg-black/40 px-4">
+    <div class="relative w-full max-w-7xl">
+        {{-- Card --}}
+        <div
+            class="relative flex flex-col bg-white rounded-2xl shadow-2xl dark:bg-gray-900 border border-gray-100 dark:border-gray-700 max-h-[90vh]">
+            {{-- Header (sticky) --}}
             <div
-              class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600"
-            >
-              <i class="fa-solid fa-truck-field text-xs"></i>
-            </div>
-            <div>
-              <h4
-                class="text-xs font-semibold tracking-wide text-gray-800 uppercase dark:text-gray-200"
-              >
-                Detail Supplier
-              </h4>
-              <p class="text-[11px] text-gray-500 dark:text-gray-400">
-                Otomatis terisi jika memilih supplier yang sudah ada. Editable
-                jika supplier baru dibuat.
-              </p>
-            </div>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label
-                class="block text-xs font-medium text-gray-600 dark:text-gray-300"
-              >
-                Kontak Person
-              </label>
-              <input
-                type="text"
-                id="supplier_kontak_person"
-                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                autocomplete="off"
-              />
-            </div>
-
-            <div>
-              <label
-                class="block text-xs font-medium text-gray-600 dark:text-gray-300"
-              >
-                No HP
-              </label>
-              <input
-                type="text"
-                id="supplier_no_hp"
-                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                autocomplete="off"
-              />
-            </div>
-
-            <div>
-              <label
-                class="block text-xs font-medium text-gray-600 dark:text-gray-300"
-              >
-                Email
-              </label>
-              <input
-                type="email"
-                id="supplier_email"
-                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                autocomplete="off"
-              />
-            </div>
-
-            <div class="md:col-span-2">
-              <label
-                class="block text-xs font-medium text-gray-600 dark:text-gray-300"
-              >
-                Alamat
-              </label>
-              <textarea
-                id="supplier_alamat"
-                rows="2"
-                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-              ></textarea>
-            </div>
-
-            <div class="md:col-span-2">
-              <label
-                class="block text-xs font-medium text-gray-600 dark:text-gray-300"
-              >
-                Keterangan Supplier
-              </label>
-              <textarea
-                id="supplier_keterangan"
-                rows="2"
-                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-              ></textarea>
-            </div>
-          </div>
-        </div>
-
-        {{-- Section: Rincian Item + Sidebar Rincian (layout 2 kolom) --}}
-        <div class="mt-5 border-t border-gray-200 dark:border-gray-700 pt-4">
-          <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
-            {{-- LEFT: Form Rincian Item --}}
-            <div class="lg:col-span-8">
-              {{-- Tabs + Action --}}
-              <div class="flex items-center justify-between gap-4">
-                <div
-                  class="flex items-center gap-6 text-xs font-semibold uppercase tracking-wide"
-                >
-                  <button
-                    type="button"
-                    id="tab-obat"
-                    data-tab="obat"
-                    class="pb-2 border-b-2 border-pink-500 text-gray-900 dark:text-white"
-                  >
-                    Obat
-                  </button>
-
-                  <button
-                    type="button"
-                    id="tab-bhp"
-                    data-tab="bhp"
-                    class="pb-2 border-b-2 border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
-                  >
-                    Bahan Habis Pakai
-                  </button>
-                </div>
-
-                <button
-                  type="button"
-                  id="btn-tambah-rincian"
-                  class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold border border-blue-500 text-blue-600 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 whitespace-nowrap"
-                >
-                  Tambah Rincian
-                  <i class="fa-solid fa-angle-right text-[10px]"></i>
-                </button>
-              </div>
-
-              <div class="mt-4 space-y-6">
-                {{-- PANEL OBAT --}}
-                <div id="panel-obat" data-panel="obat">
-       
-
-                    {{-- OBAT RESTOCK --}}
-                    <div id="form-obat-restock" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        @include('farmasi.restock-dan-return-obat-dan-bhp.obat.restock')
-                    </div>
-
-                    {{-- OBAT RETURN --}}
-                    <div id="form-obat-return" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4">
-                        @include('farmasi.restock-dan-return-obat-dan-bhp.obat.return')
-                    </div>
-                   
-
-                  {{-- Button: Tambah Rincian --}}
-                  <div class="mt-4 flex justify-end">
-                    <button
-                      type="button"
-                      id="btn-tambah-rincian-obat"
-                      class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold border border-blue-500 text-blue-600 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30"
-                    >
-                      Tambah Rincian
-                      <i class="fa-solid fa-angle-right text-[10px]"></i>
-                    </button>
-                  </div>
-                </div>
-
-                {{-- PANEL BHP --}}
-                <div id="panel-bhp" data-panel="bhp" class="hidden">
-      
-                   
-                    {{-- BHP RESTOCK --}}
-                    <div id="form-bhp-restock" class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
-                        @include('farmasi.restock-dan-return-obat-dan-bhp.bhp.restock')
-                    </div>
-
-                    {{-- BHP RETURN --}}
-                    <div id="form-bhp-return" class="hidden grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
-                        @include('farmasi.restock-dan-return-obat-dan-bhp.bhp.return')
-                    </div>
-
-                
-                </div>
-              </div>
-            </div>
-
-            {{-- RIGHT: Sidebar Rincian --}}
-            <div class="lg:col-span-4">
-              <div class="lg:sticky lg:top-24 space-y-4">
-                <div
-                  class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4"
-                >
-                  <div id="container-rincian">
-                    <h3 class="text-blue-500 font-bold text-lg mb-2">
-                      Rincian
+                class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-900 z-10 rounded-t-2xl">
+                <div>
+                    <h3 class="text-base md:text-lg font-semibold text-gray-900 dark:text-white">
+                        Buat Transaksi Restock / Return
                     </h3>
+                    <p class="text-[11px] md:text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Lengkapi header transaksi. Setelah tersimpan, lanjut input detail
+                        item.
+                    </p>
+                </div>
 
-                    {{--
+                <button type="button" id="btn-close-modal-create"
+                    class="inline-flex items-center justify-center w-8 h-8 rounded-full border border-gray-200 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+
+
+            {{-- Body (scrollable) --}}
+            <form id="formCreateRestockReturn" class="px-6 py-5 space-y-7 overflow-y-auto"
+                data-url="{{ route('create.data.restock.dan.return') }}" method="POST">
+                @csrf {{-- Section: Header Transaksi --}}
+                <div class="space-y-4">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-center gap-2">
+                            <div
+                                class="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+                                <i class="fa-solid fa-clipboard-list text-xs"></i>
+                            </div>
+                            <div>
+                                <h4
+                                    class="text-xs font-semibold tracking-wide text-gray-800 uppercase dark:text-gray-200">
+                                    Header Transaksi
+                                </h4>
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400">
+                                    Data utama transaksi restock/return.
+                                </p>
+                            </div>
+                        </div>
+
+                        <label class="inline-flex items-center cursor-pointer select-none">
+                            <div class="relative mr-3">
+                                <input type="checkbox" id="togglePurchaseOrder" class="sr-only peer" />
+
+                                <div
+                                    class="w-10 h-5 bg-gray-300 rounded-full peer peer-checked:bg-blue-500 transition-colors">
+                                </div>
+                                <div
+                                    class="absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full shadow-sm transition-transform peer-checked:translate-x-5">
+                                </div>
+                            </div>
+
+                            <span id="labelPurchaseOrder"
+                                class="text-sm font-medium text-gray-400 transition-colors duration-200 leading-tight text-left">
+                                Create Purchase<br />Order
+                            </span>
+                        </label>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {{-- Tanggal transaksi --}}
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                Tanggal Transaksi <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" name="tanggal_transaksi"
+                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                required />
+                            <div class="text-red-600 text-[11px] mt-1" data-error="tanggal_transaksi"></div>
+                        </div>
+
+                        {{-- Jenis transaksi --}}
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                Jenis Transaksi <span class="text-red-500">*</span>
+                            </label>
+                            <select id="jenis_transaksi" name="jenis_transaksi"
+                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                required>
+                                <option value="">-- Pilih --</option>
+                            </select>
+                            <div class="text-red-600 text-[11px] mt-1" data-error="jenis_transaksi"></div>
+                        </div>
+
+                        {{-- SUPPLIER (TomSelect style seperti modal obat) --}}
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                Supplier
+                            </label>
+
+                            <div class="relative mt-1">
+                                <select name="supplier_id" id="supplier_id"
+                                    data-url-index="{{ route('get.data.supplier') }}"
+                                    data-url-store="{{ route('create.data.supplier') }}"
+                                    data-url-delete="{{ route('delete.data.supplier') }}"
+                                    data-url-update="{{ route('update.data.supplier') }}"
+                                    data-url-show="{{ route('get.data.supplier.by.id', ['id' => '__ID__']) }}"
+                                    class="block w-full pr-9 text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                                    <option value="">Ketik untuk cari / tambah supplier</option>
+                                </select>
+
+                                {{-- Tombol X (clear & delete supplier) --}}
+                                <button type="button" id="btn-clear-supplier"
+                                    class="hidden absolute inset-y-0 right-2 my-auto w-5 h-5 rounded-full flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/40">
+                                    <i class="fa-solid fa-xmark text-[10px]"></i>
+                                </button>
+                            </div>
+
+                            <div class="text-red-600 text-[11px] mt-1" data-error="supplier_id"></div>
+                        </div>
+
+                        {{-- Nomor faktur --}}
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                Nomor Faktur
+                            </label>
+                            <input type="text" name="nomor_faktur"
+                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                placeholder="Opsional" autocomplete="off" />
+                            <div class="text-red-600 text-[11px] mt-1" data-error="nomor_faktur"></div>
+                        </div>
+
+                        {{-- Keterangan --}}
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                Keterangan
+                            </label>
+                            <textarea name="keterangan" rows="2"
+                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                placeholder="Opsional"></textarea>
+                            <div class="text-red-600 text-[11px] mt-1" data-error="keterangan"></div>
+                        </div>
+
+                        {{-- Purchase Order Fields (muncul saat toggle ON) --}}
+                        <div id="purchaseOrderFields" class="md:col-span-2 hidden">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {{-- Tempo Pembayaran (DATE) --}}
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                        Tempo Pembayaran
+                                    </label>
+                                    <input type="date" name="tempo_pembayaran" id="tempo_pembayaran"
+                                        class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white" />
+                                    <div class="text-red-600 text-[11px] mt-1" data-error="tempo_pembayaran"></div>
+                                </div>
+
+                                {{-- Tanggal Pengiriman --}}
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                        Tanggal Pengiriman
+                                    </label>
+                                    <input type="date" name="tanggal_pengiriman" id="tanggal_pengiriman"
+                                        class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 selection:focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white" />
+                                    <div class="text-red-600 text-[11px] mt-1" data-error="tanggal_pengiriman"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Section: Detail Supplier (muncul saat create/pilih) --}}
+                <div id="supplier-detail" class="space-y-4 hidden">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                            <i class="fa-solid fa-truck-field text-xs"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-semibold tracking-wide text-gray-800 uppercase dark:text-gray-200">
+                                Detail Supplier
+                            </h4>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400">
+                                Otomatis terisi jika memilih supplier yang sudah ada. Editable
+                                jika supplier baru dibuat.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                Kontak Person
+                            </label>
+                            <input type="text" id="supplier_kontak_person"
+                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                autocomplete="off" />
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                No HP
+                            </label>
+                            <input type="text" id="supplier_no_hp"
+                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                autocomplete="off" />
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                Email
+                            </label>
+                            <input type="email" id="supplier_email"
+                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                autocomplete="off" />
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                Alamat
+                            </label>
+                            <textarea id="supplier_alamat" rows="2"
+                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"></textarea>
+                        </div>
+
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                Keterangan Supplier
+                            </label>
+                            <textarea id="supplier_keterangan" rows="2"
+                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Section: Rincian Item + Sidebar Rincian (layout 2 kolom) --}}
+                <div class="mt-5 border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                        {{-- LEFT: Form Rincian Item --}}
+                        <div class="lg:col-span-8">
+                            {{-- Tabs + Action --}}
+                            <div class="flex items-center justify-between gap-4">
+                                <div class="flex items-center gap-6 text-xs font-semibold uppercase tracking-wide">
+                                    <button type="button" id="tab-obat" data-tab="obat"
+                                        class="pb-2 border-b-2 border-pink-500 text-gray-900 dark:text-white">
+                                        Obat
+                                    </button>
+
+                                    <button type="button" id="tab-bhp" data-tab="bhp"
+                                        class="pb-2 border-b-2 border-transparent text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white">
+                                        Bahan Habis Pakai
+                                    </button>
+                                </div>
+
+                                <button type="button" id="btn-tambah-rincian"
+                                    class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold border border-blue-500 text-blue-600 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30 whitespace-nowrap">
+                                    Tambah Rincian
+                                    <i class="fa-solid fa-angle-right text-[10px]"></i>
+                                </button>
+                            </div>
+
+                            <div class="mt-4 space-y-6">
+                                {{-- PANEL OBAT --}}
+                                <div id="panel-obat" data-panel="obat">
+
+
+                                    {{-- OBAT RESTOCK --}}
+                                    <div id="form-obat-restock" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        @include('farmasi.restock-dan-return-obat-dan-bhp.obat.restock')
+                                    </div>
+
+                                    {{-- OBAT RETURN --}}
+                                    <div id="form-obat-return" class="hidden grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        @include('farmasi.restock-dan-return-obat-dan-bhp.obat.return')
+                                    </div>
+
+
+                                    {{-- Button: Tambah Rincian --}}
+                                    <div class="mt-4 flex justify-end">
+                                        <button type="button" id="btn-tambah-rincian-obat"
+                                            class="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold border border-blue-500 text-blue-600 rounded-md hover:bg-blue-50 dark:hover:bg-blue-900/30">
+                                            Tambah Rincian
+                                            <i class="fa-solid fa-angle-right text-[10px]"></i>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {{-- PANEL BHP --}}
+                                <div id="panel-bhp" data-panel="bhp" class="hidden">
+
+
+                                    {{-- BHP RESTOCK --}}
+                                    <div id="form-bhp-restock"
+                                        class="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
+                                        @include('farmasi.restock-dan-return-obat-dan-bhp.bhp.restock')
+                                    </div>
+
+                                    {{-- BHP RETURN --}}
+                                    <div id="form-bhp-return"
+                                        class="hidden grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
+                                        @include('farmasi.restock-dan-return-obat-dan-bhp.bhp.return')
+                                    </div>
+
+
+                                </div>
+                            </div>
+                        </div>
+
+                        {{-- RIGHT: Sidebar Rincian --}}
+                        <div class="lg:col-span-4">
+                            <div class="lg:sticky lg:top-24 space-y-4">
+                                <div
+                                    class="rounded-2xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
+                                    <div id="container-rincian">
+                                        <h3 class="text-blue-500 font-bold text-lg mb-2">
+                                            Rincian
+                                        </h3>
+
+                                        {{--
                     <div class="flex items-start justify-between gap-4">
                       <div class="flex-1 space-y-1">
                         <h4 class="text-blue-400 font-medium text-sm">
@@ -613,110 +453,79 @@
                       </div>
                     </div>
                     --}}
-                  </div>
+                                    </div>
 
-                  <div class="mt-6 text-sm font-semibold text-sky-600">
-                    Biaya Lainnya
-                  </div>
+                                    <div class="mt-6 text-sm font-semibold text-sky-600">
+                                        Biaya Lainnya
+                                    </div>
 
-                  <div class="mt-4 space-y-3 text-sm">
-                    <div class="flex items-center justify-between">
-                      <span class="text-gray-600 dark:text-gray-300 font-medium"
-                        >Subtotal</span
-                      >
-                      <span
-                        id="sum-subtotal"
-                        class="font-semibold text-gray-900 dark:text-white"
-                        >Rp. 0</span
-                      >
-                    </div>
+                                    <div class="mt-4 space-y-3 text-sm">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-gray-600 dark:text-gray-300 font-medium">Subtotal</span>
+                                            <span id="sum-subtotal"
+                                                class="font-semibold text-gray-900 dark:text-white">Rp. 0</span>
+                                        </div>
 
-                    <div class="flex items-center justify-between gap-4">
-                      <span class="text-gray-600 dark:text-gray-300 font-medium"
-                        >Pajak</span
-                      >
-                      <div class="w-40">
-                        <div class="relative">
-                          <input
-                            type="number"
-                            min="0"
-                            max="100"
-                            step="1"
-                            id="sum-pajak"
-                            class="w-full text-right text-sm bg-transparent border-0 border-gray-300 dark:border-gray-700 focus:ring-0 focus:border-sky-500 pr-6 py-1"
-                            value="0"
-                          />
-                          <span
-                            class="absolute right-0 top-1 text-gray-500 text-sm"
-                            >%</span
-                          >
+                                        <div class="flex items-center justify-between gap-4">
+                                            <span class="text-gray-600 dark:text-gray-300 font-medium">Pajak</span>
+                                            <div class="w-40">
+                                                <div class="relative">
+                                                    <input type="number" min="0" max="100"
+                                                        step="1" id="sum-pajak"
+                                                        class="w-full text-right text-sm bg-transparent border-0 border-gray-300 dark:border-gray-700 focus:ring-0 focus:border-sky-500 pr-6 py-1"
+                                                        value="0" />
+                                                    <span class="absolute right-0 top-1 text-gray-500 text-sm">%</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-3 space-y-3 text-sm">
+                                        <div class="flex items-center justify-between gap-4">
+                                            <span class="text-gray-600 dark:text-gray-300 font-medium">Biaya
+                                                Lainnya</span>
+                                            <div class="w-40">
+                                                <input type="text" id="sum-biaya-lainnya"
+                                                    class="input-rupiah w-full text-right text-sm bg-transparent border-0 border-gray-300 dark:border-gray-700 focus:ring-0 focus:border-sky-500 py-1"
+                                                    value="Rp. 0" />
+                                            </div>
+                                        </div>
+
+                                        <div
+                                            class="pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                                            <span class="text-gray-700 dark:text-gray-200 font-semibold">Total
+                                                Transaksi</span>
+                                            <span id="sum-total" class="font-bold text-gray-900 dark:text-white">Rp.
+                                                0</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Buttons (pakai ID yang lama biar JS gak perlu diubah) --}}
+                                <div class="flex items-center justify-end gap-2">
+                                    <button type="button" id="btn-cancel-modal-create"
+                                        class="px-4 py-2.5 text-xs font-medium text-red-600 bg-white rounded-lg hover:bg-red-50 border border-red-300 dark:bg-gray-900 dark:border-red-700/60 dark:hover:bg-red-900/20">
+                                        Batal
+                                    </button>
+
+                                    <button type="submit" id="btn-submit-create"
+                                        class="px-4 py-2.5 text-xs font-semibold text-white bg-rose-500 rounded-lg hover:bg-rose-600 shadow-sm">
+                                        Simpan Transaksi
+                                    </button>
+                                </div>
+
+                                <p class="text-[11px] text-gray-500 dark:text-gray-400">
+                                    * Subtotal diambil dari “Harga Total Awal” item aktif
+                                    (Obat/BHP). Pajak & Biaya Lainnya auto dihitung.
+                                </p>
+                            </div>
                         </div>
-                      </div>
                     </div>
-                  </div>
-
-                  <div class="mt-3 space-y-3 text-sm">
-                    <div class="flex items-center justify-between gap-4">
-                      <span class="text-gray-600 dark:text-gray-300 font-medium"
-                        >Biaya Lainnya</span
-                      >
-                      <div class="w-40">
-                        <input
-                          type="text"
-                          id="sum-biaya-lainnya"
-                          class="input-rupiah w-full text-right text-sm bg-transparent border-0 border-gray-300 dark:border-gray-700 focus:ring-0 focus:border-sky-500 py-1"
-                          value="Rp. 0"
-                        />
-                      </div>
-                    </div>
-
-                    <div
-                      class="pt-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between"
-                    >
-                      <span
-                        class="text-gray-700 dark:text-gray-200 font-semibold"
-                        >Total Transaksi</span
-                      >
-                      <span
-                        id="sum-total"
-                        class="font-bold text-gray-900 dark:text-white"
-                        >Rp. 0</span
-                      >
-                    </div>
-                  </div>
                 </div>
 
-                {{-- Buttons (pakai ID yang lama biar JS gak perlu diubah) --}}
-                <div class="flex items-center justify-end gap-2">
-                  <button
-                    type="button"
-                    id="btn-cancel-modal-create"
-                    class="px-4 py-2.5 text-xs font-medium text-red-600 bg-white rounded-lg hover:bg-red-50 border border-red-300 dark:bg-gray-900 dark:border-red-700/60 dark:hover:bg-red-900/20"
-                  >
-                    Batal
-                  </button>
-
-                  <button
-                    type="submit"
-                    id="btn-submit-create"
-                    class="px-4 py-2.5 text-xs font-semibold text-white bg-rose-500 rounded-lg hover:bg-rose-600 shadow-sm"
-                  >
-                    Simpan Transaksi
-                  </button>
-                </div>
-
-                <p class="text-[11px] text-gray-500 dark:text-gray-400">
-                  * Subtotal diambil dari “Harga Total Awal” item aktif
-                  (Obat/BHP). Pajak & Biaya Lainnya auto dihitung.
-                </p>
-              </div>
-            </div>
-          </div>
+            </form>
         </div>
-
-      </form>
     </div>
-  </div>
 </div>
 
 @vite(['resources/js/farmasi/restock-dan-return-obat-dan-bhp/data-restock-dan-return-obat-dan-bhp.js'])

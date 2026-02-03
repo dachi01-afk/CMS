@@ -420,11 +420,13 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('/obat/{id}/meta', [RestockDanReturnController::class, 'getMetaObat'])->name('farmasi.restock_return.obat_meta');
             Route::get('/bhp/{id}/meta', [RestockDanReturnController::class, 'getMetaBhp'])->name('farmasi.restock_return.bhp_meta');
 
+            Route::get('/get-data-batch-expired/{id}', [RestockDanReturnController::class, 'getDataBatchObat']);
+
             Route::get('/get-data-depot', [RestockDanReturnController::class, 'getDataDepot'])->name('farmasi.restock_return.get.data.depot');
             Route::get('/get-data-depot-bhp', [RestockDanReturnController::class, 'getDataDepotBhp'])->name('farmasi.restock_return.get.data.depot.bhp');
 
-            Route::get('/batch-expired', [RestockDanReturnController::class, 'getBatchExpired']);
-            Route::get('/batch-stock', [RestockDanReturnController::class, 'getBatchDetail']);
+            Route::get('/get-batches-by-obat/{id}', [RestockDanReturnController::class, 'getBatchesByObat']);
+            Route::get('/get-stok-batch/{id}', [RestockDanReturnController::class, 'getStokBatch']);
 
             // ✅ store
             Route::post('/store', [RestockDanReturnController::class, 'store'])->name('create.data.restock.dan.return');
