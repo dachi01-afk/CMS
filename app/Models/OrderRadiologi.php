@@ -33,6 +33,18 @@ class OrderRadiologi extends Model
         return $this->hasMany(OrderRadiologiDetail::class);
     }
 
+    protected static function booted()
+    {
+        static::updated(function (OrderRadiologi $order) {
+            // Only run if status actually changed
+            if ($order->wasChanged('status') && $order->status === 'Selesai') {
+                $order->orderRadiologiDetail()->update([
+                    'status_pemeriksaan' => 'Selesai'
+                ]);
+            }
+        });
+    }
+
     /**
      * Scope untuk filter order khusus hari ini
      */

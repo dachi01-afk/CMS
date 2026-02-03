@@ -16,11 +16,92 @@ use Yajra\DataTables\Facades\DataTables;
 
 class OrderRadiologiController extends Controller
 {
-<<<<<<< HEAD
+
     public function getDataOrderRadiologi(Request $request)
-=======
-    public function inputHasilgetDataOrderRadiologi()
->>>>>>> 34f21204cc0c195a15e1875cd53ba3c7806209b6
+    {
+        $user = Auth::user();
+        $userId = $user->id;
+
+        // ✅ ini sebaiknya ambil model perawat, bukan query builder doang
+        $perawat = Perawat::where('user_id', $userId)->first();
+
+        if (!$perawat) {
+            return response()->json(['error' => 'User bukan perawat'], 403);
+        }
+
+        // ✅ ambil status dari request, default: Pending
+        // JS kirim "pending", DB kamu "Pending" → kita normalisasi
+        $status = $request->get('status', 'Pending');
+        $status = ucfirst(strtolower($status)); // pending -> Pending
+
+        // 2. Query utama
+        $data = OrderRadiologi::getData()
+            ->filterByPerawat($perawat->id)
+            ->today()
+            ->when($status, function ($q) use ($status) {
+                $q->where('status', $status);
+            });
+
+        return DataTables::of($data)
+            ->addIndexColumn()
+            ->addColumn('nama_pasien', function ($row) {
+                return $row->pasien->nama_pasien ?? '-';
+            })
+            ->addColumn('nama_dokter', function ($row) {
+                return $row->dokter->nama_dokter ?? '-';
+            })
+            ->addColumn('status_badge', function ($row) {
+                $config = match ($row->status) {
+                    'Selesai'  => ['bg' => 'bg-green-100', 'text' => 'text-green-700', 'dot' => 'bg-green-500'],
+                    'Pending'  => ['bg' => 'bg-yellow-100', 'text' => 'text-yellow-700', 'dot' => 'bg-yellow-500'],
+                    'Diproses' => ['bg' => 'bg-blue-100', 'text' => 'text-blue-700', 'dot' => 'bg-blue-500'],
+                    'Dibatalkan' => ['bg' => 'bg-red-100', 'text' => 'text-red-700', 'dot' => 'bg-red-500'],
+                    default    => ['bg' => 'bg-gray-100', 'text' => 'text-gray-700', 'dot' => 'bg-gray-500']
+                };
+
+                return '
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ' . $config['bg'] . ' ' . $config['text'] . '">
+                    <svg class="-ml-0.5 mr-1.5 h-2 w-2 ' . $config['dot'] . ' rounded-full" fill="currentColor" viewBox="0 0 8 8">
+                        <circle cx="4" cy="4" r="3" />
+                    </svg>
+                    ' . $row->status . '
+                </span>
+            ';
+            })
+            ->addColumn('item_pemeriksaan', function ($row) {
+                if (!$row->orderRadiologiDetail || $row->orderRadiologiDetail->isEmpty()) {
+                    return '-';
+                }
+
+                return $row->orderRadiologiDetail->map(function ($detail) {
+                    return optional($detail->jenisPemeriksaanRadiologi)->nama_pemeriksaan ?? '-';
+                })->implode(', ');
+            })
+            ->addColumn('action', function ($row) {
+                $url = route('input.hasil.order.radiologi', $row->id);
+
+                // Karena sekarang yang tampil Pending saja, ini sebenernya gak kepake.
+                // Tapi biar aman kalau suatu saat filter berubah.
+                if ($row->status === 'Selesai') {
+                    return '<button class="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-500 rounded-lg text-xs font-medium cursor-not-allowed">
+                    <i class="fas fa-check-circle mr-1"></i> Terinput
+                </button>';
+                }
+
+                return '
+                <a href="' . $url . '" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                    </svg>
+                    Input Hasil
+                </a>
+            ';
+            })
+            ->rawColumns(['status_badge', 'action'])
+            ->make(true);
+    }
+
+    public function inputHasilgetDataOrderRadiologi(Request $request)
     {
         $user = Auth::user();
         $userId = $user->id;
@@ -169,6 +250,10 @@ class OrderRadiologiController extends Controller
 
                 // Update status order jadi selesai
                 $order->update(['status' => 'Selesai']);
+
+                $order->orderRadiologiDetail()->update([
+                    'status_pemeriksaan' => 'Selesai'
+                ]);
 
                 // Update EMR (kalau memang mau dipakai)
                 EMR::updateOrCreate(
