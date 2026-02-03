@@ -11,13 +11,14 @@ $(function () {
         lengthChange: false,
         info: false,
 
-        ajax: {
-            url: "/perawat/order-radiologi/get-data-order-radiologi",
-            type: "GET",
-            data: function (d) {
-                d.status = "pending";
-            },
-        },
+        ajax: "/perawat/order-radiologi/get-data-order-radiologi",
+        // {
+        //     url: "/perawat/order-radiologi/get-data-order-radiologi",
+        //     type: "GET",
+        //     data: function (d) {
+        //         d.status = "pending";
+        //     },
+        // },
 
         columns: [
             {

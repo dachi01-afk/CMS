@@ -22,19 +22,16 @@ class OrderRadiologiController extends Controller
         $user = Auth::user();
         $userId = $user->id;
 
-        // ✅ ini sebaiknya ambil model perawat, bukan query builder doang
         $perawat = Perawat::where('user_id', $userId)->first();
 
         if (!$perawat) {
             return response()->json(['error' => 'User bukan perawat'], 403);
         }
 
-        // ✅ ambil status dari request, default: Pending
-        // JS kirim "pending", DB kamu "Pending" → kita normalisasi
-        $status = $request->get('status', 'Pending');
-        $status = ucfirst(strtolower($status)); // pending -> Pending
+        // ✅ status opsional: kalau tidak dikirim, tampilkan semua
+        $status = $request->get('status'); // null kalau tidak ada
+        $status = $status ? ucfirst(strtolower($status)) : null;
 
-        // 2. Query utama
         $data = OrderRadiologi::getData()
             ->filterByPerawat($perawat->id)
             ->today()
@@ -52,11 +49,11 @@ class OrderRadiologiController extends Controller
             })
             ->addColumn('status_badge', function ($row) {
                 $config = match ($row->status) {
-                    'Selesai'  => ['bg' => 'bg-green-100', 'text' => 'text-green-700', 'dot' => 'bg-green-500'],
-                    'Pending'  => ['bg' => 'bg-yellow-100', 'text' => 'text-yellow-700', 'dot' => 'bg-yellow-500'],
-                    'Diproses' => ['bg' => 'bg-blue-100', 'text' => 'text-blue-700', 'dot' => 'bg-blue-500'],
+                    'Selesai'    => ['bg' => 'bg-green-100', 'text' => 'text-green-700', 'dot' => 'bg-green-500'],
+                    'Pending'    => ['bg' => 'bg-yellow-100', 'text' => 'text-yellow-700', 'dot' => 'bg-yellow-500'],
+                    'Diproses'   => ['bg' => 'bg-blue-100', 'text' => 'text-blue-700', 'dot' => 'bg-blue-500'],
                     'Dibatalkan' => ['bg' => 'bg-red-100', 'text' => 'text-red-700', 'dot' => 'bg-red-500'],
-                    default    => ['bg' => 'bg-gray-100', 'text' => 'text-gray-700', 'dot' => 'bg-gray-500']
+                    default      => ['bg' => 'bg-gray-100', 'text' => 'text-gray-700', 'dot' => 'bg-gray-500'],
                 };
 
                 return '
@@ -80,12 +77,12 @@ class OrderRadiologiController extends Controller
             ->addColumn('action', function ($row) {
                 $url = route('input.hasil.order.radiologi', $row->id);
 
-                // Karena sekarang yang tampil Pending saja, ini sebenernya gak kepake.
-                // Tapi biar aman kalau suatu saat filter berubah.
                 if ($row->status === 'Selesai') {
-                    return '<button class="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-500 rounded-lg text-xs font-medium cursor-not-allowed">
-                    <i class="fas fa-check-circle mr-1"></i> Terinput
-                </button>';
+                    return '
+                    <button class="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-500 rounded-lg text-xs font-medium cursor-not-allowed">
+                        <i class="fas fa-check-circle mr-1"></i> Terinput
+                    </button>
+                ';
                 }
 
                 return '
@@ -184,6 +181,7 @@ class OrderRadiologiController extends Controller
             ->rawColumns(['status_badge', 'action'])
             ->make(true);
     }
+
     public function inputHasil($id)
     {
         $order = OrderRadiologi::getDataById($id);
