@@ -1,7 +1,7 @@
 import $ from "jquery";
 
 $(function () {
-    const tabelOrderRadiologi = $("#tabel-order-radiologi").DataTable({
+    const tableOrderRadiologi = $("#tabel-order-radiologi").DataTable({
         processing: true,
         serverSide: true,
         paging: true,
@@ -10,7 +10,15 @@ $(function () {
         pageLength: 10,
         lengthChange: false,
         info: false,
-        ajax: "/perawat/order-radiologi/get-data-order-radiologi",
+
+        ajax: {
+            url: "/perawat/order-radiologi/get-data-order-radiologi",
+            type: "GET",
+            data: function (d) {
+                d.status = "pending";
+            },
+        },
+
         columns: [
             {
                 data: "DT_RowIndex",
@@ -18,22 +26,10 @@ $(function () {
                 orderable: false,
                 searchable: false,
             },
-            {
-                data: "nama_pasien",
-                name: "nama_pasien",
-            },
-            {
-                data: "item_pemeriksaan",
-                name: "item_pemeriksaan",
-            },
-            {
-                data: "nama_dokter",
-                name: "nama_dokter",
-            },
-            {
-                data: "status_badge",
-                name: "status_badge",
-            },
+            { data: "nama_pasien", name: "nama_pasien" },
+            { data: "item_pemeriksaan", name: "item_pemeriksaan" },
+            { data: "nama_dokter", name: "nama_dokter" },
+            { data: "status_badge", name: "status_badge" },
             {
                 data: "action",
                 name: "action",
@@ -42,6 +38,7 @@ $(function () {
                 className: "text-center whitespace-nowrap",
             },
         ],
+
         dom: "t",
         rowCallback: function (row) {
             $(row).addClass(
@@ -51,16 +48,17 @@ $(function () {
                 "px-5 py-3 align-middle text-slate-700 dark:text-slate-50 text-sm",
             );
         },
-        order: [[1, "asc"]], // urut berdasar No Antrian
+
+        order: [[1, "asc"]],
         language: {
-            emptyTable: "Tidak ada data.",
+            emptyTable: "Tidak ada data pending.",
             processing: "Memuat...",
         },
     });
 
     // 🔎 Search
     $("#triage_searchInput").on("keyup", function () {
-        tabelOrderRadiologi.search(this.value).draw();
+        tableOrderRadiologi.search(this.value).draw();
     });
 
     // 🔢 Custom pagination & info
@@ -69,15 +67,14 @@ $(function () {
     const $perPage = $("#triage_pageLength");
 
     function updatePagination() {
-        const info = tabelOrderRadiologi.page.info();
+        const info = tableOrderRadiologi.page.info();
         const currentPage = info.page + 1;
         const totalPages = info.pages || 1;
 
         $info.text(
-            `Menampilkan ${info.start + 1}–${info.end} dari ${
-                info.recordsDisplay
-            } data (Halaman ${currentPage} dari ${totalPages})`,
+            `Menampilkan ${info.start + 1}–${info.end} dari ${info.recordsDisplay} data (Halaman ${currentPage} dari ${totalPages})`,
         );
+
         $pagination.empty();
 
         const prevDisabled =
@@ -97,6 +94,7 @@ $(function () {
                 i === currentPage
                     ? "text-blue-600 bg-blue-50 border-blue-300 hover:bg-blue-100"
                     : "text-gray-500 bg-white border-gray-300 hover:bg-gray-100 hover:text-gray-700";
+
             $pagination.append(
                 `<li><a href="#" class="page-number flex items-center justify-center px-3 h-8 border ${active}" data-page="${i}">${i}</a></li>`,
             );
@@ -113,20 +111,21 @@ $(function () {
         e.preventDefault();
         const $link = $(this);
         if ($link.hasClass("opacity-50")) return;
+
         if ($link.attr("id") === "btnPrev")
-            tabelOrderRadiologi.page("previous").draw("page");
+            tableOrderRadiologi.page("previous").draw("page");
         else if ($link.attr("id") === "btnNext")
-            tabelOrderRadiologi.page("next").draw("page");
+            tableOrderRadiologi.page("next").draw("page");
         else if ($link.hasClass("page-number"))
-            tabelOrderRadiologi
+            tableOrderRadiologi
                 .page(parseInt($link.data("page")) - 1)
                 .draw("page");
     });
 
     $perPage.on("change", function () {
-        tabelOrderRadiologi.page.len(parseInt($(this).val())).draw();
+        tableOrderRadiologi.page.len(parseInt($(this).val())).draw();
     });
 
-    tabelOrderRadiologi.on("draw", updatePagination);
+    tableOrderRadiologi.on("draw", updatePagination);
     updatePagination();
 });
