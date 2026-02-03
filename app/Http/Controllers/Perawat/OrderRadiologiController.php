@@ -16,7 +16,11 @@ use Yajra\DataTables\Facades\DataTables;
 
 class OrderRadiologiController extends Controller
 {
+<<<<<<< HEAD
     public function getDataOrderRadiologi(Request $request)
+=======
+    public function inputHasilgetDataOrderRadiologi()
+>>>>>>> 34f21204cc0c195a15e1875cd53ba3c7806209b6
     {
         $user = Auth::user();
         $userId = $user->id;
