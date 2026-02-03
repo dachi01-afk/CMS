@@ -2,8 +2,8 @@ import axios from "axios";
 import $ from "jquery";
 
 $(function () {
-    const warningThreshold = 7; // hari ke depan untuk warning kecil
-    const tableThreshold = 60; // hari ke depan untuk tabel besar
+    const warningThreshold = 90; // hari ke depan untuk warning kecil
+    const tableThreshold = 90; // hari ke depan untuk tabel besar
 
     $("#warningThresholdText").text(warningThreshold);
     $("#tableThresholdText").text(tableThreshold);
@@ -37,29 +37,29 @@ $(function () {
     function loadWarningKadaluarsa() {
         const $tbody = $("#warningKadaluarsaBody");
         $tbody.html(`
-            <tr>
-                <td colspan="3" class="px-3 py-3 text-center text-[11px] md:text-xs text-slate-400">
-                    Memuat data...
-                </td>
-            </tr>
-        `);
+        <tr>
+            <td colspan="3" class="px-3 py-3 text-center text-[11px] md:text-xs text-slate-400">
+                Memuat data...
+            </td>
+        </tr>
+    `);
 
         axios
             .get(`/farmasi/kadaluarsa-obat/get-data-warning-kadaluarsa-obat`, {
-                params: {
-                    threshold: warningThreshold,
-                    limit: 5,
-                },
+                params: { threshold: warningThreshold },
             })
             .then(function (response) {
                 const data = response.data || [];
                 $tbody.empty();
 
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
                 if (!data.length) {
                     $tbody.append(`
                         <tr>
                             <td colspan="3" class="px-3 py-3 text-center text-[11px] md:text-xs text-emerald-600">
-                                Tidak ada obat yang mendekati tanggal kadaluarsa 🎉
+                                Tidak ada barang yang mendekati tanggal kadaluarsa 🎉
                             </td>
                         </tr>
                     `);
@@ -67,47 +67,77 @@ $(function () {
                 }
 
                 data.forEach(function (item) {
-                    const tgl = formatTanggalIndo(item.tanggal_kadaluarsa_obat);
-                    const sisa =
-                        item.sisa_hari ??
-                        hitungSisaHari(item.tanggal_kadaluarsa_obat);
+                    let listTanggal = "";
+                    let listBatch = "";
+                    let listStok = "";
 
-                    // di DB: jumlah, bukan stok
-                    const stokLabel = (item.jumlah ?? 0) + " Unit";
+                    item.batch_obat.forEach(function (batch) {
+                        // Parsing tanggal kadaluarsa dari database
+                        const expDate = new Date(batch.tanggal_kadaluarsa_obat);
+                        expDate.setHours(0, 0, 0, 0);
 
-                    let badge = "";
-                    if (sisa < 0) {
-                        badge = `<span class="ml-1 inline-flex items-center rounded-full bg-red-50 text-red-600 border border-red-200 px-1.5 py-0.5 text-[10px]">
-                expired
-            </span>`;
-                    } else if (sisa === 0) {
-                        badge = `<span class="ml-1 inline-flex items-center rounded-full bg-rose-50 text-rose-700 border border-rose-200 px-1.5 py-0.5 text-[10px]">
-                hari ini
-            </span>`;
-                    } else {
-                        badge = `<span class="ml-1 inline-flex items-center rounded-full bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 text-[10px]">
-                ${sisa} hari lagi
-            </span>`;
-                    }
+                        // Hitung selisih hari
+                        const diffTime = expDate - today;
+                        const diffDays = Math.round(
+                            diffTime / (1000 * 60 * 60 * 24),
+                        );
 
+                        let labelSisa = "";
+                        let badgeColor = "";
+
+                        // --- LOGIKA REVISI BADGE ---
+                        if (diffDays === 0) {
+                            labelSisa = "[ Hari Ini ]";
+                            badgeColor = "text-rose-600 font-bold";
+                        } else if (diffDays > 0) {
+                            labelSisa = `[ ${diffDays} Hari Lagi ]`;
+                            badgeColor = "text-amber-600";
+                        } else {
+                            // Nilai negatif berarti sudah lewat
+                            const lewatDays = Math.abs(diffDays);
+                            labelSisa = `[ Lewat ${lewatDays} Hari ]`;
+                            badgeColor = "text-red-700 font-bold";
+                        }
+
+                        const tglIndo = formatTanggalIndo(
+                            batch.tanggal_kadaluarsa_obat,
+                        );
+
+                        // Render baris berdasarkan stok di depot (500, 2000, dst)
+                        if (
+                            batch.batch_obat_depot &&
+                            batch.batch_obat_depot.length > 0
+                        ) {
+                            batch.batch_obat_depot.forEach(function (b_depot) {
+                                listTanggal += `<div class="mb-2">${tglIndo} <span class="${badgeColor} text-[10px]">${labelSisa}</span></div>`;
+                                listBatch += `<div class="mb-2 text-slate-600">${batch.nama_batch ?? "-"}</div>`;
+                                listStok += `<div class="mb-2 font-bold text-slate-700">${b_depot.stok_obat} Unit</div>`;
+                            });
+                        } else {
+                            // Jika tidak ada stok di depot (seperti data 04 Feb)
+                            listTanggal += `<div class="mb-2">${tglIndo} <span class="${badgeColor} text-[10px]">${labelSisa}</span></div>`;
+                            listBatch += `<div class="mb-2 text-slate-600">${batch.nama_batch ?? "-"}</div>`;
+                            listStok += `<div class="mb-2 text-slate-400">0 Unit</div>`;
+                        }
+                    });
+                    // Masukkan ke dalam Tabel Body
                     $tbody.append(`
-                        <tr class="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 transition">
-                            <td class="px-3 py-2 align-top">
-                                <div class="font-medium text-[11px] md:text-xs text-slate-800 dark:text-slate-50">
-                                    ${item.nama_obat ?? "-"}
-                                </div>
-                                <div class="text-[10px] text-slate-400">
-                                    ${item.kode_obat ?? ""}
-                                </div>
-                            </td>
-                            <td class="px-3 py-2 align-top text-[11px] md:text-xs text-slate-700 dark:text-slate-100">
-                                ${tgl} ${badge}
-                            </td>
-                            <td class="px-3 py-2 align-top text-[11px] md:text-xs text-slate-700 dark:text-slate-100">
-                                ${stokLabel}
-                            </td>
-                        </tr>
-                    `);
+        <tr class="hover:bg-slate-50 border-b border-slate-100 transition">
+            <td class="px-3 py-4 align-top">
+                <div class="font-bold text-slate-800 text-xs">${item.nama_obat}</div>
+                <div class="text-[10px] text-slate-400 font-medium">${item.kode_obat}</div>
+            </td>
+            <td class="px-3 py-4 align-top text-[11px] text-slate-600">
+                ${listTanggal}
+            </td>
+            <td class="px-3 py-4 align-top text-[11px] text-slate-600">
+                ${listBatch}
+            </td>
+            <td class="px-3 py-4 align-top text-[11px] text-slate-600">
+                ${listStok}
+            </td>
+        </tr>
+    `);
                 });
             })
             .catch(function (error) {
@@ -154,9 +184,7 @@ $(function () {
                             day: "2-digit",
                             month: "2-digit",
                             year: "numeric",
-                            hour: "2-digit",
-                            minute: "2-digit",
-                        }).format(now)
+                        }).format(now),
                     );
                 })
                 .catch(function (error) {
@@ -202,7 +230,7 @@ $(function () {
                                 ? `<span class="ml-1 text-[10px] text-amber-600">(${sisa} hari lagi)</span>`
                                 : "";
                         return `<span>${formatTanggalIndo(
-                            row.tanggal_kadaluarsa_obat
+                            row.tanggal_kadaluarsa_obat,
                         )}</span> ${labelSisa}`;
                     }
                     return data;
@@ -249,7 +277,7 @@ $(function () {
 
         rowCallback: function (row, data) {
             $(row).addClass(
-                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600",
             );
             $("td", row).addClass("px-6 py-4 text-gray-900 dark:text-white");
         },
@@ -268,14 +296,14 @@ $(function () {
         $info.text(
             `Menampilkan ${info.start + 1}–${info.end} dari ${
                 info.recordsDisplay
-            } data (Halaman ${currentPage} dari ${totalPages})`
+            } data (Halaman ${currentPage} dari ${totalPages})`,
         );
         $pagination.empty();
 
         const prevDisabled =
             currentPage === 1 ? "opacity-50 cursor-not-allowed" : "";
         $pagination.append(
-            `<li><a href="#" id="btnPrevKadaluarsa" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 ${prevDisabled}">Previous</a></li>`
+            `<li><a href="#" id="btnPrevKadaluarsa" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 ${prevDisabled}">Previous</a></li>`,
         );
 
         const maxVisible = 5;
@@ -290,14 +318,14 @@ $(function () {
                     ? "text-blue-600 bg-blue-50 border-blue-300 hover:bg-blue-100"
                     : "text-gray-500 bg-white border-gray-300 hover:bg-gray-100 hover:text-gray-700";
             $pagination.append(
-                `<li><a href="#" class="kadaluarsa-page-number flex items-center justify-center px-3 h-8 border ${active}" data-page="${i}">${i}</a></li>`
+                `<li><a href="#" class="kadaluarsa-page-number flex items-center justify-center px-3 h-8 border ${active}" data-page="${i}">${i}</a></li>`,
             );
         }
 
         const nextDisabled =
             currentPage === totalPages ? "opacity-50 cursor-not-allowed" : "";
         $pagination.append(
-            `<li><a href="#" id="btnNextKadaluarsa" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 ${nextDisabled}">Next</a></li>`
+            `<li><a href="#" id="btnNextKadaluarsa" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 ${nextDisabled}">Next</a></li>`,
         );
     }
 

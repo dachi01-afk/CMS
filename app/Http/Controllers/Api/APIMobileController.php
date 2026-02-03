@@ -1883,6 +1883,7 @@ class APIMobileController extends Controller
                         'metode_pembayaran_id' => null,
                         'bukti_pembayaran' => null,
 
+                        // ✅ sementara 0 dulu, nanti kita update lagi setelah hitung detail
                         'total_tagihan' => 0,
                         'diskon_tipe' => $existingPembayaran?->diskon_tipe,
                         'diskon_nilai' => $existingPembayaran?->diskon_nilai ?? 0,
@@ -1896,7 +1897,10 @@ class APIMobileController extends Controller
 
                 DB::table('pembayaran_detail')->where('pembayaran_id', $pembayaran->id)->delete();
 
-                $total = 0;
+                // ✅ TOTAL-TOTAL (INI FIX UTAMA UNTUK FLUTTER)
+                $total = 0;        // total semua item (layanan+obat+lab+radiologi)
+                $totalLayanan = 0; // khusus layanan
+                $totalObat = 0;    // khusus obat
 
                 $insertDetail = function (array $data) use ($pembayaran, &$total) {
                     $row = [
@@ -1912,7 +1916,7 @@ class APIMobileController extends Controller
                     $row['layanan_id'] = $data['layanan_id'] ?? null;
                     $row['resep_obat_id'] = $data['resep_obat_id'] ?? null;
                     $row['order_lab_detail_id'] = $data['order_lab_detail_id'] ?? null;
-                    $row['hasil_radiologi_id'] = $data['hasil_radiologi_id'] ?? null;
+                    $row['order_radiologi_detail_id'] = $data['order_radiologi_detail_id'] ?? null;
 
                     if (array_key_exists('hasil_lab_id', $data)) {
                         $row['hasil_lab_id'] = $data['hasil_lab_id'] ?: null;
@@ -1941,6 +1945,9 @@ class APIMobileController extends Controller
                         'harga' => $harga,
                         'subtotal' => $subtotal,
                     ]);
+
+                    // ✅ FIX: isi biaya_konsultasi di header dari total layanan
+                    $totalLayanan += $subtotal;
                 }
 
                 // (B) OBAT
@@ -1963,6 +1970,9 @@ class APIMobileController extends Controller
                             'harga' => $harga,
                             'subtotal' => $subtotal,
                         ]);
+
+                        // ✅ FIX: isi total_obat di header
+                        $totalObat += $subtotal;
                     }
                 }
 
@@ -1989,7 +1999,7 @@ class APIMobileController extends Controller
                     }
                 }
 
-                // ✅ (D) RADIOLOGI - PERBAIKAN
+                // (D) RADIOLOGI
                 if (! empty($orderRadiologiId)) {
                     $radRows = DB::table('order_radiologi_detail as ord')
                         ->join('jenis_pemeriksaan_radiologi as jpr', 'jpr.id', '=', 'ord.jenis_pemeriksaan_radiologi_id')
@@ -2004,7 +2014,6 @@ class APIMobileController extends Controller
                         ->get();
 
                     foreach ($radRows as $row) {
-                        // ✅ TIDAK SKIP - masukkan semua ke billing bahkan jika hasil belum ada
                         $harga = (float) ($row->harga_pemeriksaan_radiologi ?? 0);
                         $qty = 1;
                         $subtotal = $harga * $qty;
@@ -2019,7 +2028,11 @@ class APIMobileController extends Controller
                     }
                 }
 
-                $pembayaran->update(['total_tagihan' => $total]);
+                // ✅ UPDATE HEADER PEMBAYARAN (INI YANG DIBUTUHKAN FLUTTER)
+                // ✅ Dokter cuma set total_tagihan (yang ada di DB)
+                $pembayaran->update([
+                    'total_tagihan' => $total,
+                ]);
 
                 return [
                     'emr' => $emr->fresh(['perawat']),
@@ -2027,7 +2040,9 @@ class APIMobileController extends Controller
                     'pembayaran' => $pembayaran->fresh(),
                     'billing_info' => [
                         'total' => $total,
-                        'detail_count' => DB::table('pembayaran_detail')->where('pembayaran_id', $pembayaran->id)->count(),
+                        'detail_count' => DB::table('pembayaran_detail')
+                            ->where('pembayaran_id', $pembayaran->id)
+                            ->count(),
                     ],
                     'order_lab_id' => $orderLabId ?? null,
                     'order_radiologi_id' => $orderRadiologiId ?? null,
@@ -3927,6 +3942,465 @@ class APIMobileController extends Controller
     }
 
     // punya pasien
+    public function pasienListOrderRadiologi(Request $request)
+    {
+        try {
+            $user = $request->user();
+            if (! $user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized',
+                ], 401);
+            }
+
+            $pasien = \App\Models\Pasien::where('user_id', $user->id)->first();
+            if (! $pasien) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data pasien tidak ditemukan',
+                ], 404);
+            }
+
+            // ✅ Subquery progress: total & selesai per order
+            $progressSub = DB::table('order_radiologi_detail as ord')
+                ->selectRaw("
+                ord.order_radiologi_id,
+                COUNT(*) as total,
+                SUM(CASE WHEN ord.status_pemeriksaan = 'Selesai' THEN 1 ELSE 0 END) as selesai
+            ")
+                ->groupBy('ord.order_radiologi_id');
+
+            // ✅ Ambil semua order radiologi milik pasien ini (tanpa duplikat + tanpa N+1)
+            $orders = DB::table('order_radiologi as o')
+                ->where('o.pasien_id', $pasien->id)
+                ->leftJoin('dokter as d', 'd.id', '=', 'o.dokter_id')
+
+                // ✅ dokter → poli lewat pivot
+                ->leftJoin('dokter_poli as dp', 'dp.dokter_id', '=', 'd.id')
+                ->leftJoin('poli as p', 'p.id', '=', 'dp.poli_id')
+
+                // ✅ join progress
+                ->leftJoinSub($progressSub, 'pr', function ($join) {
+                    $join->on('pr.order_radiologi_id', '=', 'o.id');
+                })
+
+                ->select(
+                    'o.id',
+                    'o.no_order_radiologi',
+                    'o.tanggal_order',
+                    'o.tanggal_pemeriksaan',
+                    'o.jam_pemeriksaan',
+                    'o.status',
+                    'o.created_at',
+                    'd.nama_dokter',
+                    'd.foto_dokter',
+
+                    // ✅ cegah duplikat: ambil 1 poli saja (atau ganti GROUP_CONCAT kalau mau semua)
+                    DB::raw('MAX(p.nama_poli) as nama_poli'),
+
+                    // ✅ progress (default 0 kalau null)
+                    DB::raw('COALESCE(pr.total, 0) as total_detail'),
+                    DB::raw('COALESCE(pr.selesai, 0) as selesai_detail')
+                )
+                ->groupBy(
+                    'o.id',
+                    'o.no_order_radiologi',
+                    'o.tanggal_order',
+                    'o.tanggal_pemeriksaan',
+                    'o.jam_pemeriksaan',
+                    'o.status',
+                    'o.created_at',
+                    'd.nama_dokter',
+                    'd.foto_dokter',
+                    'pr.total',
+                    'pr.selesai'
+                )
+                ->orderByDesc('o.created_at')
+                ->get()
+                ->map(function ($o) {
+                    return [
+                        'id' => (int) $o->id,
+                        'no_order_radiologi' => $o->no_order_radiologi,
+                        'tanggal_order' => $o->tanggal_order,
+                        'tanggal_pemeriksaan' => $o->tanggal_pemeriksaan,
+                        'jam_pemeriksaan' => $o->jam_pemeriksaan,
+                        'status' => $o->status,
+                        'progress' => [
+                            'total' => (int) $o->total_detail,
+                            'selesai' => (int) $o->selesai_detail,
+                        ],
+                        'dokter' => [
+                            'nama_dokter' => $o->nama_dokter ?? '-',
+                            'foto_dokter' => $o->foto_dokter,
+                        ],
+                        'poli' => [
+                            'nama_poli' => $o->nama_poli ?? 'Radiologi',
+                        ],
+                        'created_at' => $o->created_at,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'List order radiologi berhasil diambil',
+                'data' => $orders,
+                'total' => $orders->count(),
+            ], 200);
+
+        } catch (\Throwable $e) {
+            Log::error('ERROR pasienListOrderRadiologi: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil data order radiologi',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ✅ PASIEN - Detail Order Radiologi
+     * GET /api/pasien/order-radiologi/{orderId}
+     * Auth: Pasien (via Sanctum)
+     */
+    public function pasienDetailOrderRadiologi(Request $request, $orderId)
+    {
+        try {
+            $user = $request->user();
+            if (! $user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized',
+                ], 401);
+            }
+
+            $pasien = \App\Models\Pasien::where('user_id', $user->id)->first();
+            if (! $pasien) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data pasien tidak ditemukan',
+                ], 404);
+            }
+
+            // Ambil order + validasi kepemilikan
+            $order = DB::table('order_radiologi as o')
+                ->where('o.id', $orderId)
+                ->where('o.pasien_id', $pasien->id) // ✅ Validasi kepemilikan
+                ->leftJoin('dokter as d', 'd.id', '=', 'o.dokter_id')
+                ->leftJoin('pasien as p', 'p.id', '=', 'o.pasien_id')
+                ->select(
+                    'o.*',
+                    'd.nama_dokter',
+                    'd.foto_dokter',
+                    'p.nama_pasien',
+                    'p.jenis_kelamin',
+                    'p.tanggal_lahir'
+                )
+                ->first();
+
+            if (! $order) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Order radiologi tidak ditemukan',
+                ], 404);
+            }
+
+            // Ambil detail pemeriksaan + hasil (jika ada)
+            $details = DB::table('order_radiologi_detail as d')
+                ->join('jenis_pemeriksaan_radiologi as j', 'j.id', '=', 'd.jenis_pemeriksaan_radiologi_id')
+                ->leftJoin('hasil_radiologi as h', 'h.order_radiologi_detail_id', '=', 'd.id')
+                ->leftJoin('perawat as pr', 'pr.id', '=', 'h.perawat_id')
+                ->leftJoin('dokter as dr', 'dr.id', '=', 'h.dokter_radiologi_id')
+                ->where('d.order_radiologi_id', $orderId)
+                ->select(
+                    'd.id as order_radiologi_detail_id',
+                    'd.status_pemeriksaan',
+
+                    'j.id as jenis_id',
+                    'j.kode_pemeriksaan',
+                    'j.nama_pemeriksaan',
+                    'j.deskripsi',
+                    'j.harga_pemeriksaan_radiologi',
+
+                    'h.id as hasil_id',
+                    'h.foto_hasil_radiologi',
+                    'h.keterangan as interpretasi',
+                    'h.tanggal_pemeriksaan as tanggal_hasil',
+                    'h.jam_pemeriksaan as jam_hasil',
+
+                    'pr.nama_perawat as radiografer_nama',
+                    'dr.nama_dokter as dokter_radiologi_nama'
+                )
+                ->get()
+                ->map(function ($d) {
+                    return [
+                        'order_radiologi_detail_id' => (int) $d->order_radiologi_detail_id,
+                        'status_pemeriksaan' => $d->status_pemeriksaan,
+
+                        'pemeriksaan' => [
+                            'id' => (int) $d->jenis_id,
+                            'kode_pemeriksaan' => $d->kode_pemeriksaan,
+                            'nama_pemeriksaan' => $d->nama_pemeriksaan,
+                            'deskripsi' => $d->deskripsi,
+                            'harga' => (float) $d->harga_pemeriksaan_radiologi,
+                        ],
+
+                        'hasil' => $d->hasil_id ? [
+                            'id' => (int) $d->hasil_id,
+                            'foto_url' => $d->foto_hasil_radiologi
+                                ? asset('storage/'.$d->foto_hasil_radiologi)
+                                : null,
+                            'interpretasi' => $d->interpretasi,
+                            'tanggal_pemeriksaan' => $d->tanggal_hasil,
+                            'jam_pemeriksaan' => $d->jam_hasil,
+                            'radiografer' => $d->radiografer_nama,
+                            'dokter_radiologi' => $d->dokter_radiologi_nama,
+                        ] : null,
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Detail order radiologi berhasil diambil',
+                'data' => [
+                    'id' => (int) $order->id,
+                    'no_order_radiologi' => $order->no_order_radiologi,
+                    'tanggal_order' => $order->tanggal_order,
+                    'tanggal_pemeriksaan' => $order->tanggal_pemeriksaan,
+                    'jam_pemeriksaan' => $order->jam_pemeriksaan,
+                    'status' => $order->status,
+
+                    'dokter' => [
+                        'nama_dokter' => $order->nama_dokter ?? '-',
+                        'foto_dokter' => $order->foto_dokter,
+                    ],
+
+                    'pasien' => [
+                        'nama_pasien' => $order->nama_pasien,
+                        'jenis_kelamin' => $order->jenis_kelamin,
+                        'tanggal_lahir' => $order->tanggal_lahir,
+                    ],
+
+                    'detail' => $details,
+
+                    'created_at' => $order->created_at,
+                ],
+            ], 200);
+
+        } catch (\Throwable $e) {
+            Log::error('ERROR pasienDetailOrderRadiologi: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil detail order radiologi',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ✅ PASIEN - List Hasil Radiologi (yang sudah selesai)
+     * GET /api/pasien/hasil-radiologi
+     * Auth: Pasien (via Sanctum)
+     */
+    public function pasienListHasilRadiologi(Request $request)
+    {
+        try {
+            $user = $request->user();
+            if (! $user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized',
+                ], 401);
+            }
+
+            $pasien = \App\Models\Pasien::where('user_id', $user->id)->first();
+            if (! $pasien) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data pasien tidak ditemukan',
+                ], 404);
+            }
+
+            // Ambil hasil radiologi yang sudah selesai
+            $hasil = DB::table('hasil_radiologi as h')
+                ->join('order_radiologi_detail as od', 'od.id', '=', 'h.order_radiologi_detail_id')
+                ->join('order_radiologi as o', 'o.id', '=', 'od.order_radiologi_id')
+                ->join('jenis_pemeriksaan_radiologi as j', 'j.id', '=', 'od.jenis_pemeriksaan_radiologi_id')
+                ->leftJoin('dokter as d', 'd.id', '=', 'o.dokter_id')
+                ->leftJoin('perawat as pr', 'pr.id', '=', 'h.perawat_id')
+                ->where('o.pasien_id', $pasien->id)
+                ->where('od.status_pemeriksaan', 'Selesai')
+                ->select(
+                    'h.id as hasil_id',
+                    'h.foto_hasil_radiologi',
+                    'h.keterangan',
+                    'h.tanggal_pemeriksaan',
+                    'h.jam_pemeriksaan',
+
+                    'o.no_order_radiologi',
+                    'o.tanggal_order',
+
+                    'j.nama_pemeriksaan',
+                    'j.kode_pemeriksaan',
+
+                    'd.nama_dokter',
+                    'pr.nama_perawat as radiografer_nama'
+                )
+                ->orderByDesc('h.tanggal_pemeriksaan')
+                ->orderByDesc('h.jam_pemeriksaan')
+                ->get()
+                ->map(function ($h) {
+                    return [
+                        'hasil_id' => (int) $h->hasil_id,
+                        'foto_url' => $h->foto_hasil_radiologi
+                            ? asset('storage/'.$h->foto_hasil_radiologi)
+                            : null,
+                        'interpretasi' => $h->keterangan,
+                        'tanggal_pemeriksaan' => $h->tanggal_pemeriksaan,
+                        'jam_pemeriksaan' => $h->jam_pemeriksaan,
+
+                        'pemeriksaan' => [
+                            'nama_pemeriksaan' => $h->nama_pemeriksaan,
+                            'kode_pemeriksaan' => $h->kode_pemeriksaan,
+                        ],
+
+                        'order' => [
+                            'no_order_radiologi' => $h->no_order_radiologi,
+                            'tanggal_order' => $h->tanggal_order,
+                        ],
+
+                        'dokter' => [
+                            'nama_dokter' => $h->nama_dokter ?? '-',
+                        ],
+
+                        'radiografer' => [
+                            'nama' => $h->radiografer_nama ?? '-',
+                        ],
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'message' => 'List hasil radiologi berhasil diambil',
+                'data' => $hasil,
+                'total' => $hasil->count(),
+            ], 200);
+
+        } catch (\Throwable $e) {
+            Log::error('ERROR pasienListHasilRadiologi: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil hasil radiologi',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * ✅ PASIEN - Detail Hasil Radiologi
+     * GET /api/pasien/hasil-radiologi/{hasilId}
+     * Auth: Pasien (via Sanctum)
+     */
+    public function pasienDetailHasilRadiologi(Request $request, $hasilId)
+    {
+        try {
+            $user = $request->user();
+            if (! $user) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized',
+                ], 401);
+            }
+
+            $pasien = \App\Models\Pasien::where('user_id', $user->id)->first();
+            if (! $pasien) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data pasien tidak ditemukan',
+                ], 404);
+            }
+
+            // Ambil detail hasil + validasi kepemilikan
+            $hasil = DB::table('hasil_radiologi as h')
+                ->join('order_radiologi_detail as od', 'od.id', '=', 'h.order_radiologi_detail_id')
+                ->join('order_radiologi as o', 'o.id', '=', 'od.order_radiologi_id')
+                ->join('jenis_pemeriksaan_radiologi as j', 'j.id', '=', 'od.jenis_pemeriksaan_radiologi_id')
+                ->leftJoin('dokter as d', 'd.id', '=', 'o.dokter_id')
+                ->leftJoin('perawat as pr', 'pr.id', '=', 'h.perawat_id')
+                ->leftJoin('dokter as dr', 'dr.id', '=', 'h.dokter_radiologi_id')
+                ->where('h.id', $hasilId)
+                ->where('o.pasien_id', $pasien->id) // ✅ Validasi kepemilikan
+                ->select(
+                    'h.*',
+                    'o.no_order_radiologi',
+                    'o.tanggal_order',
+                    'j.nama_pemeriksaan',
+                    'j.kode_pemeriksaan',
+                    'j.deskripsi',
+                    'd.nama_dokter as dokter_order',
+                    'pr.nama_perawat as radiografer_nama',
+                    'dr.nama_dokter as dokter_radiologi_nama'
+                )
+                ->first();
+
+            if (! $hasil) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Hasil radiologi tidak ditemukan',
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Detail hasil radiologi berhasil diambil',
+                'data' => [
+                    'id' => (int) $hasil->id,
+                    'foto_url' => $hasil->foto_hasil_radiologi
+                        ? asset('storage/'.$hasil->foto_hasil_radiologi)
+                        : null,
+                    'interpretasi' => $hasil->keterangan,
+                    'tanggal_pemeriksaan' => $hasil->tanggal_pemeriksaan,
+                    'jam_pemeriksaan' => $hasil->jam_pemeriksaan,
+
+                    'pemeriksaan' => [
+                        'nama_pemeriksaan' => $hasil->nama_pemeriksaan,
+                        'kode_pemeriksaan' => $hasil->kode_pemeriksaan,
+                        'deskripsi' => $hasil->deskripsi,
+                    ],
+
+                    'order' => [
+                        'no_order_radiologi' => $hasil->no_order_radiologi,
+                        'tanggal_order' => $hasil->tanggal_order,
+                    ],
+
+                    'dokter_order' => [
+                        'nama_dokter' => $hasil->dokter_order ?? '-',
+                    ],
+
+                    'radiografer' => [
+                        'nama' => $hasil->radiografer_nama ?? '-',
+                    ],
+
+                    'dokter_radiologi' => [
+                        'nama' => $hasil->dokter_radiologi_nama ?? '-',
+                    ],
+
+                    'created_at' => $hasil->created_at,
+                ],
+            ], 200);
+
+        } catch (\Throwable $e) {
+            Log::error('ERROR pasienDetailHasilRadiologi: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal mengambil detail hasil radiologi',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 
     private function getAuthPasien(Request $request): ?\App\Models\Pasien
     {

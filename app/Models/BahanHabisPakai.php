@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class BahanHabisPakai extends Model
@@ -10,6 +11,8 @@ class BahanHabisPakai extends Model
     protected $table = 'bahan_habis_pakai';
 
     protected $guarded = [];
+
+    protected $appends = ['sisa_hari'];
 
     public function brandFarmasi()
     {
@@ -68,7 +71,7 @@ class BahanHabisPakai extends Model
             $kode = $data['kode'] ?? self::buatKodeBHP();
             $totalStokInput = array_sum($data['stok_depot'] ?? []);
 
-            // 1. Simpan ke tabel bahan_habis_pakai
+            // 1. Simpan ke tabel master
             $dataBhp = self::create([
                 'kode'                   => $kode,
                 'brand_farmasi_id'       => $data['brand_farmasi_id'],
@@ -82,134 +85,63 @@ class BahanHabisPakai extends Model
                 'harga_otc_bhp'          => $data['harga_otc_bhp'],
             ]);
 
-            // $dataBhpId = $dataBhp->id;
-
+            // 2. Simpan ke tabel Batch (per barang)
             $dataBatchBhp = BatchBahanHabisPakai::createData($dataBhp->id, $data);
 
-            // $dataBatchBhpId = $dataBatchBhp->id;
-
+            // 3. Siapkan data untuk Sync Pivot Depot
             $syncData = [];
             $depotIds = $data['depot_id'] ?? [];
             $tipeDepotIds = $data['tipe_depot'] ?? [];
             $stokDepot = $data['stok_depot'] ?? [];
 
-            // 2. Loop Pertama: Sync Pivot dan Update Tipe Depot
             foreach ($depotIds as $index => $depId) {
                 if (empty($depId)) continue;
 
-                // Masukkan ke array sync untuk tabel pivot 'depot_bhp'
-                $syncData[$depId] = [
-                    'stok_barang' => (int) ($stokDepot[$index] ?? 0)
-                ];
+                $stokBaris = (int) ($stokDepot[$index] ?? 0);
+                $syncData[$depId] = ['stok_barang' => $stokBaris];
 
-                // Update Tipe Depot di tabel 'depot'
-                $tipeId = $tipeDepotIds[$index] ?? null;
-                if ($tipeId) {
-                    Depot::where('id', $depId)->update(['tipe_depot_id' => $tipeId]);
+                // Update tipe depot (jika ada perubahan)
+                if (isset($tipeDepotIds[$index])) {
+                    Depot::where('id', $depId)->update(['tipe_depot_id' => $tipeDepotIds[$index]]);
                 }
             }
 
-            if (!empty($syncData)) {
-                // Jalankan sync ke tabel pivot
-                $dataBhp->depotBHP()->sync($syncData);
+            // 4. Sync ke tabel depot_bhp (Stok per Barang per Depot)
+            $dataBhp->depotBHP()->sync($syncData);
 
-                // 3. Loop Kedua: Hitung Akumulasi Stok Seluruh Barang di Depot tersebut
-                // Ini agar kolom 'jumlah_stok_depot' adalah total dari SEMUA BHP + Obat yang ada di depot itu
-                foreach ($depotIds as $depId) {
-                    if (empty($depId)) continue;
-
-                    // Hitung total stok dari semua BHP yang ada di depot ini
-                    $totalBhpDiDepot = DB::table('depot_bhp')
-                        ->where('depot_id', $depId)
-                        ->sum('stok_barang');
-
-                    // Jika tabel Obat juga menggunakan depot yang sama, 
-                    // kamu bisa menjumlahkannya juga di sini (Opsional tergantung strukturmu)
-                    // $totalObatDiDepot = DB::table('depot_obat')->where('depot_id', $depId)->sum('stok_obat');
-
-                    $totalSemuaBaru = $totalBhpDiDepot; // + $totalObatDiDepot;
-
-                    Depot::where('id', $depId)->update([
-                        'jumlah_stok_depot' => $totalSemuaBaru
-                    ]);
-                }
+            // 5. Update Total Akumulasi di Tabel Depot (Master Depot)
+            foreach ($depotIds as $depId) {
+                $totalSemuaDiDepot = DB::table('depot_bhp')->where('depot_id', $depId)->sum('stok_barang');
+                // Jika ada tabel depot_obat, jumlahkan juga di sini agar balance
+                Depot::where('id', $depId)->update(['jumlah_stok_depot' => $totalSemuaDiDepot]);
             }
 
-            $dataBatchBhpDepot = BatchBahanHabisPakaiDepot::createData($dataBatchBhp->id, $data);
+            // 6. Simpan ke tabel Batch Depot (Stok per Batch per Depot)
+            // Pastikan di dalam class ini kamu melakukan looping terhadap $data['depot_id']
+            BatchBahanHabisPakaiDepot::createData($dataBatchBhp->id, $data);
 
-            return [$dataBhp, $dataBatchBhp, $dataBatchBhpDepot];
+            return $dataBhp; // Kembalikan objek BHP agar bisa di-load di controller
         });
     }
 
-    public static function updateData($data, $bhpId)
+    public function updateBHP(array $data)
     {
-        return DB::transaction(function () use ($data, $bhpId) {
-            $dataBhp = self::where('id', $bhpId)->firstOrFail();
-            $kode = $data['kode'] ?? self::buatKodeBHP();
-            $totalStokInput = array_sum($data['stok_depot'] ?? []);
-
-            // 1. Simpan ke tabel bahan_habis_pakai
-            $dataBhp->update([
-                'kode'                   => $kode,
-                'brand_farmasi_id'       => $data['brand_farmasi_id'],
-                'jenis_id'               => $data['jenis_id'],
-                'satuan_id'              => $data['satuan_id'],
-                'nama_barang'            => $data['nama_barang'],
-                'stok_barang'            => $totalStokInput,
-                'dosis'                  => $data['dosis'],
-                'harga_beli_satuan_bhp'  => $data['harga_beli_satuan_bhp'],
-                'harga_jual_umum_bhp'    => $data['harga_jual_umum_bhp'],
-                'harga_otc_bhp'          => $data['harga_otc_bhp'],
+        return DB::transaction(function () use ($data) {
+            // Karena ini bukan static, kita gunakan $this untuk merujuk ke record saat ini
+            $this->update([
+                'kode'                  => $data['kode'] ?? $this->kode,
+                'brand_farmasi_id'      => $data['brand_farmasi_id'],
+                'jenis_id'              => $data['jenis_id'],
+                'satuan_id'             => $data['satuan_id'],
+                'nama_barang'           => $data['nama_barang'],
+                'dosis'                 => $data['dosis'],
+                'harga_beli_satuan_bhp' => $data['harga_beli_satuan_bhp'],
+                'harga_jual_umum_bhp'   => $data['harga_jual_umum_bhp'],
+                'harga_otc_bhp'         => $data['harga_otc_bhp'],
+                // Stok tetap terjaga karena tidak dimasukkan di sini
             ]);
 
-            $syncData = [];
-            $depotIds = $data['depot_id'] ?? [];
-            $tipeDepotIds = $data['tipe_depot'] ?? [];
-            $stokDepot = $data['stok_depot'] ?? [];
-
-            // 2. Loop Pertama: Sync Pivot dan Update Tipe Depot
-            foreach ($depotIds as $index => $depId) {
-                if (empty($depId)) continue;
-
-                // Masukkan ke array sync untuk tabel pivot 'depot_bhp'
-                $syncData[$depId] = [
-                    'stok_barang' => (int) ($stokDepot[$index] ?? 0)
-                ];
-
-                // Update Tipe Depot di tabel 'depot'
-                $tipeId = $tipeDepotIds[$index] ?? null;
-                if ($tipeId) {
-                    Depot::where('id', $depId)->update(['tipe_depot_id' => $tipeId]);
-                }
-            }
-
-            if (!empty($syncData)) {
-                // Jalankan sync ke tabel pivot
-                $dataBhp->depotBHP()->sync($syncData);
-
-                // 3. Loop Kedua: Hitung Akumulasi Stok Seluruh Barang di Depot tersebut
-                // Ini agar kolom 'jumlah_stok_depot' adalah total dari SEMUA BHP + Obat yang ada di depot itu
-                foreach ($depotIds as $depId) {
-                    if (empty($depId)) continue;
-
-                    // Hitung total stok dari semua BHP yang ada di depot ini
-                    $totalBhpDiDepot = DB::table('depot_bhp')
-                        ->where('depot_id', $depId)
-                        ->sum('stok_barang');
-
-                    // Jika tabel Obat juga menggunakan depot yang sama, 
-                    // kamu bisa menjumlahkannya juga di sini (Opsional tergantung strukturmu)
-                    // $totalObatDiDepot = DB::table('depot_obat')->where('depot_id', $depId)->sum('stok_obat');
-
-                    $totalSemuaBaru = $totalBhpDiDepot; // + $totalObatDiDepot;
-
-                    Depot::where('id', $depId)->update([
-                        'jumlah_stok_depot' => $totalSemuaBaru
-                    ]);
-                }
-            }
-
-            return [$dataBhp];
+            return $this; // Kembalikan objeknya sendiri
         });
     }
 
@@ -251,5 +183,80 @@ class BahanHabisPakai extends Model
         ]);
 
         return $query;
+    }
+
+    public function scopeGetWarningKadaluarsa($query, $threshold = 90, $limit = 5)
+    {
+        $today = Carbon::today()->startOfDay();
+        $nearDate = $today->copy()->addDays($threshold)->endOfDay();
+
+        return $query->select('id', 'kode', 'nama_barang', 'stok_barang')
+            ->addSelect([
+                'tgl_exp_terdekat' => BatchBahanHabisPakai::select('tanggal_kadaluarsa_bahan_habis_pakai')
+                    ->whereColumn('bahan_habis_pakai_id', 'bahan_habis_pakai.id')
+                    ->whereNotNull('tanggal_kadaluarsa_bahan_habis_pakai')
+                    ->orderBy('tanggal_kadaluarsa_bahan_habis_pakai', 'asc')
+                    ->limit(1)
+            ])
+            ->whereHas('batchBahanHabisPakai', function ($q) use ($nearDate) {
+                $q->whereNotNull('tanggal_kadaluarsa_bahan_habis_pakai')
+                    ->whereDate('tanggal_kadaluarsa_bahan_habis_pakai', '<=', $nearDate);
+            })
+            ->with(['batchBahanHabisPakai' => function ($q) use ($nearDate) {
+                $q->whereDate('tanggal_kadaluarsa_bahan_habis_pakai', '<=', $nearDate)
+                    ->orderBy('tanggal_kadaluarsa_bahan_habis_pakai', 'asc')
+                    ->with('batchBahanHabisPakaiDepot'); // Tambahkan ini untuk mengambil data stok per depot
+            }])
+            ->orderBy('tgl_exp_terdekat', 'asc')
+            ->limit($limit)
+            ->get()
+            ->map(function ($bhp) use ($threshold) {
+                $bhp->tanggal_kadaluarsa_terdekat = $bhp->tgl_exp_terdekat;
+                $diff = $bhp->sisa_hari;
+
+                if ($diff < 0) {
+                    $bhp->status_key = 'expired';
+                } elseif ($diff === 0) {
+                    $bhp->status_key = 'today';
+                } else {
+                    $bhp->status_key = 'warning';
+                }
+
+                return $bhp;
+            });
+    }
+
+    public function scopeGetDataKadaluarsa($query, $threshold = 90)
+    {
+        $nearDate = Carbon::today()->addDays($threshold)->endOfDay();
+
+        return $query->select('id', 'kode', 'nama_barang', 'stok_barang', 'satuan_id')
+            // Menambahkan kolom virtual 'tgl_exp_terdekat' untuk keperluan sorting
+            ->addSelect([
+                'tgl_exp_terdekat' => BatchBahanHabisPakai::select('tanggal_kadaluarsa_bahan_habis_pakai')
+                    ->whereColumn('bahan_habis_pakai_id', 'bahan_habis_pakai.id')
+                    ->whereNotNull('tanggal_kadaluarsa_bahan_habis_pakai')
+                    ->orderBy('tanggal_kadaluarsa_bahan_habis_pakai', 'asc')
+                    ->limit(1)
+            ])
+            ->with(['satuanBHP:id,nama_satuan_obat'])
+            ->whereHas('batchBahanHabisPakai', function ($q) use ($nearDate) {
+                $q->whereNotNull('tanggal_kadaluarsa_bahan_habis_pakai')
+                    ->whereDate('tanggal_kadaluarsa_bahan_habis_pakai', '<=', $nearDate);
+            })
+            // Urutkan berdasarkan kolom virtual tadi
+            ->orderBy('tgl_exp_terdekat', 'asc');
+    }
+
+    // Accessor untuk sisa hari (Bisa dipakai di mana saja: $obat->sisa_hari)
+    public function getSisaHariAttribute()
+    {
+        // Menggunakan atribut virtual dari subquery di scope
+        if (!$this->tgl_exp_terdekat) return null;
+
+        $today = Carbon::today()->startOfDay();
+        $exp   = Carbon::parse($this->tgl_exp_terdekat)->startOfDay();
+
+        return $today->diffInDays($exp, false);
     }
 }

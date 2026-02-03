@@ -134,7 +134,7 @@
 <!-- Modal Create Obat -->
 <div id="modalCreateObat" aria-hidden="true"
     class="hidden fixed inset-0 z-50 flex items-center justify-center w-full h-full bg-black/40 px-4">
-    <div class="relative w-full max-w-4xl">
+    <div class="relative w-full max-w-6xl">
         <!-- Card -->
         <div
             class="relative flex flex-col bg-white rounded-2xl shadow-2xl dark:bg-gray-900 border border-gray-100 dark:border-gray-700 max-h-[90vh]">
@@ -611,7 +611,7 @@
 <!-- Modal Update Obat -->
 <div id="modalUpdateObat" aria-hidden="true"
     class="hidden fixed inset-0 z-50 flex items-center justify-center w-full h-full px-4 bg-black/40">
-    <div class="relative w-full max-w-4xl">
+    <div class="relative w-full max-w-6xl">
         <!-- Card -->
         <div
             class="relative flex flex-col bg-white rounded-2xl shadow-2xl dark:bg-gray-900 border border-gray-100 dark:border-gray-700 max-h-[90vh]">

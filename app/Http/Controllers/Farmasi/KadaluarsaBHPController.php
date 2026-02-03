@@ -19,85 +19,43 @@ class KadaluarsaBHPController extends Controller
     // ==========================
     public function getWarningKadaluarsa(Request $request)
     {
-        $today     = Carbon::today()->startOfDay();
-        $threshold = (int) $request->input('threshold', 90);  // warning window ke depan
+        $threshold = (int) $request->input('threshold', 90);
         $limit     = (int) $request->input('limit', 5);
 
-        $nearDate = $today->copy()->addDays($threshold)->endOfDay();
+        // Langsung panggil scope dari Model
+        $data = BahanHabisPakai::getWarningKadaluarsa($threshold, $limit);
 
-        /**
-         * ✅ Ambil:
-         * - sudah lewat (expired)  : tanggal < today
-         * - hari ini              : tanggal = today
-         * - kurang dari threshold : today < tanggal <= nearDate
-         *
-         * Jadi range query: tanggal <= nearDate (include expired juga)
-         */
-        $dataBhp = BahanHabisPakai::select('id', 'kode', 'nama_barang', 'stok_barang', 'tanggal_kadaluarsa_bhp')
-            ->whereNotNull('tanggal_kadaluarsa_bhp')
-            ->whereDate('tanggal_kadaluarsa_bhp', '<=', $nearDate)
-            ->orderBy('tanggal_kadaluarsa_bhp', 'asc')
-            ->limit($limit)
-            ->get()
-            ->map(function ($bhp) use ($today, $threshold) {
-                $exp = Carbon::parse($bhp->tanggal_kadaluarsa_bhp)->startOfDay();
-                $diff = $today->diffInDays($exp, false); // negatif = lewat
-
-                $bhp->sisa_hari = $diff;
-
-                // ✅ status khusus untuk FE
-                if ($diff < 0) {
-                    $bhp->status_key = 'expired'; // lewat
-                } elseif ($diff === 0) {
-                    $bhp->status_key = 'today';   // kadaluarsa hari ini
-                } elseif ($diff <= $threshold) {
-                    $bhp->status_key = 'warning'; // < 7 hari
-                } else {
-                    $bhp->status_key = 'aman';
-                }
-
-                return $bhp;
-            });
-
-        return response()->json($dataBhp);
+        return response()->json($data);
     }
 
+    // ==========================
+    // DATA UNTUK DATATABLES
+    // ==========================
     public function getDataKadaluarsaBHP(Request $request)
     {
-        $today     = Carbon::today()->startOfDay();
-        $threshold = (int) $request->input('threshold', 60);
-        $nearDate  = $today->copy()->addDays($threshold)->endOfDay();
+        $threshold = (int) $request->input('threshold', 90);
 
-        /**
-         * ✅ Fokus tanggal kadaluarsa:
-         * - hanya yang punya tanggal
-         * - tampilkan yang exp <= nearDate
-         *   (include expired + hari ini + yang akan datang sampai threshold)
-         */
-        $dataBhp = BahanHabisPakai::query()
-            ->select('id', 'kode', 'nama_barang', 'stok_barang', 'tanggal_kadaluarsa_bhp', 'satuan_id')
-            ->with(['satuanBHP:id,nama_satuan_obat'])
-            ->whereNotNull('tanggal_kadaluarsa_bhp')
-            ->whereDate('tanggal_kadaluarsa_bhp', '<=', $nearDate);
+        // Panggil scope dari model
+        $query = BahanHabisPakai::getDataKadaluarsa($threshold);
 
-        return datatables()->eloquent($dataBhp)
+        // dd($query);
+
+        return datatables()->eloquent($query)
             ->addIndexColumn()
 
-            // satuan untuk FE (karena JS kamu pakai row.satuan)
+            // Ambil dari relasi yang sudah di-eager load di model
             ->addColumn('satuan', function ($row) {
-                return optional($row->satuanBHP)->nama_satuan_obat ?? '';
+                return optional($row->satuanObat)->nama_satuan_obat ?? '';
             })
 
-            // sisa hari
-            ->addColumn('sisa_hari', function ($row) use ($today) {
-                $exp = Carbon::parse($row->tanggal_kadaluarsa_bhp)->startOfDay();
-                return $today->diffInDays($exp, false);
+            // Menggunakan Accessor 'sisa_hari' dari Model
+            ->addColumn('tanggal_kadaluarsa_bhp', function ($row) {
+                return $row->tgl_exp_terdekat;
             })
 
-            // status badge (kalau FE mau pakai dari BE langsung)
-            ->addColumn('status_kadaluarsa', function ($row) use ($today) {
-                $exp  = Carbon::parse($row->tanggal_kadaluarsa_bhp)->startOfDay();
-                $diff = $today->diffInDays($exp, false);
+            // Status badge berdasarkan nilai sisa_hari di Model
+            ->addColumn('status_kadaluarsa', function ($row) {
+                $diff = $row->sisa_hari;
 
                 if ($diff < 0) {
                     return '<span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] bg-red-50 text-red-600 border border-red-200">Expired</span>';

@@ -163,6 +163,24 @@ Route::middleware(['auth:sanctum', 'role:Pasien'])->prefix('pasien')->name('pasi
         // pasien hapus testimoni miliknya
         Route::delete('/{id}', [APIMobileController::class, 'pasienDeleteTestimoni'])->name('delete');
     });
+    /*
+    |--------------------------------------------------------------------------
+    | RADIOLOGI - PASIEN ✨ NEW ✨
+    |--------------------------------------------------------------------------
+    */
+    Route::prefix('radiologi')->name('radiologi.')->group(function () {
+        // List order radiologi milik pasien
+        Route::get('/order-radiologi', [APIMobileController::class, 'pasienListOrderRadiologi'])->name('order_list');
+        
+        // Detail order radiologi
+        Route::get('/order-radiologi/{orderId}', [APIMobileController::class, 'pasienDetailOrderRadiologi'])->name('order_detail');
+        
+        // List hasil radiologi yang sudah selesai
+        Route::get('/hasil-radiologi', [APIMobileController::class, 'pasienListHasilRadiologi'])->name('hasil_list');
+        
+        // Detail hasil radiologi
+        Route::get('/hasil-radiologi/{hasilId}', [APIMobileController::class, 'pasienDetailHasilRadiologi'])->name('hasil_detail');
+    });
 });
 
 /*

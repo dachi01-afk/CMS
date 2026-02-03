@@ -115,15 +115,16 @@ class BahanHabisPakaiController extends Controller
     public function updateDataBahanHabisPakai(updateBahanHabisPakaiRequest $request, $id)
     {
         try {
-            // Data sudah otomatis tervalidasi dan ter-parse harganya di Request Class
-            $result = BahanHabisPakai::updateData($request->validated(), $id);
+            // 1. Cari objeknya dulu
+            $bhp = BahanHabisPakai::findOrFail($id);
 
-            $bhp = $result[0];
+            // 2. Panggil method dari objek tersebut
+            $bhp->updateBHP($request->validated());
 
             return response()->json([
                 'status'  => 200,
                 'message' => 'Berhasil update data BHP!',
-                'data'    => $bhp->load('brandFarmasi', 'jenisBHP', 'satuanBHP', 'depotBHP', 'batchBahanHabisPakai.batchBahanHabisPakaiDepot'),
+                'data'    => $bhp->load('brandFarmasi', 'jenisBHP', 'satuanBHP', 'depotBHP'),
             ], 200);
         } catch (\Exception $e) {
             return response()->json([

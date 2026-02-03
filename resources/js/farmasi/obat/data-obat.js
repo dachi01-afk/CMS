@@ -88,8 +88,8 @@ $(function () {
                         stok === 0
                             ? "bg-red-50 text-red-700 border-red-100"
                             : stok < 10
-                            ? "bg-amber-50 text-amber-700 border-amber-100"
-                            : "bg-emerald-50 text-emerald-700 border-emerald-100";
+                              ? "bg-amber-50 text-amber-700 border-amber-100"
+                              : "bg-emerald-50 text-emerald-700 border-emerald-100";
 
                     return `
                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] border ${warna}">
@@ -161,7 +161,7 @@ $(function () {
         dom: "t",
         rowCallback: function (row, data) {
             $(row).addClass(
-                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600",
             );
             $("td", row).addClass("px-6 py-4 text-gray-900 dark:text-white");
         },
@@ -373,14 +373,14 @@ $(function () {
         $info.text(
             `Menampilkan ${info.start + 1}–${info.end} dari ${
                 info.recordsDisplay
-            } data (Halaman ${currentPage} dari ${totalPages})`
+            } data (Halaman ${currentPage} dari ${totalPages})`,
         );
         $pagination.empty();
 
         const prevDisabled =
             currentPage === 1 ? "opacity-50 cursor-not-allowed" : "";
         $pagination.append(
-            `<li><a href="#" id="btnPrev" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 ${prevDisabled}">Previous</a></li>`
+            `<li><a href="#" id="btnPrev" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 ${prevDisabled}">Previous</a></li>`,
         );
 
         const maxVisible = 5;
@@ -395,14 +395,14 @@ $(function () {
                     ? "text-blue-600 bg-blue-50 border-blue-300 hover:bg-blue-100"
                     : "text-gray-500 bg-white border-gray-300 hover:bg-gray-100 hover:text-gray-700";
             $pagination.append(
-                `<li><a href="#" class="page-number flex items-center justify-center px-3 h-8 border ${active}" data-page="${i}">${i}</a></li>`
+                `<li><a href="#" class="page-number flex items-center justify-center px-3 h-8 border ${active}" data-page="${i}">${i}</a></li>`,
             );
         }
 
         const nextDisabled =
             currentPage === totalPages ? "opacity-50 cursor-not-allowed" : "";
         $pagination.append(
-            `<li><a href="#" id="btnNext" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 ${nextDisabled}">Next</a></li>`
+            `<li><a href="#" id="btnNext" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 ${nextDisabled}">Next</a></li>`,
         );
     }
 
@@ -1206,7 +1206,7 @@ $(function () {
         function () {
             resetFormCreate();
             if (modalCreate) modalCreate.hide();
-        }
+        },
     );
 
     // ==========================
@@ -1279,7 +1279,7 @@ $(function () {
 
                 depot_id.push($row.find(".select-nama-depot").val() || "");
                 tipe_depot.push(
-                    ($row.find(".select-tipe-depot").val() || "").trim()
+                    ($row.find(".select-tipe-depot").val() || "").trim(),
                 );
                 stok_depot.push($row.find(".input-stok-depot").val() || 0);
             });
@@ -1412,7 +1412,7 @@ $(function () {
         "#depot-container-update .input-stok-depot",
         function () {
             hitungTotalStokDepotUpdate();
-        }
+        },
     );
 
     // =====================================
@@ -2109,7 +2109,7 @@ $(function () {
 
     $("#edit_harga_jual_umum").on("blur", function () {
         const beli = parseRupiahNumberUpdate(
-            $("#edit_harga_beli_satuan").val()
+            $("#edit_harga_beli_satuan").val(),
         );
         const jual = parseRupiahNumberUpdate($(this).val());
 
@@ -2125,6 +2125,34 @@ $(function () {
             $(this).val(new Intl.NumberFormat("id-ID").format(beli));
         }
     });
+
+    function disableDepotSection() {
+        const $container = $("#depot-container-update");
+
+        // 1. Disable semua input dan select (Native HTML)
+        // Menggunakan .find() agar semua baris terkena, bukan cuma satu
+        $container.find("input, select").prop("disabled", true);
+
+        // 2. Tambahkan class visual (Tailwind) agar user tahu ini tidak bisa diedit
+        $container.find(".depot-row").addClass("bg-gray-100/80 opacity-80");
+        $container.find("input, select").addClass("cursor-not-allowed");
+
+        // 3. Matikan TomSelect (Wajib karena TomSelect punya UI sendiri)
+        $container
+            .find(".select-nama-depot, .select-tipe-depot")
+            .each(function () {
+                if (this.tomselect) {
+                    this.tomselect.disable();
+                }
+            });
+
+        // 4. Sembunyikan elemen aksi (Tombol Hapus & Tombol Tambah)
+        $container.find(".btn-remove-depot-update").addClass("hidden");
+        $container
+            .find(".btn-clear-depot, .btn-clear-tipe-depot")
+            .addClass("hidden");
+        $("#btn-add-depot-update").addClass("hidden");
+    }
 
     // ==========================
     // EVENT: BUKA / TUTUP MODAL UPDATE
@@ -2165,24 +2193,24 @@ $(function () {
                 if (data.total_harga != null) {
                     $("#edit_harga_beli_satuan").val(
                         new Intl.NumberFormat("id-ID").format(
-                            Number(data.total_harga)
-                        )
+                            Number(data.total_harga),
+                        ),
                     );
                 }
 
                 if (data.harga_jual_obat != null) {
                     $("#edit_harga_jual_umum").val(
                         new Intl.NumberFormat("id-ID").format(
-                            Number(data.harga_jual_obat)
-                        )
+                            Number(data.harga_jual_obat),
+                        ),
                     );
                 }
 
                 if (data.harga_otc_obat != null) {
                     $("#edit_harga_otc").val(
                         new Intl.NumberFormat("id-ID").format(
-                            Number(data.harga_otc_obat)
-                        )
+                            Number(data.harga_otc_obat),
+                        ),
                     );
                 }
 
@@ -2196,7 +2224,7 @@ $(function () {
                         nama_brand: data.brand_farmasi.nama_brand,
                     });
                     brandFarmasiSelectUpdate.setValue(
-                        String(data.brand_farmasi.id)
+                        String(data.brand_farmasi.id),
                     );
                 }
 
@@ -2218,7 +2246,7 @@ $(function () {
                         nama_satuan_obat: data.satuan_obat.nama_satuan_obat,
                     });
                     satuanObatSelectUpdate.setValue(
-                        String(data.satuan_obat.id)
+                        String(data.satuan_obat.id),
                     );
                 }
 
@@ -2250,8 +2278,8 @@ $(function () {
                     const depots = Array.isArray(data.depot_obat)
                         ? data.depot_obat
                         : Array.isArray(data.depots)
-                        ? data.depots
-                        : [];
+                          ? data.depots
+                          : [];
 
                     if (depots.length === 0) {
                         // tidak ada depot: tetap 1 row kosong
@@ -2312,7 +2340,7 @@ $(function () {
                                 tsDepot.setValue(String(depotItem.id));
                             } else {
                                 $row.find(".select-nama-depot").val(
-                                    depotItem.id ?? ""
+                                    depotItem.id ?? "",
                                 );
                             }
 
@@ -2329,12 +2357,12 @@ $(function () {
                                                 .nama_tipe_depot,
                                     });
                                     tsTipe.setValue(
-                                        String(depotItem.tipe_depot.id)
+                                        String(depotItem.tipe_depot.id),
                                     );
                                 }
                             } else if (depotItem.tipe_depot) {
                                 $row.find(".select-tipe-depot").val(
-                                    depotItem.tipe_depot.id ?? ""
+                                    depotItem.tipe_depot.id ?? "",
                                 );
                             }
 
@@ -2354,6 +2382,7 @@ $(function () {
                         // ✅ [BARU] setelah semua row depot di-set, hitung totalnya
                         hitungTotalStokDepotUpdate();
                     }
+                    disableDepotSection();
                 }
 
                 if (modalUpdate) modalUpdate.show();
@@ -2373,7 +2402,7 @@ $(function () {
         function () {
             resetFormUpdate();
             if (modalUpdate) modalUpdate.hide();
-        }
+        },
     );
 
     // ==========================
@@ -2455,7 +2484,7 @@ $(function () {
 
                 depot_id.push($row.find(".select-nama-depot").val() || "");
                 tipe_depot.push(
-                    ($row.find(".select-tipe-depot").val() || "").trim()
+                    ($row.find(".select-tipe-depot").val() || "").trim(),
                 );
                 stok_depot.push($row.find(".input-stok-depot").val() || 0);
             });
@@ -2480,10 +2509,10 @@ $(function () {
             nomor_batch: $("#edit_nomor_batch").val(),
 
             harga_beli_satuan: parseRupiahNumberUpdate(
-                $("#edit_harga_beli_satuan").val()
+                $("#edit_harga_beli_satuan").val(),
             ),
             harga_jual_umum: parseRupiahNumberUpdate(
-                $("#edit_harga_jual_umum").val()
+                $("#edit_harga_jual_umum").val(),
             ),
             harga_otc: parseRupiahNumberUpdate($("#edit_harga_otc").val()),
 
