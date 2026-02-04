@@ -45,8 +45,17 @@ class EMR extends Model
         return $this->hasOne(Pembayaran::class, 'emr_id');
     }
     public function resumeDokter()
-{
-    return $this->hasOne(\App\Models\ResumeDokter::class, 'emr_id');
-}
+    {
+        return $this->hasOne(\App\Models\ResumeDokter::class, 'emr_id');
+    }
+    public function scopeGetData($query)
+    {
+        return $query->with(['pasien', 'dokter', 'poli'])
+            ->select('emr.*');
+    }
 
+    public function scopeFilterByPerawat($query, $perawatId)
+    {
+        return $query->where('perawat_id', $perawatId);
+    }
 }

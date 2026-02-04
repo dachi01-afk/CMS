@@ -13,14 +13,14 @@ class OrderRadiologi extends Model
 
     protected $guarded = [];
 
-    public function dokter()
-    {
-        return $this->belongsTo(Dokter::class);
-    }
-
     public function pasien()
     {
-        return $this->belongsTo(Pasien::class);
+        return $this->belongsTo(Pasien::class, 'pasien_id');
+    }
+
+    public function dokter()
+    {
+        return $this->belongsTo(Dokter::class, 'dokter_id');
     }
 
     public function kunjungan()
@@ -30,7 +30,7 @@ class OrderRadiologi extends Model
 
     public function orderRadiologiDetail()
     {
-        return $this->hasMany(OrderRadiologiDetail::class);
+        return $this->hasMany(OrderRadiologiDetail::class, 'order_radiologi_id');
     }
 
     protected static function booted()

@@ -60,6 +60,7 @@ use App\Http\Controllers\PemakaianBahanHabisPakaiController;
 use App\Http\Controllers\Apoteker\Obat\PenjualanObatController;
 use App\Http\Controllers\Dokter\DokterController as DokterDokterController;
 use App\Http\Controllers\Farmasi\PengambilanObatController as FarmasiPengambilanObatController;
+use App\Http\Controllers\Perawat\RiwayatPemeriksaanController;
 
 // Rest of your web routes remain the same...
 Route::get('/')->middleware('checkAuth');
@@ -585,6 +586,20 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
             Route::get('/get-data-order-radiologi',  [OrderRadiologiController::class, 'getDataOrderRadiologi'])->name('get.data.order.radiologi');
             Route::get('/input-hasil/{id}', [OrderRadiologiController::class, 'inputHasil'])->name('input.hasil.order.radiologi');
             Route::post('/simpan-hasil', [OrderRadiologiController::class, 'simpanHasil'])->name('simpan-hasil');
+        });
+
+        Route::prefix('riwayat-pemeriksaan')->name('riwayat-pemeriksaan.')->group(function () {
+            // halaman utama (tab UI)
+            Route::get('/', [RiwayatPemeriksaanController::class, 'index'])->name('index');
+
+            Route::get('/radiologi/data', [RiwayatPemeriksaanController::class, 'dataRadiologi'])->name('radiologi.data');
+            Route::get('/radiologi/{order}', [RiwayatPemeriksaanController::class, 'showRadiologi'])->name('radiologi.show');
+
+            Route::get('/lab/data', [RiwayatPemeriksaanController::class, 'dataLab'])->name('lab.data');
+            Route::get('/lab/{order}', [RiwayatPemeriksaanController::class, 'showLab'])->name('lab.show');
+
+            Route::get('/emr/data', [RiwayatPemeriksaanController::class, 'dataEmr'])->name('emr.data');
+            Route::get('/emr/{emr}', [RiwayatPemeriksaanController::class, 'showEmr'])->name('emr.show');
         });
     });
 });

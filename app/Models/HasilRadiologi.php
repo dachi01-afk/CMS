@@ -12,11 +12,11 @@ class HasilRadiologi extends Model
 
     public function orderRadiologiDetail()
     {
-        return $this->belongsTo(OrderRadiologiDetail::class);
+        return $this->belongsTo(OrderRadiologiDetail::class, 'order_radiologi_detail_id');
     }
 
     public function perawat()
     {
-        return $this->belongsTo(Perawat::class);
+        return $this->belongsTo(Perawat::class, 'perawat_id');
     }
 }

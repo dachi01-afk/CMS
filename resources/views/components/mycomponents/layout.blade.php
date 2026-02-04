@@ -596,7 +596,7 @@
                                         class="fa-solid fa-truck-medical" :active="Request::routeIs('pesanan.dan.stok.masuk.index')">
                                         Pesanan Dan Stok Masuk
                                     </x-mycomponents.sidebar_link>
-                                    
+
                                     <hr class="my-3 border-slate-200 dark:border-slate-700">
 
                                     <x-mycomponents.sidebar_link href="settings.index" class="fa-solid fa-gear"
@@ -741,8 +741,7 @@
                             <!-- HEADER SIDEBAR -->
                             <div class="mb-4 flex items-center gap-3 px-2">
                                 <div
-                                    class="flex h-10 w-10 items-center justify-center rounded-xl
-                           bg-gradient-to-br from-indigo-500 to-sky-500 text-white shadow-md">
+                                    class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-sky-500 text-white shadow-md">
                                     <i class="fa-solid fa-user-nurse text-lg"></i>
                                 </div>
                                 <div>
@@ -774,6 +773,11 @@
                                     <x-mycomponents.sidebar_link href="perawat.kunjungan" class="fa-solid fa-user-check"
                                         :active="Request::routeIs('perawat.kunjungan')">
                                         Kunjungan
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="riwayat-pemeriksaan.index"
+                                        class="fa-solid fa-clock-rotate-left" :active="Request::routeIs('riwayat-pemeriksaan.*')">
+                                        Riwayat Pemeriksaan
                                     </x-mycomponents.sidebar_link>
 
                                     <hr class="my-3 border-slate-200 dark:border-slate-700">

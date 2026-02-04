@@ -24,8 +24,9 @@ class HasilLab extends Model
     {
         return $this->belongsTo(Dokter::class);
     }
-    
-    public function scopeGetData($query) {
+
+    public function scopeGetData($query)
+    {
         $query->select();
     }
 }

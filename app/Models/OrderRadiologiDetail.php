@@ -17,11 +17,11 @@ class OrderRadiologiDetail extends Model
 
     public function jenisPemeriksaanRadiologi()
     {
-        return $this->belongsTo(JenisPemeriksaanRadiologi::class);
+        return $this->belongsTo(JenisPemeriksaanRadiologi::class, 'jenis_pemeriksaan_radiologi_id');
     }
 
     public function hasilRadiologi()
     {
-        return $this->hasMany(HasilRadiologi::class);
+        return $this->hasMany(HasilRadiologi::class, 'order_radiologi_detail_id');
     }
 }
