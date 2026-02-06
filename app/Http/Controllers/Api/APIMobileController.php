@@ -53,6 +53,41 @@ class APIMobileController extends Controller
     //         'is_production' => config('midtrans.is_production', false),
     //     ]);
     // }
+    /**
+     * Save FCM Token dari Flutter
+     */
+    public function saveFCMToken(Request $request)
+    {
+        try {
+            $request->validate([
+                'fcm_token' => 'required|string|max:500',
+            ]);
+
+            $user = $request->user();
+
+            $user->update([
+                'fcm_token' => $request->fcm_token,
+            ]);
+
+            Log::info('✅ FCM Token saved', [
+                'user_id' => $user->id,
+                'token' => substr($request->fcm_token, 0, 20).'...',
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'FCM Token berhasil disimpan',
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('❌ Error saving FCM token: '.$e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menyimpan FCM token',
+            ], 500);
+        }
+    }
 
     /** LOGIN */
     public function login(Request $request)
@@ -955,139 +990,6 @@ class APIMobileController extends Controller
         ]);
     }
 
-    /**
-     * ✅ PERAWAT/RADIOGRAFER - Upload hasil radiologi
-     * POST /api/perawat/hasil-radiologi/upload
-     *
-     * Body (multipart/form-data):
-     * - order_radiologi_detail_id: 1
-     * - foto: (file) image/jpeg, image/png, atau .dcm
-     * - keterangan: "Interpretasi dokter radiologi" (nullable)
-     * - dokter_radiologi_id: 5 (nullable, ID dokter spesialis radiologi yang baca hasil)
-     * - tanggal_pemeriksaan: "2024-01-29"
-     * - jam_pemeriksaan: "14:30"
-     */
-    public function perawatUploadHasilRadiologi(Request $request)
-    {
-        $request->validate([
-            'order_radiologi_detail_id' => 'required|exists:order_radiologi_detail,id',
-            'foto' => 'required|file|mimes:jpg,jpeg,png,dcm|max:10240', // max 10MB
-            'keterangan' => 'nullable|string',
-            'dokter_radiologi_id' => 'nullable|exists:dokter,id',
-            'tanggal_pemeriksaan' => 'required|date',
-            'jam_pemeriksaan' => 'required',
-        ]);
-
-        try {
-            DB::beginTransaction();
-
-            // Upload foto
-            $path = $request->file('foto')->store('radiologi/'.date('Y/m/d'), 'public');
-
-            // Ambil perawat yang login
-            $user = $request->user();
-            $perawat = \App\Models\Perawat::where('user_id', $user->id)->first();
-
-            // Insert hasil radiologi
-            $hasilId = DB::table('hasil_radiologi')->insertGetId([
-                'order_radiologi_detail_id' => $request->order_radiologi_detail_id,
-                'foto_hasil_radiologi' => $path,
-                'perawat_id' => $perawat ? $perawat->id : null,
-                'dokter_radiologi_id' => $request->dokter_radiologi_id,
-                'keterangan' => $request->keterangan,
-                'tanggal_pemeriksaan' => $request->tanggal_pemeriksaan,
-                'jam_pemeriksaan' => $request->jam_pemeriksaan,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            // Update status detail jadi "Selesai"
-            DB::table('order_radiologi_detail')
-                ->where('id', $request->order_radiologi_detail_id)
-                ->update([
-                    'status_pemeriksaan' => 'Selesai',
-                    'updated_at' => now(),
-                ]);
-
-            // Cek apakah semua detail sudah selesai
-            $detail = DB::table('order_radiologi_detail')
-                ->where('id', $request->order_radiologi_detail_id)
-                ->first();
-
-            $orderRadiologiId = $detail->order_radiologi_id;
-
-            $allCompleted = DB::table('order_radiologi_detail')
-                ->where('order_radiologi_id', $orderRadiologiId)
-                ->where('status_pemeriksaan', '!=', 'Selesai')
-                ->doesntExist();
-
-            // Jika semua selesai, update order radiologi status
-            if ($allCompleted) {
-                DB::table('order_radiologi')
-                    ->where('id', $orderRadiologiId)
-                    ->update([
-                        'status' => 'Selesai',
-                        'updated_at' => now(),
-                    ]);
-            }
-
-            DB::commit();
-
-            $hasil = DB::table('hasil_radiologi')->where('id', $hasilId)->first();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Hasil radiologi berhasil diupload',
-                'data' => $hasil,
-            ]);
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Error perawatUploadHasilRadiologi: '.$e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengupload hasil radiologi',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-    /**
-     * ✅ PERAWAT - List order radiologi yang perlu diinput (status Pending)
-     * GET /api/perawat/order-radiologi/pending
-     */
-    public function perawatListOrderRadiologiPending()
-    {
-        $data = DB::table('order_radiologi_detail as d')
-            ->join('order_radiologi as o', 'o.id', '=', 'd.order_radiologi_id')
-            ->join('jenis_pemeriksaan_radiologi as j', 'j.id', '=', 'd.jenis_pemeriksaan_radiologi_id')
-            ->join('pasien as p', 'p.id', '=', 'o.pasien_id')
-            ->leftJoin('dokter as dok', 'dok.id', '=', 'o.dokter_id')
-            ->where('d.status_pemeriksaan', 'Pending')
-            ->select(
-                'd.id as detail_id',
-                'o.id as order_id',
-                'o.no_order_radiologi',
-                'o.tanggal_pemeriksaan',
-                'o.jam_pemeriksaan',
-                'j.nama_pemeriksaan',
-                'j.kode_pemeriksaan',
-                'p.nama_pasien',
-                'p.no_emr',
-                'dok.nama_dokter'
-            )
-            ->orderBy('o.tanggal_pemeriksaan')
-            ->orderBy('o.jam_pemeriksaan')
-            ->get();
-
-        return response()->json([
-            'success' => true,
-            'data' => $data,
-            'total_pending' => $data->count(),
-        ]);
-    }
-
     public function dokterDetailOrderLab(Request $request, $orderLabId)
     {
         $user = $request->user();
@@ -1926,7 +1828,6 @@ class APIMobileController extends Controller
                 };
 
                 // (A) LAYANAN
-                // (A) LAYANAN
                 $layananRows = DB::table('kunjungan_layanan as kl')
                     ->join('layanan as l', 'l.id', '=', 'kl.layanan_id')
                     ->where('kl.kunjungan_id', $kunjungan->id)
@@ -1949,10 +1850,7 @@ class APIMobileController extends Controller
                     $totalLayanan += $subtotal;
                 }
 
-                // ✅ JANGAN tambahkan logika fallback di sini
-                // BIARKAN $totalLayanan = 0 jika memang tidak ada layanan
-
-                // (B) OBAT
+                // (B) OBAT - ✅ UBAH DARI total_harga KE harga_jual_obat
                 if (! empty($resepId)) {
                     $obatRows = DB::table('resep_obat as ro')
                         ->join('obat as o', 'o.id', '=', 'ro.obat_id')
@@ -1973,7 +1871,6 @@ class APIMobileController extends Controller
                             'subtotal' => $subtotal,
                         ]);
 
-                        // ✅ FIX: isi total_obat di header
                         $totalObat += $subtotal;
                     }
                 }
@@ -2002,8 +1899,6 @@ class APIMobileController extends Controller
                 }
 
                 // (D) RADIOLOGI
-                // (D) RADIOLOGI
-                // (D) RADIOLOGI
                 if (! empty($orderRadiologiId)) {
                     $radRows = DB::table('order_radiologi_detail as ord')
                         ->join('jenis_pemeriksaan_radiologi as jpr', 'jpr.id', '=', 'ord.jenis_pemeriksaan_radiologi_id')
@@ -2021,9 +1916,7 @@ class APIMobileController extends Controller
                         $subtotal = $harga * $qty;
 
                         $insertDetail([
-                            // ✅ INI YANG WAJIB ADA
                             'order_radiologi_detail_id' => $row->order_radiologi_detail_id,
-
                             'nama_item' => 'Radiologi: '.$row->nama_pemeriksaan,
                             'qty' => $qty,
                             'harga' => $harga,
@@ -2032,10 +1925,9 @@ class APIMobileController extends Controller
                     }
                 }
 
-                // ✅ UPDATE HEADER PEMBAYARAN (INI YANG DIBUTUHKAN FLUTTER)
-                // ✅ Dokter cuma set total_tagihan (yang ada di DB)
+                // ✅ UPDATE HEADER PEMBAYARAN
                 $pembayaran->update([
-                    'total_tagihan' => $total, // ← Ini sudah benar, JANGAN tambah fallback
+                    'total_tagihan' => $total,
                 ]);
 
                 return [
@@ -3160,11 +3052,13 @@ class APIMobileController extends Controller
                 $emr = $kunjungan->emr;
 
                 // ===== Resep obat
+                // ===== Resep obat
                 $resepData = [];
                 if ($emr && $emr->resep && $emr->resep->obat) {
                     foreach ($emr->resep->obat as $obat) {
                         $jumlah = (int) ($obat->pivot->jumlah ?? 1);
-                        $harga = (float) ($obat->total_harga ?? 0);
+                        $hargaObat = (float) ($obat->harga_jual_obat ?? 0);
+                        $subtotalObat = $hargaObat * $jumlah;
 
                         $resepData[] = [
                             'id' => (int) $obat->id,
@@ -3173,8 +3067,8 @@ class APIMobileController extends Controller
                             'jumlah' => $jumlah,
                             'keterangan' => (string) ($obat->pivot->keterangan ?? ''),
                             'status' => (string) ($obat->pivot->status ?? 'Belum Diambil'),
-                            'harga_obat' => $harga,
-                            'subtotal' => $harga * $jumlah,
+                            'harga_obat' => $hargaObat,
+                            'subtotal' => $subtotalObat,
                         ];
                     }
                 }
@@ -4086,19 +3980,29 @@ class APIMobileController extends Controller
                 ], 404);
             }
 
-            // Ambil order + validasi kepemilikan
+            // =========================
+            // Order + validasi kepemilikan
+            // =========================
             $order = DB::table('order_radiologi as o')
+                ->leftJoin('dokter as dk', 'dk.id', '=', 'o.dokter_id')
+                ->leftJoin('pasien as ps', 'ps.id', '=', 'o.pasien_id')
                 ->where('o.id', $orderId)
-                ->where('o.pasien_id', $pasien->id) // ✅ Validasi kepemilikan
-                ->leftJoin('dokter as d', 'd.id', '=', 'o.dokter_id')
-                ->leftJoin('pasien as p', 'p.id', '=', 'o.pasien_id')
+                ->where('o.pasien_id', $pasien->id)
                 ->select(
-                    'o.*',
-                    'd.nama_dokter',
-                    'd.foto_dokter',
-                    'p.nama_pasien',
-                    'p.jenis_kelamin',
-                    'p.tanggal_lahir'
+                    'o.id',
+                    'o.no_order_radiologi',
+                    'o.tanggal_order',
+                    'o.tanggal_pemeriksaan',
+                    'o.jam_pemeriksaan',
+                    'o.status',
+                    'o.created_at',
+
+                    'dk.nama_dokter',
+                    'dk.foto_dokter',
+
+                    'ps.nama_pasien',
+                    'ps.jenis_kelamin',
+                    'ps.tanggal_lahir'
                 )
                 ->first();
 
@@ -4109,21 +4013,24 @@ class APIMobileController extends Controller
                 ], 404);
             }
 
-            // Ambil detail pemeriksaan + hasil (jika ada)
-            $details = DB::table('order_radiologi_detail as d')
-                ->join('jenis_pemeriksaan_radiologi as j', 'j.id', '=', 'd.jenis_pemeriksaan_radiologi_id')
-                ->leftJoin('hasil_radiologi as h', 'h.order_radiologi_detail_id', '=', 'd.id')
+            // =========================
+            // Detail + hasil (tanpa dokter_radiologi_id)
+            // FIX 1: deskripsi tidak ada di jenis_pemeriksaan_radiologi -> NULL as deskripsi
+            // FIX 2: dokter_radiologi_id tidak ada di hasil_radiologi -> hapus join dokter dr
+            // =========================
+            $details = DB::table('order_radiologi_detail as od')
+                ->join('jenis_pemeriksaan_radiologi as j', 'j.id', '=', 'od.jenis_pemeriksaan_radiologi_id')
+                ->leftJoin('hasil_radiologi as h', 'h.order_radiologi_detail_id', '=', 'od.id')
                 ->leftJoin('perawat as pr', 'pr.id', '=', 'h.perawat_id')
-                ->leftJoin('dokter as dr', 'dr.id', '=', 'h.dokter_radiologi_id')
-                ->where('d.order_radiologi_id', $orderId)
+                ->where('od.order_radiologi_id', $orderId)
                 ->select(
-                    'd.id as order_radiologi_detail_id',
-                    'd.status_pemeriksaan',
+                    'od.id as order_radiologi_detail_id',
+                    'od.status_pemeriksaan',
 
                     'j.id as jenis_id',
                     'j.kode_pemeriksaan',
                     'j.nama_pemeriksaan',
-                    'j.deskripsi',
+                    DB::raw('NULL as deskripsi'),
                     'j.harga_pemeriksaan_radiologi',
 
                     'h.id as hasil_id',
@@ -4132,33 +4039,31 @@ class APIMobileController extends Controller
                     'h.tanggal_pemeriksaan as tanggal_hasil',
                     'h.jam_pemeriksaan as jam_hasil',
 
-                    'pr.nama_perawat as radiografer_nama',
-                    'dr.nama_dokter as dokter_radiologi_nama'
+                    'pr.nama_perawat as radiografer_nama'
                 )
                 ->get()
-                ->map(function ($d) {
+                ->map(function ($row) {
                     return [
-                        'order_radiologi_detail_id' => (int) $d->order_radiologi_detail_id,
-                        'status_pemeriksaan' => $d->status_pemeriksaan,
+                        'order_radiologi_detail_id' => (int) $row->order_radiologi_detail_id,
+                        'status_pemeriksaan' => $row->status_pemeriksaan,
 
                         'pemeriksaan' => [
-                            'id' => (int) $d->jenis_id,
-                            'kode_pemeriksaan' => $d->kode_pemeriksaan,
-                            'nama_pemeriksaan' => $d->nama_pemeriksaan,
-                            'deskripsi' => $d->deskripsi,
-                            'harga' => (float) $d->harga_pemeriksaan_radiologi,
+                            'id' => (int) $row->jenis_id,
+                            'kode_pemeriksaan' => $row->kode_pemeriksaan,
+                            'nama_pemeriksaan' => $row->nama_pemeriksaan,
+                            'deskripsi' => $row->deskripsi, // null (aman)
+                            'harga' => (float) $row->harga_pemeriksaan_radiologi,
                         ],
 
-                        'hasil' => $d->hasil_id ? [
-                            'id' => (int) $d->hasil_id,
-                            'foto_url' => $d->foto_hasil_radiologi
-                                ? asset('storage/'.$d->foto_hasil_radiologi)
+                        'hasil' => $row->hasil_id ? [
+                            'id' => (int) $row->hasil_id,
+                            'foto_url' => $row->foto_hasil_radiologi
+                                ? asset('storage/'.$row->foto_hasil_radiologi)
                                 : null,
-                            'interpretasi' => $d->interpretasi,
-                            'tanggal_pemeriksaan' => $d->tanggal_hasil,
-                            'jam_pemeriksaan' => $d->jam_hasil,
-                            'radiografer' => $d->radiografer_nama,
-                            'dokter_radiologi' => $d->dokter_radiologi_nama,
+                            'interpretasi' => $row->interpretasi,
+                            'tanggal_pemeriksaan' => $row->tanggal_hasil,
+                            'jam_pemeriksaan' => $row->jam_hasil,
+                            'radiografer' => $row->radiografer_nama,
                         ] : null,
                     ];
                 });
@@ -4186,7 +4091,6 @@ class APIMobileController extends Controller
                     ],
 
                     'detail' => $details,
-
                     'created_at' => $order->created_at,
                 ],
             ], 200);
@@ -4234,6 +4138,9 @@ class APIMobileController extends Controller
                 ->leftJoin('perawat as pr', 'pr.id', '=', 'h.perawat_id')
                 ->where('o.pasien_id', $pasien->id)
                 ->where('od.status_pemeriksaan', 'Selesai')
+                ->when($request->query('kunjungan_id'), function ($query, $kunjunganId) {
+                    $query->where('o.kunjungan_id', $kunjunganId);
+                })
                 ->select(
                     'h.id as hasil_id',
                     'h.foto_hasil_radiologi',
@@ -4508,6 +4415,14 @@ class APIMobileController extends Controller
         }
     }
 
+    /**
+     * ✅ PASIEN - Get Hasil Lab by Kunjungan ID
+     * GET /api/pasien/hasil-lab/kunjungan/{kunjungan_id}
+     * Auth: Pasien (via Sanctum)
+     *
+     * Purpose: Mendapatkan hasil lab HANYA untuk kunjungan tertentu
+     * Filter: order_lab yang terkait dengan kunjungan_id tersebut
+     */
     public function getHasilLabByKunjungan(Request $request, $kunjunganId)
     {
         try {
@@ -4527,6 +4442,7 @@ class APIMobileController extends Controller
                 ], 404);
             }
 
+            // ✅ Verify kunjungan belongs to this pasien
             $kunjungan = Kunjungan::where('id', $kunjunganId)
                 ->where('pasien_id', $pasien->id)
                 ->first();
@@ -4538,14 +4454,19 @@ class APIMobileController extends Controller
                 ], 404);
             }
 
+            // ✅ FIX: Filter by kunjungan_id through order_lab table
+            // This ensures ONLY lab results for THIS specific visit are shown
             $hasilLab = DB::table('order_lab as ol')
                 ->join('order_lab_detail as old', 'ol.id', '=', 'old.order_lab_id')
                 ->join('jenis_pemeriksaan_lab as jpl', 'old.jenis_pemeriksaan_lab_id', '=', 'jpl.id')
                 ->leftJoin('satuan_lab as sl', 'jpl.satuan_lab_id', '=', 'sl.id')
                 ->leftJoin('hasil_lab as hl', 'old.id', '=', 'hl.order_lab_detail_id')
-                ->where('ol.pasien_id', $pasien->id)
-                ->where('ol.status', 'Selesai')
-                ->whereNotNull('hl.id')
+
+                // ✅ KEY FIX: Filter by kunjungan_id from order_lab table
+                ->where('ol.kunjungan_id', $kunjunganId)
+                ->where('ol.pasien_id', $pasien->id) // Security check
+                ->whereNotNull('hl.id') // Only get results that have hasil_lab
+
                 ->select(
                     'old.id as order_lab_detail_id',
                     'old.status_pemeriksaan',
@@ -4553,7 +4474,7 @@ class APIMobileController extends Controller
                     'jpl.kode_pemeriksaan',
                     'jpl.nama_pemeriksaan',
                     'jpl.nilai_normal',
-                    'jpl.harga_pemeriksaan_lab', // ✅ TAMBAHKAN INI
+                    'jpl.harga_pemeriksaan_lab',
                     'sl.nama_satuan as satuan',
                     'hl.id as hasil_id',
                     'hl.nilai_hasil',
@@ -4562,15 +4483,16 @@ class APIMobileController extends Controller
                     'hl.tanggal_pemeriksaan',
                     'hl.jam_pemeriksaan',
                     'ol.tanggal_order',
-                    'ol.no_order_lab'
+                    'ol.no_order_lab',
+                    'ol.kunjungan_id' // Include for verification
                 )
                 ->orderByDesc('hl.tanggal_pemeriksaan')
                 ->orderByDesc('hl.jam_pemeriksaan')
                 ->get();
 
-            // Format data untuk response
+            // Format data for response
             $formattedData = $hasilLab->map(function ($item) {
-                // Tentukan status berdasarkan nilai hasil vs nilai rujukan
+                // Determine status based on nilai_hasil vs nilai_rujukan
                 $status = 'normal';
                 if ($item->nilai_hasil && $item->nilai_rujukan) {
                     $nilaiHasil = (float) $item->nilai_hasil;
@@ -4604,6 +4526,7 @@ class APIMobileController extends Controller
                     'status_pemeriksaan' => $item->status_pemeriksaan,
                     'no_order_lab' => $item->no_order_lab,
                     'tanggal_order' => $item->tanggal_order,
+                    'kunjungan_id' => $item->kunjungan_id, // ✅ For debugging
 
                     'pemeriksaan' => [
                         'id' => $item->pemeriksaan_id,
@@ -4611,7 +4534,7 @@ class APIMobileController extends Controller
                         'nama_pemeriksaan' => $item->nama_pemeriksaan,
                         'nilai_normal' => $item->nilai_normal,
                         'satuan' => $item->satuan,
-                        'harga_pemeriksaan_lab' => (float) $item->harga_pemeriksaan_lab, // ✅ KIRIM INI
+                        'harga_pemeriksaan_lab' => (float) $item->harga_pemeriksaan_lab,
                     ],
 
                     'hasil' => [
@@ -4631,11 +4554,13 @@ class APIMobileController extends Controller
                 'message' => 'Hasil lab berhasil diambil',
                 'data' => $formattedData,
                 'total' => $formattedData->count(),
+                'kunjungan_id' => $kunjunganId, // ✅ For debugging
             ], 200);
 
         } catch (\Throwable $e) {
             Log::error('ERROR getHasilLabByKunjungan: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
+                'kunjungan_id' => $kunjunganId ?? null,
             ]);
 
             return response()->json([
@@ -8266,10 +8191,14 @@ class APIMobileController extends Controller
                         ->select(
                             'kunjungan_layanan.id',
                             'layanan.nama_layanan',
-                            'layanan.harga_layanan',
+                            'layanan.harga_sebelum_diskon',
+                            'layanan.harga_setelah_diskon',
+                            'layanan.diskon',
                             'kunjungan_layanan.jumlah',
                             'kategori_layanan.nama_kategori',
-                            DB::raw('(layanan.harga_layanan * kunjungan_layanan.jumlah) as subtotal')
+                            // ✅ Gunakan harga setelah diskon kalau ada, fallback ke sebelum diskon
+                            DB::raw('COALESCE(layanan.harga_setelah_diskon, layanan.harga_sebelum_diskon, 0) as harga_final'),
+                            DB::raw('(COALESCE(layanan.harga_setelah_diskon, layanan.harga_sebelum_diskon, 0) * kunjungan_layanan.jumlah) as subtotal')
                         )
                         ->get();
 
@@ -8277,7 +8206,10 @@ class APIMobileController extends Controller
                         return [
                             'id' => $l->id,
                             'nama_layanan' => $l->nama_layanan,
-                            'harga_layanan' => (float) $l->harga_layanan,
+                            'harga_layanan' => (float) $l->harga_final, // ✅ untuk backward compatibility dengan Flutter
+                            'harga_sebelum_diskon' => (float) ($l->harga_sebelum_diskon ?? 0),
+                            'harga_setelah_diskon' => (float) ($l->harga_setelah_diskon ?? 0),
+                            'diskon' => (float) ($l->diskon ?? 0),
                             'jumlah' => (int) $l->jumlah,
                             'subtotal' => (float) $l->subtotal,
                             'kategori' => $l->nama_kategori,
@@ -8288,6 +8220,7 @@ class APIMobileController extends Controller
                     Log::warning('Layanan relation error', ['error' => $e->getMessage()]);
                 }
 
+                // ===== RESEP OBAT =====
                 // ===== RESEP OBAT =====
                 try {
                     $resep = DB::table('resep_obat')
@@ -8303,8 +8236,8 @@ class APIMobileController extends Controller
                             'obat.kandungan_obat',
                             'resep_obat.dosis',
                             'resep_obat.jumlah',
-                            'obat.total_harga as harga_per_item',
-                            DB::raw('(obat.total_harga * resep_obat.jumlah) as subtotal'),
+                            'obat.harga_jual_obat as harga_per_item',
+                            DB::raw('(obat.harga_jual_obat * resep_obat.jumlah) as subtotal'),
                             'resep_obat.keterangan',
                             'resep.status as status',
                             'brand_farmasi.nama_brand',
@@ -8344,7 +8277,7 @@ class APIMobileController extends Controller
 
                             $data['pembayaran'] = [
                                 'id' => $pembayaran->id,
-                                'biaya_konsultasi' => $totalLayanan > 0 ? $totalLayanan : 150000,
+                                'biaya_konsultasi' => $totalLayanan > 0 ? $totalLayanan : null,
                                 'total_obat' => $totalObat,
                                 'total_tagihan' => $pembayaran->total_tagihan ?? ($totalLayanan + $totalObat),
                                 'status' => $pembayaran->status ?? 'Belum Bayar',
@@ -8867,10 +8800,9 @@ class APIMobileController extends Controller
             }
 
             // Ensure minimum value
-            if ($totalTagihan <= 0) {
-                $totalTagihan = 150000.00;
-                Log::warning('Total tagihan was 0 or negative, using default consultation fee');
-            }
+            if ($totalTagihan < 0) {
+                $totalTagihan = 0;
+            } // optional, untuk jaga-jaga
 
             Log::info('Total billing calculated:', [
                 'kunjungan_id' => $kunjungan->id,
@@ -8885,7 +8817,7 @@ class APIMobileController extends Controller
             Log::error('Stack trace: '.$e->getTraceAsString());
 
             // Return default consultation fee as fallback
-            return 150000.00;
+            return 0.00;
         }
     }
 
@@ -9261,7 +9193,6 @@ class APIMobileController extends Controller
         }
     }
 
-    // FIXED: Update method getDetailPembayaran() - ganti metodePembayaranRelation jadi metodePembayaran
     public function getDetailPembayaran($kunjunganId)
     {
         try {
@@ -9293,18 +9224,17 @@ class APIMobileController extends Controller
                         'total_tagihan',
                         'status',
                         'kode_transaksi',
-                        'metode_pembayaran_id', // FIXED: Gunakan metode_pembayaran_id
+                        'metode_pembayaran_id',
                         'tanggal_pembayaran',
                         'uang_yang_diterima',
                         'kembalian'
                     );
                 },
-                'emr.pembayaran.metodePembayaran', // FIXED: Load relasi metode pembayaran
+                'emr.pembayaran.metodePembayaran',
                 'emr.resep.obat' => function ($query) {
-                    $query->select('obat.id', 'obat.nama_obat', 'obat.dosis', 'obat.total_harga')
+                    $query->select('obat.id', 'obat.nama_obat', 'obat.dosis', 'obat.harga_jual_obat')
                         ->withPivot('jumlah', 'dosis', 'keterangan', 'status');
                 },
-                'layanan',
             ])
                 ->where('id', $kunjunganId)
                 ->where('status', 'Payment')
@@ -9333,7 +9263,7 @@ class APIMobileController extends Controller
 
             $pembayaran = $kunjungan->emr->pembayaran;
 
-            // Build response data untuk detail individual
+            // Build response data
             $responseData = [
                 'kunjungan_id' => $kunjungan->id,
                 'pasien' => [
@@ -9348,12 +9278,9 @@ class APIMobileController extends Controller
                 'tanggal_kunjungan' => $kunjungan->tanggal_kunjungan,
                 'no_antrian' => $kunjungan->no_antrian,
                 'diagnosis' => $kunjungan->emr->diagnosis ?? 'Tidak ada diagnosis',
-
-                // FIXED: GUNAKAN METODE_PEMBAYARAN_ID DAN RELASI
                 'kode_transaksi' => $pembayaran->kode_transaksi ?? null,
                 'metode_pembayaran_id' => $pembayaran->metode_pembayaran_id ?? null,
                 'metode_pembayaran_nama' => $pembayaran->metodePembayaran->nama_metode ?? 'Cash',
-
                 'layanan' => [],
                 'resep_obat' => [],
                 'total_layanan' => 0,
@@ -9363,47 +9290,81 @@ class APIMobileController extends Controller
                 'pembayaran_id' => $pembayaran->id ?? null,
             ];
 
-            // Process layanan (existing code sama seperti di atas...)
+            // ✅ PERBAIKAN: Ambil layanan dari pembayaran_detail
+            $layananDetails = DB::table('pembayaran_detail')
+                ->join('layanan', 'pembayaran_detail.layanan_id', '=', 'layanan.id')
+                ->where('pembayaran_detail.pembayaran_id', $pembayaran->id)
+                ->whereNotNull('pembayaran_detail.layanan_id')
+                ->select(
+                    'layanan.id',
+                    'layanan.nama_layanan',
+                    'pembayaran_detail.harga',
+                    'pembayaran_detail.qty as jumlah',
+                    'pembayaran_detail.subtotal'
+                )
+                ->get();
+
             $totalLayanan = 0;
-            if ($kunjungan->layanan && $kunjungan->layanan->isNotEmpty()) {
-                foreach ($kunjungan->layanan as $layanan) {
-                    $jumlah = (int) $layanan->pivot->jumlah;
-                    $hargaLayanan = (float) $layanan->harga_layanan;
-                    $subtotal = $hargaLayanan * $jumlah;
-                    $totalLayanan += $subtotal;
+            foreach ($layananDetails as $layanan) {
+                $subtotal = (float) $layanan->subtotal;
+                $totalLayanan += $subtotal;
 
-                    $responseData['layanan'][] = [
-                        'id' => $layanan->id,
-                        'nama_layanan' => $layanan->nama_layanan ?? 'Layanan',
-                        'harga_layanan' => $hargaLayanan,
-                        'jumlah' => $jumlah,
-                        'subtotal' => $subtotal,
-                    ];
-                }
+                $responseData['layanan'][] = [
+                    'id' => $layanan->id,
+                    'nama_layanan' => $layanan->nama_layanan,
+                    'harga_layanan' => (float) $layanan->harga,
+                    'jumlah' => (int) $layanan->jumlah,
+                    'subtotal' => $subtotal,
+                ];
             }
 
-            // Process resep obat (existing code sama seperti di atas...)
+            Log::info('✅ Layanan loaded from pembayaran_detail:', [
+                'pembayaran_id' => $pembayaran->id,
+                'layanan_count' => count($responseData['layanan']),
+                'total_layanan' => $totalLayanan,
+            ]);
+
+            // Process resep obat dari pembayaran_detail - ✅ UBAH harga_jual_obat
+            $obatDetails = DB::table('pembayaran_detail')
+                ->join('resep_obat', 'pembayaran_detail.resep_obat_id', '=', 'resep_obat.id')
+                ->join('obat', 'resep_obat.obat_id', '=', 'obat.id')
+                ->where('pembayaran_detail.pembayaran_id', $pembayaran->id)
+                ->whereNotNull('pembayaran_detail.resep_obat_id')
+                ->select(
+                    'obat.id',
+                    'obat.nama_obat',
+                    'resep_obat.dosis',
+                    'pembayaran_detail.harga',
+                    'pembayaran_detail.qty as jumlah',
+                    'pembayaran_detail.subtotal',
+                    'resep_obat.keterangan',
+                    'resep_obat.status'
+                )
+                ->get();
+
             $totalObat = 0;
-            if ($kunjungan->emr && $kunjungan->emr->resep) {
-                foreach ($kunjungan->emr->resep->obat as $obat) {
-                    $jumlah = $obat->pivot->jumlah ?? 1;
-                    $hargaObat = $obat->total_harga ?? 0;
-                    $subtotal = $hargaObat * $jumlah;
-                    $totalObat += $subtotal;
+            foreach ($obatDetails as $obat) {
+                $subtotal = (float) $obat->subtotal;
+                $totalObat += $subtotal;
 
-                    $responseData['resep_obat'][] = [
-                        'obat' => [
-                            'id' => $obat->id,
-                            'nama_obat' => $obat->nama_obat,
-                            'harga_obat' => $hargaObat,
-                        ],
-                        'jumlah' => $jumlah,
-                        'dosis' => $obat->pivot->dosis ?? $obat->dosis,
-                        'keterangan' => $obat->pivot->keterangan ?? 'Sesuai anjuran dokter',
-                        'status' => $obat->pivot->status ?? 'Belum Diambil',
-                    ];
-                }
+                $responseData['resep_obat'][] = [
+                    'obat' => [
+                        'id' => $obat->id,
+                        'nama_obat' => $obat->nama_obat,
+                        'harga_obat' => (float) $obat->harga,
+                    ],
+                    'jumlah' => (int) $obat->jumlah,
+                    'dosis' => $obat->dosis,
+                    'keterangan' => $obat->keterangan ?? 'Sesuai anjuran dokter',
+                    'status' => $obat->status ?? 'Belum Diambil',
+                ];
             }
+
+            Log::info('✅ Obat loaded from pembayaran_detail:', [
+                'pembayaran_id' => $pembayaran->id,
+                'obat_count' => count($responseData['resep_obat']),
+                'total_obat' => $totalObat,
+            ]);
 
             $responseData['total_layanan'] = $totalLayanan;
             $responseData['total_obat'] = $totalObat;
@@ -9414,6 +9375,7 @@ class APIMobileController extends Controller
                 'message' => 'Detail pembayaran berhasil diambil',
                 'data' => $responseData,
             ], 200);
+
         } catch (\Exception $e) {
             Log::error('❌ Error getting detail pembayaran: '.$e->getMessage());
 
@@ -10286,8 +10248,8 @@ class APIMobileController extends Controller
                     'ro.keterangan',
                     'ro.status as status_obat',
 
-                    'o.total_harga as harga_satuan',
-                    DB::raw('(o.total_harga * ro.jumlah) as subtotal'),
+                    'o.harga_jual_obat as harga_satuan',
+                    DB::raw('(o.harga_jual_obat * ro.jumlah) as subtotal'),
 
                     'p.status as status_pembayaran',
                     'p.kode_transaksi',
@@ -10621,7 +10583,7 @@ class APIMobileController extends Controller
     public function getDaftarObat()
     {
         try {
-            $obat = Obat::where('jumlah', '>', 0) // Only show medicines with stock
+            $obat = Obat::where('jumlah', '>', 0)
                 ->orderBy('nama_obat', 'asc')
                 ->get();
 
@@ -10634,7 +10596,7 @@ class APIMobileController extends Controller
                         'nama_obat' => $item->nama_obat,
                         'jumlah' => $item->jumlah,
                         'dosis' => $item->dosis,
-                        'total_harga' => $item->total_harga,
+                        'harga_jual_obat' => $item->harga_jual_obat,
                         'created_at' => $item->created_at,
                         'updated_at' => $item->updated_at,
                     ];
@@ -10651,9 +10613,6 @@ class APIMobileController extends Controller
         }
     }
 
-    /**
-     * Get all obat including those with no stock (for admin/inventory management)
-     */
     public function getAllObat()
     {
         try {
@@ -10668,7 +10627,7 @@ class APIMobileController extends Controller
                         'nama_obat' => $item->nama_obat,
                         'jumlah' => $item->jumlah,
                         'dosis' => $item->dosis,
-                        'total_harga' => $item->total_harga,
+                        'harga_jual_obat' => $item->harga_jual_obat,
                         'stock_status' => $item->jumlah > 0 ? 'Available' : 'Out of Stock',
                         'created_at' => $item->created_at,
                         'updated_at' => $item->updated_at,
@@ -10899,7 +10858,7 @@ class APIMobileController extends Controller
                         'nama_obat' => $item->obat->nama_obat,
                         'dosis' => $item->obat->dosis,
                         'jumlah' => $item->jumlah,
-                        'harga_satuan' => $item->obat->total_harga,
+                        'harga_satuan' => $item->obat->harga_jual_obat,
                         'sub_total' => $item->sub_total,
                     ];
                 })->toArray(),

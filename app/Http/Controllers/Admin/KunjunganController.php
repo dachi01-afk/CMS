@@ -2,12 +2,11 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Exports\KunjunganExport;
+use App\Helpers\NotificationHelper;
 use App\Http\Controllers\Controller;
 use App\Models\Kunjungan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Maatwebsite\Excel\Excel;
 
 class KunjunganController extends Controller
 {
@@ -33,7 +32,7 @@ class KunjunganController extends Controller
 
             // Tentukan nomor antrian berikutnya
             if ($lastKunjungan) {
-                $nextNumber = (int)$lastKunjungan->no_antrian + 1;
+                $nextNumber = (int) $lastKunjungan->no_antrian + 1;
             } else {
                 $nextNumber = 1;
             }
@@ -72,25 +71,27 @@ class KunjunganController extends Controller
 
         if ($dataKunjungan->status === 'Pending') {
             $dataKunjungan->update([
-                'status' => 'Waiting'
+                'status' => 'Waiting',
             ]);
 
             return response()->json([
                 'success' => true,
                 'status' => 200,
                 'Data Kunjungan' => $dataKunjungan,
-                'message' => 'Berhasil Merubah Status Kunjungan Dari Pending Menjadi Waiting'
+                'message' => 'Berhasil Merubah Status Kunjungan Dari Pending Menjadi Waiting',
             ]);
         } elseif ($dataKunjungan->status === 'Waiting') {
             $dataKunjungan->update([
-                'status' => 'Engaged'
+                'status' => 'Engaged',
             ]);
+
+            NotificationHelper::kirimNotifikasiStatusEngaged($dataKunjungan);
 
             return response()->json([
                 'success' => true,
                 'status' => 200,
                 'Data Kunjungan' => $dataKunjungan,
-                'message' => 'Berhasil Merubah Status Kunjungan Dari Waiting Menjadi Engaged'
+                'message' => 'Berhasil Merubah Status Kunjungan Dari Waiting Menjadi Engaged',
             ]);
         }
 

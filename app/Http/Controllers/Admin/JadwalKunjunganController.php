@@ -21,6 +21,7 @@ use Illuminate\Pagination\Paginator;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Pagination\LengthAwarePaginator;
+use App\Helpers\NotificationHelper;
 
 
 class JadwalKunjunganController extends Controller
@@ -374,6 +375,9 @@ class JadwalKunjunganController extends Controller
                 'status'     => 'Engaged',
                 'updated_at' => now(),
             ]);
+
+            // 🔔 KIRIM NOTIFIKASI FCM KE PASIEN
+            NotificationHelper::kirimNotifikasiStatusEngaged($kunjungan);
 
             // 2️⃣ Buat EMR (perawat_id dikosongkan dulu)
             Emr::firstOrCreate(

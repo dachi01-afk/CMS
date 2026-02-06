@@ -57,6 +57,8 @@ Route::middleware(['auth:sanctum'])->group(function () {
     // Logout
     Route::post('/logout', [APIMobileController::class, 'logout'])->name('api.logout');
 
+    Route::post('/fcm-token', [APIMobileController::class, 'saveFCMToken'])->name('fcm.save_token');
+
     // Penjualan obat
     Route::prefix('penjualan-obat')->name('penjualan_obat.')->group(function () {
         Route::get('/obat/list', [APIMobileController::class, 'getDaftarObat'])->name('obat.list');
@@ -139,6 +141,8 @@ Route::middleware(['auth:sanctum', 'role:Pasien'])->prefix('pasien')->name('pasi
         Route::post('/proses', [APIMobileController::class, 'prosesPembayaran'])->name('proses');
         Route::get('/status/{order_id}', [APIMobileController::class, 'checkPaymentStatus'])->name('status');
         Route::get('/metode-pembayaran', [APIMobileController::class, 'getDataMetodePembayaran'])->name('metode');
+        Route::get('pembayaran/{kunjungan_id}', [APIMobileController::class, 'getDetailPembayaran']);
+
     });
 
     // Resume dokter
@@ -171,13 +175,13 @@ Route::middleware(['auth:sanctum', 'role:Pasien'])->prefix('pasien')->name('pasi
     Route::prefix('radiologi')->name('radiologi.')->group(function () {
         // List order radiologi milik pasien
         Route::get('/order-radiologi', [APIMobileController::class, 'pasienListOrderRadiologi'])->name('order_list');
-        
+
         // Detail order radiologi
         Route::get('/order-radiologi/{orderId}', [APIMobileController::class, 'pasienDetailOrderRadiologi'])->name('order_detail');
-        
+
         // List hasil radiologi yang sudah selesai
         Route::get('/hasil-radiologi', [APIMobileController::class, 'pasienListHasilRadiologi'])->name('hasil_list');
-        
+
         // Detail hasil radiologi
         Route::get('/hasil-radiologi/{hasilId}', [APIMobileController::class, 'pasienDetailHasilRadiologi'])->name('hasil_detail');
     });
