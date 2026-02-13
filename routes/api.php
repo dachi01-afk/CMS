@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\APIMobileController;
 use App\Http\Controllers\Api\Dokter\ResumeDokterController;
 use App\Http\Controllers\Api\LihatPemeriksaanOlehPerawat;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Dokter\OrderLayananController; // taruh di atas
 
 /*
 |--------------------------------------------------------------------------
