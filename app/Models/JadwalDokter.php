@@ -27,18 +27,23 @@ class JadwalDokter extends Model
         return $this->belongsTo(DokterPoli::class);
     }
 
-    public function scopeAktifSekarang($query)
-    {
-        $now = Carbon::now();
-        $jamSekarang = $now->format('H:i:s');
+public function scopeAktifSekarang($query)
+{
+    $tz = config('app.timezone', 'Asia/Jakarta');
+    $now = Carbon::now($tz);
+    $jamSekarang = $now->format('H:i:s');
 
-        // kalau hari disimpan sebagai teks "Senin"
-        $hariIni = $now->isoFormat('dddd');
+    // Support Indo & English (lowercase)
+    $hariId = strtolower($now->locale('id')->isoFormat('dddd')); // senin
+    $hariEn = strtolower($now->locale('en')->isoFormat('dddd')); // monday
 
-        return $query->where('hari', $hariIni)
-            ->whereTime('jam_awal', '<=', $jamSekarang)
-            ->whereTime('jam_selesai', '>=', $jamSekarang);
-    }
+    return $query->where(function($q) use ($hariId, $hariEn) {
+            $q->whereRaw('LOWER(hari) = ?', [$hariId])
+              ->orWhereRaw('LOWER(hari) = ?', [$hariEn]);
+        })
+        ->whereTime('jam_awal', '<=', $jamSekarang)
+        ->whereTime('jam_selesai', '>=', $jamSekarang);
+}
 
     public function orderLayanan()
     {
