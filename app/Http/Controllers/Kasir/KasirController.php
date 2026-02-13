@@ -472,21 +472,62 @@ class KasirController extends Controller
             ->addColumn('kode_transaksi', fn($p) => $p->kode_transaksi ?? '-')
             ->addColumn('status', fn($p) => $p->status ?? '-')
             ->addColumn('action', function ($p) {
-                $url = route('kasir.transaksi', ['kode_transaksi' => $p->kode_transaksi]);
+                $urlBayar = route('kasir.transaksi', ['kode_transaksi' => $p->kode_transaksi]);
+                $urlDelete = route('kasir.pembayaran.delete', ['id' => $p->id]);
 
                 return '
-                    <button class="bayarSekarang text-blue-600 hover:text-blue-800"
-                            data-url="' . $url . '"
-                            data-id="' . $p->id . '"
-                            data-emr-id="' . $p->emr->id . '"
-                            title="Bayar Sekarang">
-                        <i class="fa-regular fa-pen-to-square"></i> Bayar Sekarang
-                    </button>
+                    <div class="flex items-center justify-center gap-3">
+                        <button class="bayarSekarang text-blue-600 hover:text-blue-800"
+                                data-url="' . $urlBayar . '"
+                                data-id="' . $p->id . '"
+                                data-emr-id="' . ($p->emr->id ?? '') . '"
+                                title="Bayar Sekarang">
+                            <i class="fa-regular fa-pen-to-square"></i> Bayar
+                        </button>
+
+                        <button class="hapusTransaksi text-rose-600 hover:text-rose-800"
+                                data-url="' . $urlDelete . '"
+                                data-kode="' . e($p->kode_transaksi) . '"
+                                title="Hapus Transaksi">
+                            <i class="fa-solid fa-trash"></i> Hapus
+                        </button>
+                    </div>
                 ';
             })
             ->rawColumns(['nama_obat', 'dosis', 'jumlah', 'nama_layanan', 'jumlah_layanan', 'action'])
             ->make(true);
     }
+
+    public function deletePembayaran($id)
+    {
+        $pembayaran = Pembayaran::with(['emr'])->findOrFail($id);
+
+        // proteksi: kalau sudah bayar, jangan boleh dihapus
+        if ($pembayaran->status === 'Sudah Bayar') {
+            return response()->json([
+                'message' => 'Transaksi sudah dibayar, tidak bisa dihapus.',
+            ], 422);
+        }
+
+        DB::transaction(function () use ($pembayaran) {
+            // kalau mau: hapus bukti transfer kalau ada
+            if ($pembayaran->bukti_pembayaran && Storage::disk('public')->exists($pembayaran->bukti_pembayaran)) {
+                Storage::disk('public')->delete($pembayaran->bukti_pembayaran);
+            }
+
+            // HATI-HATI:
+            // Umumnya "Transaksi menunggu" cuma pembayaran pending.
+            // Biasanya cukup delete pembayaran saja.
+            // Jangan delete EMR/Kunjungan/Resep kecuali kamu yakin relasinya harus ikut hilang.
+            $pembayaran->delete();
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Transaksi berhasil dihapus.',
+        ]);
+    }
+
 
     public function getDataRiwayatPembayaran()
     {
@@ -788,7 +829,6 @@ HTML;
                 'data' => $pembayaran,
                 'message' => 'Uang Kembalian Rp' . number_format($pembayaran->kembalian, 0, ',', '.') . '. Terimakasih 😊😊😊',
             ]);
-
         } catch (ValidationException $e) {
             Log::warning('Validation error in transaksi cash', [
                 'errors' => $e->errors(),
@@ -973,7 +1013,6 @@ HTML;
                 'message' => 'Bukti transfer diterima. Nominal terbayar: Rp' .
                     number_format($pembayaran->uang_yang_diterima, 0, ',', '.') . '. Terimakasih 😊😊😊',
             ]);
-
         } catch (ValidationException $e) {
             Log::warning('Validation error in transaksi transfer', [
                 'errors' => $e->errors(),
