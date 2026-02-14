@@ -1397,20 +1397,85 @@ class APIMobileController extends Controller
     public function getDataObat()
     {
         try {
-            $dataObat = Obat::all();
+            $obat = Obat::with([
+                'brandFarmasi:id,nama_brand',
+                'kategoriObat:id,nama_kategori_obat',
+                'jenisObat:id,nama_jenis_obat',
+                'satuanObat:id,nama_satuan_obat',
+                'batchObat' => function ($query) {
+                    $query->orderBy('tanggal_kadaluarsa_obat', 'asc')
+                        ->select('id', 'obat_id', 'nama_batch', 'tanggal_kadaluarsa_obat');
+                },
+            ])
+                ->where('jumlah', '>', 0)
+                ->select([
+                    'id',
+                    'brand_farmasi_id',
+                    'kategori_obat_id',
+                    'jenis_obat_id',
+                    'satuan_obat_id',
+                    'kode_obat',
+                    'nama_obat',
+                    'kandungan_obat',
+                    'jumlah',
+                    'dosis',
+                    'harga_jual_obat',
+                ])
+                ->orderBy('nama_obat', 'asc')
+                ->get()
+                ->map(function ($item) {
+                    // Ambil batch terdekat
+                    $batchTerdekat = $item->batchObat->first();
+
+                    return [
+                        'id' => $item->id,
+                        'kode_obat' => $item->kode_obat,
+                        'nama_obat' => $item->nama_obat,
+                        'kandungan_obat' => $item->kandungan_obat,
+                        'jumlah' => $item->jumlah,
+                        'dosis' => $item->dosis,
+                        'harga_jual_obat' => $item->harga_jual_obat,
+
+                        // ✅ DATA DARI BATCH TERDEKAT
+                        'nomor_batch_obat' => $batchTerdekat?->nama_batch,
+                        'tanggal_kadaluarsa_obat' => $batchTerdekat?->tanggal_kadaluarsa_obat,
+
+                        // ✅ RELASI
+                        'brand_farmasi' => $item->brandFarmasi ? [
+                            'id' => $item->brandFarmasi->id,
+                            'nama_brand' => $item->brandFarmasi->nama_brand,
+                        ] : null,
+
+                        'kategori_obat' => $item->kategoriObat ? [
+                            'id' => $item->kategoriObat->id,
+                            'nama_kategori_obat' => $item->kategoriObat->nama_kategori_obat,
+                        ] : null,
+
+                        'jenis_obat' => $item->jenisObat ? [
+                            'id' => $item->jenisObat->id,
+                            'nama_jenis_obat' => $item->jenisObat->nama_jenis_obat,
+                        ] : null,
+
+                        'satuan_obat' => $item->satuanObat ? [
+                            'id' => $item->satuanObat->id,
+                            'nama_satuan_obat' => $item->satuanObat->nama_satuan_obat,
+                        ] : null,
+                    ];
+                });
 
             return response()->json([
                 'success' => true,
-                'status' => 200,
-                'Data Obat' => $dataObat,
-                'message' => 'Berhasil Memunculkan Data Obat',
-            ]);
+                'message' => 'Data obat berhasil diambil',
+                'data' => $obat,
+            ], 200);
+
         } catch (\Exception $e) {
-            Log::error('Error getting data obat: '.$e->getMessage());
+            Log::error('Error getDataObat: '.$e->getMessage());
 
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan sistem',
+                'message' => 'Gagal mengambil data obat',
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
