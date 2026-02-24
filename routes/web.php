@@ -57,10 +57,11 @@ use App\Http\Controllers\Farmasi\BahanHabisPakaiController;
 use App\Http\Controllers\Management\JadwalDokterController;
 use App\Http\Controllers\Farmasi\RestockDanReturnController;
 use App\Http\Controllers\PemakaianBahanHabisPakaiController;
+use App\Http\Controllers\Perawat\RiwayatPemeriksaanController;
 use App\Http\Controllers\Apoteker\Obat\PenjualanObatController;
+use App\Http\Controllers\Farmasi\RestockDanReturnObatController;
 use App\Http\Controllers\Dokter\DokterController as DokterDokterController;
 use App\Http\Controllers\Farmasi\PengambilanObatController as FarmasiPengambilanObatController;
-use App\Http\Controllers\Perawat\RiwayatPemeriksaanController;
 
 // Rest of your web routes remain the same...
 Route::get('/')->middleware('checkAuth');
@@ -404,34 +405,38 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::post('/print-preview', [CetakResepObatController::class, 'printPreview'])->name('cetak.resep.obat.print.preview');
         });
 
+        Route::prefix('restock-obat')->group(function () {
+            Route::get('/', [RestockDanReturnObatController::class, 'index'])->name('index.restock.obat');
+        }); 
+
         // Route Restock Dan Return Obat Dan Barang 
-        Route::prefix('restock-return')->group(function () {
-            Route::get('/', [RestockDanReturnController::class, 'index'])->name('restock.return.obat.dan.barang');
+        // Route::prefix('restock-return')->group(function () {
+        //     Route::get('/', [RestockDanReturnController::class, 'index'])->name('restock.return.obat.dan.barang');
 
-            Route::get('/get-data-restock-dan-return-barang-dan-obat', [RestockDanReturnController::class, 'getDataRestockDanReturnBarangDanObat'])->name('get.data.restock.dan.return');
+        //     Route::get('/get-data-restock-dan-return-barang-dan-obat', [RestockDanReturnController::class, 'getDataRestockDanReturnBarangDanObat'])->name('get.data.restock.dan.return');
 
-            // ✅ META dropdown form
-            Route::get('/form-meta', [RestockDanReturnController::class, 'getFormMeta'])->name('farmasi.restock_return.form_meta');
+        //     // ✅ META dropdown form
+        //     Route::get('/form-meta', [RestockDanReturnController::class, 'getFormMeta'])->name('farmasi.restock_return.form_meta');
 
-            // ✅ search select
-            Route::get('/obat', [RestockDanReturnController::class, 'getDataObat'])->name('farmasi.restock_return.obat');
-            Route::get('/bhp', [RestockDanReturnController::class, 'getDataBHP'])->name('farmasi.restock_return.bhp');
+        //     // ✅ search select
+        //     Route::get('/obat', [RestockDanReturnController::class, 'getDataObat'])->name('farmasi.restock_return.obat');
+        //     Route::get('/bhp', [RestockDanReturnController::class, 'getDataBHP'])->name('farmasi.restock_return.bhp');
 
-            // ✅ meta per item (harga lama + kategori + satuan + batch/expired histori)
-            Route::get('/obat/{id}/meta', [RestockDanReturnController::class, 'getMetaObat'])->name('farmasi.restock_return.obat_meta');
-            Route::get('/bhp/{id}/meta', [RestockDanReturnController::class, 'getMetaBhp'])->name('farmasi.restock_return.bhp_meta');
+        //     // ✅ meta per item (harga lama + kategori + satuan + batch/expired histori)
+        //     Route::get('/obat/{id}/meta', [RestockDanReturnController::class, 'getMetaObat'])->name('farmasi.restock_return.obat_meta');
+        //     Route::get('/bhp/{id}/meta', [RestockDanReturnController::class, 'getMetaBhp'])->name('farmasi.restock_return.bhp_meta');
 
-            Route::get('/get-data-batch-expired/{id}', [RestockDanReturnController::class, 'getDataBatchObat']);
+        //     Route::get('/get-data-batch-expired/{id}', [RestockDanReturnController::class, 'getDataBatchObat']);
 
-            Route::get('/get-data-depot', [RestockDanReturnController::class, 'getDataDepot'])->name('farmasi.restock_return.get.data.depot');
-            Route::get('/get-data-depot-bhp', [RestockDanReturnController::class, 'getDataDepotBhp'])->name('farmasi.restock_return.get.data.depot.bhp');
+        //     Route::get('/get-data-depot', [RestockDanReturnController::class, 'getDataDepot'])->name('farmasi.restock_return.get.data.depot');
+        //     Route::get('/get-data-depot-bhp', [RestockDanReturnController::class, 'getDataDepotBhp'])->name('farmasi.restock_return.get.data.depot.bhp');
 
-            Route::get('/get-batches-by-obat/{id}', [RestockDanReturnController::class, 'getBatchesByObat']);
-            Route::get('/get-stok-batch/{id}', [RestockDanReturnController::class, 'getStokBatch']);
+        //     Route::get('/get-batches-by-obat/{id}', [RestockDanReturnController::class, 'getBatchesByObat']);
+        //     Route::get('/get-stok-batch/{id}', [RestockDanReturnController::class, 'getStokBatch']);
 
-            // ✅ store
-            Route::post('/store', [RestockDanReturnController::class, 'store'])->name('create.data.restock.dan.return');
-        });
+        //     // ✅ store
+        //     Route::post('/store', [RestockDanReturnController::class, 'store'])->name('create.data.restock.dan.return');
+        // });
 
         // Route Depot
         Route::prefix('depot')->group(function () {
