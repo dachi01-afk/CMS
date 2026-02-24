@@ -382,119 +382,111 @@ class KasirController extends Controller
 
         $dataPembayaran = Pembayaran::with([
             'emr.kunjungan.pasien',
-            'emr.resep.obat',
-            'emr.kunjungan.layanan',
+            'pembayaranDetail', // relasi ke pembayaran_detail
             'metodePembayaran',
-        ])->where('status', 'Belum Bayar')
-            ->where(function ($q) use ($hariIni) {
-                $q->whereHas('emr.kunjungan', function ($kunjungan) use ($hariIni) {
-                    $kunjungan->whereDate('tanggal_kunjungan', $hariIni);
-                });
+        ])
+            ->where('status', 'Belum Bayar')
+            ->whereHas('emr.kunjungan', function ($q) use ($hariIni) {
+                $q->whereDate('tanggal_kunjungan', $hariIni);
             })
             ->latest()
             ->get();
 
         return DataTables::of($dataPembayaran)
             ->addIndexColumn()
-            ->addColumn('nama_pasien', fn($p) => $p->emr->kunjungan->pasien->nama_pasien ?? '-')
-            ->addColumn('tanggal_kunjungan', fn($p) => $p->emr->kunjungan->tanggal_kunjungan ?? '-')
-            ->addColumn('no_antrian', fn($p) => $p->emr->kunjungan->no_antrian ?? '-')
-            ->addColumn('nama_obat', function ($p) {
-                $resep = $p->emr->resep ?? null;
-                if (!$resep || $resep->obat->isEmpty()) {
-                    return '<span class="text-gray-400 italic">Tidak ada</span>';
+
+            ->addColumn(
+                'nama_pasien',
+                fn($p) =>
+                optional($p->emr->kunjungan->pasien)->nama_pasien ?? '-'
+            )
+
+            ->addColumn(
+                'tanggal_kunjungan',
+                fn($p) =>
+                optional($p->emr->kunjungan)->tanggal_kunjungan ?? '-'
+            )
+
+            ->addColumn(
+                'no_antrian',
+                fn($p) =>
+                optional($p->emr->kunjungan)->no_antrian ?? '-'
+            )
+
+            // ✅ SEMUA ITEM DARI pembayaran_detail
+            ->addColumn('items', function ($p) {
+
+                if ($p->details->isEmpty()) {
+                    return '<span class="text-gray-400 italic">Tidak ada item</span>';
                 }
 
                 $output = '<ul class="list-disc pl-4">';
-                foreach ($resep->obat as $obat) {
-                    $output .= '<li>' . e($obat->nama_obat) . '</li>';
+                foreach ($p->details as $d) {
+                    $output .= '<li>'
+                        . e($d->nama_item)
+                        . ' (x' . $d->qty . ') - Rp '
+                        . number_format($d->subtotal, 0, ',', '.')
+                        . '</li>';
                 }
                 $output .= '</ul>';
 
                 return $output;
             })
-            ->addColumn('dosis', function ($p) {
-                $resep = $p->emr->resep ?? null;
-                if (!$resep || $resep->obat->isEmpty()) {
-                    return '-';
-                }
-                $output = '<ul class="list-disc pl-4">';
-                foreach ($resep->obat as $obat) {
-                    $output .= '<li>' . e($obat->pivot->dosis ?? '-') . '</li>';
-                }
-                $output .= '</ul>';
 
-                return $output;
-            })
-            ->addColumn('jumlah', function ($p) {
-                $resep = $p->emr->resep ?? null;
-                if (!$resep || $resep->obat->isEmpty()) {
-                    return '-';
-                }
-                $output = '<ul class="list-disc pl-4">';
-                foreach ($resep->obat as $obat) {
-                    $output .= '<li>' . e($obat->pivot->jumlah ?? '-') . '</li>';
-                }
-                $output .= '</ul>';
+            ->addColumn(
+                'total_tagihan',
+                fn($p) =>
+                'Rp ' . number_format($p->total_tagihan ?? 0, 0, ',', '.')
+            )
 
-                return $output;
-            })
-            ->addColumn('nama_layanan', function ($p) {
-                $layanan = $p->emr->kunjungan->layanan ?? collect();
-                if ($layanan->isEmpty()) {
-                    return '<span class="text-gray-400 italic">Tidak ada</span>';
-                }
+            ->addColumn(
+                'metode_pembayaran',
+                fn($p) =>
+                optional($p->metodePembayaran)->nama_metode ?? '-'
+            )
 
-                $output = '<ul class="list-disc pl-4">';
-                foreach ($layanan as $l) {
-                    $output .= '<li>' . e($l->nama_layanan ?? '-') . '</li>';
-                }
-                $output .= '</ul>';
+            ->addColumn(
+                'kode_transaksi',
+                fn($p) =>
+                $p->kode_transaksi ?? '-'
+            )
 
-                return $output;
-            })
-            ->addColumn('jumlah_layanan', function ($p) {
-                $layanan = $p->emr->kunjungan->layanan ?? collect();
-                if ($layanan->isEmpty()) {
-                    return '<span class="text-gray-400 italic">Tidak ada</span>';
-                }
+            ->addColumn(
+                'status',
+                fn($p) =>
+                $p->status ?? '-'
+            )
 
-                $output = '<ul class="list-disc pl-4">';
-                foreach ($layanan as $l) {
-                    $output .= '<li>' . e($l->pivot->jumlah ?? '-') . '</li>';
-                }
-                $output .= '</ul>';
-
-                return $output;
-            })
-            ->addColumn('total_tagihan', fn($p) => 'Rp ' .  number_format($p->total_tagihan, 0, ',', '.')  ?? '-')
-            ->addColumn('metode_pembayaran', fn($p) => $p->metodePembayaran->nama_metode ?? '-')
-            ->addColumn('kode_transaksi', fn($p) => $p->kode_transaksi ?? '-')
-            ->addColumn('status', fn($p) => $p->status ?? '-')
             ->addColumn('action', function ($p) {
-                $urlBayar = route('kasir.transaksi', ['kode_transaksi' => $p->kode_transaksi]);
-                $urlDelete = route('kasir.pembayaran.delete', ['id' => $p->id]);
+
+                $urlBayar = route('kasir.transaksi', [
+                    'kode_transaksi' => $p->kode_transaksi
+                ]);
+
+                $urlDelete = route('kasir.pembayaran.delete', [
+                    'id' => $p->id
+                ]);
 
                 return '
-                    <div class="flex items-center justify-center gap-3">
-                        <button class="bayarSekarang text-blue-600 hover:text-blue-800"
-                                data-url="' . $urlBayar . '"
-                                data-id="' . $p->id . '"
-                                data-emr-id="' . ($p->emr->id ?? '') . '"
-                                title="Bayar Sekarang">
-                            <i class="fa-regular fa-pen-to-square"></i> Bayar
-                        </button>
+                <div class="flex items-center justify-center gap-3">
+                    <button class="bayarSekarang text-blue-600 hover:text-blue-800"
+                            data-url="' . $urlBayar . '"
+                            data-id="' . $p->id . '"
+                            title="Bayar Sekarang">
+                        <i class="fa-regular fa-pen-to-square"></i> Bayar
+                    </button>
 
-                        <button class="hapusTransaksi text-rose-600 hover:text-rose-800"
-                                data-url="' . $urlDelete . '"
-                                data-kode="' . e($p->kode_transaksi) . '"
-                                title="Hapus Transaksi">
-                            <i class="fa-solid fa-trash"></i> Hapus
-                        </button>
-                    </div>
-                ';
+                    <button class="hapusTransaksi text-rose-600 hover:text-rose-800"
+                            data-url="' . $urlDelete . '"
+                            data-kode="' . e($p->kode_transaksi) . '"
+                            title="Hapus Transaksi">
+                        <i class="fa-solid fa-trash"></i> Hapus
+                    </button>
+                </div>
+            ';
             })
-            ->rawColumns(['nama_obat', 'dosis', 'jumlah', 'nama_layanan', 'jumlah_layanan', 'action'])
+
+            ->rawColumns(['items', 'action'])
             ->make(true);
     }
 

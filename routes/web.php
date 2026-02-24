@@ -407,7 +407,7 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
 
         Route::prefix('restock-obat')->group(function () {
             Route::get('/', [RestockDanReturnObatController::class, 'index'])->name('index.restock.obat');
-        }); 
+        });
 
         // Route Restock Dan Return Obat Dan Barang 
         // Route::prefix('restock-return')->group(function () {
@@ -615,12 +615,6 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
 Route::get('/login-dokter', [AuthController::class, 'login'])->name('login.dokter');
 Route::post('/proses-login-dokter', [AuthController::class, 'prosesLogin'])->name('proses.login.dokter');
 
-Route::get('user-data', function () {
-    $model = User::query();
-
-    return DataTables::eloquent($model)
-        ->addColumn('intro', 'Hi {{$username}}!')
-        ->toJson();
-});
+Route::get('/is-global', [LayananController::class, 'isGlobal'])->name('layanan.is.global');
 
 require __DIR__ . '/auth.php';

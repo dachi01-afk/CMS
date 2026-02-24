@@ -15,12 +15,13 @@ class Pembayaran extends Model
         return $this->belongsTo(EMR::class);
     }
 
-    public function administrasi()
+    public function metodePembayaran()
     {
-        return $this->hasMany(Administrasi::class);
+        return $this->belongsTo(MetodePembayaran::class);
     }
 
-    public function metodePembayaran() {
-        return $this->belongsTo(MetodePembayaran::class);
+    public function pembayaranDetail()
+    {
+        return $this->hasMany(PembayaranDetail::class);
     }
 }

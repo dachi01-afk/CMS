@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\BatchObat;
 use App\Models\User;
 use App\Models\KategoriObat;
 use App\Models\KunjunganLayanan;
@@ -34,22 +35,24 @@ class DatabaseSeeder extends Seeder
             LayananSeeder::class,
             DokterPoliSeeder::class,
             BrandFarmasiSeeder::class,
+            TipeDepotSeeder::class,
+            DepotSeeder::class,
             JenisObatSeeder::class,
             SatuanObatSeeder::class,
             ObatSeeder::class,
-            // BahanHabisPakaiSeeder::class,
+            BatchObatSeeder::class,
+            BatchObatDepotSeeder::class,
+            DepotObatSeeder::class,
+            BahanHabisPakaiSeeder::class,
             JadwalDokterSeeder::class,
             KunjunganSeeder::class,
             KunjunganLayananSeeder::class,
             ResepSeeder::class,
-            // ResepObatSeeder::class,
-            // EMRSeeder::class,
+            ResepObatSeeder::class,
+            EMRSeeder::class,
             MetodePembayaranSeeder::class,
             PerawatDokterPoliSeeder::class,
-            // PembayaranSeeder::class,
-            TipeDepotSeeder::class,
-            DepotSeeder::class,
-            DepotObatSeeder::class,
+            PembayaranSeeder::class,
             SatuanLabSeeder::class,
             JenisPemeriksaanLabSeeder::class,
             JenisPemeriksaanRadiologiSeeder::class,

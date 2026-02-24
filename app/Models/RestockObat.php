@@ -13,4 +13,9 @@ class RestockObat extends Model
     protected $table = 'restock_obat';
 
     protected $guarded = [];
+
+    public function restockObatDetail()
+    {
+        return $this->hasMany(RestockObatDetail::class);
+    }
 }

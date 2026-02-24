@@ -24,7 +24,7 @@ return new class extends Migration
                 'restock_obat_detail_obat_id',
             )->cascadeOnUpdate()->casCadeOnDelete();
             $table->foreignId('batch_obat_id')->constrained(
-                'batch',
+                'batch_obat',
                 'id',
                 'restock_obat_detail_batch_obat_id',
             )->cascadeOnUpdate()->casCadeOnDelete();

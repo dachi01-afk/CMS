@@ -3,46 +3,70 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\BahanHabisPakai; // Pastikan Model ini sudah ada
-use App\Models\BrandFarmasi;    // Sesuaikan nama Model-nya
-use App\Models\JenisObat;       // Sesuaikan nama Model-nya
-use App\Models\Satuan;          // Sesuaikan nama Model-nya
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
+
+use App\Models\BrandFarmasi;
+use App\Models\JenisObat;
 use App\Models\SatuanObat;
-use Carbon\Carbon;
 
 class BahanHabisPakaiSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        // Pastikan tabel master ada isinya agar tidak error
-        if (BrandFarmasi::count() == 0 || SatuanObat::count() == 0) {
-            $this->command->error('Data Brand atau Satuan masih kosong. Jalankan seeder master dulu!');
+        $now = Carbon::now();
+
+        $brandId  = BrandFarmasi::query()->value('id');
+        $jenisId  = JenisObat::query()->value('id');
+        $satuanId = SatuanObat::query()->value('id');
+
+        if (!$brandId || !$jenisId || !$satuanId) {
+            $this->command->warn('⚠️ BahanHabisPakaiSeeder dibatalkan: FK brand/jeni/satuan belum ada.');
             return;
         }
 
-        // Contoh membuat 10 data random menggunakan loop
-        for ($i = 1; $i <= 10; $i++) {
-            BahanHabisPakai::create([
-                'brand_farmasi_id'      => BrandFarmasi::inRandomOrder()->first()->id,
-                'jenis_id'              => JenisObat::inRandomOrder()->first()->id,
-                'satuan_id'             => SatuanObat::inRandomOrder()->first()->id,
-                'kode'                  => 'BHP-' . strtoupper(fake()->unique()->bothify('??###')),
-                'nama_barang'           => fake()->randomElement(['Kapas Steril', 'Kasa Roll', 'Spuit 3cc', 'Handscoon M', 'Alkohol Swab']),
-                'stok_barang'           => rand(50, 200),
-                'dosis'                 => 0.00,
-                'tanggal_kadaluarsa_bhp' => Carbon::now()->addYears(rand(1, 3))->format('Y-m-d'),
-                'no_batch'              => 'BTCH-' . fake()->bothify('??##'),
-                'harga_beli_satuan_bhp' => 10000.00,
-                'avg_hpp_bhp'           => 10000.00,
-                'harga_jual_umum_bhp'   => 15000.00,
-                'harga_otc_bhp'         => 13500.00,
-                'keterangan'            => 'Seed data via Model',
-            ]);
-        }
+        DB::table('bahan_habis_pakai')->updateOrInsert(
+            ['id' => 1],
+            [
+                'brand_farmasi_id' => $brandId,
+                'jenis_id'         => $jenisId,
+                'satuan_id'        => $satuanId,
 
-        $this->command->info('10 Data Bahan Habis Pakai berhasil ditambahkan via Model!');
+                'kode'             => 'BHP-00001',
+                'nama_barang'      => 'Kasa Steril',
+                'stok_barang'      => 0,          // dihitung dari batch_bahan_habis_pakai_depot
+                'dosis'            => 1.00,
+                'harga_beli_satuan_bhp' => 1000.00,
+                'avg_hpp_bhp'      => 0.00,
+                'harga_jual_umum_bhp' => 1500.00,
+                'harga_otc_bhp'    => 1800.00,
+                'keterangan'       => 'BHP untuk perawatan luka',
+                'created_at'       => $now,
+                'updated_at'       => $now,
+            ]
+        );
+
+        DB::table('bahan_habis_pakai')->updateOrInsert(
+            ['id' => 2],
+            [
+                'brand_farmasi_id' => $brandId,
+                'jenis_id'         => $jenisId,
+                'satuan_id'        => $satuanId,
+
+                'kode'             => 'BHP-00002',
+                'nama_barang'      => 'Spuit 3ml',
+                'stok_barang'      => 0,
+                'dosis'            => 1.00,
+                'harga_beli_satuan_bhp' => 2000.00,
+                'avg_hpp_bhp'      => 0.00,
+                'harga_jual_umum_bhp' => 3000.00,
+                'harga_otc_bhp'    => 3500.00,
+                'keterangan'       => 'BHP untuk injeksi',
+                'created_at'       => $now,
+                'updated_at'       => $now,
+            ]
+        );
+
+        $this->command->info('✅ BahanHabisPakaiSeeder OK (ID 1 & 2).');
     }
 }

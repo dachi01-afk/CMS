@@ -32,6 +32,13 @@ class Layanan extends Model
         return (float) ($hargaSebelum ?? 0);
     }
 
+    public static function isGlobal()
+    {
+        static::query()->update(['is_global' => 1]);
+
+        return static::get();
+    }
+
     // ===== RELASI =====
 
     public function kunjungan()

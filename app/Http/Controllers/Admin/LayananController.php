@@ -440,4 +440,11 @@ class LayananController extends Controller
             'message' => "Berhasil Menghapus 1 Data Layanan",
         ]);
     }
+
+    public function isGlobal()
+    {
+        $dataLayanan = Layanan::isGlobal();
+
+        return response()->json([$dataLayanan]);
+    }
 }

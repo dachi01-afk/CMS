@@ -13,4 +13,9 @@ class RestockObatDetail extends Model
     protected $table = 'restock_obat_detail';
 
     protected $guarded = [];
+
+    public function restockObat()
+    {
+        return $this->belongsTo(RestockObat::class);
+    }
 }

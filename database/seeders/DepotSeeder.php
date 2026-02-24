@@ -23,21 +23,44 @@ class DepotSeeder extends Seeder
             return;
         }
 
-        // hanya create kalau depot masih kosong
-        if (Depot::count() > 0) {
-            $this->command->info('ℹ️ depot sudah ada, skip seeder');
-            return;
+        // ✅ Pastikan Depot ID 1 & 2 selalu ada (dibutuhkan untuk relasi stok)
+        Depot::updateOrCreate(
+            ['id' => 1],
+            [
+                'tipe_depot_id'     => $tipeDepotIds->random(),
+                'nama_depot'        => 'Depot 1',
+                'jumlah_stok_depot' => 0,
+                'created_at'        => $now,
+                'updated_at'        => $now,
+            ]
+        );
+
+        Depot::updateOrCreate(
+            ['id' => 2],
+            [
+                'tipe_depot_id'     => $tipeDepotIds->random(),
+                'nama_depot'        => 'Depot 2',
+                'jumlah_stok_depot' => 0,
+                'created_at'        => $now,
+                'updated_at'        => $now,
+            ]
+        );
+
+        // ✅ Tambahan depot lain kalau kamu masih mau (misal sampai 5)
+        // Mulai dari 3 supaya tidak ganggu depot 1 & 2
+        for ($i = 3; $i <= 5; $i++) {
+            Depot::updateOrCreate(
+                ['id' => $i],
+                [
+                    'tipe_depot_id'     => $tipeDepotIds->random(),
+                    'nama_depot'        => 'Depot ' . $faker->unique()->word(),
+                    'jumlah_stok_depot' => 0,
+                    'created_at'        => $now,
+                    'updated_at'        => $now,
+                ]
+            );
         }
 
-        // jumlah depot bebas, contoh 5
-        for ($i = 1; $i <= 5; $i++) {
-            Depot::create([
-                'tipe_depot_id'    => $tipeDepotIds->random(), // ✅ FK murni dari DB
-                'nama_depot'       => 'Depot ' . $faker->unique()->word(),
-                'jumlah_stok_depot' => $faker->numberBetween(0, 500),
-                'created_at'       => $now,
-                'updated_at'       => $now,
-            ]);
-        }
+        $this->command->info('✅ DepotSeeder OK (Depot 1 & 2 dipastikan ada, plus depot tambahan).');
     }
 }
