@@ -567,6 +567,9 @@ Route::middleware(['auth', 'role:Kasir'])->group(function () {
         // Riwayat Transaksi Layanan
         Route::get('/get-data-riwayat-transaksi-layanan', [TransaksiLayananController::class, 'getDataRiwayatTransaksiLayanan'])->name('kasir.get.data.riwayat.transaksi.layanan');
         Route::get('/kwitansi-transaksi-layanan/{kodeTransaksi}', [TransaksiLayananController::class, 'kwitansiTransaksiLayanan'])->name('kasir.show.kwitansi.transaksi.layanan');
+
+        // Delete Transaksi
+        Route::delete('/pembayaran/{id}', [KasirController::class, 'deletePembayaran'])->name('kasir.pembayaran.delete');
     });
 });
 

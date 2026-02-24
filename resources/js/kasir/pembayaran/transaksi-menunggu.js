@@ -1,4 +1,4 @@
-    import axios from "axios";
+import axios from "axios";
 import $ from "jquery";
 
 $(function () {
@@ -58,7 +58,7 @@ $(function () {
         dom: "t",
         rowCallback: function (row, data) {
             $(row).addClass(
-                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600",
             );
             $("td", row).addClass("px-6 py-4 text-gray-900 dark:text-white");
         },
@@ -82,7 +82,7 @@ $(function () {
         $info.text(
             `Menampilkan ${info.start + 1}–${info.end} dari ${
                 info.recordsDisplay
-            } data (Halaman ${currentPage} dari ${totalPages})`
+            } data (Halaman ${currentPage} dari ${totalPages})`,
         );
 
         // Hapus pagination lama
@@ -100,7 +100,7 @@ $(function () {
         const prevDisabled =
             currentPage === 1 ? "opacity-50 cursor-not-allowed" : "";
         $pagination.append(
-            `<li><a href="#" id="btnPrev" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 ${prevDisabled}">Previous</a></li>`
+            `<li><a href="#" id="btnPrev" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 ${prevDisabled}">Previous</a></li>`,
         );
 
         // Tombol angka halaman
@@ -116,7 +116,7 @@ $(function () {
                     ? "text-blue-600 bg-blue-50 border-blue-300 hover:bg-blue-100"
                     : "text-gray-500 bg-white border-gray-300 hover:bg-gray-100 hover:text-gray-700";
             $pagination.append(
-                `<li><a href="#" class="page-number flex items-center justify-center px-3 h-8 border ${active}" data-page="${i}">${i}</a></li>`
+                `<li><a href="#" class="page-number flex items-center justify-center px-3 h-8 border ${active}" data-page="${i}">${i}</a></li>`,
             );
         }
 
@@ -124,7 +124,7 @@ $(function () {
         const nextDisabled =
             currentPage === totalPages ? "opacity-50 cursor-not-allowed" : "";
         $pagination.append(
-            `<li><a href="#" id="btnNext" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 ${nextDisabled}">Next</a></li>`
+            `<li><a href="#" id="btnNext" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 ${nextDisabled}">Next</a></li>`,
         );
     }
 
@@ -150,6 +150,76 @@ $(function () {
 $(document).on("click", ".bayarSekarang", function () {
     const url = $(this).data("url");
     window.location.href = url;
+});
+
+$(document).on("click", ".hapusTransaksi", async function () {
+    const url = $(this).data("url");
+    const kode = $(this).data("kode") || "-";
+
+    const result = await Swal.fire({
+        title: "Hapus transaksi?",
+        html: `Kode transaksi: <b>${kode}</b><br>Data yang dihapus tidak bisa dikembalikan.`,
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Ya, hapus",
+        cancelButtonText: "Batal",
+        confirmButtonColor: "#dc2626",
+        cancelButtonColor: "#64748b",
+        reverseButtons: true,
+        focusCancel: true,
+    });
+
+    if (!result.isConfirmed) return;
+
+    const csrf = document
+        .querySelector('meta[name="csrf-token"]')
+        ?.getAttribute("content");
+
+    try {
+        Swal.fire({
+            title: "Menghapus...",
+            text: "Tunggu sebentar ya.",
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            didOpen: () => Swal.showLoading(),
+        });
+
+        const res = await fetch(url, {
+            method: "DELETE",
+            headers: {
+                "X-CSRF-TOKEN": csrf,
+                Accept: "application/json",
+            },
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+            await Swal.fire({
+                title: "Gagal",
+                text: data.message || "Gagal menghapus transaksi.",
+                icon: "error",
+            });
+            return;
+        }
+
+        await Swal.fire({
+            title: "Berhasil",
+            text: data.message || "Transaksi berhasil dihapus.",
+            icon: "success",
+            timer: 1600,
+            showConfirmButton: false,
+        });
+
+        $("#transaksiMenunggu").DataTable().ajax.reload(null, false);
+    } catch (err) {
+        console.error(err);
+        Swal.fire({
+            title: "Error",
+            text: "Error jaringan / server.",
+            icon: "error",
+        });
+    }
 });
 
 // $(function () {
