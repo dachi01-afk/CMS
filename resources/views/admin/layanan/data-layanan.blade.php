@@ -89,8 +89,6 @@
                         <th class="px-6 py-3">Nama Layanan</th>
                         <th class="px-6 py-3">Poli</th>
                         <th class="px-6 py-3">Harga Layanan</th>
-                        <th class="px-6 py-3">Diskon</th>
-                        <th class="px-6 py-3">Tarif Layanan</th>
                         <th class="px-6 py-3">Kategori Layanan</th>
                         <th class="px-6 py-3 text-center w-32">Aksi</th>
                     </tr>
@@ -196,114 +194,18 @@
                     <div id="nama_layanan_create-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
-                <!-- Pengaturan Akses Poli -->
-                <div class="space-y-3">
-
-                    <!-- Toggle Global -->
-                    <div
-                        class="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3
-                dark:bg-slate-700 dark:border-slate-600">
-                        <div>
-                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">Layanan Global</p>
-                            <p class="text-xs text-slate-500 dark:text-slate-300">Jika aktif, layanan dapat diakses
-                                oleh semua poli.</p>
-                        </div>
-
-                        <label class="inline-flex items-center cursor-pointer select-none">
-                            <input type="checkbox" id="is_global_create" name="is_global" class="sr-only peer">
-                            <div
-                                class="relative w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer
-                        peer-checked:bg-emerald-600 dark:bg-slate-600
-                        after:content-[''] after:absolute after:top-0.5 after:left-[2px]
-                        after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all
-                        peer-checked:after:translate-x-full">
-                            </div>
-                        </label>
-                    </div>
-                    <div id="is_global_create-error" class="text-red-600 text-sm -mt-2"></div>
-
-                    <!-- Pilih Poli (muncul kalau tidak global) -->
-                    <div id="poli_section_create" class="space-y-1.5">
-                        <label for="poli_id_create"
-                            class="block text-sm font-semibold text-slate-800 dark:text-slate-100">
-                            Poli yang Bisa Mengakses Layanan
-                        </label>
-                        <select id="poli_id_create" name="poli_id[]" multiple
-                            class="w-full rounded-lg border border-slate-300 bg-white text-slate-800 text-sm
-         dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100">
-                        </select>
-                        <p class="text-[11px] text-slate-500 dark:text-slate-300">
-                            Pilih satu atau beberapa poli. Jika layanan global, bagian ini akan disembunyikan.
-                        </p>
-                        <div id="poli_id_create-error" class="text-red-600 text-sm mt-1"></div>
-                    </div>
-
-                </div>
-
-                <!-- Tarif & Diskon -->
-                <div class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                        <!-- Harga sebelum diskon -->
-                        <div class="space-y-1.5">
-                            <label class="block text-sm font-semibold text-slate-800 dark:text-slate-100">Harga</label>
-                            <div class="relative">
-                                <span
-                                    class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 dark:text-slate-300 text-sm">Rp</span>
-                                <input type="text" name="harga_sebelum_diskon" id="harga_sebelum_diskon_create"
-                                    class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm
+                <!-- Harga sebelum diskon -->
+                <div class="space-y-1.5">
+                    <label class="block text-sm font-semibold text-slate-800 dark:text-slate-100">Harga</label>
+                    <div class="relative">
+                        <span
+                            class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 dark:text-slate-300 text-sm">Rp</span>
+                        <input type="text" name="harga_sebelum_diskon" id="harga_sebelum_diskon_create"
+                            class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm
                                            focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
-                                    placeholder="150.000">
-                            </div>
-                            <div id="harga_sebelum_diskon_create-error" class="text-red-600 text-sm mt-1"></div>
-                        </div>
-
-                        <!-- Jenis diskon -->
-                        <div class="space-y-1.5">
-                            <label class="block text-sm font-semibold text-slate-800 dark:text-slate-100">Jenis
-                                Diskon</label>
-                            <select name="diskon_tipe" id="diskon_tipe_create"
-                                class="w-full py-2.5 px-3 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm
-                                       focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100">
-                                <option value="nominal">Nominal (Rp)</option>
-                                <option value="persen">Persen (%)</option>
-                            </select>
-                        </div>
-
-                        <!-- Diskon -->
-                        <div class="space-y-1.5">
-                            <label
-                                class="block text-sm font-semibold text-slate-800 dark:text-slate-100">Diskon</label>
-                            <div class="relative">
-                                <span id="diskon_prefix_rp_create"
-                                    class="hidden absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 dark:text-slate-300 text-sm">Rp</span>
-
-                                <input type="text" name="diskon" id="diskon_create"
-                                    class="w-full pr-3 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm
-                                           focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
-                                    placeholder="0">
-                            </div>
-                            <p id="diskon_helper_create" class="text-[11px] text-slate-500">Isi 0 jika tidak ada
-                                diskon.</p>
-                            <div id="diskon_create-error" class="text-red-600 text-sm mt-1"></div>
-                        </div>
-
-                        <!-- Harga setelah diskon -->
-                        <div class="space-y-1.5">
-                            <label class="block text-sm font-semibold text-slate-800 dark:text-slate-100">Harga Setelah
-                                Diskon</label>
-                            <div class="relative">
-                                <span
-                                    class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 dark:text-slate-300 text-sm">Rp</span>
-                                <input type="text" name="harga_setelah_diskon" id="harga_setelah_diskon_create"
-                                    class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-300 bg-slate-100 text-slate-700 text-sm cursor-not-allowed
-                                           dark:bg-slate-600 dark:text-slate-200"
-                                    readonly>
-                            </div>
-                            <div id="harga_setelah_diskon_create-error" class="text-red-600 text-sm mt-1"></div>
-                        </div>
-
+                            placeholder="150.000">
                     </div>
+                    <div id="harga_sebelum_diskon_create-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
                 <!-- FOOTER -->
@@ -393,119 +295,18 @@
                     <div id="nama_layanan_update-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
-                <!-- Pengaturan Akses Poli (UPDATE) -->
-                <div class="space-y-3">
-
-                    <!-- Toggle Global -->
-                    <div
-                        class="flex items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3
-                dark:bg-slate-700 dark:border-slate-600">
-                        <div>
-                            <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">Layanan Global</p>
-                            <p class="text-xs text-slate-500 dark:text-slate-300">
-                                Jika aktif, layanan dapat diakses oleh semua poli.
-                            </p>
-                        </div>
-
-                        <label class="inline-flex items-center cursor-pointer select-none">
-                            <input type="checkbox" id="is_global_update" name="is_global" class="sr-only peer">
-                            <div
-                                class="relative w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer
-                        peer-checked:bg-emerald-600 dark:bg-slate-600
-                        after:content-[''] after:absolute after:top-0.5 after:left-[2px]
-                        after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all
-                        peer-checked:after:translate-x-full">
-                            </div>
-                        </label>
-                    </div>
-                    <div id="is_global_update-error" class="text-red-600 text-sm -mt-2"></div>
-
-                    <!-- Pilih Poli (muncul kalau tidak global) -->
-                    <div id="poli_section_update" class="space-y-1.5">
-                        <label for="poli_id_update"
-                            class="block text-sm font-semibold text-slate-800 dark:text-slate-100">
-                            Poli yang Bisa Mengakses Layanan
-                        </label>
-
-                        <!-- tetap poli_id ya (array) -->
-                        <select id="poli_id_update" name="poli_id[]" multiple
-                            class="w-full rounded-lg border border-slate-300 bg-white text-slate-800 text-sm
-                   dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100">
-                        </select>
-
-                        <p class="text-[11px] text-slate-500 dark:text-slate-300">
-                            Pilih satu atau beberapa poli. Jika layanan global, bagian ini akan disembunyikan.
-                        </p>
-
-                        <div id="poli_id_update-error" class="text-red-600 text-sm mt-1"></div>
-                    </div>
-
-                </div>
-
-                <!-- Tarif & Diskon -->
-                <div class="space-y-4">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                        <!-- Harga sebelum diskon -->
-                        <div class="space-y-1.5">
-                            <label class="block text-sm font-semibold text-slate-800 dark:text-slate-100">Harga</label>
-                            <div class="relative">
-                                <span
-                                    class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 dark:text-slate-300 text-sm">Rp</span>
-                                <input type="text" name="harga_sebelum_diskon" id="harga_sebelum_diskon_update"
-                                    class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm
+                <!-- Harga sebelum diskon -->
+                <div class="space-y-1.5">
+                    <label class="block text-sm font-semibold text-slate-800 dark:text-slate-100">Harga</label>
+                    <div class="relative">
+                        <span
+                            class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 dark:text-slate-300 text-sm">Rp</span>
+                        <input type="text" name="harga_sebelum_diskon" id="harga_sebelum_diskon_update"
+                            class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm
                                            focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
-                                    placeholder="150.000">
-                            </div>
-                            <div id="harga_sebelum_diskon_update-error" class="text-red-600 text-sm mt-1"></div>
-                        </div>
-
-                        <!-- Jenis diskon -->
-                        <div class="space-y-1.5">
-                            <label class="block text-sm font-semibold text-slate-800 dark:text-slate-100">Jenis
-                                Diskon</label>
-                            <select name="diskon_tipe" id="diskon_tipe_update"
-                                class="w-full py-2.5 px-3 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm
-                                       focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100">
-                                <option value="nominal">Nominal (Rp)</option>
-                                <option value="persen">Persen (%)</option>
-                            </select>
-                        </div>
-
-                        <!-- Diskon -->
-                        <div class="space-y-1.5">
-                            <label
-                                class="block text-sm font-semibold text-slate-800 dark:text-slate-100">Diskon</label>
-                            <div class="relative">
-                                <span id="diskon_prefix_rp_update"
-                                    class="hidden absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 dark:text-slate-300 text-sm">Rp</span>
-
-                                <input type="text" name="diskon" id="diskon_update"
-                                    class="w-full pr-3 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm
-                                           focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
-                                    placeholder="0">
-                            </div>
-                            <p id="diskon_helper_update" class="text-[11px] text-slate-500">Isi 0 jika tidak ada
-                                diskon.</p>
-                            <div id="diskon_update-error" class="text-red-600 text-sm mt-1"></div>
-                        </div>
-
-                        <!-- Harga setelah diskon -->
-                        <div class="space-y-1.5">
-                            <label class="block text-sm font-semibold text-slate-800 dark:text-slate-100">Harga Setelah
-                                Diskon</label>
-                            <div class="relative">
-                                <span
-                                    class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 dark:text-slate-300 text-sm">Rp</span>
-                                <input type="text" name="harga_setelah_diskon" id="harga_setelah_diskon_update"
-                                    class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-300 bg-slate-100 text-slate-700 text-sm cursor-not-allowed
-                                           dark:bg-slate-600 dark:text-slate-200"
-                                    readonly>
-                            </div>
-                            <div id="harga_setelah_diskon_update-error" class="text-red-600 text-sm mt-1"></div>
-                        </div>
-
+                            placeholder="150.000">
                     </div>
+                    <div id="harga_sebelum_diskon_update-error" class="text-red-600 text-sm mt-1"></div>
                 </div>
 
                 <div class="flex justify-end gap-3 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">

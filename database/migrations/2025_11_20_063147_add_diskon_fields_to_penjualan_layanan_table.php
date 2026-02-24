@@ -18,7 +18,7 @@ return new class extends Migration
             $table->enum('diskon_tipe', ['persen', 'rupiah'])
                 ->nullable()
                 ->after('total_tagihan');
-            
+
             // nilai diskon (misal 10 untuk 10% atau 15000 untuk 15.000 rupiah)
             $table->decimal('diskon_nilai', 15, 2)
                 ->default(0)

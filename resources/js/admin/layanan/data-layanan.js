@@ -66,25 +66,6 @@ $(function () {
                 },
             },
 
-            // Diskon -> tampilkan label_diskon (Rp / %), fallback 0
-            {
-                data: "label_diskon",
-                name: "label_diskon",
-                orderable: false,
-                render: function (data) {
-                    return data ? data : "-";
-                },
-            },
-
-            // Harga setelah diskon
-            {
-                data: "harga_setelah_diskon",
-                name: "harga_setelah_diskon",
-                render: function (data) {
-                    return "Rp " + toRupiah(data);
-                },
-            },
-
             // Kategori
             {
                 data: "nama_kategori",
@@ -105,7 +86,7 @@ $(function () {
 
         rowCallback: function (row, data) {
             $(row).addClass(
-                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600",
             );
             $("td", row).addClass("px-6 py-4 text-gray-900 dark:text-white");
         },
@@ -152,7 +133,7 @@ $(function () {
         $info.text(
             `Menampilkan ${info.start + 1}–${info.end} dari ${
                 info.recordsDisplay
-            } data (Halaman ${currentPage} dari ${totalPages})`
+            } data (Halaman ${currentPage} dari ${totalPages})`,
         );
 
         $pagination.empty();
@@ -160,7 +141,7 @@ $(function () {
         const prevDisabled =
             currentPage === 1 ? "opacity-50 cursor-not-allowed" : "";
         $pagination.append(
-            `<li><a href="#" id="btnPrev" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 ${prevDisabled}">Previous</a></li>`
+            `<li><a href="#" id="btnPrev" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 ${prevDisabled}">Previous</a></li>`,
         );
 
         const maxVisible = 5;
@@ -176,14 +157,14 @@ $(function () {
                     : "text-gray-500 bg-white border-gray-300 hover:bg-gray-100 hover:text-gray-700";
 
             $pagination.append(
-                `<li><a href="#" class="page-number flex items-center justify-center px-3 h-8 border ${active}" data-page="${i}">${i}</a></li>`
+                `<li><a href="#" class="page-number flex items-center justify-center px-3 h-8 border ${active}" data-page="${i}">${i}</a></li>`,
             );
         }
 
         const nextDisabled =
             currentPage === totalPages ? "opacity-50 cursor-not-allowed" : "";
         $pagination.append(
-            `<li><a href="#" id="btnNext" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 ${nextDisabled}">Next</a></li>`
+            `<li><a href="#" id="btnNext" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 ${nextDisabled}">Next</a></li>`,
         );
     }
 
@@ -265,18 +246,10 @@ $(function () {
     const addModalEl = document.getElementById("modalCreateLayanan");
     const $formAdd = $("#formCreateLayanan");
 
-    let poliTomCreate = null;
-    let poliLoaded = false;
-    let poliLoading = false;
-
     function showModal() {
         addModalEl?.classList.remove("hidden");
         document.documentElement.classList.add("overflow-hidden");
         document.body.classList.add("overflow-hidden");
-
-        initTomPoliCreate();
-        ensurePoliLoaded();
-        togglePoliSectionCreate();
     }
 
     function hideModal() {
@@ -291,151 +264,10 @@ $(function () {
 
         clearInvalid(
             "#kategori_layanan_id_create, #nama_layanan_create, #harga_sebelum_diskon_create, #diskon_create, #poli_id_create, #is_global_create",
-            "#kategori_layanan_id_create-error, #nama_layanan_create-error, #harga_sebelum_diskon_create-error, #diskon_create-error, #harga_setelah_diskon_create-error, #poli_id_create-error, #is_global_create-error"
+            "#kategori_layanan_id_create-error, #nama_layanan_create-error, #harga_sebelum_diskon_create-error, #diskon_create-error, #harga_setelah_diskon_create-error, #poli_id_create-error, #is_global_create-error",
         );
 
-        setDiskonInputStyleCreate();
         $("#harga_setelah_diskon_create").val("");
-
-        if (poliTomCreate) {
-            poliTomCreate.clear(true);
-            poliTomCreate.enable();
-        }
-
-        togglePoliSectionCreate();
-    }
-
-    // helper: normalisasi response poli dari berbagai format
-    function extractPoliList(res) {
-        const payload = res?.data;
-
-        if (Array.isArray(payload)) return payload; // [ ... ]
-        if (Array.isArray(payload?.data)) return payload.data; // { data: [ ... ] }
-        if (Array.isArray(payload?.data?.data)) return payload.data.data; // { data: { data: [ ... ] } }
-        if (Array.isArray(payload?.result)) return payload.result; // { result: [ ... ] }
-
-        return [];
-    }
-
-    function initTomPoliCreate() {
-        if (poliTomCreate) return;
-
-        poliTomCreate = new TomSelect("#poli_id_create", {
-            plugins: ["remove_button"],
-            maxItems: null, // multi
-            closeAfterSelect: false, // biar bisa klik banyak tanpa nutup
-            hideSelected: true,
-            create: false,
-            persist: false,
-
-            placeholder: "Ketik untuk mencari poli...",
-            searchField: ["text"], // cari dari teks option (substring)
-
-            dropdownParent: "body", // aman dari overflow modal
-        });
-
-        // ✅ mirip seperti screenshot: begitu fokus, dropdown langsung tampil
-        poliTomCreate.on("focus", () => poliTomCreate.open());
-        poliTomCreate.on("type", () => poliTomCreate.open());
-    }
-
-    function ensurePoliLoaded() {
-        initTomPoliCreate();
-        if (!poliTomCreate) return;
-
-        if (poliLoaded || poliLoading) return;
-        poliLoading = true;
-
-        axios
-            .get("/poli/get-data-poli", {
-                headers: { Accept: "application/json" },
-            })
-            .then((res) => {
-                const payload = res.data;
-
-                // support format response apa pun yg umum
-                const list = Array.isArray(payload)
-                    ? payload
-                    : Array.isArray(payload?.data)
-                    ? payload.data
-                    : Array.isArray(payload?.data?.data)
-                    ? payload.data.data
-                    : [];
-
-                // ✅ cara paling mirip screenshot: isi <option> dulu
-                const sel = document.getElementById("poli_id_create");
-                sel.innerHTML = "";
-
-                list.forEach((item) => {
-                    const opt = document.createElement("option");
-                    opt.value = String(item.id);
-                    opt.textContent = item.nama_poli;
-                    sel.appendChild(opt);
-                });
-
-                // ✅ refresh tomselect setelah option dimasukkan
-                poliTomCreate.clearOptions();
-                poliTomCreate.sync(); // baca ulang option dari DOM
-                poliTomCreate.refreshOptions(false);
-
-                poliLoaded = true;
-            })
-            .catch((err) => {
-                console.error("Gagal load poli:", err);
-            })
-            .finally(() => {
-                poliLoading = false;
-            });
-    }
-
-    // --------------------------
-    // TOGGLE GLOBAL
-    // --------------------------
-    function togglePoliSectionCreate() {
-        const isGlobal = $("#is_global_create").is(":checked");
-        const $poliSection = $("#poli_section_create");
-
-        if (isGlobal) {
-            $poliSection.addClass("hidden");
-            if (poliTomCreate) {
-                poliTomCreate.clear(true);
-                poliTomCreate.disable();
-            }
-        } else {
-            $poliSection.removeClass("hidden");
-            if (poliTomCreate) poliTomCreate.enable();
-            ensurePoliLoaded();
-        }
-    }
-
-    function setDiskonInputStyleCreate() {
-        const tipe = $("#diskon_tipe_create").val();
-        const $input = $("#diskon_create");
-        const $prefix = $("#diskon_prefix_rp_create");
-
-        if (tipe === "nominal") {
-            $prefix.removeClass("hidden");
-            $input.addClass("pl-10").removeClass("pl-3");
-            $input.attr("placeholder", "0");
-        } else {
-            $prefix.addClass("hidden");
-            $input.removeClass("pl-10").addClass("pl-3");
-            $input.attr("placeholder", "0 - 100");
-        }
-    }
-
-    function hitungHargaCreate() {
-        const hargaAwal = getNumericValue(
-            $("#harga_sebelum_diskon_create").val()
-        );
-        const tipe = $("#diskon_tipe_create").val();
-
-        let diskonVal = getNumericValue($("#diskon_create").val());
-        if (tipe === "persen")
-            diskonVal = Math.max(0, Math.min(100, diskonVal));
-
-        const akhir = calcHargaAkhir(hargaAwal, diskonVal, tipe);
-        $("#harga_setelah_diskon_create").val(formatRupiahDisplay(akhir));
     }
 
     // ========= Events =========
@@ -445,39 +277,14 @@ $(function () {
     });
 
     $(
-        "#buttonCloseModalCreateLayanan, #buttonCloseModalCreateLayanan_footer"
+        "#buttonCloseModalCreateLayanan, #buttonCloseModalCreateLayanan_footer",
     ).on("click", function () {
         hideModal();
     });
 
-    $("#is_global_create").on("change", togglePoliSectionCreate);
-
     $("#harga_sebelum_diskon_create").on("input", function () {
         $(this).val(formatRupiahInput($(this).val()));
-        hitungHargaCreate();
     });
-
-    $("#diskon_tipe_create").on("change", function () {
-        $("#diskon_create").val("");
-        setDiskonInputStyleCreate();
-        hitungHargaCreate();
-    });
-
-    $("#diskon_create").on("input", function () {
-        const tipe = $("#diskon_tipe_create").val();
-        const raw = $(this).val();
-
-        if (tipe === "nominal") {
-            $(this).val(formatRupiahInput(raw));
-        } else {
-            let p = getNumericValue(raw);
-            p = Math.max(0, Math.min(100, p));
-            $(this).val(p ? String(p) : "");
-        }
-        hitungHargaCreate();
-    });
-
-    setDiskonInputStyleCreate();
 
     // ========= Submit =========
     $formAdd.on("submit", function (e) {
@@ -487,39 +294,20 @@ $(function () {
 
         clearInvalid(
             "#kategori_layanan_id_create, #nama_layanan_create, #harga_sebelum_diskon_create, #diskon_create, #poli_id_create, #is_global_create",
-            "#kategori_layanan_id_create-error, #nama_layanan_create-error, #harga_sebelum_diskon_create-error, #diskon_create-error, #harga_setelah_diskon_create-error, #poli_id_create-error, #is_global_create-error"
+            "#kategori_layanan_id_create-error, #nama_layanan_create-error, #harga_sebelum_diskon_create-error, #diskon_create-error, #harga_setelah_diskon_create-error, #poli_id_create-error, #is_global_create-error",
         );
 
         const hargaSebelum = getNumericValue(
-            $("#harga_sebelum_diskon_create").val()
-        );
-        const tipe = $("#diskon_tipe_create").val();
-        const diskon = getNumericValue($("#diskon_create").val());
-        const hargaSetelah = getNumericValue(
-            $("#harga_setelah_diskon_create").val()
+            $("#harga_sebelum_diskon_create").val(),
         );
 
         const isGlobal = $("#is_global_create").is(":checked");
 
-        // ambil dari TomSelect (pastikan array)
-        let poliIds = [];
-        if (!isGlobal && poliTomCreate) {
-            const v = poliTomCreate.getValue();
-            poliIds = Array.isArray(v) ? v : v ? String(v).split(",") : [];
-        }
-
         const formData = {
             kategori_layanan_id: $("#kategori_layanan_id_create").val(),
             nama_layanan: $("#nama_layanan_create").val(),
-            diskon_tipe: tipe,
-            diskon:
-                tipe === "persen" ? Math.max(0, Math.min(100, diskon)) : diskon,
             harga_sebelum_diskon: hargaSebelum,
-            harga_setelah_diskon: hargaSetelah,
             is_global: isGlobal ? 1 : 0,
-
-            // ✅ FIX: harus poli_ids (bukan poli_id)
-            poli_id: poliIds,
         };
 
         axios
@@ -585,7 +373,7 @@ $(function () {
                             setInvalid(
                                 $(map[field].el),
                                 map[field].err,
-                                errors[field][0]
+                                errors[field][0],
                             );
                         }
                     });
@@ -620,138 +408,18 @@ $(function () {
     const $formEdit = $("#formUpdateLayanan");
     const $selectKategori = $("#kategori_layanan_id_update");
 
-    // TOMSELECT POLI UPDATE
-    let poliTomUpdate = null;
-    let poliLoadedUpdate = false;
-    let poliLoadingUpdate = false;
-
-    function initTomPoliUpdate() {
-        if (poliTomUpdate) return;
-
-        poliTomUpdate = new TomSelect("#poli_id_update", {
-            plugins: ["remove_button"],
-            maxItems: null,
-            closeAfterSelect: false,
-            hideSelected: true,
-            create: false,
-            persist: false,
-            placeholder: "Ketik untuk mencari poli...",
-            searchField: ["text"],
-            dropdownParent: "body",
-        });
-
-        poliTomUpdate.on("focus", () => poliTomUpdate.open());
-        poliTomUpdate.on("type", () => poliTomUpdate.open());
-    }
-
-    function ensurePoliLoadedUpdate() {
-        initTomPoliUpdate();
-        if (!poliTomUpdate) return;
-        if (poliLoadedUpdate || poliLoadingUpdate) return;
-
-        poliLoadingUpdate = true;
-
-        axios
-            .get("/poli/get-data-poli", {
-                headers: { Accept: "application/json" },
-            })
-            .then((res) => {
-                const payload = res.data;
-                const list = Array.isArray(payload)
-                    ? payload
-                    : Array.isArray(payload?.data)
-                    ? payload.data
-                    : Array.isArray(payload?.data?.data)
-                    ? payload.data.data
-                    : [];
-
-                const sel = document.getElementById("poli_id_update");
-                sel.innerHTML = "";
-
-                list.forEach((item) => {
-                    const opt = document.createElement("option");
-                    opt.value = String(item.id);
-                    opt.textContent = item.nama_poli;
-                    sel.appendChild(opt);
-                });
-
-                poliTomUpdate.clearOptions();
-                poliTomUpdate.sync();
-                poliTomUpdate.refreshOptions(false);
-
-                poliLoadedUpdate = true;
-            })
-            .catch((err) => console.error("Gagal load poli (update):", err))
-            .finally(() => (poliLoadingUpdate = false));
-    }
-
-    function togglePoliSectionUpdate() {
-        const isGlobal = $("#is_global_update").is(":checked");
-        const $poliSection = $("#poli_section_update");
-
-        if (isGlobal) {
-            $poliSection.addClass("hidden");
-            if (poliTomUpdate) {
-                poliTomUpdate.clear(true);
-                poliTomUpdate.disable();
-            }
-        } else {
-            $poliSection.removeClass("hidden");
-            if (poliTomUpdate) poliTomUpdate.enable();
-            ensurePoliLoadedUpdate();
-        }
-    }
-
     function resetEditForm() {
         if ($formEdit[0]) $formEdit[0].reset();
 
         clearInvalid(
             "#kategori_layanan_id_update, #nama_layanan_update, #harga_sebelum_diskon_update, #diskon_update, #is_global_update, #poli_id_update",
-            "#kategori_layanan_id_update-error, #nama_layanan_update-error, #harga_sebelum_diskon_update-error, #diskon_update-error, #harga_setelah_diskon_update-error, #is_global_update-error, #poli_id_update-error"
+            "#kategori_layanan_id_update-error, #nama_layanan_update-error, #harga_sebelum_diskon_update-error, #diskon_update-error, #harga_setelah_diskon_update-error, #is_global_update-error, #poli_id_update-error",
         );
 
-        setDiskonInputStyleUpdate();
         $("#harga_setelah_diskon_update").val("");
-
-        initTomPoliUpdate();
-        if (poliTomUpdate) {
-            poliTomUpdate.clear(true);
-            poliTomUpdate.enable();
-        }
 
         // default: tidak global (supaya poli tampil)
         $("#is_global_update").prop("checked", false);
-        togglePoliSectionUpdate();
-    }
-
-    function setDiskonInputStyleUpdate() {
-        const tipe = $("#diskon_tipe_update").val();
-        const $input = $("#diskon_update");
-        const $prefix = $("#diskon_prefix_rp_update");
-
-        if (tipe === "nominal") {
-            $prefix.removeClass("hidden");
-            $input.addClass("pl-10").removeClass("pl-3");
-            $input.attr("placeholder", "0");
-        } else {
-            $prefix.addClass("hidden");
-            $input.removeClass("pl-10").addClass("pl-3");
-            $input.attr("placeholder", "0 - 100");
-        }
-    }
-
-    function hitungHargaUpdate() {
-        const hargaAwal = getNumericValue(
-            $("#harga_sebelum_diskon_update").val()
-        );
-        const tipe = $("#diskon_tipe_update").val();
-
-        let diskonVal = getNumericValue($("#diskon_update").val());
-        if (tipe === "persen")
-            diskonVal = Math.max(0, Math.min(100, diskonVal));
-
-        const akhir = calcHargaAkhir(hargaAwal, diskonVal, tipe);
-        $("#harga_setelah_diskon_update").val(formatRupiahDisplay(akhir));
     }
 
     function loadKategoriUpdate(selectedId = null) {
@@ -760,12 +428,12 @@ $(function () {
         axios.get("/kategori_layanan/get-data-kategori-layanan").then((res) => {
             const list = res.data.data || [];
             $selectKategori.html(
-                `<option value="">Pilih kategori layanan</option>`
+                `<option value="">Pilih kategori layanan</option>`,
             );
 
             list.forEach((item) => {
                 $selectKategori.append(
-                    `<option value="${item.id}">${item.nama_kategori}</option>`
+                    `<option value="${item.id}">${item.nama_kategori}</option>`,
                 );
             });
 
@@ -776,34 +444,7 @@ $(function () {
     // events input format
     $("#harga_sebelum_diskon_update").on("input", function () {
         $(this).val(formatRupiahInput($(this).val()));
-        hitungHargaUpdate();
     });
-
-    $("#diskon_tipe_update").on("change", function () {
-        $("#diskon_update").val("");
-        setDiskonInputStyleUpdate();
-        hitungHargaUpdate();
-    });
-
-    $("#diskon_update").on("input", function () {
-        const tipe = $("#diskon_tipe_update").val();
-        const raw = $(this).val();
-
-        if (tipe === "nominal") {
-            $(this).val(formatRupiahInput(raw));
-        } else {
-            let p = getNumericValue(raw);
-            p = Math.max(0, Math.min(100, p));
-            $(this).val(p ? String(p) : "");
-        }
-
-        hitungHargaUpdate();
-    });
-
-    // toggle global
-    $("#is_global_update").on("change", togglePoliSectionUpdate);
-
-    setDiskonInputStyleUpdate();
 
     // klik edit
     $("body").on("click", ".btn-edit-layanan", function () {
@@ -820,60 +461,14 @@ $(function () {
                 $("#nama_layanan_update").val(layanan.nama_layanan);
 
                 $("#harga_sebelum_diskon_update").val(
-                    formatRupiahDisplay(layanan.harga_sebelum_diskon)
+                    formatRupiahDisplay(layanan.harga_sebelum_diskon),
                 );
-                $("#harga_setelah_diskon_update").val(
-                    formatRupiahDisplay(layanan.harga_setelah_diskon)
-                );
-
-                const tipe = layanan.diskon_tipe
-                    ? layanan.diskon_tipe
-                    : layanan.diskon >= 1 && layanan.diskon <= 100
-                    ? "persen"
-                    : "nominal";
-
-                $("#diskon_tipe_update").val(tipe);
-                setDiskonInputStyleUpdate();
-
-                if (layanan.diskon) {
-                    if (tipe === "persen") {
-                        $("#diskon_update").val(
-                            String(
-                                Math.max(
-                                    0,
-                                    Math.min(100, Number(layanan.diskon))
-                                )
-                            )
-                        );
-                    } else {
-                        $("#diskon_update").val(
-                            formatRupiahDisplay(layanan.diskon)
-                        );
-                    }
-                } else {
-                    $("#diskon_update").val("");
-                }
 
                 loadKategoriUpdate(layanan.kategori_layanan_id);
 
                 // ✅ GLOBAL + POLI
                 const isGlobal = Number(layanan.is_global || 0) === 1;
                 $("#is_global_update").prop("checked", isGlobal);
-
-                ensurePoliLoadedUpdate();
-
-                // setelah poli ter-load, set value
-                // layanan.poli_id harus array ID (kita buat dari backend)
-                setTimeout(() => {
-                    togglePoliSectionUpdate();
-
-                    if (!isGlobal && poliTomUpdate) {
-                        const poliIds = Array.isArray(layanan.poli_id)
-                            ? layanan.poli_id
-                            : [];
-                        poliTomUpdate.setValue(poliIds.map(String), true);
-                    }
-                }, 150);
 
                 editModal?.show();
             })
@@ -892,37 +487,19 @@ $(function () {
 
         clearInvalid(
             "#kategori_layanan_id_update, #nama_layanan_update, #harga_sebelum_diskon_update, #diskon_update, #is_global_update, #poli_id_update",
-            "#kategori_layanan_id_update-error, #nama_layanan_update-error, #harga_sebelum_diskon_update-error, #diskon_update-error, #harga_setelah_diskon_update-error, #is_global_update-error, #poli_id_update-error"
+            "#kategori_layanan_id_update-error, #nama_layanan_update-error, #harga_sebelum_diskon_update-error, #diskon_update-error, #harga_setelah_diskon_update-error, #is_global_update-error, #poli_id_update-error",
         );
 
-        const tipe = $("#diskon_tipe_update").val();
-        const diskon = getNumericValue($("#diskon_update").val());
-
         const isGlobal = $("#is_global_update").is(":checked");
-
-        let poliId = [];
-        if (!isGlobal && poliTomUpdate) {
-            const v = poliTomUpdate.getValue();
-            poliId = Array.isArray(v) ? v : v ? String(v).split(",") : [];
-        }
 
         const formData = {
             id: $("#id_update").val(),
             kategori_layanan_id: $("#kategori_layanan_id_update").val(),
             nama_layanan: $("#nama_layanan_update").val(),
-            diskon_tipe: tipe,
-            diskon:
-                tipe === "persen" ? Math.max(0, Math.min(100, diskon)) : diskon,
             harga_sebelum_diskon: getNumericValue(
-                $("#harga_sebelum_diskon_update").val()
+                $("#harga_sebelum_diskon_update").val(),
             ),
-            harga_setelah_diskon: getNumericValue(
-                $("#harga_setelah_diskon_update").val()
-            ),
-
-            // ✅ global & poli_id
             is_global: isGlobal ? 1 : 0,
-            poli_id: poliId,
         };
 
         axios
@@ -985,7 +562,7 @@ $(function () {
                             setInvalid(
                                 $(map[field].el),
                                 map[field].err,
-                                errors[field][0]
+                                errors[field][0],
                             );
                         }
                     });
@@ -1009,7 +586,7 @@ $(function () {
 
     // close modal update
     $(
-        "#buttonCloseModalUpdateLayanan, #buttonCloseModalUpdateLayanan_footer"
+        "#buttonCloseModalUpdateLayanan, #buttonCloseModalUpdateLayanan_footer",
     ).on("click", function () {
         editModal?.hide();
         resetEditForm();

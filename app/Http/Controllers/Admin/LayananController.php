@@ -40,64 +40,6 @@ class LayananController extends Controller
                 return $row->nama_layanan ?? '-';
             })
 
-            // KATEGORI
-            ->addColumn('nama_kategori', function ($row) {
-                return optional($row->kategoriLayanan)->nama_kategori ?? '-';
-            })
-
-            // HARGA SEBELUM DISKON (angka mentah)
-            ->addColumn('harga_sebelum_diskon', function ($row) {
-                return is_null($row->harga_sebelum_diskon) ? 0 : (float) $row->harga_sebelum_diskon;
-            })
-
-            // DISKON (angka mentah)
-            ->addColumn('diskon', function ($row) {
-                return is_null($row->diskon) ? 0 : (float) $row->diskon;
-            })
-
-            // LABEL DISKON
-            ->addColumn('label_diskon', function ($row) {
-                $hargaAwal  = (float) ($row->harga_sebelum_diskon ?? 0);
-                $hargaAkhir = (float) ($row->harga_setelah_diskon ?? 0);
-                $diskon     = (float) ($row->diskon ?? 0);
-
-                // tidak ada diskon
-                if ($hargaAwal <= 0) return null;
-
-                $selisih = $hargaAwal - $hargaAkhir;
-
-                // kalau harga akhir >= harga awal, anggap tidak ada diskon
-                if ($selisih <= 0) return null;
-
-                /**
-                 * LOGIKA:
-                 * - Kalau diskon <= 100, kita anggap ini diskon persen (sesuai desain kamu sebelumnya),
-                 *   tapi LABEL persen dihitung dari harga supaya tidak pernah salah tampil.
-                 * - Kalau diskon > 100, anggap nominal.
-                 */
-                if ($diskon > 0 && $diskon <= 100) {
-                    $pct = ($selisih / $hargaAwal) * 100;
-                    $pct = max(0, $pct);
-
-                    $pctStr = rtrim(rtrim(number_format($pct, 2, '.', ''), '0'), '.');
-                    return $pctStr . '%';
-                }
-
-                // nominal -> tampilkan dari selisih (lebih konsisten) atau dari diskon
-                // saya pakai selisih supaya pasti match dengan tarif
-                return 'Rp' . number_format($selisih, 0, ',', '.');
-            })
-
-            // HARGA SETELAH DISKON (angka mentah)
-            ->addColumn('harga_setelah_diskon', function ($row) {
-                return is_null($row->harga_setelah_diskon) ? 0 : (float) $row->harga_setelah_diskon;
-            })
-
-            // GLOBAL BOOLEAN
-            ->addColumn('is_global', function ($row) {
-                return (bool) ($row->is_global ?? false);
-            })
-
             // ✅ KOLOM POLI (LOGIC GLOBAL VS PIVOT)
             ->addColumn('poli_label', function ($row) {
                 $isGlobal = (int) ($row->is_global ?? 0);
@@ -116,6 +58,21 @@ class LayananController extends Controller
                 }
 
                 return implode(', ', $names);
+            })
+
+            // HARGA SEBELUM DISKON (angka mentah)
+            ->addColumn('harga_sebelum_diskon', function ($row) {
+                return is_null($row->harga_sebelum_diskon) ? 0 : (float) $row->harga_sebelum_diskon;
+            })
+
+            // KATEGORI
+            ->addColumn('nama_kategori', function ($row) {
+                return optional($row->kategoriLayanan)->nama_kategori ?? '-';
+            })
+
+            // GLOBAL BOOLEAN
+            ->addColumn('is_global', function ($row) {
+                return (bool) ($row->is_global ?? false);
             })
 
             // AKSI
@@ -153,14 +110,10 @@ class LayananController extends Controller
             'kategori_layanan_id'      => 'required|exists:kategori_layanan,id',
             'nama_layanan'             => 'required|string|max:255',
             'harga_sebelum_diskon'     => 'required|numeric|min:0',
-            'diskon'                   => 'nullable|numeric|min:0',
-            'harga_setelah_diskon'     => 'required|numeric|min:0',
-
-            'is_global'                => 'required|boolean',
 
             // ✅ PENTING:
             // kalau is_global = 1, poli_id diabaikan dari validasi (supaya min:1 tidak error walau poli_id=[])
-            'poli_id'                  => 'exclude_if:is_global,1|required_if:is_global,0|array|min:1',
+            'poli_id'                  => 'exclude_if:is_global,1|array|min:1',
             'poli_id.*'                => 'integer|exists:poli,id',
         ], [
             'poli_id.required_if' => 'Jika layanan tidak global, minimal pilih 1 poli.',
@@ -185,9 +138,7 @@ class LayananController extends Controller
                     'kategori_layanan_id'      => $request->kategori_layanan_id,
                     'nama_layanan'             => $request->nama_layanan,
                     'harga_sebelum_diskon'     => $request->harga_sebelum_diskon,
-                    'diskon'                   => $request->diskon ?? 0,
-                    'harga_setelah_diskon'     => $request->harga_setelah_diskon,
-                    'is_global'                => (int) $request->is_global,
+                    'is_global'                => 1,
                 ]);
 
                 // ✅ kalau tidak global → simpan pivot
@@ -284,12 +235,7 @@ class LayananController extends Controller
 
             // kita validasi minimal ada, nanti dicek numeriknya manual supaya bisa terima "150.000"
             'harga_sebelum_diskon' => ['required'],
-            'diskon_tipe' => ['nullable', Rule::in(['nominal', 'persen'])],
-            'diskon' => ['nullable'],
-            'harga_setelah_diskon' => ['nullable'], // boleh dikirim FE, tapi server tetap hitung ulang
-
-            'is_global' => ['required', 'boolean'],
-            'poli_id'   => ['exclude_if:is_global,1', 'required_if:is_global,0', 'array', 'min:1'],
+            'poli_id'   => ['exclude_if:is_global,1', 'array', 'min:1'],
             'poli_id.*' => ['integer', 'exists:poli,id'],
         ], [
             'id.required' => 'ID layanan wajib ada.',
@@ -302,8 +248,6 @@ class LayananController extends Controller
             'nama_layanan.max' => 'Nama layanan maksimal 255 karakter.',
 
             'harga_sebelum_diskon.required' => 'Harga layanan wajib diisi.',
-
-            'diskon_tipe.in' => 'Jenis diskon tidak valid.',
         ]);
 
         if ($validator->fails()) {
@@ -320,8 +264,6 @@ class LayananController extends Controller
                 $layanan = Layanan::lockForUpdate()->findOrFail((int) $request->id);
 
                 $hargaAwal = $toNumber($request->harga_sebelum_diskon);
-                $diskon = $toNumber($request->diskon);
-                $tipe = $request->diskon_tipe ?: 'nominal';
 
                 // VALIDASI SERVER-SIDE ANGKA
                 if ($hargaAwal < 0) {
@@ -332,58 +274,18 @@ class LayananController extends Controller
                     ], 422);
                 }
 
-                if ($diskon < 0) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Validasi gagal.',
-                        'errors' => ['diskon' => ['Diskon tidak boleh negatif.']]
-                    ], 422);
-                }
-
-                // HITUNG POTONGAN
-                if ($tipe === 'persen') {
-                    if ($diskon > 100) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Validasi gagal.',
-                            'errors' => ['diskon' => ['Diskon persen harus 0 sampai 100.']]
-                        ], 422);
-                    }
-                    $potongan = ($diskon / 100) * $hargaAwal;
-                } else {
-                    // nominal (opsional: larang diskon > harga)
-                    if ($diskon > $hargaAwal) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Validasi gagal.',
-                            'errors' => ['diskon' => ['Diskon nominal tidak boleh melebihi harga.']]
-                        ], 422);
-                    }
-                    $potongan = $diskon;
-                }
-
-                $hargaAkhir = $hargaAwal - $potongan;
-                if ($hargaAkhir < 0) $hargaAkhir = 0;
-
                 // Payload update
                 $payload = [
                     'kategori_layanan_id' => (int) $request->kategori_layanan_id,
                     'nama_layanan' => $request->nama_layanan,
                     'harga_sebelum_diskon' => $hargaAwal,
-                    'diskon' => $diskon,
-                    'harga_setelah_diskon' => round($hargaAkhir, 0),
                 ];
-
-                // Aman: hanya set diskon_tipe kalau kolomnya memang ada di DB
-                if (Schema::hasColumn('layanan', 'diskon_tipe')) {
-                    $payload['diskon_tipe'] = $tipe;
-                }
 
                 $layanan->update($payload);
 
                 // ✅ simpan is_global kalau kolomnya ada
                 if (Schema::hasColumn('layanan', 'is_global')) {
-                    $layanan->is_global = (int) $request->is_global;
+                    $layanan->is_global = 1;
                     $layanan->save();
                 }
 
@@ -405,7 +307,7 @@ class LayananController extends Controller
                         'harga_sebelum_diskon' => $layanan->harga_sebelum_diskon,
                         'diskon' => $layanan->diskon,
                         'harga_setelah_diskon' => $layanan->harga_setelah_diskon,
-                        'diskon_tipe' => Schema::hasColumn('layanan', 'diskon_tipe') ? $layanan->diskon_tipe : $tipe,
+                        'diskon_tipe' => Schema::hasColumn('layanan', 'diskon_tipe') ? $layanan->diskon_tipe : null,
                     ]
                 ], 200);
             });
