@@ -31,18 +31,11 @@ $(function () {
                         day: "2-digit",
                         month: "long",
                         year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
                     });
                     return waktuIndonesia;
                 },
             },
             { data: "no_antrian", name: "no_antrian" },
-            { data: "nama_obat", name: "nama_obat" },
-            { data: "dosis", name: "dosis" },
-            { data: "jumlah", name: "jumlah" },
-            { data: "nama_layanan", name: "nama_layanan" },
-            { data: "jumlah_layanan", name: "jumlah_layanan" },
             { data: "total_tagihan", name: "total_tagihan" },
             { data: "metode_pembayaran", name: "metode_pembayaran" },
             { data: "kode_transaksi", name: "kode_transaksi" },

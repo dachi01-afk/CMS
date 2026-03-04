@@ -10,6 +10,10 @@ class Pembayaran extends Model
 
     protected $guarded = [];
 
+    protected $casts = [
+        'tanggal_pembayaran' => 'datetime',
+    ];
+
     public function emr()
     {
         return $this->belongsTo(EMR::class);

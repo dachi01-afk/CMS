@@ -80,19 +80,15 @@
                            text-white tracking-wide">
                     <tr>
                         <th class="px-4 md:px-6 py-3">No</th>
-                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Nama Pasien</th>
-                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Tanggal Kunjungan</th>
-                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Nomor Antrian</th>
-                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Nama Obat</th>
-                        <th class="px-4 md:px-6 py-3">Dosis</th>
-                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Jumlah Obat</th>
-                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Nama Layanan</th>
-                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Jumlah Layanan</th>
+                        <th class="px-4 md:px-6 py-3">Nama Pasien</th>
+                        <th class="px-4 md:px-6 py-3">Tanggal Kunjungan</th>
+                        <th class="px-4 md:px-6 py-3">Nomor Antrian</th>
                         <th class="px-4 md:px-6 py-3">Total</th>
-                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Metode Pembayaran</th>
+                        <th class="px-4 md:px-6 py-3">Metode Pembayaran</th>
+                        <th class="px-4 md:px-6 py-3">Kode Transaksi</th>
                         <th class="px-4 md:px-6 py-3">Status</th>
-                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Bukti Pembayaran</th>
-                        <th class="px-4 md:px-6 py-3 text-center">Action</th>
+                        <th class="px-4 md:px-6 py-3">Bukti Transaksi</th>
+                        <th class="px-4 md:px-6 py-3">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
@@ -106,8 +102,7 @@
             class="flex flex-col md:flex-row md:items-center md:justify-between gap-3
                    px-4 md:px-6 py-3 border-t border-slate-200 dark:border-slate-700
                    bg-slate-50/70 dark:bg-slate-800/60 rounded-b-2xl">
-            <div id="riwayat-transaksi-custom-info"
-                class="text-xs md:text-sm text-slate-600 dark:text-slate-300"></div>
+            <div id="riwayat-transaksi-custom-info" class="text-xs md:text-sm text-slate-600 dark:text-slate-300"></div>
             <ul id="riwayat-transaksi-custom-pagination"
                 class="inline-flex items-center gap-0 text-sm isolate rounded-lg
                        border border-slate-200 dark:border-slate-600 overflow-hidden">

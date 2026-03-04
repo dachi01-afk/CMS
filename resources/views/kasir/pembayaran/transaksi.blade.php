@@ -16,221 +16,537 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-    <!-- Flowbite JS -->
+    <!-- Flowbite JS (boleh tetap ada, tapi kita TIDAK pakai flowbite modal) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.8.1/flowbite.min.js" defer></script>
 
     <!-- SweetAlert -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
-<body>
-    <section class="bg-white py-8 antialiased dark:bg-gray-900 md:py-16">
+<body class="bg-gray-50 dark:bg-gray-900">
+    <section class="py-6 md:py-10">
         <div class="mx-auto max-w-screen-xl px-4 2xl:px-0">
-            <div class="mx-auto max-w-3xl">
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-white sm:text-2xl">Detail Transaksi</h2>
 
-                <div class="mt-6 space-y-4 border-b border-t border-gray-200 py-8 dark:border-gray-700 sm:mt-8">
-                    <h4 class="text-lg font-semibold text-gray-900 dark:text-white">
-                        {{ $dataPembayaran->emr->kunjungan->pasien->nama_pasien }}
-                    </h4>
-
-                    <dl>
-                        <dt class="text-base font-medium text-gray-900 dark:text-white">Tanggal Kunjungan</dt>
-                        <dd class="mt-1 text-base font-normal text-gray-500 dark:text-gray-400">
-                            {{ \Carbon\Carbon::parse($dataPembayaran->emr->kunjungan->tanggal_kunjungan)->timezone('Asia/Jakarta')->translatedFormat('l, d F Y') }}
-                        </dd>
-                    </dl>
+            <!-- Top Bar -->
+            <div class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex items-start gap-3">
+                    <div
+                        class="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-50 text-primary-700 dark:bg-gray-800 dark:text-primary-300">
+                        <i class="fa-solid fa-receipt"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-semibold text-gray-900 dark:text-white sm:text-2xl">
+                            Detail Transaksi
+                        </h1>
+                        <div class="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-600 dark:text-gray-300">
+                            <span
+                                class="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+                                <i class="fa-solid fa-hashtag opacity-70"></i>
+                                <span>Kode:</span>
+                                <span class="font-semibold text-gray-900 dark:text-white">
+                                    {{ $dataPembayaran->kode_transaksi ?? '-' }}
+                                </span>
+                            </span>
+                            <span
+                                class="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+                                <i class="fa-solid fa-shield-heart opacity-70"></i>
+                                <span>Modul Kasir Klinik</span>
+                            </span>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="mt-6 sm:mt-8">
-                    <div class="relative overflow-x-auto border-b border-gray-200 dark:border-gray-800">
-                        <table class="w-full text-left font-medium text-gray-900 dark:text-white md:table-fixed">
-                            <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
-                                {{-- Resep Obat (optional) --}}
-                                @foreach (data_get($dataPembayaran, 'emr.resep.obat', []) as $o)
-                                    <tr>
-                                        <td class="whitespace-nowrap py-4 md:w-[384px]">
-                                            <label>{{ $o->nama_obat }}</label>
-                                        </td>
-                                        <td class="p-4 text-base font-normal text-gray-900 dark:text-white">
-                                            x{{ $o->pivot->jumlah ?? 1 }}
-                                        </td>
-                                        <td class="p-4 text-right text-base font-bold text-gray-900 dark:text-white">
-                                            Rp{{ number_format(($o->harga_jual_obat ?? 0) * ($o->pivot->jumlah ?? 1), 0, ',', '.') }}
-                                        </td>
-                                    </tr>
-                                @endforeach
+                <a href="{{ route('kasir.pembayaran') }}"
+                    class="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-900 shadow-sm hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
+                    <i class="fa-solid fa-arrow-left"></i>
+                    Kembali
+                </a>
+            </div>
 
-                                {{-- Jika tidak ada resep, bisa tampilkan baris info (opsional) --}}
-                                @if (empty(data_get($dataPembayaran, 'emr.resep.obat')))
-                                    <tr>
-                                        <td class="py-4 text-sm text-gray-500 dark:text-gray-400" colspan="3">
-                                            Tidak ada resep untuk kunjungan ini.
-                                        </td>
-                                    </tr>
-                                @endif
+            <!-- Content Layout -->
+            <div class="grid grid-cols-1 gap-6 lg:grid-cols-12">
 
-                                {{-- Layanan (punya data) --}}
-                                @foreach ($dataPembayaran->emr->kunjungan->layanan as $l)
-                                    <tr>
-                                        <td class="whitespace-nowrap py-4 md:w-[384px]">
-                                            <label>{{ $l->nama_layanan }}</label>
-                                        </td>
-                                        <td class="p-4 text-base font-normal text-gray-900 dark:text-white">
-                                            x{{ $l->pivot->jumlah ?? 1 }}
-                                        </td>
-                                        <td class="p-4 text-right text-base font-bold text-gray-900 dark:text-white">
-                                            Rp{{ number_format(($l->harga_setelah_diskon ?? 0) * ($l->pivot->jumlah ?? 1), 0, ',', '.') }}
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+                <!-- LEFT: Detail -->
+                <div class="lg:col-span-8 space-y-6">
+
+                    <!-- Patient Card -->
+                    <div
+                        class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+                        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                            <div class="flex items-start gap-3">
+                                <div
+                                    class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-gray-700 dark:text-emerald-300">
+                                    <i class="fa-solid fa-user-injured"></i>
+                                </div>
+                                <div>
+                                    <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                                        {{ data_get($dataPembayaran, 'emr.kunjungan.pasien.nama_pasien', '-') }}
+                                    </h2>
+                                    <p class="mt-1 text-sm text-gray-600 dark:text-gray-300">
+                                        Informasi kunjungan & poli untuk kebutuhan pembayaran kasir.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="flex flex-wrap gap-2">
+                                <span
+                                    class="inline-flex items-center gap-2 rounded-full bg-gray-50 px-3 py-1 text-xs font-medium text-gray-700 ring-1 ring-gray-200 dark:bg-gray-900/30 dark:text-gray-200 dark:ring-gray-700">
+                                    <i class="fa-regular fa-calendar"></i>
+                                    @php $tgl = data_get($dataPembayaran, 'emr.kunjungan.tanggal_kunjungan'); @endphp
+                                    {{ $tgl ? \Carbon\Carbon::parse($tgl)->timezone('Asia/Jakarta')->translatedFormat('l, d F Y') : '-' }}
+                                </span>
+
+                                <span
+                                    class="inline-flex items-center gap-2 rounded-full bg-gray-50 px-3 py-1 text-xs font-medium text-gray-700 ring-1 ring-gray-200 dark:bg-gray-900/30 dark:text-gray-200 dark:ring-gray-700">
+                                    <i class="fa-solid fa-stethoscope"></i>
+                                    {{ data_get($dataPembayaran, 'emr.kunjungan.poli.nama_poli', '-') }}
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="mt-4 space-y-6">
-                        <h4 class="text-xl font-semibold text-gray-900 dark:text-white">Ringkasan Transaksi</h4>
-
-                        <div class="space-y-4">
-                            {{-- total awal (sebelum diskon) --}}
-                            <dl class="flex items-center justify-between gap-4">
-                                <dt class="text-gray-500 dark:text-gray-400">Total Harga</dt>
-                                <dd class="text-base font-medium text-gray-900 dark:text-white">
-                                    Rp{{ number_format($dataPembayaran->total_tagihan, 0, ',', '.') }}
-                                </dd>
-                            </dl>
-
-                            {{-- input diskon persen --}}
-                            <dl class="flex items-center justify-between gap-4">
-                                <dt class="text-gray-500 dark:text-gray-400">Diskon (%)</dt>
-                                <dd class="flex-1 text-right">
-                                    <input type="number" id="diskon_persen" min="0" max="100"
-                                        value="0"
-                                        class="w-32 text-right rounded-lg border-gray-300 dark:bg-gray-700 dark:text-white" />
-                                </dd>
-                            </dl>
-
-                            {{-- subtotal setelah diskon (tampil realtime) --}}
-                            <dl class="flex items-center justify-between gap-4">
-                                <dt class="text-gray-500 dark:text-gray-400">Subtotal Setelah Diskon</dt>
-                                <dd id="subtotal_setelah_diskon_display"
-                                    class="text-base font-semibold text-gray-900 dark:text-white">
-                                    Rp{{ number_format($dataPembayaran->total_tagihan, 0, ',', '.') }}
-                                </dd>
-                            </dl>
-
-                            {{-- hidden untuk dipakai JS & dikirim ke backend --}}
-                            <input type="hidden" id="total_setelah_diskon"
-                                value="{{ $dataPembayaran->total_tagihan }}">
+                    <!-- Items: OBAT -->
+                    <div
+                        class="rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+                        <div
+                            class="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-700">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700 dark:bg-gray-700 dark:text-indigo-300">
+                                    <i class="fa-solid fa-pills"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-base font-semibold text-gray-900 dark:text-white">Daftar Obat</h3>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Sumber: pembayaran_detail</p>
+                                </div>
+                            </div>
+                            <span
+                                class="rounded-full bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700 ring-1 ring-gray-200 dark:bg-gray-900/30 dark:text-gray-200 dark:ring-gray-700">
+                                {{ $itemsObat?->count() ?? 0 }} item
+                            </span>
                         </div>
 
-                        <div class="space-y-4 mt-4">
-                            {{-- Metode Pembayar --}}
-                            <dl
-                                class="flex items-center justify-between gap-4 border-t border-gray-200 pt-2 dark:border-gray-700">
-                                <dt class="text-lg font-bold text-gray-900 dark:text-white">Metode Pembayaran</dt>
-                                <select class="text-lg font-bold text-gray-900 dark:text-white rounded-md"
-                                    id="pilih-metode-pembayaran">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead
+                                    class="bg-gray-50 text-xs uppercase text-gray-600 dark:bg-gray-900/30 dark:text-gray-300">
+                                    <tr>
+                                        <th class="px-5 py-3">Item</th>
+                                        <th class="px-5 py-3 w-24 text-center">Qty</th>
+                                        <th class="px-5 py-3 w-28 text-center">Diskon (%)</th>
+                                        <th class="px-5 py-3 w-40 text-right">Subtotal</th>
+                                        <th class="px-5 py-3 w-44 text-right">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                    @forelse ($itemsObat as $item)
+                                        <tr class="item-row hover:bg-gray-50/70 dark:hover:bg-gray-900/20"
+                                            data-detail-id="{{ $item->id }}"
+                                            data-subtotal="{{ (float) ($item->subtotal ?? 0) }}">
+                                            <td class="px-5 py-4">
+                                                <div class="font-medium text-gray-900 dark:text-white">
+                                                    {{ $item->nama_item }}</div>
+                                                <div class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                                    Rp {{ number_format($item->harga ?? 0, 0, ',', '.') }} / item
+                                                </div>
+                                            </td>
+
+                                            <td class="px-5 py-4 text-center text-sm text-gray-800 dark:text-gray-200">
+                                                x{{ $item->qty ?? 1 }}
+                                            </td>
+
+                                            <td class="px-5 py-4 text-center">
+                                                <input type="number" min="0" max="100" value="0"
+                                                    class="diskon-item w-20 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-right text-sm font-semibold text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
+                                            </td>
+
+                                            <td
+                                                class="px-5 py-4 text-right text-sm font-semibold text-gray-900 dark:text-white">
+                                                Rp {{ number_format($item->subtotal ?? 0, 0, ',', '.') }}
+                                            </td>
+
+                                            <td class="px-5 py-4 text-right font-bold text-gray-900 dark:text-white">
+                                                <span class="row-total-display">
+                                                    Rp {{ number_format($item->subtotal ?? 0, 0, ',', '.') }}
+                                                </span>
+                                                <div
+                                                    class="row-discount-note mt-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 hidden">
+                                                    Hemat Rp 0
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td class="px-5 py-5 text-sm text-gray-500 dark:text-gray-400"
+                                                colspan="5">
+                                                <span class="italic text-gray-400">Tidak ada obat</span>
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Items: LAYANAN -->
+                    <div
+                        class="rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+                        <div
+                            class="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-700">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-50 text-amber-700 dark:bg-gray-700 dark:text-amber-300">
+                                    <i class="fa-solid fa-hand-holding-medical"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-base font-semibold text-gray-900 dark:text-white">Daftar Layanan
+                                    </h3>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">Sumber: pembayaran_detail</p>
+                                </div>
+                            </div>
+                            <span
+                                class="rounded-full bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700 ring-1 ring-gray-200 dark:bg-gray-900/30 dark:text-gray-200 dark:ring-gray-700">
+                                {{ $itemsLayanan?->count() ?? 0 }} item
+                            </span>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead
+                                    class="bg-gray-50 text-xs uppercase text-gray-600 dark:bg-gray-900/30 dark:text-gray-300">
+                                    <tr>
+                                        <th class="px-5 py-3">Item</th>
+                                        <th class="px-5 py-3 w-24 text-center">Qty</th>
+                                        <th class="px-5 py-3 w-28 text-center">Diskon (%)</th>
+                                        <th class="px-5 py-3 w-40 text-right">Subtotal</th>
+                                        <th class="px-5 py-3 w-44 text-right">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                    @forelse ($itemsLayanan as $item)
+                                        <tr class="item-row hover:bg-gray-50/70 dark:hover:bg-gray-900/20"
+                                            data-detail-id="{{ $item->id }}"
+                                            data-subtotal="{{ (float) ($item->subtotal ?? 0) }}">
+                                            <td class="px-5 py-4">
+                                                <div class="font-medium text-gray-900 dark:text-white">
+                                                    {{ $item->nama_item }}</div>
+                                                <div class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                                    Rp {{ number_format($item->harga ?? 0, 0, ',', '.') }} / item
+                                                </div>
+                                            </td>
+
+                                            <td class="px-5 py-4 text-center text-sm text-gray-800 dark:text-gray-200">
+                                                x{{ $item->qty ?? 1 }}
+                                            </td>
+
+                                            <td class="px-5 py-4 text-center">
+                                                <input type="number" min="0" max="100" value="0"
+                                                    class="diskon-item w-20 rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-right text-sm font-semibold text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
+                                            </td>
+
+                                            <td
+                                                class="px-5 py-4 text-right text-sm font-semibold text-gray-900 dark:text-white">
+                                                Rp {{ number_format($item->subtotal ?? 0, 0, ',', '.') }}
+                                            </td>
+
+                                            <td class="px-5 py-4 text-right font-bold text-gray-900 dark:text-white">
+                                                <span class="row-total-display">
+                                                    Rp {{ number_format($item->subtotal ?? 0, 0, ',', '.') }}
+                                                </span>
+                                                <div
+                                                    class="row-discount-note mt-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300 hidden">
+                                                    Hemat Rp 0
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td class="px-5 py-5 text-sm text-gray-500 dark:text-gray-400"
+                                                colspan="5">
+                                                <span class="italic text-gray-400">Tidak ada layanan</span>
+                                            </td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    {{-- LAB & RADIOLOGI kamu biarkan sama seperti punya kamu (tidak perlu diubah) --}}
+                    @if (($itemsLab?->count() ?? 0) > 0)
+                        {{-- ... (tidak diubah) ... --}}
+                        <div
+                            class="rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+                            <div
+                                class="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-700">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-50 text-cyan-700 dark:bg-gray-700 dark:text-cyan-300">
+                                        <i class="fa-solid fa-flask"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-base font-semibold text-gray-900 dark:text-white">Order Lab
+                                        </h3>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">Opsional</p>
+                                    </div>
+                                </div>
+                                <span
+                                    class="rounded-full bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700 ring-1 ring-gray-200 dark:bg-gray-900/30 dark:text-gray-200 dark:ring-gray-700">
+                                    {{ $itemsLab?->count() ?? 0 }} item
+                                </span>
+                            </div>
+
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead
+                                        class="bg-gray-50 text-xs uppercase text-gray-600 dark:bg-gray-900/30 dark:text-gray-300">
+                                        <tr>
+                                            <th class="px-5 py-3">Item</th>
+                                            <th class="px-5 py-3 w-24 text-center">Qty</th>
+                                            <th class="px-5 py-3 w-40 text-right">Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                        @foreach ($itemsLab as $item)
+                                            <tr class="hover:bg-gray-50/70 dark:hover:bg-gray-900/20">
+                                                <td class="px-5 py-4">
+                                                    <div class="font-medium text-gray-900 dark:text-white">
+                                                        {{ $item->nama_item }}</div>
+                                                    <div class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                                        Rp {{ number_format($item->harga ?? 0, 0, ',', '.') }} / item
+                                                    </div>
+                                                </td>
+                                                <td
+                                                    class="px-5 py-4 text-center text-sm text-gray-800 dark:text-gray-200">
+                                                    x{{ $item->qty ?? 1 }}
+                                                </td>
+                                                <td
+                                                    class="px-5 py-4 text-right font-semibold text-gray-900 dark:text-white">
+                                                    Rp {{ number_format($item->subtotal ?? 0, 0, ',', '.') }}
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    @endif
+
+                    @if (($itemsRadiologi?->count() ?? 0) > 0)
+                        {{-- ... (tidak diubah) ... --}}
+                        <div
+                            class="rounded-2xl bg-white shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+                            <div
+                                class="flex items-center justify-between border-b border-gray-200 px-5 py-4 dark:border-gray-700">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="flex h-9 w-9 items-center justify-center rounded-xl bg-rose-50 text-rose-700 dark:bg-gray-700 dark:text-rose-300">
+                                        <i class="fa-solid fa-x-ray"></i>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-base font-semibold text-gray-900 dark:text-white">Order
+                                            Radiologi</h3>
+                                        <p class="text-xs text-gray-500 dark:text-gray-400">Opsional</p>
+                                    </div>
+                                </div>
+                                <span
+                                    class="rounded-full bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700 ring-1 ring-gray-200 dark:bg-gray-900/30 dark:text-gray-200 dark:ring-gray-700">
+                                    {{ $itemsRadiologi?->count() ?? 0 }} item
+                                </span>
+                            </div>
+
+                            <div class="overflow-x-auto">
+                                <table class="w-full text-left">
+                                    <thead
+                                        class="bg-gray-50 text-xs uppercase text-gray-600 dark:bg-gray-900/30 dark:text-gray-300">
+                                        <tr>
+                                            <th class="px-5 py-3">Item</th>
+                                            <th class="px-5 py-3 w-24 text-center">Qty</th>
+                                            <th class="px-5 py-3 w-40 text-right">Subtotal</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                        @foreach ($itemsRadiologi as $item)
+                                            <tr class="hover:bg-gray-50/70 dark:hover:bg-gray-900/20">
+                                                <td class="px-5 py-4">
+                                                    <div class="font-medium text-gray-900 dark:text-white">
+                                                        {{ $item->nama_item }}</div>
+                                                    <div class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                                        Rp {{ number_format($item->harga ?? 0, 0, ',', '.') }} / item
+                                                    </div>
+                                                </td>
+                                                <td
+                                                    class="px-5 py-4 text-center text-sm text-gray-800 dark:text-gray-200">
+                                                    x{{ $item->qty ?? 1 }}
+                                                </td>
+                                                <td
+                                                    class="px-5 py-4 text-right font-semibold text-gray-900 dark:text-white">
+                                                    Rp {{ number_format($item->subtotal ?? 0, 0, ',', '.') }}
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    @endif
+                </div>
+
+                <!-- RIGHT: Summary (Sticky) -->
+                <aside class="lg:col-span-4">
+                    <div class="lg:sticky lg:top-6 space-y-4">
+                        <div
+                            class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+                            <div class="flex items-center justify-between">
+                                <h4 class="text-base font-semibold text-gray-900 dark:text-white">Ringkasan Transaksi
+                                </h4>
+                                <span
+                                    class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-gray-900/30 dark:text-emerald-300 dark:ring-gray-700">
+                                    <i class="fa-solid fa-circle-check"></i> Siap dibayar
+                                </span>
+                            </div>
+
+                            <div class="mt-4 space-y-3">
+                                <dl class="flex items-center justify-between gap-4">
+                                    <dt class="text-sm text-gray-600 dark:text-gray-300">Total Harga</dt>
+                                    <dd id="total_harga_display"
+                                        class="text-sm font-semibold text-gray-900 dark:text-white">
+                                        Rp {{ number_format($totalAwal ?? 0, 0, ',', '.') }}
+                                    </dd>
+                                </dl>
+
+                                <dl class="flex items-center justify-between gap-4">
+                                    <dt class="text-sm text-gray-600 dark:text-gray-300">Total Diskon</dt>
+                                    <dd id="potongan_display"
+                                        class="text-sm font-semibold text-gray-900 dark:text-white">
+                                        Rp 0
+                                    </dd>
+                                </dl>
+
+                                <dl
+                                    class="flex items-center justify-between gap-4 border-t border-gray-200 pt-3 dark:border-gray-700">
+                                    <dt class="text-sm font-semibold text-gray-900 dark:text-white">Total Bayar</dt>
+                                    <dd id="total_tagihan_display"
+                                        class="text-lg font-bold text-gray-900 dark:text-white">
+                                        Rp {{ number_format($totalAwal ?? 0, 0, ',', '.') }}
+                                    </dd>
+                                </dl>
+
+                                <input type="hidden" id="total_setelah_diskon" value="{{ $totalAwal ?? 0 }}">
+                                <input type="hidden" id="total_tagihan_awal" value="{{ $totalAwal ?? 0 }}">
+                            </div>
+                        </div>
+
+                        <div
+                            class="rounded-2xl bg-white p-5 shadow-sm ring-1 ring-gray-200 dark:bg-gray-800 dark:ring-gray-700">
+                            <label class="mb-2 block text-sm font-semibold text-gray-900 dark:text-white">
+                                Metode Pembayaran
+                            </label>
+
+                            <div class="relative">
+                                <i
+                                    class="fa-solid fa-credit-card absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                <select id="pilih-metode-pembayaran"
+                                    class="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm font-semibold text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
                                     @foreach ($dataMetodePembayaran as $metodePembayaran)
                                         <option value="{{ $metodePembayaran->id }}">
-                                            {{ $metodePembayaran->nama_metode }}</option>
+                                            {{ $metodePembayaran->nama_metode }}
+                                        </option>
                                     @endforeach
                                 </select>
-                            </dl>
-
-                            {{-- total tagihan akhir (ikut subtotal setelah diskon) --}}
-                            <dl
-                                class="flex items-center justify-between gap-4 border-t border-gray-200 pt-2 dark:border-gray-700">
-                                <dt class="text-lg font-bold text-gray-900 dark:text-white">Total Tagihan</dt>
-                                <dd class="text-lg font-bold text-gray-900 dark:text-white" id="total_tagihan_display">
-                                    Rp{{ number_format($dataPembayaran->total_tagihan, 0, ',', '.') }}
-                                </dd>
-                            </dl>
-                        </div>
-
-                        <div class="gap-4 sm:flex sm:items-center">
-                            <a href="{{ route('kasir.pembayaran') }}"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                                Kembali ke halaman kasir
-                            </a>
+                            </div>
 
                             <button type="button" id="btnLanjutPembayaran"
-                                class="mt-4 flex w-full items-center justify-center rounded-lg bg-primary-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-800 sm:mt-0">
+                                class="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-primary-700 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-primary-800">
+                                <i class="fa-solid fa-arrow-right"></i>
                                 Lanjutkan Pembayaran
                             </button>
+
+                            <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                                Pastikan total dan diskon sudah sesuai sebelum melanjutkan.
+                            </p>
                         </div>
                     </div>
-                </div>
+                </aside>
             </div>
         </div>
     </section>
 
-    {{-- total awal (hidden) --}}
-    <input type="hidden" id="total_tagihan_awal" value="{{ $dataPembayaran->total_tagihan }}">
-
-    <!-- Modal Pembayaran CASH -->
+    <!-- Modal CASH -->
     <div id="pembayaranCash" tabindex="-1" aria-hidden="true"
-        class="hidden fixed inset-0 z-50 items-center justify-center bg-black bg-opacity-50">
-        <div class="relative w-full max-w-md p-4">
-            <div class="relative bg-white rounded-lg shadow dark:bg-gray-800">
-                <!-- Header -->
-                <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Konfirmasi Pembayaran</h3>
-                    <button type="button" data-modal-hide="pembayaranModal"
-                        class="text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg text-sm p-1.5">✖</button>
-                </div>
-
-                <!-- Body -->
-                <form id="formPembayaranCash" action="{{ route('kasir.pembayaran.cash') }}" method="POST">
-                    @csrf
-                    <div class="p-4 space-y-4">
-                        <input type="hidden" name="id" value="{{ $dataPembayaran->id }}">
-                        <input type="hidden" name="metode_pembayaran_id" id="metode-pembayaran-cash"
-                            value="{{ $dataPembayaran->id }}">
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Total
-                                Tagihan</label>
-                            <div class="relative mt-1">
-                                <span
-                                    class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-300">Rp</span>
-                                <!-- NOTE: simpan format ribuan di tampilan, JS akan membersihkannya -->
-                                <input type="text" id="total_tagihan" readonly
-                                    value="{{ number_format($dataPembayaran->total_tagihan, 0, ',', '.') }}"
-                                    class="w-full pl-10 rounded-lg border-gray-300 dark:bg-gray-700 dark:text-white" />
-                            </div>
+        class="hidden fixed inset-0 z-50 items-center justify-center bg-black/50 px-4">
+        <div class="relative w-full max-w-md">
+            <div class="relative overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-gray-800">
+                <div class="flex items-center justify-between border-b border-gray-200 p-5 dark:border-gray-700">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 dark:bg-gray-700 dark:text-emerald-300">
+                            <i class="fa-solid fa-money-bill-wave"></i>
                         </div>
-
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Uang yang
-                                Diterima</label>
-                            <div class="relative mt-1">
-                                <span
-                                    class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-300">Rp</span>
-                                <input type="text" name="uang_yang_diterima" id="uang_diterima"
-                                    placeholder="Masukkan nominal"
-                                    class="w-full pl-10 rounded-lg border-gray-300 dark:bg-gray-700 dark:text-white" />
-                            </div>
-                        </div>
-
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Uang
-                                Kembalian</label>
-                            <div class="relative mt-1">
-                                <input type="text" name="kembalian" id="uang_kembalian" readonly
-                                    class="w-full mt-1 rounded-lg border-gray-300 dark:bg-gray-700 dark:text-white" />
-                            </div>
+                            <h3 class="text-base font-semibold text-gray-900 dark:text-white">Konfirmasi Pembayaran
+                                (Cash)</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Masukkan uang diterima untuk hitung
+                                kembalian.</p>
                         </div>
                     </div>
 
-                    <!-- Footer -->
-                    <div class="flex justify-end items-center p-4 border-t dark:border-gray-700">
-                        <button data-modal-hide="pembayaranModal" type="button"
-                            class="text-gray-500 bg-white hover:bg-gray-100 border border-gray-200 rounded-lg px-5 py-2.5 text-sm dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600">
+                    {{-- ✅ GANTI: jangan pakai data-modal-hide (flowbite) --}}
+                    <button type="button" data-close-modal="cash"
+                        class="rounded-xl p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-white">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <form id="formPembayaranCash" action="{{ route('kasir.pembayaran.cash') }}" method="POST">
+                    @csrf
+                    <div class="space-y-4 p-5">
+                        <input type="hidden" name="id" value="{{ $dataPembayaran->id }}">
+                        <input type="hidden" name="metode_pembayaran_id" id="metode-pembayaran-cash"
+                            value="">
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Total
+                                Tagihan</label>
+                            <div class="relative mt-2">
+                                <span
+                                    class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-300">Rp</span>
+                                <input type="text" readonly
+                                    value="{{ number_format($totalAwal ?? 0, 0, ',', '.') }}"
+                                    class="total_tagihan_input w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 pl-10 text-sm font-semibold text-gray-900 dark:border-gray-700 dark:bg-gray-900/30 dark:text-white" />
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Uang yang
+                                Diterima</label>
+                            <div class="relative mt-2">
+                                <span
+                                    class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-300">Rp</span>
+                                <input type="text" name="uang_yang_diterima" id="uang_diterima"
+                                    placeholder="Contoh: 100.000"
+                                    class="w-full rounded-xl border border-gray-200 bg-white px-3 py-2.5 pl-10 text-sm font-semibold text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white" />
+                            </div>
+                            <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">Input otomatis diformat rupiah.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Uang
+                                Kembalian</label>
+                            <input type="text" name="kembalian" id="uang_kembalian" readonly
+                                class="mt-2 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm font-semibold text-gray-900 dark:border-gray-700 dark:bg-gray-900/30 dark:text-white" />
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2 border-t border-gray-200 p-5 dark:border-gray-700">
+                        {{-- ✅ GANTI: jangan pakai data-modal-hide --}}
+                        <button type="button" data-close-modal="cash"
+                            class="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
                             Batal
                         </button>
                         <button id="btnSubmitPembayaran" type="submit"
-                            class="ms-2 text-white bg-primary-700 hover:bg-primary-800 font-medium rounded-lg text-sm px-5 py-2.5">
+                            class="rounded-xl bg-primary-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-800">
                             Bayar Sekarang
                         </button>
                     </div>
@@ -241,80 +557,83 @@
 
     <!-- Modal TRANSFER -->
     <div id="pembayaranTransfer" tabindex="-1" aria-hidden="true"
-        class="hidden fixed inset-0 z-50 items-center justify-center bg-black bg-opacity-50">
-        <div class="relative w-full max-w-2xl p-4">
-            <div class="relative bg-white rounded-lg shadow dark:bg-gray-800">
-                <!-- Header -->
-                <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Konfirmasi Pembayar Metode Transfer
-                    </h3>
-                    <button type="button" data-modal-hide="transferModal"
-                        class="text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg text-sm p-1.5">✖</button>
+        class="hidden fixed inset-0 z-50 items-center justify-center bg-black/50 px-4">
+        <div class="relative w-full max-w-2xl">
+            <div class="relative overflow-hidden rounded-2xl bg-white shadow-xl dark:bg-gray-800">
+                <div class="flex items-center justify-between border-b border-gray-200 p-5 dark:border-gray-700">
+                    <div class="flex items-center gap-3">
+                        <div
+                            class="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700 dark:bg-gray-700 dark:text-indigo-300">
+                            <i class="fa-solid fa-building-columns"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-semibold text-gray-900 dark:text-white">Konfirmasi Pembayaran
+                                (Transfer)</h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Unggah bukti transfer untuk verifikasi.
+                            </p>
+                        </div>
+                    </div>
+
+                    {{-- ✅ GANTI --}}
+                    <button type="button" data-close-modal="transfer"
+                        class="rounded-xl p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-900 dark:hover:bg-gray-700 dark:hover:text-white">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
 
-                <!-- Body -->
                 <form id="formPembayaranTransfer" action="{{ route('kasir.pembayaran.transfer') }}" method="POST"
                     enctype="multipart/form-data">
                     @csrf
-                    <div class="p-4 space-y-4">
+                    <div class="space-y-4 p-5">
                         <input type="hidden" name="id" value="{{ $dataPembayaran->id }}">
                         <input type="hidden" name="metode_pembayaran_id" id="metode-pembayaran-transfer"
                             value="">
+
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Total
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Total
                                 Tagihan</label>
-                            <div class="relative mt-1">
+                            <div class="relative mt-2">
                                 <span
                                     class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-300">Rp</span>
-                                <!-- NOTE: simpan format ribuan di tampilan, JS akan membersihkannya -->
-                                <input type="text" id="total_tagihan" readonly
-                                    value="{{ number_format($dataPembayaran->total_tagihan, 0, ',', '.') }}"
-                                    class="w-full pl-10 rounded-lg border-gray-300 dark:bg-gray-700 dark:text-white" />
+                                <input type="text" readonly
+                                    value="{{ number_format($totalAwal ?? 0, 0, ',', '.') }}"
+                                    class="total_tagihan_input w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2.5 pl-10 text-sm font-semibold text-gray-900 dark:border-gray-700 dark:bg-gray-900/30 dark:text-white" />
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                                Upload Bukti Transfer
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-200">Bukti
+                                Transfer</label>
+
+                            <label for="upload"
+                                class="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-gray-300 bg-gray-50 p-6 text-center hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-900/30 dark:hover:bg-gray-700">
+                                <div id="preview-bukti-pembayaran"
+                                    class="flex w-full flex-col items-center justify-center gap-2">
+                                    <i class="fa-regular fa-image text-3xl text-gray-400"></i>
+                                    <p class="text-sm text-gray-600 dark:text-gray-300">
+                                        <span class="font-semibold">Klik untuk upload</span> atau drag & drop
+                                    </p>
+                                    <p class="text-xs text-gray-500 dark:text-gray-400">JPG/PNG/GIF • disarankan jelas
+                                        & terbaca</p>
+                                </div>
+                                <input id="upload" type="file" class="hidden" accept="image/*"
+                                    name="bukti_pembayaran" />
                             </label>
-                            <div class="flex items-center justify-center w-full px-5 py-3">
-                                <label for="upload"
-                                    class="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500">
-                                    <div class="flex flex-col items-center justify-center w-full h-full pt-5 pb-6"
-                                        id="preview-bukti-pembayaran">
-                                        <svg class="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400" aria-hidden="true"
-                                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                                            <path stroke="currentColor" stroke-linecap="round"
-                                                stroke-linejoin="round" stroke-width="2"
-                                                d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
-                                        </svg>
-                                        <p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                                            <span class="font-semibold">Click to upload</span> or drag and drop
-                                        </p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">
-                                            SVG, PNG, JPG or GIF (MAX. 800x400px)
-                                        </p>
-                                    </div>
-                                    <input id="upload" type="file" class="hidden" accept="image/*"
-                                        name="bukti_pembayaran" />
-                                </label>
-                            </div>
+
                             <p id="text-ganti-gambar"
-                                class="mt-2 text-sm text-gray-500 dark:text-gray-400 text-center hidden">
-                                Klik untuk ganti gambar
+                                class="mt-2 hidden text-center text-xs text-gray-500 dark:text-gray-400">
+                                Klik area di atas untuk ganti gambar
                             </p>
                         </div>
-
                     </div>
 
-                    <!-- Footer -->
-                    <div class="flex justify-end items-center p-4 border-t dark:border-gray-700">
-                        <button data-modal-hide="transferModal" type="button"
-                            class="text-gray-500 bg-white hover:bg-gray-100 border border-gray-200 rounded-lg px-5 py-2.5 text-sm dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600">
+                    <div class="flex items-center justify-end gap-2 border-t border-gray-200 p-5 dark:border-gray-700">
+                        <button type="button" data-close-modal="transfer"
+                            class="rounded-xl border border-gray-200 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-100 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700">
                             Batal
                         </button>
                         <button type="submit"
-                            class="ms-2 text-white bg-primary-700 hover:bg-primary-800 font-medium rounded-lg text-sm px-5 py-2.5">
+                            class="rounded-xl bg-primary-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-primary-800">
                             Kirim Bukti Pembayaran
                         </button>
                     </div>
@@ -323,7 +642,6 @@
         </div>
     </div>
 
-    <!-- JS Section -->
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const uangDiterimaInput = document.getElementById('uang_diterima');
@@ -335,13 +653,12 @@
             const modalCash = document.getElementById('pembayaranCash');
             const modalTransfer = document.getElementById('pembayaranTransfer');
 
-            // === DISKON & TOTAL ===
             const totalAwalInput = document.getElementById('total_tagihan_awal');
-            const diskonInput = document.getElementById('diskon_persen');
-            const subtotalDisplay = document.getElementById('subtotal_setelah_diskon_display');
-            const totalSetelahDiskonHidden = document.getElementById('total_setelah_diskon');
+            const totalHargaDisplay = document.getElementById('total_harga_display');
+            const potonganDisplay = document.getElementById('potongan_display');
             const totalTagihanDisplay = document.getElementById('total_tagihan_display');
-            const totalInputsAll = document.querySelectorAll('input#total_tagihan');
+            const totalSetelahDiskonHidden = document.getElementById('total_setelah_diskon');
+            const totalInputsAll = document.querySelectorAll('.total_tagihan_input');
 
             const totalAwal = parseFloat(totalAwalInput?.value || '0') || 0;
 
@@ -350,45 +667,99 @@
             }
 
             function formatRupiah(value) {
-                return new Intl.NumberFormat("id-ID").format(value);
+                const n = Number(value) || 0;
+                return new Intl.NumberFormat("id-ID").format(n);
             }
 
-            // Hitung total setelah diskon & update ke semua tampilan
-            function updateTotalSetelahDiskon() {
-                const persen = parseFloat(diskonInput?.value) || 0;
+            function clamp(n, min, max) {
+                return Math.min(Math.max(n, min), max);
+            }
 
-                let potongan = totalAwal * (persen / 100);
-                if (potongan > totalAwal) potongan = totalAwal;
-
-                const totalSetelah = totalAwal - potongan;
-
-                if (subtotalDisplay) {
-                    subtotalDisplay.textContent = "Rp" + formatRupiah(totalSetelah);
+            function getFirstErrorMessage(data) {
+                if (!data) return null;
+                if (data.message) return data.message;
+                if (data.errors && typeof data.errors === 'object') {
+                    const firstKey = Object.keys(data.errors)[0];
+                    if (firstKey && Array.isArray(data.errors[firstKey]) && data.errors[firstKey][0]) {
+                        return data.errors[firstKey][0];
+                    }
                 }
+                return null;
+            }
 
-                if (totalTagihanDisplay) {
-                    totalTagihanDisplay.textContent = "Rp" + formatRupiah(totalSetelah);
+            function hitungKembalian() {
+                const totalBayar = parseFloat(totalSetelahDiskonHidden?.value || 0) || 0;
+                const diterima = parseFloat(onlyDigits(uangDiterimaInput?.value)) || 0;
+                const kembalian = diterima - totalBayar;
+
+                if (uangKembalianInput) {
+                    uangKembalianInput.value = "Rp " + formatRupiah(Math.max(kembalian, 0));
                 }
+            }
 
-                if (totalSetelahDiskonHidden) {
-                    totalSetelahDiskonHidden.value = totalSetelah;
-                }
+            // ✅ Hitung diskon per item + simpan payload diskon item berdasarkan pembayaran_detail.id
+            function recalcAll() {
+                const rows = document.querySelectorAll('.item-row');
+                let totalBase = 0;
+                let totalAfter = 0;
 
-                // update semua input total_tagihan di modal cash & transfer
-                totalInputsAll.forEach(inp => {
-                    inp.value = formatRupiah(totalSetelah);
+                const diskonItems = [];
+
+                rows.forEach(row => {
+                    const detailId = row.dataset.detailId; // ✅ pembayaran_detail.id
+                    const baseSubtotal = parseFloat(row.dataset.subtotal || '0') || 0;
+                    totalBase += baseSubtotal;
+
+                    const input = row.querySelector('.diskon-item');
+                    let persen = parseFloat(input?.value || '0') || 0;
+                    persen = clamp(persen, 0, 100);
+                    if (input && Number(input.value) !== persen) input.value = persen;
+
+                    const diskonNominal = baseSubtotal * (persen / 100);
+                    const after = Math.max(baseSubtotal - diskonNominal, 0);
+                    totalAfter += after;
+
+                    // update row UI
+                    const totalDisplay = row.querySelector('.row-total-display');
+                    if (totalDisplay) totalDisplay.textContent = "Rp " + formatRupiah(after);
+
+                    const note = row.querySelector('.row-discount-note');
+                    if (note) {
+                        if (diskonNominal > 0) {
+                            note.classList.remove('hidden');
+                            note.textContent = "Hemat Rp " + formatRupiah(diskonNominal);
+                        } else {
+                            note.classList.add('hidden');
+                        }
+                    }
+
+                    // ✅ payload backend (id detail + persen diskon)
+                    if (detailId) {
+                        diskonItems.push({
+                            id: Number(detailId),
+                            persen
+                        });
+                    }
                 });
 
-                // setiap total berubah, kembalian harus dihitung ulang
+                const potongan = Math.max(totalBase - totalAfter, 0);
+
+                if (totalHargaDisplay) totalHargaDisplay.textContent = "Rp " + formatRupiah(totalBase || totalAwal);
+                if (potonganDisplay) potonganDisplay.textContent = "Rp " + formatRupiah(potongan);
+                if (totalTagihanDisplay) totalTagihanDisplay.textContent = "Rp " + formatRupiah(totalAfter);
+
+                if (totalSetelahDiskonHidden) totalSetelahDiskonHidden.value = totalAfter;
+                totalInputsAll.forEach(inp => inp.value = formatRupiah(totalAfter));
+
+                // ✅ store globally for submit
+                window.__DISKON_ITEMS__ = diskonItems;
+
                 hitungKembalian();
             }
 
-            if (diskonInput) {
-                diskonInput.addEventListener('input', updateTotalSetelahDiskon);
-            }
-
-            // inisialisasi awal (tanpa diskon)
-            updateTotalSetelahDiskon();
+            document.querySelectorAll('.diskon-item').forEach(inp => {
+                inp.addEventListener('input', recalcAll);
+            });
 
             function openModal(modal) {
                 if (!modal) return;
@@ -409,69 +780,15 @@
                 closeModal(modalTransfer);
             }
 
-            // === OPEN MODAL SESUAI METODE ===
-            if (btnLanjut) {
-                btnLanjut.addEventListener("click", (e) => {
-                    e.preventDefault();
-                    const selected = pilihMetode?.options[pilihMetode.selectedIndex];
-                    if (!selected) return alert("Pilih metode pembayaran dulu.");
+            // close modal custom
+            document.querySelectorAll('[data-close-modal="cash"]').forEach(btn => {
+                btn.addEventListener('click', () => closeModal(modalCash));
+            });
+            document.querySelectorAll('[data-close-modal="transfer"]').forEach(btn => {
+                btn.addEventListener('click', () => closeModal(modalTransfer));
+            });
 
-                    const metodeID = selected.value;
-                    const metodeText = selected.textContent.toLowerCase();
-
-                    // Masukkan ID ke input hidden
-                    const cashInput = document.getElementById("metode-pembayaran-cash");
-                    const transferInput = document.getElementById("metode-pembayaran-transfer");
-                    if (cashInput) cashInput.value = metodeID;
-                    if (transferInput) transferInput.value = metodeID;
-
-                    closeAll();
-                    if (metodeText.includes("cash")) openModal(modalCash);
-                    else if (metodeText.includes("transfer")) openModal(modalTransfer);
-                    else alert("Metode pembayaran belum dikenali: " + selected.textContent);
-                });
-            }
-
-            // === TOMBOL CLOSE SAJA YANG NGE-TUTUP MODAL (bukan semua button!) ===
-            document.querySelectorAll("#pembayaranCash [data-modal-hide], #pembayaranTransfer [data-modal-hide]")
-                .forEach(btn => {
-                    btn.addEventListener("click", () => {
-                        const modal = btn.closest("#pembayaranCash") || btn.closest(
-                            "#pembayaranTransfer");
-
-                        // reset form & preview hanya saat explicit close
-                        if (modal) {
-                            const forms = modal.querySelectorAll("form");
-                            forms.forEach(form => form.reset());
-
-                            const preview = modal.querySelector("#preview-bukti-pembayaran");
-                            if (preview) {
-                                preview.innerHTML = `
-              <svg class="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400" aria-hidden="true"
-                  xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
-              </svg>
-              <p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                <span class="font-semibold">Click to upload</span> or drag and drop
-              </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">SVG, PNG, JPG or GIF (MAX. 800x400px)</p>`;
-                            }
-
-                            const textGanti = modal.querySelector("#text-ganti-gambar");
-                            if (textGanti) textGanti.classList.add("hidden");
-
-                            // ⬅️ PENTING: setelah form di-reset, apply lagi total setelah diskon ke semua input total_tagihan
-                            if (typeof updateTotalSetelahDiskon === 'function') {
-                                updateTotalSetelahDiskon();
-                            }
-
-                            closeModal(modal);
-                        }
-                    });
-                });
-
-            // === TUTUP MODAL LEWAT KLIK OVERLAY ===
+            // overlay click close
             [modalCash, modalTransfer].forEach(modal => {
                 if (!modal) return;
                 modal.addEventListener("click", (ev) => {
@@ -479,23 +796,36 @@
                 });
             });
 
-            // === ESC ngetutup semua modal ===
+            // esc close
             document.addEventListener("keydown", (ev) => {
                 if (ev.key === "Escape") closeAll();
             });
 
-            // === FORMAT UANG CASH ===
-            if (uangKembalianInput) uangKembalianInput.classList.add('pl-3');
+            // open modal sesuai metode
+            if (btnLanjut) {
+                btnLanjut.addEventListener("click", (e) => {
+                    e.preventDefault();
+                    const selected = pilihMetode?.options[pilihMetode.selectedIndex];
+                    if (!selected) return alert("Pilih metode pembayaran dulu.");
 
-            function hitungKembalian() {
-                const totalSesudahDiskon = parseFloat(totalSetelahDiskonHidden?.value || totalAwal) || 0;
-                const diterima = parseFloat(onlyDigits(uangDiterimaInput?.value)) || 0;
-                const kembalian = diterima - totalSesudahDiskon;
-                if (uangKembalianInput) {
-                    uangKembalianInput.value = (kembalian >= 0) ? "Rp " + formatRupiah(kembalian) : "Rp 0";
-                }
+                    const metodeID = selected.value;
+                    const metodeText = (selected.textContent || "").toLowerCase();
+
+                    const cashInput = document.getElementById("metode-pembayaran-cash");
+                    const transferInput = document.getElementById("metode-pembayaran-transfer");
+                    if (cashInput) cashInput.value = metodeID;
+                    if (transferInput) transferInput.value = metodeID;
+
+                    recalcAll();
+                    closeAll();
+
+                    if (metodeText.includes("cash")) openModal(modalCash);
+                    else if (metodeText.includes("transfer")) openModal(modalTransfer);
+                    else alert("Metode pembayaran belum dikenali: " + (selected.textContent || "-"));
+                });
             }
 
+            // format uang cash
             if (uangDiterimaInput) {
                 uangDiterimaInput.addEventListener("input", (e) => {
                     let angka = onlyDigits(e.target.value);
@@ -504,7 +834,7 @@
                 });
             }
 
-            // === PREVIEW GAMBAR (TRANSFER) ===
+            // preview gambar transfer (biarkan sama)
             const fileInput = document.getElementById("upload");
             const previewContainer = document.getElementById("preview-bukti-pembayaran");
             const textGantiGambar = document.getElementById("text-ganti-gambar");
@@ -526,53 +856,72 @@
                     reader.onload = (ev) => {
                         previewContainer.innerHTML = `
           <img src="${ev.target.result}" alt="Preview Bukti Pembayaran"
-               class="object-cover w-full h-64 rounded-lg shadow-md" />`;
-                        textGantiGambar.classList.remove("hidden");
+               class="h-56 w-full rounded-2xl object-cover shadow" />
+        `;
+                        if (textGantiGambar) textGantiGambar.classList.remove("hidden");
                     };
                     reader.readAsDataURL(file);
                 });
             }
 
-            // === SUBMIT CASH ===
-            const formPembayaranCash = document.getElementById('formPembayaranCash');
-            if (formPembayaranCash) {
-                formPembayaranCash.addEventListener('submit', async function(e) {
+            // ✅ SUBMIT CASH: kirim diskon per item
+            const formCash = document.getElementById('formPembayaranCash');
+            if (formCash) {
+                formCash.addEventListener('submit', async function(e) {
                     e.preventDefault();
+
+                    const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+                    const metodeCash = document.getElementById('metode-pembayaran-cash');
 
                     const totalSesudahDiskon = parseFloat(totalSetelahDiskonHidden?.value ||
                         totalAwal) || 0;
-                    const uangDiterimaClean = parseFloat(onlyDigits(uangDiterimaInput?.value)) || 0;
-                    const kembalianClean = uangDiterimaClean - totalSesudahDiskon;
-                    const metodeCash = document.getElementById('metode-pembayaran-cash');
-                    const diskonPersen = parseFloat(diskonInput?.value) || 0;
+                    const uangDiterima = parseFloat(onlyDigits(uangDiterimaInput?.value)) || 0;
+                    const kembalianClean = uangDiterima - totalSesudahDiskon;
 
-                    if (uangDiterimaClean === 0 || uangDiterimaClean < totalSesudahDiskon) {
+                    // totalBase dari tampilan summary
+                    const totalBaseText = (totalHargaDisplay?.textContent || '').replace(/[^\d]/g, '');
+                    const totalBase = parseFloat(totalBaseText || totalAwal) || totalAwal;
+
+                    if (!metodeCash?.value) {
                         Swal.fire({
                             icon: 'warning',
-                            title: 'Uang Kurang',
+                            title: 'Metode belum dipilih',
+                            text: 'Pilih metode pembayaran dulu.'
+                        });
+                        return;
+                    }
+                    if (uangDiterima < totalSesudahDiskon) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Uang kurang',
                             text: 'Nominal uang yang diterima belum cukup.'
                         });
                         return;
                     }
 
-                    const formData = new FormData(formPembayaranCash);
-                    formData.set('uang_yang_diterima', uangDiterimaClean);
-                    formData.set('kembalian', kembalianClean);
-                    formData.set('total_tagihan', totalAwal); // sebelum diskon
-                    formData.set('total_setelah_diskon', totalSesudahDiskon);
-                    formData.set('diskon_tipe', diskonPersen > 0 ? 'persen' : '');
-                    formData.set('diskon_nilai', diskonPersen);
-                    formData.set('metode_pembayaran_id', metodeCash?.value);
+                    // ✅ payload diskon per item
+                    const diskonItems = window.__DISKON_ITEMS__ || [];
 
-                    const submitBtn = this.querySelector('button[type="submit"]');
+                    const formData = new FormData(formCash);
+                    formData.set('uang_yang_diterima', uangDiterima);
+                    formData.set('kembalian', kembalianClean);
+                    formData.set('metode_pembayaran_id', metodeCash.value);
+
+                    // server akan hitung ulang, tapi tetap kita kirim untuk record
+                    formData.set('total_tagihan', totalBase);
+                    formData.set('total_setelah_diskon', totalSesudahDiskon);
+
+                    // ✅ per-item diskon
+                    formData.set('diskon_items', JSON.stringify(diskonItems));
+
+                    const submitBtn = formCash.querySelector('button[type="submit"]');
                     if (submitBtn) {
                         submitBtn.disabled = true;
                         submitBtn.classList.add('opacity-60', 'cursor-not-allowed');
                     }
 
                     try {
-                        const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
-                        const response = await fetch(this.action, {
+                        const res = await fetch(formCash.action, {
                             method: 'POST',
                             credentials: 'same-origin',
                             headers: {
@@ -581,23 +930,32 @@
                             },
                             body: formData
                         });
-                        const data = await response.json();
+
+                        const ct = res.headers.get('Content-Type') || '';
+                        const data = ct.includes('application/json') ?
+                            await res.json() : {
+                                success: res.ok,
+                                message: res.ok ? 'OK' : 'Gagal'
+                            };
+
                         if (data.success) {
+                            closeModal(modalCash);
                             await Swal.fire({
                                 icon: 'success',
-                                title: 'Berhasil!',
-                                text: data.message || 'Pembayaran berhasil.'
+                                title: 'Pembayaran berhasil',
+                                text: data.message || 'Pembayaran cash berhasil diproses.'
                             });
                             window.location.href = "{{ route('kasir.pembayaran') }}";
                         } else {
+                            const msg = getFirstErrorMessage(data) || 'Gagal memproses pembayaran.';
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Gagal',
-                                text: data.message || 'Gagal memproses pembayaran.'
+                                text: msg
                             });
                         }
                     } catch (err) {
-                        console.error('Fetch error:', err);
+                        console.error(err);
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
@@ -612,68 +970,41 @@
                 });
             }
 
-            // === SUBMIT TRANSFER ===
-            const formPembayaranTransfer = document.getElementById('formPembayaranTransfer');
-            if (formPembayaranTransfer) {
-                formPembayaranTransfer.addEventListener('submit', async function(e) {
+            // ✅ SUBMIT TRANSFER: fetch + sweetalert + redirect (KIRIM diskon_items)
+            const formTransfer = document.getElementById('formPembayaranTransfer');
+            if (formTransfer) {
+                formTransfer.addEventListener('submit', async function(e) {
                     e.preventDefault();
 
-                    const metodeInput = document.getElementById('metode-pembayaran-transfer');
-                    const formData = new FormData(this);
-                    if (metodeInput) formData.set('metode_pembayaran_id', metodeInput.value);
+                    const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
-                    const totalSesudahDiskon = parseFloat(totalSetelahDiskonHidden?.value ||
-                        totalAwal) || 0;
-                    const diskonPersen = parseFloat(diskonInput?.value) || 0;
-
-                    formData.set('total_tagihan', totalAwal);
-                    formData.set('total_setelah_diskon', totalSesudahDiskon);
-                    formData.set('diskon_tipe', diskonPersen > 0 ? 'persen' : '');
-                    formData.set('diskon_nilai', diskonPersen);
-
-                    // === FIX UNTUK FILE ===
-                    const fileInput = document.getElementById('upload');
-                    if (fileInput && fileInput.files.length > 0) {
-                        formData.set('bukti_pembayaran', fileInput.files[0]);
-                    }
-
-                    // === VALIDASI FILE ===
-                    const bukti = formData.get('bukti_pembayaran');
-                    if (!(bukti instanceof File) || bukti.size === 0) {
+                    const metodeTransfer = document.getElementById('metode-pembayaran-transfer');
+                    if (!metodeTransfer?.value) {
                         Swal.fire({
                             icon: 'warning',
-                            title: 'Bukti Transfer Belum Diupload',
-                            text: 'Silakan unggah bukti pembayaran sebelum mengirim.'
-                        });
-                        return;
-                    }
-                    if (bukti.type && !bukti.type.startsWith('image/')) {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Format tidak didukung',
-                            text: 'File harus berupa gambar.'
-                        });
-                        return;
-                    }
-                    const MAX_MB = 5;
-                    if (bukti.size > MAX_MB * 1024 * 1024) {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'File terlalu besar',
-                            text: `Maksimal ukuran ${MAX_MB} MB.`
+                            title: 'Metode belum dipilih',
+                            text: 'Pilih metode pembayaran dulu.'
                         });
                         return;
                     }
 
-                    const submitBtn = this.querySelector('button[type="submit"]');
+                    // ✅ payload diskon per item (sama seperti cash)
+                    const diskonItems = window.__DISKON_ITEMS__ || [];
+
+                    const formData = new FormData(formTransfer);
+                    formData.set('metode_pembayaran_id', metodeTransfer.value);
+
+                    // ✅ PENTING: kirim diskon_items
+                    formData.set('diskon_items', JSON.stringify(diskonItems));
+
+                    const submitBtn = formTransfer.querySelector('button[type="submit"]');
                     if (submitBtn) {
                         submitBtn.disabled = true;
                         submitBtn.classList.add('opacity-60', 'cursor-not-allowed');
                     }
 
                     try {
-                        const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
-                        const response = await fetch(this.action, {
+                        const res = await fetch(formTransfer.action, {
                             method: 'POST',
                             credentials: 'same-origin',
                             headers: {
@@ -683,29 +1014,32 @@
                             body: formData
                         });
 
-                        let data = null;
-                        const ct = response.headers.get('Content-Type') || '';
-                        data = ct.includes('application/json') ? await response.json() : {
-                            success: response.ok,
-                            message: response.ok ? 'OK' : 'Gagal'
-                        };
+                        const ct = res.headers.get('Content-Type') || '';
+                        const data = ct.includes('application/json') ?
+                            await res.json() :
+                            {
+                                success: res.ok,
+                                message: res.ok ? 'OK' : 'Gagal'
+                            };
 
-                        if (data && data.success) {
+                        if (data.success) {
+                            closeModal(modalTransfer);
                             await Swal.fire({
                                 icon: 'success',
-                                title: 'Berhasil!',
-                                text: data.message || 'Bukti transfer terkirim.'
+                                title: 'Bukti terkirim',
+                                text: data.message || 'Bukti transfer berhasil dikirim.'
                             });
                             window.location.href = "{{ route('kasir.pembayaran') }}";
                         } else {
+                            const msg = getFirstErrorMessage(data) || 'Gagal mengirim bukti.';
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Gagal',
-                                text: (data && data.message) || 'Gagal mengirim data.'
+                                text: msg
                             });
                         }
                     } catch (err) {
-                        console.error('Fetch error:', err);
+                        console.error(err);
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
@@ -719,6 +1053,9 @@
                     }
                 });
             }
+
+            // initial compute
+            recalcAll();
         });
     </script>
 

@@ -84,16 +84,11 @@
                         <th class="px-4 md:px-6 py-3">Nama Pasien</th>
                         <th class="px-4 md:px-6 py-3">Tanggal Kunjungan</th>
                         <th class="px-4 md:px-6 py-3">Nomor Antrian</th>
-                        <th class="px-4 md:px-6 py-3">Nama Obat</th>
-                        <th class="px-4 md:px-6 py-3">Dosis</th>
-                        <th class="px-4 md:px-6 py-3">Jumlah Obat</th>
-                        <th class="px-4 md:px-6 py-3">Nama Layanan</th>
-                        <th class="px-4 md:px-6 py-3">Jumlah Layanan</th>
                         <th class="px-4 md:px-6 py-3">Total</th>
                         <th class="px-4 md:px-6 py-3">Metode Pembayaran</th>
-                        <th class="px-4 md:px-6 py-3">Status</th>
                         <th class="px-4 md:px-6 py-3">Kode Transaksi</th>
-                        <th class="px-4 md:px-6 py-3 text-center">Action</th>
+                        <th class="px-4 md:px-6 py-3">Status</th>
+                        <th class="px-4 md:px-6 py-3">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700">

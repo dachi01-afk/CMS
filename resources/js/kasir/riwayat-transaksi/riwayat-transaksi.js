@@ -10,7 +10,7 @@ $(function () {
         ordering: true,
         pageLength: 10,
         lengthChange: false,
-        info: false,    
+        info: false,
         ajax: "/kasir/get-data-riwayat-pembayaran",
         columns: [
             {
@@ -26,26 +26,19 @@ $(function () {
                 render: function (data) {
                     if (!data) return "-";
                     const date = new Date(data);
-                    const waktuIndonesia = date.toLocaleString("id-ID", {
+                    const waktuIndonesia = date.toLocaleDateString("id-ID", {
                         timeZone: "Asia/Jakarta",
                         day: "2-digit",
                         month: "long",
                         year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
                     });
-
                     return waktuIndonesia;
                 },
             },
             { data: "no_antrian", name: "no_antrian" },
-            { data: "nama_obat", name: "nama_obat" },
-            { data: "dosis", name: "dosis" },
-            { data: "jumlah", name: "jumlah" },
-            { data: "nama_layanan", name: "nama_layanan" },
-            { data: "jumlah_layanan", name: "jumlah_layanan" },
-            { data: "total_tagihan", name: "total_tagihan" },
+            { data: "total_setelah_diskon", name: "total_setelah_diskon" },
             { data: "metode_pembayaran", name: "metode_pembayaran" },
+            { data: "kode_transaksi", name: "kode_transaksi" },
             { data: "status", name: "status" },
             { data: "bukti_pembayaran", name: "bukti_pembayaran" },
             {
@@ -59,7 +52,7 @@ $(function () {
         dom: "t",
         rowCallback: function (row, data) {
             $(row).addClass(
-                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600",
             );
             $("td", row).addClass("px-6 py-4 text-gray-900 dark:text-white");
         },
@@ -82,14 +75,14 @@ $(function () {
         $info.text(
             `Menampilkan ${info.start + 1}–${info.end} dari ${
                 info.recordsDisplay
-            } data (Halaman ${currentPage} dari ${totalPages})`
+            } data (Halaman ${currentPage} dari ${totalPages})`,
         );
         $pagination.empty();
 
         const prevDisabled =
             currentPage === 1 ? "opacity-50 cursor-not-allowed" : "";
         $pagination.append(
-            `<li><a href="#" id="btnPrev" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 ${prevDisabled}">Previous</a></li>`
+            `<li><a href="#" id="btnPrev" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 ${prevDisabled}">Previous</a></li>`,
         );
 
         const maxVisible = 5;
@@ -104,14 +97,14 @@ $(function () {
                     ? "text-blue-600 bg-blue-50 border-blue-300 hover:bg-blue-100"
                     : "text-gray-500 bg-white border-gray-300 hover:bg-gray-100 hover:text-gray-700";
             $pagination.append(
-                `<li><a href="#" class="page-number flex items-center justify-center px-3 h-8 border ${active}" data-page="${i}">${i}</a></li>`
+                `<li><a href="#" class="page-number flex items-center justify-center px-3 h-8 border ${active}" data-page="${i}">${i}</a></li>`,
             );
         }
 
         const nextDisabled =
             currentPage === totalPages ? "opacity-50 cursor-not-allowed" : "";
         $pagination.append(
-            `<li><a href="#" id="btnNext" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 ${nextDisabled}">Next</a></li>`
+            `<li><a href="#" id="btnNext" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 ${nextDisabled}">Next</a></li>`,
         );
     }
 

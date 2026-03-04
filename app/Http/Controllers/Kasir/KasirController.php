@@ -378,17 +378,12 @@ class KasirController extends Controller
 
     public function getDataPembayaran()
     {
-        $hariIni = Carbon::today();
-
         $dataPembayaran = Pembayaran::with([
             'emr.kunjungan.pasien',
             'pembayaranDetail', // relasi ke pembayaran_detail
             'metodePembayaran',
         ])
             ->where('status', 'Belum Bayar')
-            ->whereHas('emr.kunjungan', function ($q) use ($hariIni) {
-                $q->whereDate('tanggal_kunjungan', $hariIni);
-            })
             ->latest()
             ->get();
 
@@ -413,26 +408,6 @@ class KasirController extends Controller
                 optional($p->emr->kunjungan)->no_antrian ?? '-'
             )
 
-            // ✅ SEMUA ITEM DARI pembayaran_detail
-            ->addColumn('items', function ($p) {
-
-                if ($p->details->isEmpty()) {
-                    return '<span class="text-gray-400 italic">Tidak ada item</span>';
-                }
-
-                $output = '<ul class="list-disc pl-4">';
-                foreach ($p->details as $d) {
-                    $output .= '<li>'
-                        . e($d->nama_item)
-                        . ' (x' . $d->qty . ') - Rp '
-                        . number_format($d->subtotal, 0, ',', '.')
-                        . '</li>';
-                }
-                $output .= '</ul>';
-
-                return $output;
-            })
-
             ->addColumn(
                 'total_tagihan',
                 fn($p) =>
@@ -449,12 +424,6 @@ class KasirController extends Controller
                 'kode_transaksi',
                 fn($p) =>
                 $p->kode_transaksi ?? '-'
-            )
-
-            ->addColumn(
-                'status',
-                fn($p) =>
-                $p->status ?? '-'
             )
 
             ->addColumn('action', function ($p) {
@@ -525,103 +494,79 @@ class KasirController extends Controller
     {
         $dataPembayaran = Pembayaran::with([
             'emr.kunjungan.pasien',
-            'emr.resep.obat',
-            'emr.kunjungan.layanan',
+            'pembayaranDetail', // relasi ke pembayaran_detail
             'metodePembayaran',
-        ])->where('status', 'Sudah Bayar')
+        ])
+            ->where('status', 'Sudah Bayar')
             ->latest()
             ->get();
 
         return DataTables::of($dataPembayaran)
             ->addIndexColumn()
-            ->addColumn('nama_pasien', function ($p) {
-                return $p->emr?->kunjungan?->pasien?->nama_pasien ?? '-';
-            })
-            ->addColumn('tanggal_kunjungan', function ($p) {
-                $tgl = $p->emr?->kunjungan?->tanggal_kunjungan ?? null;
 
-                return $tgl ? Carbon::parse($tgl)->toIso8601String() : '-';
-            })
-            ->addColumn('no_antrian', function ($p) {
-                return $p->emr?->kunjungan?->no_antrian ?? '-';
-            })
-            ->addColumn('nama_obat', function ($p) {
-                $resep = $p->emr?->resep;
-                if (!$resep || $resep->obat->isEmpty()) {
-                    return '<span class="text-gray-400 italic">Tidak ada</span>';
-                }
-                $items = [];
-                foreach ($resep->obat as $obat) {
-                    $items[] = '<li>' . e($obat->nama_obat) . '</li>';
-                }
+            ->addColumn(
+                'nama_pasien',
+                fn($p) =>
+                optional($p->emr->kunjungan->pasien)->nama_pasien ?? '-'
+            )
 
-                return '<ul class="list-disc pl-4">' . implode('', $items) . '</ul>';
-            })
-            ->addColumn('dosis', function ($p) {
-                $resep = $p->emr?->resep;
-                if (!$resep || $resep->obat->isEmpty()) {
-                    return '<span class="text-gray-400 italic">Tidak ada</span>';
-                }
-                $items = [];
-                foreach ($resep->obat as $obat) {
-                    $val = $obat->pivot->dosis ?? null;
-                    $val = is_numeric($val) ? number_format((float) $val, 2) . ' mg' : e($val ?? '-');
-                    $items[] = '<li>' . $val . '</li>';
-                }
+            ->addColumn(
+                'tanggal_kunjungan',
+                fn($p) =>
+                optional($p->emr->kunjungan)->tanggal_kunjungan ?? '-'
+            )
 
-                return '<ul class="list-disc pl-4">' . implode('', $items) . '</ul>';
-            })
-            ->addColumn('jumlah', function ($p) {
-                $resep = $p->emr?->resep;
-                if (!$resep || $resep->obat->isEmpty()) {
-                    return '<span class="text-gray-400 italic">Tidak ada</span>';
-                }
-                $items = [];
-                foreach ($resep->obat as $obat) {
-                    $qty = $obat->pivot->jumlah ?? null;
-                    $items[] = '<li>' . (($qty !== null && $qty !== '') ? e($qty) . ' capsul' : '-') . '</li>';
-                }
+            ->addColumn(
+                'no_antrian',
+                fn($p) =>
+                optional($p->emr->kunjungan)->no_antrian ?? '-'
+            )
 
-                return '<ul class="list-disc pl-4">' . implode('', $items) . '</ul>';
-            })
-            ->addColumn('nama_layanan', function ($p) {
-                $layanan = $p->emr?->kunjungan?->layanan ?? collect();
-                if ($layanan->isEmpty()) {
-                    return '<span class="text-gray-400 italic">Tidak ada</span>';
-                }
-                $items = [];
-                foreach ($layanan as $l) {
-                    $items[] = '<li>' . e($l->nama_layanan ?? '-') . '</li>';
-                }
+            /**
+             * ✅ TOTAL + METODE
+             */
+            ->addColumn(
+                'total_setelah_diskon',
+                fn($p) =>
+                'Rp ' . number_format($p->total_setelah_diskon ?? 0, 0, ',', '.')
+            )
 
-                return '<ul class="list-disc pl-4">' . implode('', $items) . '</ul>';
-            })
-            ->addColumn('jumlah_layanan', function ($p) {
-                $layanan = $p->emr?->kunjungan?->layanan ?? collect();
-                if ($layanan->isEmpty()) {
-                    return '<span class="text-gray-400 italic">Tidak ada</span>';
-                }
-                $items = [];
-                foreach ($layanan as $l) {
-                    $items[] = '<li>' . e($l->pivot->jumlah ?? '-') . '</li>';
-                }
+            ->addColumn(
+                'metode_pembayaran',
+                fn($p) =>
+                optional($p->metodePembayaran)->nama_metode ?? '-'
+            )
 
-                return '<ul class="list-disc pl-4">' . implode('', $items) . '</ul>';
-            })
-            ->addColumn('total_tagihan', function ($p) {
-                return 'Rp ' . number_format((int) ($p->total_tagihan ?? 0), 0, ',', '.');
-            })
-            ->addColumn('metode_pembayaran', function ($p) {
-                return $p->metodePembayaran->nama_metode ?? '-';
-            })
+            /**
+             * ✅ KODE TRANSAKSI
+             */
+            ->addColumn(
+                'kode_transaksi',
+                fn($p) =>
+                $p->kode_transaksi ?? '-'
+            )
+
+            /**
+             * ✅ STATUS
+             */
+            ->addColumn(
+                'status',
+                fn($p) =>
+                $p->status ?? '-'
+            )
+
+            /**
+             * ✅ BUKTI PEMBAYARAN (tetap tampil)
+             */
             ->addColumn('bukti_pembayaran', function ($p) {
                 if (!$p->bukti_pembayaran) {
                     return '<span class="text-gray-400 italic">Tidak ada</span>';
                 }
+
                 $url = asset('storage/' . $p->bukti_pembayaran);
                 $urlEsc = e($url);
 
-                $html = <<<HTML
+                return <<<HTML
 <div class="flex flex-col items-center text-center space-y-2">
     <img src="{$urlEsc}" alt="Bukti Pembayaran"
          class="w-24 h-24 object-cover rounded-lg border border-gray-300 shadow-sm hover:scale-105 transition-transform duration-200 cursor-pointer"
@@ -631,18 +576,15 @@ class KasirController extends Controller
     </a>
 </div>
 HTML;
+            })
 
-                return $html;
-            })
-            ->addColumn('status', function ($p) {
-                return $p->status ?? '-';
-            })
             ->addColumn('action', function ($p) {
                 $url = route('show.kwitansi', ['kodeTransaksi' => $p->kode_transaksi]);
                 $urlEsc = e($url);
 
                 return '<button class="cetakKuitansi text-blue-600 hover:text-blue-800" data-url="' . $urlEsc . '" title="Cetak Kwitansi"><i class="fa-solid fa-print"></i> Cetak Kwitansi</button>';
             })
+
             ->rawColumns([
                 'nama_obat',
                 'dosis',
@@ -660,79 +602,137 @@ HTML;
         $dataPembayaran = Pembayaran::with([
             'emr.kunjungan.pasien',
             'emr.kunjungan.poli',
-            'emr.kunjungan.layanan',
-            'emr.resep.obat',
-        ])->where('kode_transaksi', $kodeTransaksi)
+            'pembayaranDetail',      // ✅ relasi ke tabel pembayaran_detail
+            'metodePembayaran',
+        ])
+            ->where('kode_transaksi', $kodeTransaksi)
             ->firstOrFail();
 
+        $details = $dataPembayaran->pembayaranDetail ?? collect();
+
+        // ✅ KATEGORI: pakai prefix nama_item (paling robust sesuai saveEMR kamu)
+        $itemsObat = $details->filter(fn($d) => str_starts_with((string)$d->nama_item, 'Obat:'))->values();
+        $itemsLayanan = $details->filter(fn($d) => str_starts_with((string)$d->nama_item, 'Layanan:'))->values();
+        $itemsLab = $details->filter(fn($d) => str_starts_with((string)$d->nama_item, 'Lab:'))->values();
+        $itemsRadiologi = $details->filter(fn($d) => str_starts_with((string)$d->nama_item, 'Radiologi:'))->values();
+
+        // ✅ TOTAL = jumlah subtotal seluruh detail
+        $totalAwal = (float) $details->sum('subtotal');
+
+        // kalau detail kosong, totalAwal jadi 0 (ini harusnya tidak terjadi kalau billing benar)
         $dataMetodePembayaran = MetodePembayaran::all();
 
-        return view('kasir.pembayaran.transaksi', compact('dataPembayaran', 'dataMetodePembayaran'));
+        return view('kasir.pembayaran.transaksi', compact(
+            'dataPembayaran',
+            'dataMetodePembayaran',
+            'itemsObat',
+            'itemsLayanan',
+            'itemsLab',
+            'itemsRadiologi',
+            'totalAwal'
+        ));
     }
 
     public function transaksiCash(Request $request)
     {
-        // normalize diskon_tipe '' -> null biar lulus nullable|in
-        $request->merge([
-            'diskon_tipe' => $request->diskon_tipe ?: null,
-        ]);
-
         $request->validate([
             'id' => ['required', 'exists:pembayaran,id'],
             'uang_yang_diterima' => ['required', 'numeric', 'min:0'],
-            'kembalian' => ['required', 'numeric'],
+            'kembalian' => ['nullable', 'numeric'],
             'metode_pembayaran_id' => ['required', 'exists:metode_pembayaran,id'],
-            'total_tagihan' => ['nullable', 'numeric', 'min:0'],
-            'total_setelah_diskon' => ['nullable', 'numeric', 'min:0'],
-            'diskon_tipe' => ['nullable', 'in:persen,nominal'],
-            'diskon_nilai' => ['nullable', 'numeric', 'min:0'],
+
+            // ✅ wajib ada diskon per item
+            'diskon_items' => ['required', 'string'],
         ]);
 
-        try {
-            $pembayaranId = $request->id;
-            $pembayaran = null;
+        $pembayaranId = (int) $request->id;
+        $pembayaran = null;
 
+        try {
             Log::info('=== TRANSAKSI CASH START ===', [
                 'pembayaran_id' => $pembayaranId,
                 'timestamp' => now()->toDateTimeString(),
             ]);
 
             DB::transaction(function () use ($request, $pembayaranId, &$pembayaran) {
-                $pemb = Pembayaran::with(['emr.resep.obat', 'emr.kunjungan.pasien.user'])
+
+                $pemb = Pembayaran::with(['emr.kunjungan.pasien.user'])
                     ->lockForUpdate()
                     ->findOrFail($pembayaranId);
 
-                // total awal ambil dari DB
-                $totalAwal = (float) ($pemb->total_tagihan ?? 0);
+                if (($pemb->status ?? '') !== 'Belum Bayar') {
+                    throw ValidationException::withMessages([
+                        'id' => 'Transaksi ini sudah diproses / status bukan Belum Bayar.',
+                    ]);
+                }
 
-                if ($totalAwal <= 0 && $request->filled('total_tagihan')) {
-                    $totalAwal = (float) $request->total_tagihan;
+                // ✅ parse diskon per item
+                $diskonItems = json_decode($request->diskon_items, true);
+                if (!is_array($diskonItems)) {
+                    throw ValidationException::withMessages([
+                        'diskon_items' => 'Format diskon_items tidak valid.',
+                    ]);
+                }
+
+                // Map: pembayaran_detail_id => persen
+                $mapPersen = [];
+                foreach ($diskonItems as $it) {
+                    if (!isset($it['id'])) continue;
+                    $id = (int) $it['id'];
+                    $persen = (float) ($it['persen'] ?? 0);
+                    if ($persen < 0) $persen = 0;
+                    if ($persen > 100) $persen = 100;
+                    $mapPersen[$id] = $persen;
+                }
+
+                // ✅ ambil semua detail
+                $details = DB::table('pembayaran_detail')
+                    ->where('pembayaran_id', $pembayaranId)
+                    ->select('id', 'subtotal')
+                    ->get();
+
+                if ($details->isEmpty()) {
+                    throw ValidationException::withMessages([
+                        'id' => 'Detail pembayaran kosong. Pastikan pembayaran_detail sudah terbentuk.',
+                    ]);
+                }
+
+                $totalAwal = 0.0;
+                $totalSetelahDiskon = 0.0;
+                $potonganTotal = 0.0;
+
+                foreach ($details as $d) {
+                    $subtotal = (float) ($d->subtotal ?? 0);
+                    $totalAwal += $subtotal;
+
+                    $persen = $mapPersen[(int) $d->id] ?? 0.0;
+
+                    $potongan = $subtotal * ($persen / 100);
+                    if ($potongan > $subtotal) $potongan = $subtotal;
+
+                    $after = $subtotal - $potongan;
+
+                    $potonganTotal += $potongan;
+                    $totalSetelahDiskon += $after;
+
+                    // ✅ update pembayaran_detail sesuai requirement kamu
+                    DB::table('pembayaran_detail')
+                        ->where('id', $d->id)
+                        ->update([
+                            'total_tagihan' => $subtotal,        // ✅ sama dengan subtotal
+                            'diskon_tipe' => 'persen',           // ✅ enum persen
+                            'diskon_nilai' => $persen,           // ✅ persen per item
+                            'total_setelah_diskon' => $after,    // ✅ hasil setelah diskon
+                            'updated_at' => now(),
+                        ]);
                 }
 
                 if ($totalAwal <= 0) {
                     throw ValidationException::withMessages([
-                        'total_tagihan' => 'Total tagihan tidak valid.',
+                        'id' => 'Total tagihan tidak valid.',
                     ]);
                 }
 
-                // hitung diskon di server
-                $diskonTipe = $request->diskon_tipe ?: null;
-                $diskonNilai = (float) ($request->diskon_nilai ?? 0);
-
-                $potongan = 0.0;
-                if ($diskonTipe === 'persen' && $diskonNilai > 0) {
-                    $potongan = $totalAwal * ($diskonNilai / 100);
-                } elseif ($diskonTipe === 'nominal' && $diskonNilai > 0) {
-                    $potongan = $diskonNilai;
-                }
-
-                if ($potongan > $totalAwal) {
-                    $potongan = $totalAwal;
-                }
-
-                $totalSetelahDiskon = $totalAwal - $potongan;
-
-                // validasi uang diterima >= total setelah diskon
                 $uangDiterima = (float) $request->uang_yang_diterima;
                 if ($uangDiterima < $totalSetelahDiskon) {
                     throw ValidationException::withMessages([
@@ -740,24 +740,16 @@ HTML;
                     ]);
                 }
 
-                // hitung kembalian di server
                 $kembalian = $uangDiterima - $totalSetelahDiskon;
 
-                Log::info('Payment calculation', [
-                    'total_awal' => $totalAwal,
-                    'diskon_tipe' => $diskonTipe,
-                    'diskon_nilai' => $diskonNilai,
-                    'potongan' => $potongan,
-                    'total_setelah_diskon' => $totalSetelahDiskon,
-                    'uang_diterima' => $uangDiterima,
-                    'kembalian' => $kembalian,
-                ]);
+                // ✅ header pembayaran (source of truth dari detail)
+                // diskon_nilai di header kita isi persen global (potongan / totalAwal)
+                $diskonPersenGlobal = $totalAwal > 0 ? ($potonganTotal / $totalAwal) * 100 : 0;
 
-                // update pembayaran
                 $pemb->update([
                     'total_tagihan' => $totalAwal,
-                    'diskon_tipe' => $diskonTipe,
-                    'diskon_nilai' => $diskonNilai,
+                    'diskon_tipe' => $potonganTotal > 0 ? 'persen' : null,
+                    'diskon_nilai' => $potonganTotal > 0 ? $diskonPersenGlobal : 0,
                     'total_setelah_diskon' => $totalSetelahDiskon,
                     'uang_yang_diterima' => $uangDiterima,
                     'kembalian' => $kembalian,
@@ -766,47 +758,21 @@ HTML;
                     'metode_pembayaran_id' => $request->metode_pembayaran_id,
                 ]);
 
-                Log::info('Pembayaran updated to Sudah Bayar', [
-                    'pembayaran_id' => $pemb->id,
-                    'kode_transaksi' => $pemb->kode_transaksi,
-                ]);
-
                 $pembayaran = $pemb->fresh([
-                    'emr.resep.obat',
                     'emr.kunjungan.pasien.user',
-                    'emr.kunjungan.layanan',
                     'metodePembayaran',
                 ]);
 
-                // ✅✅✅ KIRIM NOTIF SETELAH COMMIT ✅✅✅
                 DB::afterCommit(function () use ($pembayaranId) {
                     try {
-                        Log::info('🔔 Preparing to send notification for pembayaran cash', [
-                            'pembayaran_id' => $pembayaranId,
-                        ]);
-
                         $pembFresh = Pembayaran::with(['emr.kunjungan.pasien.user'])->find($pembayaranId);
-
                         if ($pembFresh) {
-                            Log::info('Pembayaran loaded for notification', [
-                                'pembayaran_id' => $pembFresh->id,
-                                'pasien_id' => $pembFresh->emr->kunjungan->pasien_id ?? null,
-                                'pasien_user_id' => $pembFresh->emr->kunjungan->pasien->user_id ?? null,
-                            ]);
-
                             NotificationHelper::kirimNotifikasiPembayaranSelesai($pembFresh);
-
-                            Log::info('✅ Notification helper called successfully');
-                        } else {
-                            Log::warning('⚠️ Pembayaran not found for notification', [
-                                'pembayaran_id' => $pembayaranId,
-                            ]);
                         }
                     } catch (\Throwable $e) {
                         Log::error('❌ Error sending notification for pembayaran cash', [
-                            'error' => $e->getMessage(),
-                            'trace' => $e->getTraceAsString(),
                             'pembayaran_id' => $pembayaranId,
+                            'error' => $e->getMessage(),
                         ]);
                     }
                 });
@@ -819,7 +785,7 @@ HTML;
             return response()->json([
                 'success' => true,
                 'data' => $pembayaran,
-                'message' => 'Uang Kembalian Rp' . number_format($pembayaran->kembalian, 0, ',', '.') . '. Terimakasih 😊😊😊',
+                'message' => 'Uang Kembalian Rp' . number_format((float) $pembayaran->kembalian, 0, ',', '.') . '. Terimakasih 😊😊😊',
             ]);
         } catch (ValidationException $e) {
             Log::warning('Validation error in transaksi cash', [
@@ -832,91 +798,124 @@ HTML;
                 'trace' => $e->getTraceAsString(),
                 'pembayaran_id' => $pembayaranId ?? null,
             ]);
-            throw $e;
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memproses pembayaran: ' . $e->getMessage(),
+            ], 500);
         }
     }
 
     public function transaksiTransfer(Request $request)
     {
-        // normalize diskon_tipe '' -> null
-        $request->merge([
-            'diskon_tipe' => $request->diskon_tipe ?: null,
-        ]);
-
         $request->validate([
             'id' => ['required', 'exists:pembayaran,id'],
             'bukti_pembayaran' => ['required', 'file', 'mimes:jpeg,jpg,png,gif,webp,svg,jfif', 'max:5120'],
             'metode_pembayaran_id' => ['required', 'exists:metode_pembayaran,id'],
-            'total_tagihan' => ['nullable', 'numeric', 'min:0'],
-            'total_setelah_diskon' => ['nullable', 'numeric', 'min:0'],
-            'diskon_tipe' => ['nullable', 'in:persen,nominal'],
-            'diskon_nilai' => ['nullable', 'numeric', 'min:0'],
+
+            // ✅ wajib untuk update pembayaran_detail
+            'diskon_items' => ['required', 'string'],
         ]);
 
-        try {
-            $pembayaranId = $request->id;
-            $pembayaran = null;
+        $pembayaranId = (int) $request->id;
+        $pembayaran = null;
 
+        try {
             Log::info('=== TRANSAKSI TRANSFER START ===', [
                 'pembayaran_id' => $pembayaranId,
                 'timestamp' => now()->toDateTimeString(),
             ]);
 
             DB::transaction(function () use ($request, $pembayaranId, &$pembayaran) {
-                $pemb = Pembayaran::with(['emr.resep.obat', 'emr.kunjungan.pasien.user'])
+
+                $pemb = Pembayaran::with(['emr.kunjungan.pasien.user'])
                     ->lockForUpdate()
                     ->findOrFail($pembayaranId);
 
-                // total awal dari DB
-                $totalAwal = (float) ($pemb->total_tagihan ?? 0);
-                if ($totalAwal <= 0 && $request->filled('total_tagihan')) {
-                    $totalAwal = (float) $request->total_tagihan;
+                if (($pemb->status ?? '') !== 'Belum Bayar') {
+                    throw ValidationException::withMessages([
+                        'id' => 'Transaksi ini sudah diproses / status bukan Belum Bayar.',
+                    ]);
+                }
+
+                // ✅ parse diskon per item
+                $diskonItems = json_decode($request->diskon_items, true);
+                if (!is_array($diskonItems)) {
+                    throw ValidationException::withMessages([
+                        'diskon_items' => 'Format diskon_items tidak valid.',
+                    ]);
+                }
+
+                // Map: pembayaran_detail_id => persen
+                $mapPersen = [];
+                foreach ($diskonItems as $it) {
+                    if (!isset($it['id'])) continue;
+                    $id = (int) $it['id'];
+                    $persen = (float) ($it['persen'] ?? 0);
+                    if ($persen < 0) $persen = 0;
+                    if ($persen > 100) $persen = 100;
+                    $mapPersen[$id] = $persen;
+                }
+
+                // ✅ ambil detail transaksi
+                $details = DB::table('pembayaran_detail')
+                    ->where('pembayaran_id', $pembayaranId)
+                    ->select('id', 'subtotal')
+                    ->get();
+
+                if ($details->isEmpty()) {
+                    throw ValidationException::withMessages([
+                        'id' => 'Detail pembayaran kosong. Pastikan pembayaran_detail sudah terbentuk.',
+                    ]);
+                }
+
+                $totalAwal = 0.0;
+                $totalSetelahDiskon = 0.0;
+                $potonganTotal = 0.0;
+
+                foreach ($details as $d) {
+                    $subtotal = (float) ($d->subtotal ?? 0);
+                    $totalAwal += $subtotal;
+
+                    $persen = $mapPersen[(int) $d->id] ?? 0.0;
+
+                    $potongan = $subtotal * ($persen / 100);
+                    if ($potongan > $subtotal) $potongan = $subtotal;
+
+                    $after = $subtotal - $potongan;
+
+                    $potonganTotal += $potongan;
+                    $totalSetelahDiskon += $after;
+
+                    // ✅ update pembayaran_detail sesuai requirement kamu
+                    DB::table('pembayaran_detail')
+                        ->where('id', $d->id)
+                        ->update([
+                            'total_tagihan' => $subtotal,
+                            'diskon_tipe' => 'persen',
+                            'diskon_nilai' => $persen,
+                            'total_setelah_diskon' => $after,
+                            'updated_at' => now(),
+                        ]);
                 }
 
                 if ($totalAwal <= 0) {
                     throw ValidationException::withMessages([
-                        'total_tagihan' => 'Total tagihan tidak valid.',
+                        'id' => 'Total tagihan tidak valid.',
                     ]);
                 }
-
-                // hitung diskon di server
-                $diskonTipe = $request->diskon_tipe ?: null;
-                $diskonNilai = (float) ($request->diskon_nilai ?? 0);
-
-                $potongan = 0.0;
-                if ($diskonTipe === 'persen' && $diskonNilai > 0) {
-                    $potongan = $totalAwal * ($diskonNilai / 100);
-                } elseif ($diskonTipe === 'nominal' && $diskonNilai > 0) {
-                    $potongan = $diskonNilai;
-                }
-
-                if ($potongan > $totalAwal) {
-                    $potongan = $totalAwal;
-                }
-
-                $totalSetelahDiskon = $totalAwal - $potongan;
-
                 if ($totalSetelahDiskon <= 0) {
                     throw ValidationException::withMessages([
                         'total_setelah_diskon' => 'Total setelah diskon tidak valid.',
                     ]);
                 }
 
-                Log::info('Payment calculation for transfer', [
-                    'total_awal' => $totalAwal,
-                    'diskon_tipe' => $diskonTipe,
-                    'diskon_nilai' => $diskonNilai,
-                    'total_setelah_diskon' => $totalSetelahDiskon,
-                ]);
-
-                // upload bukti transfer
+                // ✅ upload bukti transfer
                 $fotoPath = null;
                 if ($request->hasFile('bukti_pembayaran')) {
                     $file = $request->file('bukti_pembayaran');
                     $ext = strtolower($file->getClientOriginalExtension());
-                    if ($ext === 'jfif') {
-                        $ext = 'jpg';
-                    }
+                    if ($ext === 'jfif') $ext = 'jpg';
 
                     $fileName = time() . '_' . uniqid() . '.' . $ext;
                     $path = 'bukti-transaksi/' . $fileName;
@@ -930,20 +929,22 @@ HTML;
                     }
                     $fotoPath = $path;
 
-                    Log::info('Bukti transfer uploaded', [
-                        'path' => $fotoPath,
-                    ]);
+                    Log::info('Bukti transfer uploaded', ['path' => $fotoPath]);
                 }
 
-                // untuk transfer, uang_yang_diterima = total setelah diskon, kembalian = 0
+                // ✅ update header pembayaran (source of truth dari detail)
+                $diskonPersenGlobal = $totalAwal > 0 ? ($potonganTotal / $totalAwal) * 100 : 0;
+
                 $pemb->update([
                     'total_tagihan' => $totalAwal,
-                    'diskon_tipe' => $diskonTipe,
-                    'diskon_nilai' => $diskonNilai,
+                    'diskon_tipe' => $potonganTotal > 0 ? 'persen' : null,
+                    'diskon_nilai' => $potonganTotal > 0 ? $diskonPersenGlobal : 0,
                     'total_setelah_diskon' => $totalSetelahDiskon,
+
                     'bukti_pembayaran' => $fotoPath,
                     'uang_yang_diterima' => $totalSetelahDiskon,
                     'kembalian' => 0,
+
                     'tanggal_pembayaran' => now(),
                     'status' => 'Sudah Bayar',
                     'metode_pembayaran_id' => $request->metode_pembayaran_id,
@@ -955,35 +956,15 @@ HTML;
                 ]);
 
                 $pembayaran = $pemb->fresh([
-                    'emr.resep.obat',
                     'emr.kunjungan.pasien.user',
-                    'emr.kunjungan.layanan',
                     'metodePembayaran',
                 ]);
 
-                // ✅✅✅ KIRIM NOTIF SETELAH COMMIT ✅✅✅
                 DB::afterCommit(function () use ($pembayaranId) {
                     try {
-                        Log::info('🔔 Preparing to send notification for pembayaran transfer', [
-                            'pembayaran_id' => $pembayaranId,
-                        ]);
-
                         $pembFresh = Pembayaran::with(['emr.kunjungan.pasien.user'])->find($pembayaranId);
-
                         if ($pembFresh) {
-                            Log::info('Pembayaran loaded for notification', [
-                                'pembayaran_id' => $pembFresh->id,
-                                'pasien_id' => $pembFresh->emr->kunjungan->pasien_id ?? null,
-                                'pasien_user_id' => $pembFresh->emr->kunjungan->pasien->user_id ?? null,
-                            ]);
-
                             NotificationHelper::kirimNotifikasiPembayaranSelesai($pembFresh);
-
-                            Log::info('✅ Notification helper called successfully');
-                        } else {
-                            Log::warning('⚠️ Pembayaran not found for notification', [
-                                'pembayaran_id' => $pembayaranId,
-                            ]);
                         }
                     } catch (\Throwable $e) {
                         Log::error('❌ Error sending notification for pembayaran transfer', [
@@ -1003,7 +984,7 @@ HTML;
                 'success' => true,
                 'data' => $pembayaran,
                 'message' => 'Bukti transfer diterima. Nominal terbayar: Rp' .
-                    number_format($pembayaran->uang_yang_diterima, 0, ',', '.') . '. Terimakasih 😊😊😊',
+                    number_format((float) $pembayaran->uang_yang_diterima, 0, ',', '.') . '. Terimakasih 😊😊😊',
             ]);
         } catch (ValidationException $e) {
             Log::warning('Validation error in transaksi transfer', [
@@ -1016,7 +997,11 @@ HTML;
                 'trace' => $e->getTraceAsString(),
                 'pembayaran_id' => $pembayaranId ?? null,
             ]);
-            throw $e;
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal memproses pembayaran transfer: ' . $e->getMessage(),
+            ], 500);
         }
     }
 
@@ -1024,54 +1009,17 @@ HTML;
     {
         $dataPembayaran = Pembayaran::with([
             'emr.kunjungan.pasien',
-            'emr.resep.obat',
-            'emr.kunjungan.layanan',
             'metodePembayaran',
+            'pembayaranDetail',
         ])->where('kode_transaksi', $kodeTransaksi)->firstOrFail();
 
-        $resep = optional($dataPembayaran->emr)->resep;
-
-        if ($resep instanceof Collection) {
-            $obatCollection = $resep->flatMap(function ($item) {
-                return $item->obat ?? collect();
-            });
-        } elseif ($resep) {
-            $obatCollection = $resep->obat ?? collect();
-        } else {
-            $obatCollection = collect();
-        }
-
-        $totalObat = $obatCollection->sum(function ($obat) {
-            $jumlah = $obat->pivot->jumlah ?? 0;
-            $harga  = $obat->total_harga ?? 0;
-
-            return $jumlah * $harga;
-        });
-
-        $layananCollection = optional(optional($dataPembayaran->emr)->kunjungan)->layanan ?? collect();
-
-        if (!$layananCollection instanceof Collection) {
-            $layananCollection = $layananCollection
-                ? collect([$layananCollection])
-                : collect();
-        }
-
-        $totalLayanan = $layananCollection->sum(function ($layanan) {
-            $jumlah = $layanan->pivot->jumlah ?? 0;
-            $harga  = $layanan->harga_setelah_diskon ?? 0;
-
-            return $jumlah * $harga;
-        });
-
-        $grandTotal = $totalObat + $totalLayanan;
+        $details = $dataPembayaran->pembayaranDetail ?? collect();
 
         $namaPT = 'Royal Klinik';
 
         return view('kasir.pembayaran.kwitansi', compact(
             'dataPembayaran',
-            'totalObat',
-            'totalLayanan',
-            'grandTotal',
+            'details',
             'namaPT'
         ));
     }
