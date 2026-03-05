@@ -104,7 +104,8 @@ export default defineConfig({
 
                 // riwayat pemeriksaaan
                 "resources/js/perawat/riwayat-pemeriksaan/emr.js",
-                "resources/js/perawat/riwayat-pemeriksaan/data-lab.js"
+                "resources/js/perawat/riwayat-pemeriksaan/data-lab.js",
+                "resources/js/perawat/riwayat-pemeriksaan/data-radiologi.js"
             ],
             refresh: true,
         }),
