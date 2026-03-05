@@ -101,6 +101,9 @@ export default defineConfig({
                 "resources/js/farmasi/penggunaan-bhp/data-penggunaan-bhp.js",
                 "resources/js/farmasi/bahan-habis-pakai/data-pemakaian-bhp.js",
                 "resources/js/farmasi/pesanan-dan-stok-masuk/data-pesanan-dan-stok-masuk.js",
+
+                // riwayat pemeriksaaan
+                "resources/js/perawat/riwayat-pemeriksaan/emr.js",
             ],
             refresh: true,
         }),
