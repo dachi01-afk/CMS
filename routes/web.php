@@ -1,67 +1,69 @@
 <?php
 
-use App\Models\User;
-use Illuminate\Support\Facades\Route;
-use Yajra\DataTables\Facades\DataTables;
-use App\Http\Controllers\QrCodeController;
-use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\Admin\PoliController;
-use App\Http\Controllers\Api\APIWebController;
-use App\Http\Controllers\Dokter\AuthController;
-use App\Http\Controllers\Kasir\KasirController;
-use App\Http\Controllers\Farmasi\ObatController;
-use App\Http\Controllers\Admin\LaporanController;
-use App\Http\Controllers\Admin\LayananController;
-use App\Http\Controllers\Farmasi\DepotController;
-use App\Http\Controllers\Admin\SettingsController;
-use App\Http\Controllers\JenisSpesialisController;
-use App\Http\Controllers\Management\EMRController;
 use App\Http\Controllers\Admin\DashboardController;
-use App\Http\Controllers\Farmasi\FarmasiController;
-use App\Http\Controllers\Management\UserController;
-use App\Http\Controllers\Perawat\PerawatController;
-use App\Http\Controllers\Testing\TestingController;
-use App\Http\Controllers\Farmasi\SupplierController;
-use App\Http\Controllers\Perawat\OrderLabController;
-use App\Http\Controllers\Farmasi\JenisObatController;
-use App\Http\Controllers\Farmasi\OrderObatController;
-use App\Http\Controllers\Farmasi\PesananDanStokMasuk;
-use App\Http\Controllers\Farmasi\TipeDepotController;
-use App\Http\Controllers\Management\DokterController;
-use App\Http\Controllers\Management\PasienController;
-use App\Http\Controllers\Perawat\KunjunganController;
-use App\Http\Controllers\Admin\OrderLayananController;
-use App\Http\Controllers\Farmasi\SatuanObatController;
-use App\Http\Controllers\Kasir\TransaksiObatController;
-use App\Http\Controllers\Management\ApotekerController;
-use App\Http\Controllers\Farmasi\BrandFarmasiController;
-use App\Http\Controllers\Farmasi\KategoriObatController;
-use App\Http\Controllers\Testing\TestingChartController;
 use App\Http\Controllers\Admin\DataMedisPasienController;
 use App\Http\Controllers\Admin\JadwalKunjunganController;
 use App\Http\Controllers\Admin\KategoriLayananController;
+use App\Http\Controllers\Admin\LaporanController;
+use App\Http\Controllers\Admin\LayananController;
+use App\Http\Controllers\Admin\ManajemenPenggunaController;
+use App\Http\Controllers\Admin\OrderLayananController;
 use App\Http\Controllers\Admin\PengambilanObatController;
-use App\Http\Controllers\Farmasi\KadaluarsaBHPController;
-use App\Http\Controllers\Farmasi\PenggunaanBHPController;
-use App\Http\Controllers\SuperAdmin\SuperAdminController;
 use App\Http\Controllers\Admin\PengaturanKlinikController;
+use App\Http\Controllers\Admin\PoliController;
+use App\Http\Controllers\Admin\SettingsController;
+use App\Http\Controllers\Api\APIWebController;
+use App\Http\Controllers\Apoteker\Obat\PenjualanObatController;
+use App\Http\Controllers\Dokter\AuthController;
+use App\Http\Controllers\Dokter\DokterController as DokterDokterController;
+use App\Http\Controllers\Farmasi\BahanHabisPakaiController;
+use App\Http\Controllers\Farmasi\BrandFarmasiController;
 use App\Http\Controllers\Farmasi\CetakResepObatController;
+use App\Http\Controllers\Farmasi\DepotController;
+use App\Http\Controllers\Farmasi\FarmasiController;
+use App\Http\Controllers\Farmasi\JenisObatController;
+use App\Http\Controllers\Farmasi\KadaluarsaBHPController;
 use App\Http\Controllers\Farmasi\KadaluarsaObatController;
+use App\Http\Controllers\Farmasi\KategoriObatController;
+use App\Http\Controllers\Farmasi\ObatController;
+use App\Http\Controllers\Farmasi\OrderObatController;
+use App\Http\Controllers\Farmasi\PengambilanObatController as FarmasiPengambilanObatController;
+use App\Http\Controllers\Farmasi\PenggunaanBHPController;
 use App\Http\Controllers\Farmasi\PenggunaanObatController;
+use App\Http\Controllers\Farmasi\PesananDanStokMasuk;
+use App\Http\Controllers\Farmasi\RestockDanReturnController;
+use App\Http\Controllers\Farmasi\RestockDanReturnObatController;
+use App\Http\Controllers\Farmasi\SatuanObatController;
+use App\Http\Controllers\Farmasi\SupplierController;
+use App\Http\Controllers\Farmasi\TipeDepotController;
+use App\Http\Controllers\JenisSpesialisController;
+use App\Http\Controllers\Kasir\DiskonApprovalController;
+use App\Http\Controllers\Kasir\KasirController;
 use App\Http\Controllers\Kasir\MetodePembayaranController;
 use App\Http\Controllers\Kasir\RiwayatTransaksiController;
 use App\Http\Controllers\Kasir\TransaksiLayananController;
-use App\Http\Controllers\Perawat\OrderRadiologiController;
-use App\Http\Controllers\Admin\ManajemenPenggunaController;
-use App\Http\Controllers\Farmasi\BahanHabisPakaiController;
+use App\Http\Controllers\Kasir\TransaksiObatController;
+use App\Http\Controllers\Management\ApotekerController;
+use App\Http\Controllers\Management\DokterController;
+use App\Http\Controllers\Management\EMRController;
 use App\Http\Controllers\Management\JadwalDokterController;
-use App\Http\Controllers\Farmasi\RestockDanReturnController;
+use App\Http\Controllers\Management\PasienController;
+use App\Http\Controllers\Management\UserController;
+use App\Http\Controllers\SuperAdmin\DiskonApprovalManagerController;
 use App\Http\Controllers\PemakaianBahanHabisPakaiController;
+use App\Http\Controllers\Perawat\KunjunganController;
+use App\Http\Controllers\Perawat\OrderLabController;
+use App\Http\Controllers\Perawat\OrderRadiologiController;
+use App\Http\Controllers\Perawat\PerawatController;
 use App\Http\Controllers\Perawat\RiwayatPemeriksaanController;
-use App\Http\Controllers\Apoteker\Obat\PenjualanObatController;
-use App\Http\Controllers\Farmasi\RestockDanReturnObatController;
-use App\Http\Controllers\Dokter\DokterController as DokterDokterController;
-use App\Http\Controllers\Farmasi\PengambilanObatController as FarmasiPengambilanObatController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\QrCodeController;
+use App\Http\Controllers\SuperAdmin\SuperAdminController;
+use App\Http\Controllers\Testing\TestingChartController;
+use App\Http\Controllers\Testing\TestingController;
+use App\Models\User;
+use Illuminate\Support\Facades\Route;
+use Yajra\DataTables\Facades\DataTables;
 
 // Rest of your web routes remain the same...
 Route::get('/')->middleware('checkAuth');
@@ -524,6 +526,9 @@ Route::middleware(['auth', 'role:Kasir'])->group(function () {
         Route::get('/transaksi/{kode_transaksi}', [KasirController::class, 'transaksi'])->name('kasir.transaksi');
         Route::get('/kwitansi/{kodeTransaksi}', [KasirController::class, 'showKwitansi'])->name('show.kwitansi');
 
+        Route::post('/pembayaran/{pembayaran}/diskon/request', [DiskonApprovalController::class, 'requestApproval'])->name('kasir.pembayaran.diskon.request');
+        Route::get('/pembayaran/{pembayaran}/diskon/status', [DiskonApprovalController::class, 'status'])->name('kasir.pembayaran.diskon.status');
+
         Route::post('/pembayaran-cash', [KasirController::class, 'transaksiCash'])->name('kasir.pembayaran.cash');
         Route::post('/pembayaran-transfer', [KasirController::class, 'transaksiTransfer'])->name('kasir.pembayaran.transfer');
 
@@ -610,6 +615,15 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
             Route::get('/emr/{emr}', [RiwayatPemeriksaanController::class, 'showEmr'])->name('emr.show');
         });
     });
+});
+
+Route::middleware(['auth'])->prefix('super-admin')->group(function () {
+    Route::get('/diskon-approval', [DiskonApprovalManagerController::class, 'index'])->name('super.admin.diskon.index');
+    Route::get('/diskon-approval/get-data-belum-approve', [DiskonApprovalManagerController::class, 'getDataBelumApprove']);
+    Route::get('/diskon-approval/{approval}/detail-items', [DiskonApprovalManagerController::class, 'getDetailItems'])->name('super.admin.diskon.detail_items');
+
+    Route::post('/diskon-approval/{approval}/approve', [DiskonApprovalManagerController::class, 'approve'])->name('super.admin.diskon.approve');
+    Route::post('/diskon-approval/{approval}/reject', [DiskonApprovalManagerController::class, 'reject'])->name('super.admin.diskon.reject');
 });
 
 Route::get('/login-dokter', [AuthController::class, 'login'])->name('login.dokter');

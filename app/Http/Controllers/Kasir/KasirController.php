@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Kasir;
 
 use App\Helpers\NotificationHelper;
 use App\Http\Controllers\Controller;
+use App\Models\DiskonApproval;
 use App\Models\Kasir;
 use App\Models\MetodePembayaran;
 use App\Models\Pembayaran;
@@ -602,7 +603,7 @@ HTML;
         $dataPembayaran = Pembayaran::with([
             'emr.kunjungan.pasien',
             'emr.kunjungan.poli',
-            'pembayaranDetail',      // ✅ relasi ke tabel pembayaran_detail
+            'pembayaranDetail',
             'metodePembayaran',
         ])
             ->where('kode_transaksi', $kodeTransaksi)
@@ -610,16 +611,52 @@ HTML;
 
         $details = $dataPembayaran->pembayaranDetail ?? collect();
 
-        // ✅ KATEGORI: pakai prefix nama_item (paling robust sesuai saveEMR kamu)
+        $latestApproval = DiskonApproval::where('pembayaran_id', $dataPembayaran->id)
+            ->latest('id')
+            ->first();
+
+        $approvalStatus = $latestApproval?->status;
+
+        $approvalItemsRaw = $latestApproval?->diskon_items ?? [];
+        if (is_string($approvalItemsRaw)) {
+            $decoded = json_decode($approvalItemsRaw, true);
+            $approvalItemsRaw = is_array($decoded) ? $decoded : [];
+        }
+
+        $approvalItemsById = collect($approvalItemsRaw)
+            ->map(function ($item) {
+                return [
+                    'id' => (int) ($item['id'] ?? 0),
+                    'persen' => (float) ($item['persen'] ?? 0),
+                ];
+            })
+            ->filter(fn($item) => $item['id'] > 0)
+            ->keyBy('id');
+
+        $diskonLocked = in_array($approvalStatus, ['pending', 'approved'], true);
+
+        $details = $details->map(function ($detail) use ($approvalStatus, $approvalItemsById) {
+            $diskonDariDetail = (float) ($detail->diskon_nilai ?? 0);
+
+            if (in_array($approvalStatus, ['pending', 'approved'], true)) {
+                $diskonInput = (float) data_get($approvalItemsById->get($detail->id), 'persen', $diskonDariDetail);
+            } elseif ($approvalStatus === 'rejected') {
+                $diskonInput = 0;
+            } else {
+                $diskonInput = $diskonDariDetail;
+            }
+
+            $detail->diskon_input = $diskonInput;
+
+            return $detail;
+        });
+
         $itemsObat = $details->filter(fn($d) => str_starts_with((string)$d->nama_item, 'Obat:'))->values();
         $itemsLayanan = $details->filter(fn($d) => str_starts_with((string)$d->nama_item, 'Layanan:'))->values();
         $itemsLab = $details->filter(fn($d) => str_starts_with((string)$d->nama_item, 'Lab:'))->values();
         $itemsRadiologi = $details->filter(fn($d) => str_starts_with((string)$d->nama_item, 'Radiologi:'))->values();
 
-        // ✅ TOTAL = jumlah subtotal seluruh detail
         $totalAwal = (float) $details->sum('subtotal');
-
-        // kalau detail kosong, totalAwal jadi 0 (ini harusnya tidak terjadi kalau billing benar)
         $dataMetodePembayaran = MetodePembayaran::all();
 
         return view('kasir.pembayaran.transaksi', compact(
@@ -629,7 +666,10 @@ HTML;
             'itemsLayanan',
             'itemsLab',
             'itemsRadiologi',
-            'totalAwal'
+            'totalAwal',
+            'approvalStatus',
+            'approvalItemsRaw',
+            'diskonLocked'
         ));
     }
 
@@ -640,8 +680,6 @@ HTML;
             'uang_yang_diterima' => ['required', 'numeric', 'min:0'],
             'kembalian' => ['nullable', 'numeric'],
             'metode_pembayaran_id' => ['required', 'exists:metode_pembayaran,id'],
-
-            // ✅ wajib ada diskon per item
             'diskon_items' => ['required', 'string'],
         ]);
 
@@ -666,26 +704,16 @@ HTML;
                     ]);
                 }
 
-                // ✅ parse diskon per item
-                $diskonItems = json_decode($request->diskon_items, true);
-                if (!is_array($diskonItems)) {
-                    throw ValidationException::withMessages([
-                        'diskon_items' => 'Format diskon_items tidak valid.',
-                    ]);
-                }
+                $normalizedDiskonItems = $this->validateApprovalBeforePayment(
+                    $pembayaranId,
+                    (string) $request->diskon_items
+                );
 
-                // Map: pembayaran_detail_id => persen
                 $mapPersen = [];
-                foreach ($diskonItems as $it) {
-                    if (!isset($it['id'])) continue;
-                    $id = (int) $it['id'];
-                    $persen = (float) ($it['persen'] ?? 0);
-                    if ($persen < 0) $persen = 0;
-                    if ($persen > 100) $persen = 100;
-                    $mapPersen[$id] = $persen;
+                foreach ($normalizedDiskonItems as $it) {
+                    $mapPersen[(int) $it['id']] = (float) $it['persen'];
                 }
 
-                // ✅ ambil semua detail
                 $details = DB::table('pembayaran_detail')
                     ->where('pembayaran_id', $pembayaranId)
                     ->select('id', 'subtotal')
@@ -705,7 +733,9 @@ HTML;
                     $subtotal = (float) ($d->subtotal ?? 0);
                     $totalAwal += $subtotal;
 
-                    $persen = $mapPersen[(int) $d->id] ?? 0.0;
+                    $persen = (float) ($mapPersen[(int) $d->id] ?? 0.0);
+                    if ($persen < 0) $persen = 0;
+                    if ($persen > 100) $persen = 100;
 
                     $potongan = $subtotal * ($persen / 100);
                     if ($potongan > $subtotal) $potongan = $subtotal;
@@ -715,15 +745,14 @@ HTML;
                     $potonganTotal += $potongan;
                     $totalSetelahDiskon += $after;
 
-                    // ✅ update pembayaran_detail sesuai requirement kamu
                     DB::table('pembayaran_detail')
                         ->where('id', $d->id)
                         ->update([
-                            'total_tagihan' => $subtotal,        // ✅ sama dengan subtotal
-                            'diskon_tipe' => 'persen',           // ✅ enum persen
-                            'diskon_nilai' => $persen,           // ✅ persen per item
-                            'total_setelah_diskon' => $after,    // ✅ hasil setelah diskon
-                            'updated_at' => now(),
+                            'total_tagihan'        => $subtotal,
+                            'diskon_tipe'          => $persen > 0 ? 'persen' : null,
+                            'diskon_nilai'         => $persen,
+                            'total_setelah_diskon' => $after,
+                            'updated_at'           => now(),
                         ]);
                 }
 
@@ -741,20 +770,17 @@ HTML;
                 }
 
                 $kembalian = $uangDiterima - $totalSetelahDiskon;
-
-                // ✅ header pembayaran (source of truth dari detail)
-                // diskon_nilai di header kita isi persen global (potongan / totalAwal)
                 $diskonPersenGlobal = $totalAwal > 0 ? ($potonganTotal / $totalAwal) * 100 : 0;
 
                 $pemb->update([
-                    'total_tagihan' => $totalAwal,
-                    'diskon_tipe' => $potonganTotal > 0 ? 'persen' : null,
-                    'diskon_nilai' => $potonganTotal > 0 ? $diskonPersenGlobal : 0,
+                    'total_tagihan'        => $totalAwal,
+                    'diskon_tipe'          => $potonganTotal > 0 ? 'persen' : null,
+                    'diskon_nilai'         => $potonganTotal > 0 ? $diskonPersenGlobal : 0,
                     'total_setelah_diskon' => $totalSetelahDiskon,
-                    'uang_yang_diterima' => $uangDiterima,
-                    'kembalian' => $kembalian,
-                    'tanggal_pembayaran' => now(),
-                    'status' => 'Sudah Bayar',
+                    'uang_yang_diterima'   => $uangDiterima,
+                    'kembalian'            => $kembalian,
+                    'tanggal_pembayaran'   => now(),
+                    'status'               => 'Sudah Bayar',
                     'metode_pembayaran_id' => $request->metode_pembayaran_id,
                 ]);
 
@@ -812,8 +838,6 @@ HTML;
             'id' => ['required', 'exists:pembayaran,id'],
             'bukti_pembayaran' => ['required', 'file', 'mimes:jpeg,jpg,png,gif,webp,svg,jfif', 'max:5120'],
             'metode_pembayaran_id' => ['required', 'exists:metode_pembayaran,id'],
-
-            // ✅ wajib untuk update pembayaran_detail
             'diskon_items' => ['required', 'string'],
         ]);
 
@@ -838,26 +862,16 @@ HTML;
                     ]);
                 }
 
-                // ✅ parse diskon per item
-                $diskonItems = json_decode($request->diskon_items, true);
-                if (!is_array($diskonItems)) {
-                    throw ValidationException::withMessages([
-                        'diskon_items' => 'Format diskon_items tidak valid.',
-                    ]);
-                }
+                $normalizedDiskonItems = $this->validateApprovalBeforePayment(
+                    $pembayaranId,
+                    (string) $request->diskon_items
+                );
 
-                // Map: pembayaran_detail_id => persen
                 $mapPersen = [];
-                foreach ($diskonItems as $it) {
-                    if (!isset($it['id'])) continue;
-                    $id = (int) $it['id'];
-                    $persen = (float) ($it['persen'] ?? 0);
-                    if ($persen < 0) $persen = 0;
-                    if ($persen > 100) $persen = 100;
-                    $mapPersen[$id] = $persen;
+                foreach ($normalizedDiskonItems as $it) {
+                    $mapPersen[(int) $it['id']] = (float) $it['persen'];
                 }
 
-                // ✅ ambil detail transaksi
                 $details = DB::table('pembayaran_detail')
                     ->where('pembayaran_id', $pembayaranId)
                     ->select('id', 'subtotal')
@@ -877,7 +891,9 @@ HTML;
                     $subtotal = (float) ($d->subtotal ?? 0);
                     $totalAwal += $subtotal;
 
-                    $persen = $mapPersen[(int) $d->id] ?? 0.0;
+                    $persen = (float) ($mapPersen[(int) $d->id] ?? 0.0);
+                    if ($persen < 0) $persen = 0;
+                    if ($persen > 100) $persen = 100;
 
                     $potongan = $subtotal * ($persen / 100);
                     if ($potongan > $subtotal) $potongan = $subtotal;
@@ -887,15 +903,14 @@ HTML;
                     $potonganTotal += $potongan;
                     $totalSetelahDiskon += $after;
 
-                    // ✅ update pembayaran_detail sesuai requirement kamu
                     DB::table('pembayaran_detail')
                         ->where('id', $d->id)
                         ->update([
-                            'total_tagihan' => $subtotal,
-                            'diskon_tipe' => 'persen',
-                            'diskon_nilai' => $persen,
+                            'total_tagihan'        => $subtotal,
+                            'diskon_tipe'          => $persen > 0 ? 'persen' : null,
+                            'diskon_nilai'         => $persen,
                             'total_setelah_diskon' => $after,
-                            'updated_at' => now(),
+                            'updated_at'           => now(),
                         ]);
                 }
 
@@ -904,13 +919,13 @@ HTML;
                         'id' => 'Total tagihan tidak valid.',
                     ]);
                 }
+
                 if ($totalSetelahDiskon <= 0) {
                     throw ValidationException::withMessages([
                         'total_setelah_diskon' => 'Total setelah diskon tidak valid.',
                     ]);
                 }
 
-                // ✅ upload bukti transfer
                 $fotoPath = null;
                 if ($request->hasFile('bukti_pembayaran')) {
                     $file = $request->file('bukti_pembayaran');
@@ -927,26 +942,24 @@ HTML;
                         $image->scale(width: 800);
                         Storage::disk('public')->put($path, (string) $image->encodeByExtension($ext, quality: 80));
                     }
+
                     $fotoPath = $path;
 
                     Log::info('Bukti transfer uploaded', ['path' => $fotoPath]);
                 }
 
-                // ✅ update header pembayaran (source of truth dari detail)
                 $diskonPersenGlobal = $totalAwal > 0 ? ($potonganTotal / $totalAwal) * 100 : 0;
 
                 $pemb->update([
-                    'total_tagihan' => $totalAwal,
-                    'diskon_tipe' => $potonganTotal > 0 ? 'persen' : null,
-                    'diskon_nilai' => $potonganTotal > 0 ? $diskonPersenGlobal : 0,
+                    'total_tagihan'        => $totalAwal,
+                    'diskon_tipe'          => $potonganTotal > 0 ? 'persen' : null,
+                    'diskon_nilai'         => $potonganTotal > 0 ? $diskonPersenGlobal : 0,
                     'total_setelah_diskon' => $totalSetelahDiskon,
-
-                    'bukti_pembayaran' => $fotoPath,
-                    'uang_yang_diterima' => $totalSetelahDiskon,
-                    'kembalian' => 0,
-
-                    'tanggal_pembayaran' => now(),
-                    'status' => 'Sudah Bayar',
+                    'bukti_pembayaran'     => $fotoPath,
+                    'uang_yang_diterima'   => $totalSetelahDiskon,
+                    'kembalian'            => 0,
+                    'tanggal_pembayaran'   => now(),
+                    'status'               => 'Sudah Bayar',
                     'metode_pembayaran_id' => $request->metode_pembayaran_id,
                 ]);
 
@@ -1003,6 +1016,92 @@ HTML;
                 'message' => 'Gagal memproses pembayaran transfer: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    private function normalizeDiskonItemsCheckout(array $items): array
+    {
+        $out = [];
+
+        foreach ($items as $it) {
+            $id = (int)($it['id'] ?? 0);
+            $persen = (float)($it['persen'] ?? 0);
+
+            $persen = max(0, min(100, $persen));
+
+            if ($id > 0 && $persen > 0) {
+                $out[] = [
+                    'id' => $id,
+                    'persen' => $persen,
+                ];
+            }
+        }
+
+        usort($out, fn($a, $b) => $a['id'] <=> $b['id']);
+
+        return $out;
+    }
+
+    private function decodeApprovalDiskonItems($raw): array
+    {
+        if (is_array($raw)) {
+            $items = $raw;
+        } elseif (is_string($raw)) {
+            $decoded = json_decode($raw, true);
+            $items = is_array($decoded) ? $decoded : [];
+        } else {
+            $items = [];
+        }
+
+        return $this->normalizeDiskonItemsCheckout($items);
+    }
+
+    private function validateApprovalBeforePayment(int $pembayaranId, string $diskonItemsJson): array
+    {
+        $decoded = json_decode($diskonItemsJson, true);
+
+        if (!is_array($decoded)) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'diskon_items' => 'Format diskon_items tidak valid.',
+            ]);
+        }
+
+        $normalizedRequest = $this->normalizeDiskonItemsCheckout($decoded);
+
+        $latestApproval = \App\Models\DiskonApproval::where('pembayaran_id', $pembayaranId)
+            ->latest('id')
+            ->first();
+
+        if ($latestApproval && $latestApproval->status === 'pending') {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'diskon_items' => 'Pembayaran ini sedang diajukan untuk diskon. Tunggu keputusan Manager terlebih dahulu.',
+            ]);
+        }
+
+        $approvedSnapshot = $latestApproval
+            ? $this->decodeApprovalDiskonItems($latestApproval->diskon_items)
+            : [];
+
+        if (count($normalizedRequest) > 0) {
+            if (!$latestApproval || $latestApproval->status !== 'approved') {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'diskon_items' => 'Diskon belum disetujui Manager.',
+                ]);
+            }
+
+            if (json_encode($normalizedRequest) !== json_encode($approvedSnapshot)) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'diskon_items' => 'Data diskon berubah / tidak sesuai approval. Silakan refresh halaman transaksi.',
+                ]);
+            }
+        } else {
+            if ($latestApproval && $latestApproval->status === 'approved' && count($approvedSnapshot) > 0) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'diskon_items' => 'Data diskon approved tidak sesuai. Silakan refresh halaman transaksi.',
+                ]);
+            }
+        }
+
+        return $normalizedRequest;
     }
 
     public function showKwitansi($kodeTransaksi)

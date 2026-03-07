@@ -8,6 +8,9 @@ export default defineConfig({
                 "resources/css/app.css",
                 "resources/js/app.js",
 
+                // Super Admin (Manager) Approval Diskon
+                "resources/js/super-admin/layanan/data-belum-approve-diskon.js",
+
                 // admin
                 "resources/js/admin/dashboard.js",
 

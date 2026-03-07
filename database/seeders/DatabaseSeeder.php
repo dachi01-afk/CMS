@@ -52,12 +52,12 @@ class DatabaseSeeder extends Seeder
             EMRSeeder::class,
             MetodePembayaranSeeder::class,
             PerawatDokterPoliSeeder::class,
-            PembayaranSeeder::class,
             SatuanLabSeeder::class,
             JenisPemeriksaanLabSeeder::class,
             JenisPemeriksaanRadiologiSeeder::class,
-            // OrderLabSeeder::class,
-            // OrderRadiologiSeeder::class,
+            OrderLabSeeder::class,
+            OrderRadiologiSeeder::class,
+            PembayaranSeeder::class,
         ]);
     }
 }

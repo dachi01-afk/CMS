@@ -295,6 +295,11 @@
                                         Kasir
                                     </x-mycomponents.sidebar_link>
 
+                                    <x-mycomponents.sidebar_link href="super.admin.diskon.index"
+                                        class="fa-solid fa-circle-check" :active="Request::routeIs('super.admin.diskon.index')">
+                                        Approve Diskon
+                                    </x-mycomponents.sidebar_link>
+
                                     <x-mycomponents.sidebar_link href="kasir.metode.pembayaran" class="fa-solid fa-wallet"
                                         :active="Request::routeIs('kasir.metode.pembayaran')">
                                         Metode Pembayaran
@@ -582,8 +587,8 @@
                                         Cetak Resep Obat
                                     </x-mycomponents.sidebar_link>
 
-                                    <x-mycomponents.sidebar_link href="index.restock.obat"
-                                        class="fa-solid fa-arrows-rotate" :active="Request::routeIs('index.restock.obat')">
+                                    <x-mycomponents.sidebar_link href="index.restock.obat" class="fa-solid fa-arrows-rotate"
+                                        :active="Request::routeIs('index.restock.obat')">
                                         Restock & Return Obat dan BHP
                                     </x-mycomponents.sidebar_link>
 
