@@ -10,6 +10,7 @@ export default defineConfig({
 
                 // Super Admin (Manager) Approval Diskon
                 "resources/js/super-admin/layanan/data-belum-approve-diskon.js",
+                "resources/js/super-admin/layanan/data-sudah-approve-diskon.js",
 
                 // admin
                 "resources/js/admin/dashboard.js",
@@ -108,7 +109,7 @@ export default defineConfig({
                 // riwayat pemeriksaaan
                 "resources/js/perawat/riwayat-pemeriksaan/emr.js",
                 "resources/js/perawat/riwayat-pemeriksaan/data-lab.js",
-                "resources/js/perawat/riwayat-pemeriksaan/data-radiologi.js"
+                "resources/js/perawat/riwayat-pemeriksaan/data-radiologi.js",
             ],
             refresh: true,
         }),

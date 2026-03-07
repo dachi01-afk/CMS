@@ -620,7 +620,10 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
 Route::middleware(['auth'])->prefix('super-admin')->group(function () {
     Route::get('/diskon-approval', [DiskonApprovalManagerController::class, 'index'])->name('super.admin.diskon.index');
     Route::get('/diskon-approval/get-data-belum-approve', [DiskonApprovalManagerController::class, 'getDataBelumApprove']);
+    Route::get('/diskon-approval/get-data-sudah-approve', [DiskonApprovalManagerController::class, 'getDataSudahApprove'])->name('super.admin.data.sudah.approve');
+
     Route::get('/diskon-approval/{approval}/detail-items', [DiskonApprovalManagerController::class, 'getDetailItems'])->name('super.admin.diskon.detail_items');
+    Route::get('/diskon-approval/{approval}/detail-items-sudah-approve', [DiskonApprovalManagerController::class, 'getDetailSudahApprove'])->name('super.admin.diskon.detail_items.sudah.approve');
 
     Route::post('/diskon-approval/{approval}/approve', [DiskonApprovalManagerController::class, 'approve'])->name('super.admin.diskon.approve');
     Route::post('/diskon-approval/{approval}/reject', [DiskonApprovalManagerController::class, 'reject'])->name('super.admin.diskon.reject');
