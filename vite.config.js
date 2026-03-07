@@ -9,8 +9,8 @@ export default defineConfig({
                 "resources/js/app.js",
 
                 // Super Admin (Manager) Approval Diskon
-                "resources/js/super-admin/layanan/data-belum-approve-diskon.js",
-                "resources/js/super-admin/layanan/data-sudah-approve-diskon.js",
+                "resources/js/super-admin/data-belum-approve-diskon.js",
+                "resources/js/super-admin/data-sudah-approve-diskon.js",
 
                 // admin
                 "resources/js/admin/dashboard.js",
