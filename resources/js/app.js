@@ -14,40 +14,58 @@ import { initFlowbite } from "flowbite";
 import $ from "jquery";
 import DataTable from "datatables.net";
 import "datatables.net-responsive";
-import "datatables.net-dt/css/dataTables.dataTables.css"; // <== CSS-nya juga
+import "datatables.net-dt/css/dataTables.dataTables.css";
 
-// // ✅ Global assignment
-// window.Alpine = Alpine;
+// ✅ Global assignment
 window.$ = window.jQuery = $;
-
-// // ✅ Start Alpine
-// Alpine.start();
 
 // ✅ Export agar DataTable bisa diakses dari file JS lain
 export { DataTable };
 
 document.addEventListener("DOMContentLoaded", () => {
+    initFlowbite();
+
     const passwordInput = document.getElementById("password");
     const toggleBtn = document.getElementById("togglePassword");
     const eyeIcon = document.getElementById("eyeIcon");
     const eyeOffIcon = document.getElementById("eyeOffIcon");
 
-    if (!passwordInput || !toggleBtn) return;
+    if (passwordInput && toggleBtn) {
+        toggleBtn.addEventListener("click", () => {
+            const isHidden = passwordInput.type === "password";
+            passwordInput.type = isHidden ? "text" : "password";
 
-    toggleBtn.addEventListener("click", () => {
-        const isHidden = passwordInput.type === "password";
-        passwordInput.type = isHidden ? "text" : "password";
+            if (eyeIcon && eyeOffIcon) {
+                eyeIcon.classList.toggle("hidden", isHidden);
+                eyeOffIcon.classList.toggle("hidden", !isHidden);
+            }
 
-        // swap icons
-        if (eyeIcon && eyeOffIcon) {
-            eyeIcon.classList.toggle("hidden", isHidden);
-            eyeOffIcon.classList.toggle("hidden", !isHidden);
-        }
+            toggleBtn.setAttribute("aria-pressed", String(isHidden));
+            toggleBtn.setAttribute(
+                "aria-label",
+                isHidden ? "Sembunyikan password" : "Tampilkan password",
+            );
+        });
+    }
 
-        toggleBtn.setAttribute("aria-pressed", String(isHidden));
-        toggleBtn.setAttribute(
-            "aria-label",
-            isHidden ? "Sembunyikan password" : "Tampilkan password",
-        );
-    });
+    // =========================
+    // HEARTBEAT USER ONLINE
+    // =========================
+    const isAuthenticated =
+        document
+            .querySelector('meta[name="user-authenticated"]')
+            ?.getAttribute("content") === "true";
+
+    if (isAuthenticated) {
+        setInterval(() => {
+            axios
+                .post("/heartbeat")
+                .then((response) => {
+                    // optional: console.log("Heartbeat success");
+                })
+                .catch((error) => {
+                    console.error("Heartbeat gagal:", error);
+                });
+        }, 60000); // 60 detik
+    }
 });

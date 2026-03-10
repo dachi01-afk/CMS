@@ -49,7 +49,6 @@ use App\Http\Controllers\Management\EMRController;
 use App\Http\Controllers\Management\JadwalDokterController;
 use App\Http\Controllers\Management\PasienController;
 use App\Http\Controllers\Management\UserController;
-use App\Http\Controllers\SuperAdmin\DiskonApprovalManagerController;
 use App\Http\Controllers\PemakaianBahanHabisPakaiController;
 use App\Http\Controllers\Perawat\KunjunganController;
 use App\Http\Controllers\Perawat\OrderLabController;
@@ -58,15 +57,30 @@ use App\Http\Controllers\Perawat\PerawatController;
 use App\Http\Controllers\Perawat\RiwayatPemeriksaanController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QrCodeController;
+use App\Http\Controllers\SuperAdmin\DiskonApprovalManagerController;
+use App\Http\Controllers\SuperAdmin\PasienHariIniController;
+use App\Http\Controllers\SuperAdmin\PasienInsightController;
 use App\Http\Controllers\SuperAdmin\SuperAdminController;
+use App\Http\Controllers\SuperAdmin\TransaksiInsightController;
 use App\Http\Controllers\Testing\TestingChartController;
 use App\Http\Controllers\Testing\TestingController;
 use App\Models\User;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Yajra\DataTables\Facades\DataTables;
 
 // Rest of your web routes remain the same...
 Route::get('/')->middleware('checkAuth');
+
+Route::middleware('auth')->post('/heartbeat', function () {
+    User::where('id', Auth::id())->update([
+        'terakhir_login' => now()
+    ]);
+
+    return response()->json([
+        'success' => true
+    ]);
+});
 
 Route::get('/testing', [TestingController::class, 'testing'])->name('testing');
 Route::post('/testing-create-kunjungan', [TestingController::class, 'testingCreateKunjungan'])->name('testing.create.kunjungan');
@@ -137,10 +151,6 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    Route::prefix('super-admin')->group(function () {
-        Route::get('index', [SuperAdminController::class, 'dashboard'])->name('super.admin.index');
-    });
-
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('index');
         Route::get('/chart_kunjungan', [DashboardController::class, 'getChartKunjungan'])->name('chart_kunjungan');
@@ -148,6 +158,10 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::get('/total_pasien', [DashboardController::class, 'getTotalPasien'])->name('total_pasien');
         Route::get('/total_farmasi', [DashboardController::class, 'getTotalFarmasi'])->name('total_farmasi');
         Route::get('/stok_obat', [DashboardController::class, 'getStokObat'])->name('stok_obat');
+        Route::patch('/antrian/{kunjungan}/proses', [DashboardController::class, 'proses'])->name('admin.antrian.proses');
+        Route::patch('/antrian/{kunjungan}/batalkan', [DashboardController::class, 'batalkan'])->name('admin.antrian.batalkan');
+        Route::get('/antrian', [DashboardController::class, 'index'])->name('antrian');
+        Route::get('/antrian/data', [DashboardController::class, 'getDataAntrean'])->name('antrian.data');
     });
 
     Route::prefix('jenis-spesialis')->group(function () {
@@ -627,6 +641,16 @@ Route::middleware(['auth'])->prefix('super-admin')->group(function () {
 
     Route::post('/diskon-approval/{approval}/approve', [DiskonApprovalManagerController::class, 'approve'])->name('super.admin.diskon.approve');
     Route::post('/diskon-approval/{approval}/reject', [DiskonApprovalManagerController::class, 'reject'])->name('super.admin.diskon.reject');
+
+    Route::get('index', [SuperAdminController::class, 'dashboard'])->name('super.admin.index');
+    Route::get('/dashboard/chart-kunjungan', [SuperAdminController::class, 'chartKunjungan'])->name('super.admin.chart.kunjungan');
+
+    Route::get('/pasien/insight', [PasienInsightController::class, 'index'])->name('super.admin.pasien.insight.index');
+    Route::get('/pasien/insight/{id}', [PasienInsightController::class, 'show'])->name('super.admin.pasien.insight.show');
+    Route::get('/pasien-hari-ini', [PasienHariIniController::class, 'index'])->name('super.admin.pasien.hari.ini.index');
+
+    Route::get('/transaksi/insight', [TransaksiInsightController::class, 'index'])->name('super.admin.transaksi.insight.index');
+    Route::get('/transaksi/insight/{id}', [TransaksiInsightController::class, 'show'])->name('super.admin.transaksi.insight.show');
 });
 
 Route::get('/login-dokter', [AuthController::class, 'login'])->name('login.dokter');

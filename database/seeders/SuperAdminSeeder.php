@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\SuperAdmin;
 use App\Models\User;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Faker\Factory as Faker;
 
@@ -21,7 +20,7 @@ class SuperAdminSeeder extends Seeder
 
         foreach ($roleSuperAdmin as $superAdmin) {
             SuperAdmin::updateOrCreate(['user_id' => $superAdmin->id],
-                ['nama_super_admin' => $superAdmin->username,
+                ['nama_super_admin' => $faker->name,
                 'no_hp_super_admin' => $faker->phoneNumber(),
             ]);
         }

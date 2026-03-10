@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\RedirectIfAuthenticatedWithRole;
 use App\Http\Middleware\RoleMiddleware;
+use App\Http\Middleware\TerakhirLogin;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -23,6 +24,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role'      => RoleMiddleware::class,
             'checkAuth' => RedirectIfAuthenticatedWithRole::class,
+            'terakhirLogin' => TerakhirLogin::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

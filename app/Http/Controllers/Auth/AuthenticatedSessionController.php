@@ -31,7 +31,7 @@ class AuthenticatedSessionController extends Controller
 
         switch ($user->role) {
             case 'Super Admin':
-                return redirect()->route('admin.index');
+                return redirect()->route('super.admin.index');
             case 'Admin':
                 return redirect()->route('admin.index');
             case 'Farmasi':
@@ -48,15 +48,19 @@ class AuthenticatedSessionController extends Controller
         }
     }
 
-    /**
-     * Destroy an authenticated session.
-     */
     public function destroy(Request $request): RedirectResponse
     {
+        $user = Auth::guard('web')->user();
+
+        if ($user) {
+            $user->update([
+                'terakhir_login' => null,
+            ]);
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
-
         $request->session()->regenerateToken();
 
         return redirect('/');
