@@ -153,6 +153,7 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
 
     Route::prefix('admin')->name('admin.')->group(function () {
         Route::get('/', [DashboardController::class, 'index'])->name('index');
+        Route::get('/dashboard/stats', [DashboardController::class, 'getDashboardStats'])->name('admin.dashboard.stats');
         Route::get('/chart_kunjungan', [DashboardController::class, 'getChartKunjungan'])->name('chart_kunjungan');
         Route::get('/total_dokter', [DashboardController::class, 'getTotalDokter'])->name('total_dokter');
         Route::get('/total_pasien', [DashboardController::class, 'getTotalPasien'])->name('total_pasien');

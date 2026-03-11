@@ -7,7 +7,6 @@ use App\Models\Admin;
 use App\Models\Dokter;
 use App\Models\Farmasi;
 use App\Models\Kunjungan;
-use App\Models\Obat;
 use App\Models\Pasien;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -18,41 +17,45 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $user = Auth::id();
-        $namaAdmin = Admin::where('user_id', $user)->value('nama_admin');
+        $userId = Auth::id();
+        $namaAdmin = Admin::where('user_id', $userId)->value('nama_admin') ?? 'Admin';
+
         return view('admin.dashboard', compact('namaAdmin'));
     }
 
-    // ===============================
-    // 📊 Grafik Kunjungan dengan Filter
-    // ===============================
+    public function getDashboardStats()
+    {
+        $today = Carbon::today(config('app.timezone', 'Asia/Jakarta'))->toDateString();
+
+        return response()->json([
+            'kunjungan_hari_ini' => Kunjungan::whereDate('tanggal_kunjungan', $today)
+                ->where('status', 'Pending')
+                ->count(),
+            'dokter'  => Dokter::count(),
+            'pasien'  => Pasien::count(),
+            'farmasi' => Farmasi::count(),
+        ]);
+    }
+
     public function getChartKunjungan(Request $request)
     {
-        $periode = $request->get('periode', 'tahunan');
+        $periode = $this->resolvePeriode($request);
 
-        // ===============================
-        // HARIAN
-        // ===============================
         if ($periode === 'harian') {
-            $tanggal = $request->filled('tanggal')
-                ? Carbon::parse($request->tanggal)
-                : now();
+            $tanggal = $this->resolveSelectedDate($request);
 
             $total = Kunjungan::whereDate('tanggal_kunjungan', $tanggal->toDateString())->count();
 
             return response()->json([
-                'mode_label' => 'Harian',
-                'short_label' => $tanggal->format('d M Y'),
-                'filter_label' => 'tanggal ' . $tanggal->format('d M Y'),
+                'mode_label'    => 'Harian',
+                'short_label'   => $tanggal->translatedFormat('d M Y'),
+                'filter_label'  => 'Tanggal ' . $tanggal->translatedFormat('d F Y'),
                 'dataset_label' => 'Jumlah Kunjungan Harian',
-                'labels' => [$tanggal->format('d M Y')],
-                'values' => [$total],
+                'labels'        => [$tanggal->translatedFormat('d M Y')],
+                'values'        => [(int) $total],
             ]);
         }
 
-        // ===============================
-        // MINGGUAN
-        // ===============================
         if ($periode === 'mingguan') {
             $startOfWeek = $this->parseWeekInput($request->get('minggu'));
             $endOfWeek = $startOfWeek->copy()->endOfWeek(Carbon::SUNDAY);
@@ -70,13 +73,13 @@ class DashboardController extends Controller
             $values = [];
 
             $namaHari = [
-                'Monday' => 'Sen',
-                'Tuesday' => 'Sel',
+                'Monday'    => 'Sen',
+                'Tuesday'   => 'Sel',
                 'Wednesday' => 'Rab',
-                'Thursday' => 'Kam',
-                'Friday' => 'Jum',
-                'Saturday' => 'Sab',
-                'Sunday' => 'Min',
+                'Thursday'  => 'Kam',
+                'Friday'    => 'Jum',
+                'Saturday'  => 'Sab',
+                'Sunday'    => 'Min',
             ];
 
             $cursor = $startOfWeek->copy();
@@ -89,23 +92,17 @@ class DashboardController extends Controller
             }
 
             return response()->json([
-                'mode_label' => 'Mingguan',
-                'short_label' => $startOfWeek->format('d M') . ' - ' . $endOfWeek->format('d M Y'),
-                'filter_label' => 'minggu ' . $startOfWeek->format('d M Y') . ' - ' . $endOfWeek->format('d M Y'),
+                'mode_label'    => 'Mingguan',
+                'short_label'   => $startOfWeek->translatedFormat('d M') . ' - ' . $endOfWeek->translatedFormat('d M Y'),
+                'filter_label'  => 'Minggu ' . $startOfWeek->translatedFormat('d M Y') . ' - ' . $endOfWeek->translatedFormat('d M Y'),
                 'dataset_label' => 'Jumlah Kunjungan Mingguan',
-                'labels' => $labels,
-                'values' => $values,
+                'labels'        => $labels,
+                'values'        => $values,
             ]);
         }
 
-        // ===============================
-        // BULANAN
-        // ===============================
         if ($periode === 'bulanan') {
-            $bulan = $request->filled('bulan')
-                ? Carbon::createFromFormat('Y-m', $request->bulan)->startOfMonth()
-                : now()->startOfMonth();
-
+            $bulan = $this->resolveSelectedMonth($request);
             $startOfMonth = $bulan->copy()->startOfMonth();
             $endOfMonth = $bulan->copy()->endOfMonth();
 
@@ -127,19 +124,16 @@ class DashboardController extends Controller
             }
 
             return response()->json([
-                'mode_label' => 'Bulanan',
-                'short_label' => $startOfMonth->format('M Y'),
-                'filter_label' => 'bulan ' . $startOfMonth->translatedFormat('F Y'),
+                'mode_label'    => 'Bulanan',
+                'short_label'   => $startOfMonth->translatedFormat('M Y'),
+                'filter_label'  => 'Bulan ' . $startOfMonth->translatedFormat('F Y'),
                 'dataset_label' => 'Jumlah Kunjungan Bulanan',
-                'labels' => $labels,
-                'values' => $values,
+                'labels'        => $labels,
+                'values'        => $values,
             ]);
         }
 
-        // ===============================
-        // TAHUNAN
-        // ===============================
-        $tahun = (int) $request->get('tahun', now()->year);
+        $tahun = $this->resolveSelectedYear($request);
 
         $rawData = Kunjungan::selectRaw('MONTH(tanggal_kunjungan) as bulan, COUNT(*) as total')
             ->whereYear('tanggal_kunjungan', $tahun)
@@ -148,15 +142,15 @@ class DashboardController extends Controller
             ->pluck('total', 'bulan');
 
         $namaBulan = [
-            1 => 'Jan',
-            2 => 'Feb',
-            3 => 'Mar',
-            4 => 'Apr',
-            5 => 'Mei',
-            6 => 'Jun',
-            7 => 'Jul',
-            8 => 'Agu',
-            9 => 'Sep',
+            1  => 'Jan',
+            2  => 'Feb',
+            3  => 'Mar',
+            4  => 'Apr',
+            5  => 'Mei',
+            6  => 'Jun',
+            7  => 'Jul',
+            8  => 'Agu',
+            9  => 'Sep',
             10 => 'Okt',
             11 => 'Nov',
             12 => 'Des',
@@ -171,18 +165,53 @@ class DashboardController extends Controller
         }
 
         return response()->json([
-            'mode_label' => 'Tahunan',
-            'short_label' => (string) $tahun,
-            'filter_label' => 'tahun ' . $tahun,
+            'mode_label'    => 'Tahunan',
+            'short_label'   => (string) $tahun,
+            'filter_label'  => 'Tahun ' . $tahun,
             'dataset_label' => 'Jumlah Kunjungan Tahunan',
-            'labels' => $labels,
-            'values' => $values,
+            'labels'        => $labels,
+            'values'        => $values,
         ]);
     }
 
-    // ===============================
-    // Helper parse week input
-    // ===============================
+    private function resolvePeriode(Request $request): string
+    {
+        $periode = $request->get('periode', 'tahunan');
+
+        return in_array($periode, ['harian', 'mingguan', 'bulanan', 'tahunan'], true)
+            ? $periode
+            : 'tahunan';
+    }
+
+    private function resolveSelectedDate(Request $request): Carbon
+    {
+        try {
+            return Carbon::parse($request->get('tanggal', now()->toDateString()));
+        } catch (\Throwable $th) {
+            return now();
+        }
+    }
+
+    private function resolveSelectedMonth(Request $request): Carbon
+    {
+        try {
+            return Carbon::createFromFormat('Y-m', $request->get('bulan', now()->format('Y-m')))->startOfMonth();
+        } catch (\Throwable $th) {
+            return now()->startOfMonth();
+        }
+    }
+
+    private function resolveSelectedYear(Request $request): int
+    {
+        $year = (int) $request->get('tahun', now()->year);
+
+        if ($year < 2000 || $year > 2100) {
+            return (int) now()->year;
+        }
+
+        return $year;
+    }
+
     private function parseWeekInput(?string $weekInput): Carbon
     {
         if (!$weekInput || !preg_match('/^(\d{4})-W(\d{2})$/', $weekInput, $matches)) {
@@ -193,45 +222,5 @@ class DashboardController extends Controller
         $week = (int) $matches[2];
 
         return Carbon::now()->setISODate($year, $week)->startOfWeek(Carbon::MONDAY);
-    }
-
-    // ===============================
-    // 👨‍⚕️ Total Dokter
-    // ===============================
-    public function getTotalDokter()
-    {
-        return response()->json([
-            'total' => Dokter::count()
-        ]);
-    }
-
-    // ===============================
-    // 🧍‍♂️ Total Pasien
-    // ===============================
-    public function getTotalPasien()
-    {
-        return response()->json([
-            'total' => Pasien::count()
-        ]);
-    }
-
-    // ===============================
-    // 👩‍🔬 Total Farmasi
-    // ===============================
-    public function getTotalFarmasi()
-    {
-        return response()->json([
-            'total' => Farmasi::count()
-        ]);
-    }
-
-    // ===============================
-    // 💊 Total Item Obat
-    // ===============================
-    public function getStokObat()
-    {
-        return response()->json([
-            'total' => Obat::count()
-        ]);
     }
 }

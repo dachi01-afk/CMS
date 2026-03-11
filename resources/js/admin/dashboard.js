@@ -38,29 +38,29 @@ $(document).ready(function () {
 
     function updateDistribution(stats) {
         const maxValue = Math.max(
+            stats.kunjungan_hari_ini,
             stats.dokter,
             stats.pasien,
             stats.farmasi,
-            stats.obat,
             1,
         );
 
+        setValue("#totalKunjunganHariIniMini", stats.kunjungan_hari_ini);
         setValue("#totalDokterMini", stats.dokter);
         setValue("#totalPasienMini", stats.pasien);
         setValue("#totalFarmasiMini", stats.farmasi);
-        setValue("#totalObatMini", stats.obat);
 
+        setProgress("#barKunjunganHariIni", stats.kunjungan_hari_ini, maxValue);
         setProgress("#barDokter", stats.dokter, maxValue);
         setProgress("#barPasien", stats.pasien, maxValue);
         setProgress("#barFarmasi", stats.farmasi, maxValue);
-        setProgress("#barObat", stats.obat, maxValue);
     }
 
     function updateCards(stats) {
+        setValue("#totalKunjunganHariIni", stats.kunjungan_hari_ini);
         setValue("#totalDokter", stats.dokter);
         setValue("#totalPasien", stats.pasien);
         setValue("#totalFarmasi", stats.farmasi);
-        setValue("#totalObat", stats.obat);
 
         updateDistribution(stats);
     }
@@ -104,9 +104,7 @@ $(document).ready(function () {
 
     function getChartParams() {
         const periode = $("#filterPeriodeChart").val();
-        const params = {
-            periode: periode,
-        };
+        const params = { periode };
 
         if (periode === "harian") {
             params.tanggal = $("#filterTanggalChart").val();
@@ -114,7 +112,7 @@ $(document).ready(function () {
             params.minggu = $("#filterMingguChart").val();
         } else if (periode === "bulanan") {
             params.bulan = $("#filterBulanChart").val();
-        } else if (periode === "tahunan") {
+        } else {
             params.tahun = $("#filterTahunChart").val();
         }
 
@@ -139,18 +137,21 @@ $(document).ready(function () {
                     {
                         label: datasetLabel,
                         data: values,
-                        backgroundColor: "rgba(79, 70, 229, 0.75)",
-                        borderColor: "rgba(79, 70, 229, 1)",
+                        backgroundColor: "rgba(37, 99, 235, 0.82)",
+                        borderColor: "#2563eb",
                         borderWidth: 1,
-                        borderRadius: 10,
+                        borderRadius: 12,
                         borderSkipped: false,
-                        maxBarThickness: 30,
+                        maxBarThickness: labels.length === 1 ? 90 : 34,
                     },
                 ],
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
+                layout: {
+                    padding: 0,
+                },
                 plugins: {
                     legend: {
                         display: false,
@@ -199,7 +200,7 @@ $(document).ready(function () {
     function loadChart() {
         setStatus("Memuat grafik...", "loading");
 
-        $.getJSON("/admin/chart_kunjungan", getChartParams())
+        return $.getJSON("/admin/chart_kunjungan", getChartParams())
             .done(function (response) {
                 const labels = response.labels || [];
                 const values = response.values || [];
@@ -215,17 +216,17 @@ $(document).ready(function () {
                 );
 
                 $("#chartModeText").text(response.mode_label || "-");
+                $("#chartModeHero").text(response.mode_label || "-");
                 $("#chartActiveFilter").text(response.filter_label || "-");
                 $("#chartSummary").text(
                     `${formatNumber(totalKunjungan)} kunjungan tercatat pada ${response.filter_label || "periode terpilih"}.`,
                 );
+                $("#heroPeriodeBadge").html(
+                    `<i class="fa-solid fa-calendar-days"></i>${response.filter_label || "-"}`,
+                );
 
                 if ($("#chartYear").length) {
                     $("#chartYear").text(response.short_label || "-");
-                }
-
-                if ($("#chartYearText").length) {
-                    $("#chartYearText").text(response.short_label || "-");
                 }
 
                 setStatus("Grafik berhasil dimuat", "success");
@@ -233,6 +234,7 @@ $(document).ready(function () {
             .fail(function () {
                 $("#chartSummary").text("Data grafik gagal dimuat.");
                 $("#chartModeText").text("-");
+                $("#chartModeHero").text("-");
                 $("#chartActiveFilter").text("-");
                 setStatus("Gagal memuat grafik", "error");
                 console.error("Gagal memuat data grafik.");
@@ -240,44 +242,52 @@ $(document).ready(function () {
     }
 
     function loadStats() {
-        $.when(
-            $.getJSON("/admin/total_dokter"),
-            $.getJSON("/admin/total_pasien"),
-            $.getJSON("/admin/total_farmasi"),
-            $.getJSON("/admin/stok_obat"),
-        )
-            .done(function (dokterRes, pasienRes, farmasiRes, obatRes) {
+        return $.getJSON("/admin/dashboard/stats")
+            .done(function (response) {
                 const stats = {
-                    dokter: Number(dokterRes[0]?.total ?? 0),
-                    pasien: Number(pasienRes[0]?.total ?? 0),
-                    farmasi: Number(farmasiRes[0]?.total ?? 0),
-                    obat: Number(obatRes[0]?.total ?? 0),
+                    kunjungan_hari_ini: Number(
+                        response.kunjungan_hari_ini ?? 0,
+                    ),
+                    dokter: Number(response.dokter ?? 0),
+                    pasien: Number(response.pasien ?? 0),
+                    farmasi: Number(response.farmasi ?? 0),
                 };
 
                 updateCards(stats);
 
                 if ($("#distributionNote").length) {
                     $("#distributionNote").text(
-                        "Perbandingan relatif antar statistik utama berhasil dimuat.",
+                        "Perbandingan relatif antara pasien hari ini dan statistik utama berhasil dimuat.",
                     );
                 }
             })
             .fail(function () {
                 updateCards({
+                    kunjungan_hari_ini: 0,
                     dokter: 0,
                     pasien: 0,
                     farmasi: 0,
-                    obat: 0,
                 });
 
                 if ($("#distributionNote").length) {
                     $("#distributionNote").text(
-                        "Sebagian data gagal dimuat. Periksa endpoint dashboard.",
+                        "Sebagian data gagal dimuat. Periksa endpoint dashboard admin.",
                     );
                 }
 
-                console.error("Gagal memuat salah satu data statistik.");
+                console.error("Gagal memuat data statistik dashboard.");
             });
+    }
+
+    function resetChartFilter() {
+        $("#filterPeriodeChart").val("tahunan");
+        $("#filterTanggalChart").val(new Date().toISOString().split("T")[0]);
+        $("#filterMingguChart").val(getCurrentWeekInputValue());
+        $("#filterBulanChart").val(new Date().toISOString().slice(0, 7));
+        $("#filterTahunChart").val(new Date().getFullYear());
+
+        toggleChartFilterInputs();
+        loadChart();
     }
 
     $("#filterPeriodeChart").on("change", function () {
@@ -288,8 +298,12 @@ $(document).ready(function () {
         loadChart();
     });
 
+    $("#btnResetDashboardFilter").on("click", function () {
+        resetChartFilter();
+    });
+
     initDefaultFilterValues();
     toggleChartFilterInputs();
-    loadChart();
     loadStats();
+    loadChart();
 });
