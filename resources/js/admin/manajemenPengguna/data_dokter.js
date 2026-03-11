@@ -47,7 +47,7 @@ $(function () {
         dom: "t",
         rowCallback: function (row, data) {
             $(row).addClass(
-                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600",
             );
             $("td", row).addClass("px-6 py-4 text-gray-900 dark:text-white");
         },
@@ -71,7 +71,7 @@ $(function () {
         $info.text(
             `Menampilkan ${info.start + 1}–${info.end} dari ${
                 info.recordsDisplay
-            } data (Halaman ${currentPage} dari ${totalPages})`
+            } data (Halaman ${currentPage} dari ${totalPages})`,
         );
 
         $pagination.empty();
@@ -194,7 +194,7 @@ $(function () {
         function () {
             addModal?.hide();
             resetAddForm();
-        }
+        },
     );
 
     $("#formAddDokter").on("submit", function (e) {
@@ -276,7 +276,7 @@ function initTomSelectPoli() {
             },
             option: function (data, escape) {
                 return `<div class="px-2 py-1 text-sm">${escape(
-                    data.text
+                    data.text,
                 )}</div>`;
             },
         },
@@ -304,10 +304,10 @@ function initTomSelectEditPoli() {
         render: {
             item: (
                 d,
-                e
+                e,
             ) => `<div class="inline-flex items-center gap-1 px-2 py-1 rounded-full
                              bg-blue-50 border border-blue-200 text-blue-700 text-xs">${e(
-                                 d.text
+                                 d.text,
                              )}</div>`,
             option: (d, e) =>
                 `<div class="px-2 py-1 text-sm">${e(d.text)}</div>`,
@@ -379,7 +379,7 @@ $(function () {
                 $("#edit_nama_dokter").val(dokter.nama_dokter ?? "");
                 $("#edit_email_akun_dokter").val(dokter.user?.email ?? "");
                 $("#edit_spesialis_dokter").val(
-                    dokter.jenis_spesialis_id ?? ""
+                    dokter.jenis_spesialis_id ?? "",
                 );
                 $("#edit_no_hp_dokter").val(dokter.no_hp ?? "");
                 $("#edit_deskripsi_dokter").val(dokter.deskripsi_dokter ?? "");
@@ -410,7 +410,7 @@ $(function () {
                 // refresh options width setelah modal tampil
                 setTimeout(
                     () => tsEditPoli && tsEditPoli.refreshOptions(false),
-                    100
+                    100,
                 );
             })
             .catch(() => {
@@ -493,7 +493,7 @@ $(function () {
         function () {
             hideEditModal();
             resetEditForm();
-        }
+        },
     );
 });
 
@@ -515,7 +515,7 @@ $(function () {
         }).then((result) => {
             if (result.isConfirmed) {
                 axios
-                    .delete(`/manajemen_pengguna/delete_dokter/${dokterId}`)
+                    .delete(`/super-admin/delete_dokter/${dokterId}`)
                     .then((response) => {
                         Swal.fire({
                             icon: "success",
@@ -634,7 +634,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     placeholder.classList.add("hidden");
                     dropArea.classList.remove(
                         "border-dashed",
-                        "border-gray-400"
+                        "border-gray-400",
                     );
                     dropArea.classList.add("border-solid", "border-gray-300");
                 };
@@ -677,7 +677,7 @@ document.addEventListener(
 
         // panel putih di dalam modal (card konten)
         const panel = editModalElement.querySelector(
-            ".relative.bg-white.rounded-2xl"
+            ".relative.bg-white.rounded-2xl",
         );
         if (!panel) return;
 
@@ -690,5 +690,5 @@ document.addEventListener(
             e.stopPropagation();
         }
     },
-    true // pakai capture biar eksekusi LEBIH DULU dari handler lain (Flowbite dll)
+    true, // pakai capture biar eksekusi LEBIH DULU dari handler lain (Flowbite dll)
 );

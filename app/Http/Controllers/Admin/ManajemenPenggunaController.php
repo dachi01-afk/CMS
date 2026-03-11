@@ -2,17 +2,18 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Models\User;
-use App\Models\Dokter;
-use App\Models\Pasien;
-use App\Models\Apoteker;
-use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
+use App\Models\Apoteker;
+use App\Models\Dokter;
 use App\Models\Farmasi;
 use App\Models\JenisSpesialis;
 use App\Models\Kasir;
+use App\Models\Pasien;
 use App\Models\Perawat;
 use App\Models\Poli;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Yajra\DataTables\Facades\DataTables;
 
 class ManajemenPenggunaController extends Controller
@@ -44,6 +45,9 @@ class ManajemenPenggunaController extends Controller
 
     public function dataDokter()
     {
+        $user = Auth::user();
+        $isSuperAdmin = $user && strtolower(trim($user->role)) === 'super admin';
+
         $query = Dokter::with([
             'user:id,username,email,role',
             'jenisSpesialis:id,nama_spesialis',
@@ -66,33 +70,49 @@ class ManajemenPenggunaController extends Controller
             ->addColumn('email_user', fn($row) => $row->user->email ?? '-')
             ->addColumn('role', fn($row) => $row->user->role ?? '-')
             ->addColumn('nama_spesialis', fn($row) => $row->jenisSpesialis->nama_spesialis ?? '-')
-
-            // 🔁 Tampilkan banyak poli sebagai badge (pakai relasi many-to-many)
             ->addColumn('nama_poli', function ($row) {
                 if ($row->poli->isEmpty()) {
-                    return '<div class="flex flex-wrap gap-1">
-                    <span class="px-2 py-1 rounded-full bg-gray-100 text-gray-500 text-xs border border-gray-300">
-                        Tidak ada
-                    </span>
-                </div>';
+                    return '
+                    <div class="flex flex-wrap gap-1">
+                        <span class="px-2 py-1 rounded-full bg-gray-100 text-gray-500 text-xs border border-gray-300">
+                            Tidak ada
+                        </span>
+                    </div>
+                ';
                 }
 
                 $badges = $row->poli->map(function ($poli) {
-                    return '<span class="px-2 py-1 rounded-full bg-blue-50 text-blue-700 text-xs border border-blue-200 
-                        hover:bg-blue-100 transition-colors">'
+                    return '<span class="px-2 py-1 rounded-full bg-blue-50 text-blue-700 text-xs border border-blue-200 hover:bg-blue-100 transition-colors">'
                         . e($poli->nama_poli) .
                         '</span>';
                 })->implode('');
 
                 return '<div class="flex flex-wrap gap-2">' . $badges . '</div>';
             })
-
-            ->addColumn('action', function ($dokter) {
-                return '
-                <button class="btn-edit-dokter text-blue-600 hover:text-blue-800 mr-2" data-id="' . $dokter->id . '"  title="Edit">
+            ->addColumn('action', function ($dokter) use ($isSuperAdmin) {
+                $buttons = '
+                <button 
+                    class="btn-edit-dokter text-blue-600 hover:text-blue-800 mr-2" 
+                    data-id="' . $dokter->id . '" 
+                    title="Edit"
+                >
                     <i class="fa-regular fa-pen-to-square text-lg"></i>
                 </button>
             ';
+
+                if ($isSuperAdmin) {
+                    $buttons .= '
+                    <button 
+                        class="btn-delete-dokter text-red-600 hover:text-red-800" 
+                        data-id="' . $dokter->id . '" 
+                        title="Hapus"
+                    >
+                        <i class="fa-regular fa-trash-can text-lg"></i>
+                    </button>
+                ';
+                }
+
+                return $buttons;
             })
             ->rawColumns(['foto', 'nama_poli', 'action'])
             ->make(true);
@@ -100,6 +120,9 @@ class ManajemenPenggunaController extends Controller
 
     public function dataPasien()
     {
+        $user = Auth::user();
+        $isSuperAdmin = $user && strtolower(trim($user->role)) === 'super admin';
+
         $query = Pasien::with('user')->select('pasien.*')->latest()->get();
 
         return DataTables::of($query)
@@ -115,53 +138,70 @@ class ManajemenPenggunaController extends Controller
             ->addColumn('username', fn($row) => $row->user->username ?? '-')
             ->addColumn('email_user', fn($row) => $row->user->email ?? '-')
             ->addColumn('role', fn($row) => $row->user->role ?? '-')
-            ->addColumn('action', function ($pasien) {
+            ->addColumn('action', function ($pasien) use ($isSuperAdmin) {
 
                 $showUrl   = route('manajemen_pengguna.show.detail.pasien', $pasien->no_emr);
                 $stikerUrl = route('manajemen_pengguna.cetak.stiker.pasien', $pasien->no_emr);
 
+                $deleteButton = '';
+
+                if ($isSuperAdmin) {
+                    $deleteButton = '
+                    <button type="button"
+                        class="btn-delete-pasien flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                        data-id="' . $pasien->id . '">
+                        <i class="fa-regular fa-trash-can text-red-600"></i>
+                        Hapus Pasien
+                    </button>
+                ';
+                }
+
                 return '
-    <div class="relative inline-block text-left">
+                <div class="relative inline-block text-left">
 
-        <!-- Trigger -->
-        <button type="button"
-    class="btn-action-menu w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200">
-    <i class="fa-solid fa-ellipsis-vertical text-gray-700"></i>
-</button>
+                    <!-- Trigger -->
+                    <button type="button"
+                        class="btn-action-menu w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-200">
+                        <i class="fa-solid fa-ellipsis-vertical text-gray-700"></i>
+                    </button>
 
-        <!-- Dropdown -->
-        <div class="hidden absolute right-0 mt-2 w-40 origin-top-right bg-white border border-gray-200 
-                    rounded-xl shadow-lg z-50 action-dropdown">
+                    <!-- Dropdown -->
+                    <div class="hidden absolute right-0 mt-2 w-44 origin-top-right bg-white border border-gray-200 
+                                rounded-xl shadow-lg z-50 action-dropdown">
 
-            <a href="' . $showUrl . '" 
-               class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                <i class="fa-regular fa-eye text-blue-600"></i>
-                Detail Pasien
-            </a>
+                        <a href="' . $showUrl . '" 
+                           class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                            <i class="fa-regular fa-eye text-blue-600"></i>
+                            Detail Pasien
+                        </a>
 
-            <a href="' . $stikerUrl . '" target="_blank"
-               class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                <i class="fa-solid fa-print text-amber-600"></i>
-                Cetak Stiker
-            </a>
+                        <a href="' . $stikerUrl . '" target="_blank"
+                           class="flex items-center gap-2 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                            <i class="fa-solid fa-print text-amber-600"></i>
+                            Cetak Stiker
+                        </a>
 
-            <button type="button"
-                class="btn-edit-pasien flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                data-id="' . $pasien->id . '">
-                <i class="fa-regular fa-pen-to-square text-green-600"></i>
-                Edit Pasien
-            </button>
-        </div>
-    </div>
-    ';
+                        <button type="button"
+                            class="btn-edit-pasien flex items-center gap-2 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                            data-id="' . $pasien->id . '">
+                            <i class="fa-regular fa-pen-to-square text-green-600"></i>
+                            Edit Pasien
+                        </button>
+
+                        ' . $deleteButton . '
+                    </div>
+                </div>
+            ';
             })
             ->rawColumns(['foto', 'action'])
             ->make(true);
     }
 
-
     public function dataFarmasi()
     {
+        $user = Auth::user();
+        $isSuperAdmin = $user && strtolower(trim($user->role)) === 'super admin';
+
         $query = Farmasi::with('user')->select('farmasi.*')->latest()->get();
 
         return DataTables::of($query)
@@ -177,19 +217,32 @@ class ManajemenPenggunaController extends Controller
             ->addColumn('username', fn($row) => $row->user->username ?? '-')
             ->addColumn('email_user', fn($row) => $row->user->email ?? '-')
             ->addColumn('role', fn($row) => $row->user->role ?? '-')
-            ->addColumn('action', function ($farmasi) {
-                return '
-            <button class="btn-edit-farmasi text-blue-600 hover:text-blue-800 mr-2" data-id="' . $farmasi->id . '" title="Edit">
-                <i class="fa-regular fa-pen-to-square text-lg"></i>
-            </button>
+            ->addColumn('action', function ($farmasi) use ($isSuperAdmin) {
+                $buttons = '
+                <button class="btn-edit-farmasi text-blue-600 hover:text-blue-800 mr-2" data-id="' . $farmasi->id . '" title="Edit">
+                    <i class="fa-regular fa-pen-to-square text-lg"></i>
+                </button>
             ';
+
+                if ($isSuperAdmin) {
+                    $buttons .= '
+                    <button class="btn-delete-farmasi text-red-600 hover:text-red-800" data-id="' . $farmasi->id . '" title="Hapus">
+                        <i class="fa-regular fa-trash-can text-lg"></i>
+                    </button>
+                ';
+                }
+
+                return $buttons;
             })
             ->rawColumns(['foto', 'action'])
             ->make(true);
     }
-
+    
     public function dataPerawat()
     {
+        $user = Auth::user();
+        $isSuperAdmin = $user && strtolower(trim($user->role)) === 'super admin';
+
         $query = Perawat::with([
             'user',
             'perawatDokterPoli.dokter',
@@ -198,7 +251,6 @@ class ManajemenPenggunaController extends Controller
             ->select('perawat.*')
             ->latest();
 
-        // helper fallback teks
         $fallback = function (string $rel, $value) {
             return ($value !== null && $value !== '')
                 ? e($value)
@@ -208,7 +260,6 @@ class ManajemenPenggunaController extends Controller
         return DataTables::of($query)
             ->addIndexColumn()
 
-            // ================= FOTO =================
             ->addColumn('foto', function (Perawat $row) {
                 if (!empty($row->foto_perawat)) {
                     $url = asset('storage/' . $row->foto_perawat);
@@ -223,7 +274,6 @@ class ManajemenPenggunaController extends Controller
                 return '<span class="text-gray-400 italic text-xs">Tidak ada</span>';
             })
 
-            // ================= USER =================
             ->addColumn('username', function (Perawat $row) use ($fallback) {
                 return $fallback('user', optional($row->user)->username);
             })
@@ -236,7 +286,6 @@ class ManajemenPenggunaController extends Controller
                 return $fallback('user', optional($row->user)->role);
             })
 
-            // ================= POLI (chip + nomor urut) =================
             ->addColumn('nama_poli', function (Perawat $row) {
                 $items = $row->perawatDokterPoli
                     ->filter(function ($rel) {
@@ -266,7 +315,6 @@ class ManajemenPenggunaController extends Controller
                 return $html;
             })
 
-            // ================= DOKTER (chip + nomor urut) =================
             ->addColumn('nama_dokter', function (Perawat $row) {
                 $items = $row->perawatDokterPoli
                     ->filter(function ($rel) {
@@ -301,15 +349,10 @@ class ManajemenPenggunaController extends Controller
 
                 if ($search) {
                     $query->where(function ($q) use ($search) {
-                        // 🔍 cari di NAMA PERAWAT (kolom di tabel perawat)
                         $q->where('nama_perawat', 'like', '%' . $search . '%')
-
-                            // 🔍 cari di POLI
                             ->orWhereHas('perawatDokterPoli.poli', function ($qq) use ($search) {
                                 $qq->where('nama_poli', 'like', '%' . $search . '%');
                             })
-
-                            // 🔍 cari di DOKTER
                             ->orWhereHas('perawatDokterPoli.dokter', function ($qq) use ($search) {
                                 $qq->where('nama_dokter', 'like', '%' . $search . '%');
                             });
@@ -317,20 +360,29 @@ class ManajemenPenggunaController extends Controller
                 }
             })
 
-
-            // ================= ACTION =================
-            ->addColumn('action', function (Perawat $perawat) {
-                return '
+            ->addColumn('action', function (Perawat $perawat) use ($isSuperAdmin) {
+                $buttons = '
                 <div class="flex items-center justify-center gap-2">
                     <button class="btn-edit-perawat text-sky-600 hover:text-sky-800"
                             data-id="' . $perawat->id . '" title="Edit">
                         <i class="fa-regular fa-pen-to-square text-lg"></i>
                     </button>
-                </div>
             ';
+
+                if ($isSuperAdmin) {
+                    $buttons .= '
+                    <button class="btn-delete-perawat text-red-600 hover:text-red-800"
+                            data-id="' . $perawat->id . '" title="Hapus">
+                        <i class="fa-regular fa-trash-can text-lg"></i>
+                    </button>
+                ';
+                }
+
+                $buttons .= '</div>';
+
+                return $buttons;
             })
 
-            // kolom yang berisi HTML
             ->rawColumns([
                 'foto',
                 'username',
@@ -346,6 +398,9 @@ class ManajemenPenggunaController extends Controller
 
     public function dataKasir()
     {
+        $user = Auth::user();
+        $isSuperAdmin = $user && strtolower(trim($user->role)) === 'super admin';
+
         $query = Kasir::with('user')->select('kasir.*')->latest()->get();
 
         return DataTables::of($query)
@@ -353,7 +408,7 @@ class ManajemenPenggunaController extends Controller
             ->addColumn('foto', function ($row) {
                 if ($row->foto_kasir) {
                     $url = asset('storage/' . $row->foto_kasir);
-                    return '<img src="' . $url . '" alt="Foto Farmasi" class="w-12 h-12 rounded-lg object-cover mx-auto shadow">';
+                    return '<img src="' . $url . '" alt="Foto Kasir" class="w-12 h-12 rounded-lg object-cover mx-auto shadow">';
                 } else {
                     return '<span class="text-gray-400 italic">Tidak ada</span>';
                 }
@@ -361,12 +416,22 @@ class ManajemenPenggunaController extends Controller
             ->addColumn('username', fn($row) => $row->user->username ?? '-')
             ->addColumn('email_user', fn($row) => $row->user->email ?? '-')
             ->addColumn('role', fn($row) => $row->user->role ?? '-')
-            ->addColumn('action', function ($kasir) {
-                return '
-            <button class="btn-edit-kasir text-blue-600 hover:text-blue-800 mr-2" data-id="' . $kasir->id . '" title="Edit">
-                <i class="fa-regular fa-pen-to-square text-lg"></i>
-            </button>
+            ->addColumn('action', function ($kasir) use ($isSuperAdmin) {
+                $buttons = '
+                <button class="btn-edit-kasir text-blue-600 hover:text-blue-800 mr-2" data-id="' . $kasir->id . '" title="Edit">
+                    <i class="fa-regular fa-pen-to-square text-lg"></i>
+                </button>
             ';
+
+                if ($isSuperAdmin) {
+                    $buttons .= '
+                    <button class="btn-delete-kasir text-red-600 hover:text-red-800" data-id="' . $kasir->id . '" title="Hapus">
+                        <i class="fa-regular fa-trash-can text-lg"></i>
+                    </button>
+                ';
+                }
+
+                return $buttons;
             })
             ->rawColumns(['foto', 'action'])
             ->make(true);

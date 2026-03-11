@@ -434,7 +434,7 @@ $(function () {
         }).then((result) => {
             if (result.isConfirmed) {
                 axios
-                    .delete(`/manajemen_pengguna/delete_kasir/${dokterId}`)
+                    .delete(`/super-admin/delete_kasir/${dokterId}`)
                     .then((response) => {
                         Swal.fire({
                             icon: "success",

@@ -361,7 +361,7 @@ $(function () {
         }).then((result) => {
             if (result.isConfirmed) {
                 axios
-                    .delete(`/manajemen_pengguna/delete_farmasi/${dokterId}`)
+                    .delete(`/super-admin/delete_farmasi/${dokterId}`)
                     .then((response) => {
                         Swal.fire({
                             icon: "success",

@@ -425,7 +425,7 @@ $(function () {
         }).then((result) => {
             if (result.isConfirmed) {
                 axios
-                    .delete(`/manajemen_pengguna/delete_pasien/${dokterId}`)
+                    .delete(`/super-admin/delete_pasien/${dokterId}`)
                     .then((response) => {
                         Swal.fire({
                             icon: "success",

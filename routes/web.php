@@ -217,14 +217,12 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::get('/get_dokter_by_id/{id}', [DokterController::class, 'getDokterById'])->name('get_dokter_by_id');
         Route::post('/add_dokter', [DokterController::class, 'createDokter'])->name('add_dokter');
         Route::post('/update_dokter/', [DokterController::class, 'updateDokter'])->name('update_dokter');
-        Route::delete('/delete_dokter/{id}', [DokterController::class, 'deleteDokter'])->name('delete_dokter');
 
         // crud farmasi
         Route::get('/data_farmasi', [ManajemenPenggunaController::class, 'dataFarmasi'])->name('data_farmasi');
         Route::post('/add_farmasi', [FarmasiController::class, 'createFarmasi'])->name('add_farmasi');
         Route::get('/get_farmasi_by_id/{id}', [FarmasiController::class, 'getFarmasiById'])->name('get_farmasi_by_id');
         Route::put('/update_farmasi/{id}', [FarmasiController::class, 'updateFarmasi'])->name('update_farmasi');
-        Route::delete('/delete_farmasi/{id}', [FarmasiController::class, 'deleteFarmasi'])->name('delete_farmasi');
 
         // crud perawat
         Route::get('/data_perawat', [ManajemenPenggunaController::class, 'dataPerawat'])->name('data_perawat');
@@ -233,21 +231,18 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::get('/list_poli', [PerawatController::class, 'listPoli']);
         Route::get('/poli/{poliId}/dokter', [PerawatController::class, 'listDokterByPoli']);
         Route::put('/update_perawat/{id}', [PerawatController::class, 'updatePerawat'])->name('update_perawat');
-        Route::delete('/delete_perawat/{id}', [PerawatController::class, 'deletePerawat'])->name('delete_perawat');
 
         // crud kasir
         Route::get('/data_kasir', [ManajemenPenggunaController::class, 'dataKasir'])->name('data_kasir');
         Route::post('/add_kasir', [KasirController::class, 'createKasir'])->name('add_kasir');
         Route::get('/get_kasir_by_id/{id}', [KasirController::class, 'getKasirById'])->name('get_kasir_by_id');
         Route::put('/update_kasir/{id}', [KasirController::class, 'updateKasir'])->name('update_kasir');
-        Route::delete('/delete_kasir/{id}', [KasirController::class, 'deleteKasir'])->name('delete_kasir');
 
         // crud pasien
         Route::get('/data_pasien', [ManajemenPenggunaController::class, 'dataPasien'])->name('data_pasien');
         Route::get('/get_pasien_by_id/{id}', [PasienController::class, 'getPasienById'])->name('get_pasien_by_id');
         Route::post('/add_pasien', [PasienController::class, 'createPasien'])->name('add_pasien');
         Route::put('/update_pasien/{id}', [PasienController::class, 'updatePasien'])->name('update_pasien');
-        Route::delete('/delete_pasien/{id}', [PasienController::class, 'deletePasien'])->name('delete_pasien');
         Route::delete('/search', [PasienController::class, 'search'])->name('pasien');
         Route::get('/cetak-stiker-pasien/{noEMR}', [PasienController::class, 'cetakStiker'])->name('cetak.stiker.pasien');
         Route::get('/show-detail-data-pasien/{noEMR}', [PasienController::class, 'showPasien'])->name('show.detail.pasien');
@@ -631,7 +626,23 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
     });
 });
 
-Route::middleware(['auth'])->prefix('super-admin')->group(function () {
+Route::middleware(['auth', 'superAdmin'])->prefix('super-admin')->group(function () {
+
+    // delete data dokter 
+    Route::delete('/delete_dokter/{id}', [DokterController::class, 'deleteDokter'])->name('delete_dokter');
+
+    // delete data pasien 
+    Route::delete('/delete_pasien/{id}', [PasienController::class, 'deletePasien'])->name('delete_pasien');
+
+    // delete data farmasi 
+    Route::delete('/delete_farmasi/{id}', [FarmasiController::class, 'deleteFarmasi'])->name('delete_farmasi');
+
+    // delete data perawat
+    Route::delete('/delete_perawat/{id}', [PerawatController::class, 'deletePerawat'])->name('delete_perawat');
+
+    // delete data kasir
+    Route::delete('/delete_kasir/{id}', [KasirController::class, 'deleteKasir'])->name('delete_kasir');
+
     Route::get('/diskon-approval', [DiskonApprovalManagerController::class, 'index'])->name('super.admin.diskon.index');
     Route::get('/diskon-approval/get-data-belum-approve', [DiskonApprovalManagerController::class, 'getDataBelumApprove']);
     Route::get('/diskon-approval/get-data-sudah-approve', [DiskonApprovalManagerController::class, 'getDataSudahApprove'])->name('super.admin.data.sudah.approve');

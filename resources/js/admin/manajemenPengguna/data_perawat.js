@@ -905,7 +905,7 @@ $(function () {
             Swal.showLoading();
 
             axios
-                .delete(`/manajemen_pengguna/delete_perawat/${perawatId}`, {
+                .delete(`/super-admin/delete_perawat/${perawatId}`, {
                     headers: {
                         "X-CSRF-TOKEN": csrf,
                         Accept: "application/json",
