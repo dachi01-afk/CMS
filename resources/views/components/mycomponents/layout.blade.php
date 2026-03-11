@@ -461,11 +461,6 @@
                                                 class="fa-solid fa-clipboard-list" :active="Request::routeIs('order.layanan.index')">
                                                 Order Layanan
                                             </x-mycomponents.sidebar_link>
-
-                                            <x-mycomponents.sidebar_link href="data_medis_pasien.index"
-                                                class="fa-solid fa-notes-medical">
-                                                Data Medis Pasien
-                                            </x-mycomponents.sidebar_link>
                                         </ul>
                                     </div>
 

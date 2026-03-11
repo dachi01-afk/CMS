@@ -60,21 +60,21 @@
                         <input type="text" name="tekanan_darah"
                             value="{{ old('tekanan_darah', $dataEMR->tekanan_darah) }}"
                             class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                            placeholder="120/80">
+                            placeholder="0">
                     </div>
                     {{-- Nadi --}}
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Nadi (x/mnt)</label>
                         <input type="number" name="nadi" value="{{ old('nadi', $dataEMR->nadi) }}"
                             class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                            placeholder="80">
+                            placeholder="0">
                     </div>
                     {{-- RR --}}
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Pernapasan (x/mnt)</label>
                         <input type="number" name="pernapasan" value="{{ old('pernapasan', $dataEMR->pernapasan) }}"
                             class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                            placeholder="20">
+                            placeholder="0">
                     </div>
                     {{-- Suhu --}}
                     <div>
@@ -82,7 +82,7 @@
                         <input type="number" step="0.1" name="suhu_tubuh"
                             value="{{ old('suhu_tubuh', $dataEMR->suhu_tubuh) }}"
                             class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                            placeholder="36.5">
+                            placeholder="0">
                     </div>
 
                     {{-- SpO2 --}}
@@ -91,7 +91,7 @@
                         <input type="number" name="saturasi_oksigen"
                             value="{{ old('saturasi_oksigen', $dataEMR->saturasi_oksigen) }}"
                             class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                            placeholder="98">
+                            placeholder="0">
                     </div>
 
                     {{-- BB & TB (Auto IMT) --}}

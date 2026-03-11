@@ -126,9 +126,9 @@ class PasienInsightController extends Controller
             'trendSubtitle'        => $trendMeta['subtitle'],
             'trendDatasetLabel'    => $trendMeta['dataset_label'],
             'chartPerPoliLabels'   => $chartPerPoli->pluck('nama_poli')->values(),
-            'chartPerPoliValues'   => $chartPerPoli->pluck('total')->map(fn ($v) => (int) $v)->values(),
+            'chartPerPoliValues'   => $chartPerPoli->pluck('total')->map(fn($v) => (int) $v)->values(),
             'chartStatusLabels'    => $chartStatus->pluck('status')->values(),
-            'chartStatusValues'    => $chartStatus->pluck('total')->map(fn ($v) => (int) $v)->values(),
+            'chartStatusValues'    => $chartStatus->pluck('total')->map(fn($v) => (int) $v)->values(),
             'chartTrendLabels'     => $trendChart['labels'],
             'chartTrendValues'     => $trendChart['values'],
         ]);
@@ -247,9 +247,9 @@ class PasienInsightController extends Controller
             'stats'                => $stats,
             'riwayat'              => $riwayat,
             'chartPerPoliLabels'   => $chartPerPoli->pluck('nama_poli')->values(),
-            'chartPerPoliValues'   => $chartPerPoli->pluck('total')->map(fn ($v) => (int) $v)->values(),
+            'chartPerPoliValues'   => $chartPerPoli->pluck('total')->map(fn($v) => (int) $v)->values(),
             'chartStatusLabels'    => $chartStatus->pluck('status')->values(),
-            'chartStatusValues'    => $chartStatus->pluck('total')->map(fn ($v) => (int) $v)->values(),
+            'chartStatusValues'    => $chartStatus->pluck('total')->map(fn($v) => (int) $v)->values(),
             'chartMonthlyLabels'   => $chartMonthlyLabels,
             'chartMonthlyValues'   => $chartMonthlyValues,
         ]);
@@ -326,30 +326,13 @@ class PasienInsightController extends Controller
         $this->applyCommonFilters($baseQuery, $request);
 
         if ($periode === 'harian') {
-            $start = $selectedDate->copy()->subDays(6);
-            $end = $selectedDate->copy();
-
-            $raw = (clone $baseQuery)
-                ->whereBetween('k.tanggal_kunjungan', [$start->toDateString(), $end->toDateString()])
-                ->selectRaw("DATE(k.tanggal_kunjungan) as label_key, COUNT(k.id) as total")
-                ->groupBy('label_key')
-                ->orderBy('label_key')
-                ->pluck('total', 'label_key');
-
-            $labels = [];
-            $values = [];
-
-            $cursor = $start->copy();
-            while ($cursor <= $end) {
-                $key = $cursor->format('Y-m-d');
-                $labels[] = $cursor->translatedFormat('d M');
-                $values[] = (int) ($raw[$key] ?? 0);
-                $cursor->addDay();
-            }
+            $total = (clone $baseQuery)
+                ->whereDate('k.tanggal_kunjungan', $selectedDate->toDateString())
+                ->count('k.id');
 
             return [
-                'labels' => $labels,
-                'values' => $values,
+                'labels' => [$selectedDate->translatedFormat('d M Y')],
+                'values' => [(int) $total],
             ];
         }
 
@@ -458,22 +441,22 @@ class PasienInsightController extends Controller
     {
         if ($periode === 'harian') {
             return [
-                'title' => 'Tren 7 Hari Terakhir',
-                'subtitle' => 'Grafik kunjungan 7 hari terakhir sampai tanggal ' . $selectedDate->translatedFormat('d F Y'),
+                'title' => 'Kunjungan Pada Tanggal Dipilih',
+                'subtitle' => 'Grafik jumlah kunjungan pada tanggal ' . $selectedDate->translatedFormat('d F Y'),
                 'dataset_label' => 'Kunjungan Harian',
             ];
         }
 
         if ($periode === 'bulanan') {
             return [
-                'title' => 'Tren Harian Dalam Bulan',
+                'title' => 'Kunjungan Harian Dalam Bulan',
                 'subtitle' => 'Grafik jumlah kunjungan per hari pada ' . $selectedMonth->translatedFormat('F Y'),
                 'dataset_label' => 'Kunjungan Bulanan',
             ];
         }
 
         return [
-            'title' => 'Tren Bulanan Dalam Tahun',
+            'title' => 'Kunjungan Bulanan Dalam Tahun',
             'subtitle' => 'Grafik jumlah kunjungan per bulan pada tahun ' . $selectedYear,
             'dataset_label' => 'Kunjungan Tahunan',
         ];

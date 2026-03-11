@@ -16,7 +16,7 @@
                     </span>
 
                     <h1 class="mt-4 text-3xl font-bold leading-tight sm:text-4xl">
-                        Selamat Datang Kembali, Admin!
+                        Selamat Datang Kembali, {{ $namaAdmin }}
                     </h1>
 
                     <p class="mt-3 text-sm leading-6 text-blue-100 sm:text-base">

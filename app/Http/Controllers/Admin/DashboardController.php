@@ -3,20 +3,24 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin;
 use App\Models\Dokter;
-use App\Models\Pasien;
 use App\Models\Farmasi;
-use App\Models\Obat;
 use App\Models\Kunjungan;
+use App\Models\Obat;
+use App\Models\Pasien;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
     public function index()
     {
-        return view('admin.dashboard');
+        $user = Auth::id();
+        $namaAdmin = Admin::where('user_id', $user)->value('nama_admin');
+        return view('admin.dashboard', compact('namaAdmin'));
     }
 
     // ===============================

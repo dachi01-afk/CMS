@@ -160,7 +160,6 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::get('/stok_obat', [DashboardController::class, 'getStokObat'])->name('stok_obat');
         Route::patch('/antrian/{kunjungan}/proses', [DashboardController::class, 'proses'])->name('admin.antrian.proses');
         Route::patch('/antrian/{kunjungan}/batalkan', [DashboardController::class, 'batalkan'])->name('admin.antrian.batalkan');
-        Route::get('/antrian', [DashboardController::class, 'index'])->name('antrian');
         Route::get('/antrian/data', [DashboardController::class, 'getDataAntrean'])->name('antrian.data');
     });
 
@@ -644,6 +643,8 @@ Route::middleware(['auth'])->prefix('super-admin')->group(function () {
 
     Route::get('index', [SuperAdminController::class, 'dashboard'])->name('super.admin.index');
     Route::get('/dashboard/chart-kunjungan', [SuperAdminController::class, 'chartKunjungan'])->name('super.admin.chart.kunjungan');
+    Route::get('/dashboard/report-kunjungan/pdf', [SuperAdminController::class, 'reportKunjunganPdf'])->name('super.admin.report.kunjungan.pdf');
+    Route::get('/dashboard/report-kunjungan/excel', [SuperAdminController::class, 'reportKunjunganExcel'])->name('super.admin.report.kunjungan.excel');
 
     Route::get('/pasien/insight', [PasienInsightController::class, 'index'])->name('super.admin.pasien.insight.index');
     Route::get('/pasien/insight/{id}', [PasienInsightController::class, 'show'])->name('super.admin.pasien.insight.show');

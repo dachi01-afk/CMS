@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\SuperAdmin;
 
+use App\Exports\SuperAdmin\KunjunganReportExport;
 use App\Http\Controllers\Controller;
 use App\Models\Kunjungan;
 use App\Models\OrderLayanan;
@@ -10,10 +11,12 @@ use App\Models\Pembayaran;
 use App\Models\PenjualanObat;
 use App\Models\SuperAdmin;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Maatwebsite\Excel\Facades\Excel;
 
 class SuperAdminController extends Controller
 {
@@ -31,14 +34,19 @@ class SuperAdminController extends Controller
         abort_unless($user && $isManager, 403, 'Hanya Super Admin yang dapat mengakses dashboard ini.');
     }
 
+    private function getNamaSuperAdmin(): string
+    {
+        $login = Auth::id();
+        $superAdmin = SuperAdmin::where('user_id', $login)->first();
+
+        return $superAdmin->nama_super_admin ?? 'Super Admin';
+    }
+
     public function dashboard()
     {
         $this->ensureManager();
 
-        $login = Auth::id();
-
-        $superAdmin = SuperAdmin::where('user_id', $login)->first();
-        $namaSuperAdmin = $superAdmin->nama_super_admin ?? 'Super Admin';
+        $namaSuperAdmin = $this->getNamaSuperAdmin();
 
         $serverStatus = 'Online';
         $hariIni = Carbon::today();
@@ -98,11 +106,100 @@ class SuperAdminController extends Controller
         return response()->json($this->buildKunjunganChart($filter));
     }
 
+    public function reportKunjunganPdf(Request $request)
+    {
+        $this->ensureManager();
+
+        Carbon::setLocale('id');
+
+        $filter = $this->normalizeChartFilter($request->get('filter'));
+        $chartData = $this->buildKunjunganChart($filter);
+        $namaSuperAdmin = $this->getNamaSuperAdmin();
+        $generatedAt = now();
+
+        $fileName = 'laporan-kunjungan-' . $filter . '-' . $generatedAt->format('Ymd_His') . '.pdf';
+
+        $pdf = Pdf::loadView('super-admin.report-kunjungan-pdf', [
+            'namaSuperAdmin' => $namaSuperAdmin,
+            'chartData' => $chartData,
+            'generatedAt' => $generatedAt,
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download($fileName);
+    }
+
+    public function reportKunjunganExcel(Request $request)
+    {
+        $this->ensureManager();
+
+        Carbon::setLocale('id');
+
+        $filter = $this->normalizeChartFilter($request->get('filter'));
+        $generatedAt = now();
+        $now = now();
+
+        switch ($filter) {
+            case 'harian':
+                $start = $now->copy()->startOfMonth();
+                $end = $now->copy()->endOfMonth();
+                break;
+
+            case 'mingguan':
+                $start = $now->copy()->subWeeks(11)->startOfWeek(Carbon::MONDAY);
+                $end = $now->copy()->endOfWeek(Carbon::SUNDAY);
+                break;
+
+            case 'tahunan':
+                $start = $now->copy()->subYears(4)->startOfYear();
+                $end = $now->copy()->endOfYear();
+                break;
+
+            case 'bulanan':
+            default:
+                $start = $now->copy()->startOfYear();
+                $end = $now->copy()->endOfYear();
+                break;
+        }
+
+        $rows = Kunjungan::query()
+            ->leftJoin('dokter', 'kunjungan.dokter_id', '=', 'dokter.id')
+            ->leftJoin('pasien', 'kunjungan.pasien_id', '=', 'pasien.id')
+            ->leftJoin('poli', 'kunjungan.poli_id', '=', 'poli.id')
+            ->whereDate('kunjungan.tanggal_kunjungan', '>=', $start->toDateString())
+            ->whereDate('kunjungan.tanggal_kunjungan', '<=', $end->toDateString())
+            ->orderBy('kunjungan.tanggal_kunjungan', 'desc')
+            ->orderBy('kunjungan.no_antrian', 'asc')
+            ->select([
+                'kunjungan.no_antrian',
+                'kunjungan.keluhan_awal',
+                'kunjungan.status',
+                'kunjungan.tanggal_kunjungan',
+                'dokter.nama_dokter',
+                'pasien.nama_pasien',
+                'poli.nama_poli',
+            ])
+            ->get();
+
+        $fileName = 'laporan-kunjungan-' . $filter . '-' . $generatedAt->format('Ymd_His') . '.xlsx';
+
+        return Excel::download(new KunjunganReportExport($rows), $fileName);
+    }
+
     private function normalizeChartFilter(?string $filter): string
     {
         $allowed = ['harian', 'mingguan', 'bulanan', 'tahunan'];
 
         return in_array($filter, $allowed, true) ? $filter : 'bulanan';
+    }
+
+    private function getChartFilterLabel(string $filter): string
+    {
+        return match ($filter) {
+            'harian' => 'Harian',
+            'mingguan' => 'Mingguan',
+            'tahunan' => 'Tahunan',
+            default => 'Bulanan',
+        };
     }
 
     private function buildKunjunganChart(string $filter): array
@@ -210,8 +307,20 @@ class SuperAdminController extends Controller
             }
         }
 
+        $rows = [];
+        foreach ($keys as $index => $key) {
+            $rows[] = [
+                'label' => $labels[$index],
+                'total' => $totalMap[$key] ?? 0,
+                'aktif' => $activeMap[$key] ?? 0,
+                'selesai' => $successMap[$key] ?? 0,
+                'dibatalkan' => $canceledMap[$key] ?? 0,
+            ];
+        }
+
         return [
             'filter' => $filter,
+            'filter_label' => $this->getChartFilterLabel($filter),
             'labels' => $labels,
             'range_text' => $start->translatedFormat('d M Y') . ' - ' . $end->translatedFormat('d M Y'),
 
@@ -224,6 +333,8 @@ class SuperAdminController extends Controller
             'summary_aktif' => array_sum($activeMap),
             'summary_selesai' => array_sum($successMap),
             'summary_dibatalkan' => array_sum($canceledMap),
+
+            'rows' => $rows,
         ];
     }
 }

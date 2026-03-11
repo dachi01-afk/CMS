@@ -713,8 +713,8 @@
                         <p class="section-subtitle mt-1">{{ $trendSubtitle }}</p>
                     </div>
                     <span class="info-badge">
-                        <i class="fa-solid fa-chart-line"></i>
-                        Trend
+                        <i class="fa-solid fa-chart-column"></i>
+                        Bar Chart
                     </span>
                 </div>
                 <div class="chart-area">
@@ -984,20 +984,17 @@
 
             if ($('#chartTrend').length) {
                 new Chart($('#chartTrend').get(0), {
-                    type: 'line',
+                    type: 'bar',
                     data: {
                         labels: trendLabels,
                         datasets: [{
                             label: trendDatasetLabel,
                             data: trendValues,
+                            backgroundColor: 'rgba(37, 99, 235, 0.82)',
                             borderColor: '#2563eb',
-                            backgroundColor: 'rgba(37, 99, 235, 0.12)',
-                            fill: true,
-                            tension: 0.35,
-                            borderWidth: 3,
-                            pointRadius: 4,
-                            pointHoverRadius: 6,
-                            pointBackgroundColor: '#2563eb'
+                            borderWidth: 1,
+                            borderRadius: 12,
+                            maxBarThickness: trendLabels.length === 1 ? 90 : 36
                         }]
                     },
                     options: {
@@ -1008,6 +1005,13 @@
                                 display: true,
                                 labels: {
                                     color: '#334155'
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return `${context.dataset.label}: ${context.parsed.y} kunjungan`;
+                                    }
                                 }
                             }
                         },

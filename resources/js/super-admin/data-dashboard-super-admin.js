@@ -5,6 +5,13 @@ $(function () {
     const $canvas = $("#managerChart");
     const $filter = $("#filterKunjunganChart");
     const $range = $("#kunjunganChartRange");
+
+    const $reportDropdownWrapper = $("#reportDropdownWrapper");
+    const $reportDropdownMenu = $("#reportDropdownMenu");
+    const $toggleReportDropdown = $("#btnToggleReportDropdown");
+    const $reportPdf = $("#btnReportPdfKunjungan");
+    const $reportExcel = $("#btnReportExcelKunjungan");
+
     const initialDataEl = document.getElementById("kunjunganChartInitialData");
 
     const $summaryTotal = $("#summaryTotalKunjungan");
@@ -40,6 +47,25 @@ $(function () {
         $summaryAktif.text(formatNumber(payload.summary_aktif));
         $summarySelesai.text(formatNumber(payload.summary_selesai));
         $summaryDibatalkan.text(formatNumber(payload.summary_dibatalkan));
+    }
+
+    function updateReportLinks(filter) {
+        const pdfBaseUrl = $reportPdf.data("base-url");
+        const excelBaseUrl = $reportExcel.data("base-url");
+
+        if (pdfBaseUrl) {
+            $reportPdf.attr(
+                "href",
+                `${pdfBaseUrl}?filter=${encodeURIComponent(filter)}`,
+            );
+        }
+
+        if (excelBaseUrl) {
+            $reportExcel.attr(
+                "href",
+                `${excelBaseUrl}?filter=${encodeURIComponent(filter)}`,
+            );
+        }
     }
 
     function getMaxTicksLimit(filter) {
@@ -181,6 +207,7 @@ $(function () {
     function renderChart(payload) {
         $range.text(payload.range_text);
         updateSummaryCards(payload);
+        updateReportLinks(payload.filter);
 
         if (managerChart) {
             managerChart.destroy();
@@ -191,6 +218,8 @@ $(function () {
     }
 
     function loadChartData(filter) {
+        updateReportLinks(filter);
+
         $.ajax({
             url: $chartSection.data("chart-url"),
             type: "GET",
@@ -199,6 +228,9 @@ $(function () {
             },
             beforeSend: function () {
                 $filter.prop("disabled", true);
+                $toggleReportDropdown
+                    .prop("disabled", true)
+                    .addClass("opacity-60");
             },
             success: function (response) {
                 renderChart(response);
@@ -209,11 +241,38 @@ $(function () {
             },
             complete: function () {
                 $filter.prop("disabled", false);
+                $toggleReportDropdown
+                    .prop("disabled", false)
+                    .removeClass("opacity-60");
             },
         });
     }
 
+    $toggleReportDropdown.on("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $reportDropdownMenu.toggleClass("hidden");
+    });
+
+    $(document).on("click", function (e) {
+        if (
+            !$reportDropdownWrapper.is(e.target) &&
+            $reportDropdownWrapper.has(e.target).length === 0
+        ) {
+            $reportDropdownMenu.addClass("hidden");
+        }
+    });
+
+    $reportPdf.on("click", function () {
+        $reportDropdownMenu.addClass("hidden");
+    });
+
+    $reportExcel.on("click", function () {
+        $reportDropdownMenu.addClass("hidden");
+    });
+
     renderChart(initialChartData);
+    updateReportLinks($filter.val());
 
     $filter.on("change", function () {
         loadChartData($(this).val());

@@ -189,13 +189,46 @@
                         </p>
                     </div>
 
-                    <select id="filterKunjunganChart"
-                        class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100">
-                        <option value="harian" {{ $chartFilter === 'harian' ? 'selected' : '' }}>Harian</option>
-                        <option value="mingguan" {{ $chartFilter === 'mingguan' ? 'selected' : '' }}>Mingguan</option>
-                        <option value="bulanan" {{ $chartFilter === 'bulanan' ? 'selected' : '' }}>Bulanan</option>
-                        <option value="tahunan" {{ $chartFilter === 'tahunan' ? 'selected' : '' }}>Tahunan</option>
-                    </select>
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <div class="relative" id="reportDropdownWrapper">
+                            <button type="button" id="btnToggleReportDropdown"
+                                class="inline-flex items-center justify-center gap-2 rounded-xl bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800">
+                                <i class="fa-solid fa-file-arrow-down"></i>
+                                Report
+                                <i class="fa-solid fa-chevron-down text-xs"></i>
+                            </button>
+
+                            <div id="reportDropdownMenu"
+                                class="absolute right-0 z-20 mt-2 hidden min-w-[190px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl">
+                                <a id="btnReportPdfKunjungan"
+                                    href="{{ route('super.admin.report.kunjungan.pdf', ['filter' => $chartFilter]) }}"
+                                    data-base-url="{{ route('super.admin.report.kunjungan.pdf') }}"
+                                    class="flex items-center gap-3 border-b border-slate-100 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                                    <i class="fa-solid fa-file-pdf text-rose-500"></i>
+                                    Download PDF
+                                </a>
+
+                                <a id="btnReportExcelKunjungan"
+                                    href="{{ route('super.admin.report.kunjungan.excel', ['filter' => $chartFilter]) }}"
+                                    data-base-url="{{ route('super.admin.report.kunjungan.excel') }}"
+                                    class="flex items-center gap-3 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                                    <i class="fa-solid fa-file-excel text-emerald-600"></i>
+                                    Download Excel
+                                </a>
+                            </div>
+                        </div>
+
+                        <select id="filterKunjunganChart"
+                            class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100">
+                            <option value="harian" {{ $chartFilter === 'harian' ? 'selected' : '' }}>Harian</option>
+                            <option value="mingguan" {{ $chartFilter === 'mingguan' ? 'selected' : '' }}>Mingguan
+                            </option>
+                            <option value="bulanan" {{ $chartFilter === 'bulanan' ? 'selected' : '' }}>Bulanan
+                            </option>
+                            <option value="tahunan" {{ $chartFilter === 'tahunan' ? 'selected' : '' }}>Tahunan
+                            </option>
+                        </select>
+                    </div>
                 </div>
 
                 <div class="mb-4 flex flex-wrap items-center gap-2 text-xs text-slate-500">
@@ -403,4 +436,4 @@
 
     </div>
 </x-mycomponents.layout>
-@vite(['resources/js/super-admin/data-dashboard-super-admin.js'])   
+@vite(['resources/js/super-admin/data-dashboard-super-admin.js'])

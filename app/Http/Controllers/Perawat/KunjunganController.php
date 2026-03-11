@@ -156,39 +156,44 @@ class KunjunganController extends Controller
 
         $perawatId = $perawat->id;
 
-        $dataKunjunganEngaged = EMR::with(['pasien', 'dokter', 'poli', 'perawat', 'kunjungan'])
-            // status kunjungan harus Engaged
+        // Ambil semua pasangan dokter-poli yang dimiliki perawat ini
+        $dokterPoliPairs = DB::table('perawat_dokter_poli as pdp')
+            ->join('dokter_poli as dp', 'dp.id', '=', 'pdp.dokter_poli_id')
+            ->where('pdp.perawat_id', $perawatId)
+            ->select('dp.dokter_id', 'dp.poli_id')
+            ->get();
+
+        $query = EMR::with(['pasien', 'dokter', 'poli', 'perawat', 'kunjungan'])
             ->whereHas('kunjungan', function ($q) {
                 $q->where('status', 'Engaged');
             })
-            // filter hak akses berdasarkan perawat
-            ->where(function ($q) use ($perawatId) {
+            ->where(function ($q) use ($perawatId, $dokterPoliPairs) {
 
-                // 🔹 CASE A: EMR belum dipegang siapa pun (perawat_id NULL)
-                //   → boleh dilihat perawat ini jika dokter_id & poli_id
-                //     masuk ke mapping perawat_dokter_poli
-                $q->where(function ($sub) use ($perawatId) {
-                    $sub->whereNull('perawat_id')
-                        ->whereExists(function ($qq) use ($perawatId) {
-                            $qq->select(DB::raw(1))
-                                ->from('perawat_dokter_poli as pdp')
-                                ->join('dokter_poli as dp', 'dp.id', '=', 'pdp.dokter_poli_id')
-                                ->where('pdp.perawat_id', $perawatId)
-                                // pasangan dokter & poli di dokter_poli harus sama dengan di EMR
-                                ->whereColumn('dp.dokter_id', 'emr.dokter_id')
-                                ->whereColumn('dp.poli_id', 'emr.poli_id');
-                        });
-                })
+                // CASE B:
+                // kalau EMR sudah dipegang perawat ini, tetap tampil
+                $q->where('perawat_id', $perawatId);
 
-                    // 🔹 CASE B: EMR sudah ada perawat_id → hanya perawat itu yang boleh lihat
-                    ->orWhere(function ($sub) use ($perawatId) {
-                        $sub->where('perawat_id', $perawatId);
+                // CASE A:
+                // kalau EMR masih NULL, tampilkan ke semua perawat
+                // yang punya pasangan dokter + poli yang sama
+                if ($dokterPoliPairs->isNotEmpty()) {
+                    $q->orWhere(function ($sub) use ($dokterPoliPairs) {
+                        $sub->whereNull('perawat_id')
+                            ->where(function ($pairQuery) use ($dokterPoliPairs) {
+                                foreach ($dokterPoliPairs as $pair) {
+                                    $pairQuery->orWhere(function ($match) use ($pair) {
+                                        $match->where('dokter_id', $pair->dokter_id)
+                                            ->where('poli_id', $pair->poli_id);
+                                    });
+                                }
+                            });
                     });
+                }
             })
-            ->orderBy('id', 'desc')
+            ->orderByDesc('id')
             ->get();
 
-        return DataTables::of($dataKunjunganEngaged)
+        return DataTables::of($query)
             ->addIndexColumn()
             ->addColumn('no_antrian', fn($emr) => optional($emr->kunjungan)->no_antrian ?? '-')
             ->addColumn('nama_pasien', fn($emr) => optional($emr->pasien)->nama_pasien ?? '-')
@@ -199,7 +204,7 @@ class KunjunganController extends Controller
                 if (!empty($row->id)) {
                     $url = route('perawat.form.pengisian.vital.sign', $row->id);
 
-                    return '    
+                    return '
                     <a href="' . $url . '"
                        class="inline-flex items-center px-3 py-1 rounded-lg
                               bg-indigo-600 text-white text-xs font-medium

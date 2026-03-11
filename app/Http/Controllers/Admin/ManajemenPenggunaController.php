@@ -36,9 +36,6 @@ class ManajemenPenggunaController extends Controller
                     >
                         <i class="fa-regular fa-pen-to-square text-lg"></i>
                     </button>
-                    <button class="btn-delete text-red-600 hover:text-red-800" data-id="' . $user->id . '" title="Hapus">
-                        <i class="fa-regular fa-trash-can text-lg"></i>
-                    </button>
                 ';
             })
             ->rawColumns(['action'])
@@ -94,9 +91,6 @@ class ManajemenPenggunaController extends Controller
                 return '
                 <button class="btn-edit-dokter text-blue-600 hover:text-blue-800 mr-2" data-id="' . $dokter->id . '"  title="Edit">
                     <i class="fa-regular fa-pen-to-square text-lg"></i>
-                </button>
-                <button class="btn-delete-dokter text-red-600 hover:text-red-800" data-id="' . $dokter->id . '" title="Hapus">
-                    <i class="fa-regular fa-trash-can text-lg"></i>
                 </button>
             ';
             })
@@ -157,14 +151,6 @@ class ManajemenPenggunaController extends Controller
                 <i class="fa-regular fa-pen-to-square text-green-600"></i>
                 Edit Pasien
             </button>
-
-            <button type="button"
-                class="btn-delete-pasien flex items-center gap-2 w-full px-3 py-2 text-sm text-red-700 hover:bg-gray-50"
-                data-id="' . $pasien->id . '">
-                <i class="fa-regular fa-trash-can text-red-600"></i>
-                Hapus Pasien
-            </button>
-
         </div>
     </div>
     ';
@@ -195,9 +181,6 @@ class ManajemenPenggunaController extends Controller
                 return '
             <button class="btn-edit-farmasi text-blue-600 hover:text-blue-800 mr-2" data-id="' . $farmasi->id . '" title="Edit">
                 <i class="fa-regular fa-pen-to-square text-lg"></i>
-            </button>
-            <button class="btn-delete-farmasi text-red-600 hover:text-red-800" data-id="' . $farmasi->id . '" title="Hapus">
-                <i class="fa-regular fa-trash-can text-lg"></i>
             </button>
             ';
             })
@@ -343,10 +326,6 @@ class ManajemenPenggunaController extends Controller
                             data-id="' . $perawat->id . '" title="Edit">
                         <i class="fa-regular fa-pen-to-square text-lg"></i>
                     </button>
-                    <button class="btn-delete-perawat text-red-600 hover:text-red-800"
-                            data-id="' . $perawat->id . '" title="Hapus">
-                        <i class="fa-regular fa-trash-can text-lg"></i>
-                    </button>
                 </div>
             ';
             })
@@ -386,9 +365,6 @@ class ManajemenPenggunaController extends Controller
                 return '
             <button class="btn-edit-kasir text-blue-600 hover:text-blue-800 mr-2" data-id="' . $kasir->id . '" title="Edit">
                 <i class="fa-regular fa-pen-to-square text-lg"></i>
-            </button>
-            <button class="btn-delete-kasir text-red-600 hover:text-red-800" data-id="' . $kasir->id . '" title="Hapus">
-                <i class="fa-regular fa-trash-can text-lg"></i>
             </button>
             ';
             })
