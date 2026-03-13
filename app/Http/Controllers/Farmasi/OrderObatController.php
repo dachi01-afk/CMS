@@ -3,355 +3,393 @@
 namespace App\Http\Controllers\Farmasi;
 
 use App\Http\Controllers\Controller;
-use App\Models\Kunjungan;
 use App\Models\Obat;
 use App\Models\Pasien;
 use App\Models\PenjualanObat;
-use App\Models\Resep;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 use Yajra\DataTables\Facades\DataTables;
 
 class OrderObatController extends Controller
 {
-     public function getDataPenjualanObat()
+    public function getDataPenjualanObat(Request $request)
     {
-        // Ambil data dari tabel penjualan_obat beserta relasinya
-        $dataPenjualan = PenjualanObat::with(['pasien', 'obat', 'metodePembayaran'])
-            ->latest()
-            ->get()
-            ->groupBy('kode_transaksi'); // 🔥 Kelompokkan per transaksi
+        $query = PenjualanObat::with(['pasien', 'penjualanObatDetail.obat'])
+            ->select('penjualan_obat.*')
+            ->latest();
 
-        // Ubah hasil menjadi bentuk siap tampil
-        $penjualanData = $dataPenjualan->map(function ($group) {
-            $first = $group->first();
-
-            // Gabungkan nama obat dan jumlah
-            $namaObat = $group->pluck('obat.nama_obat')->implode(', ');
-            $jumlah   = $group->pluck('jumlah')->implode(', ');
-
-            // Hitung total transaksi (subtotal semua obat)
-            $totalTagihan = $group->sum('sub_total');
-
-            // Format uang diterima dan kembalian (jika ada)
-            $uangDiterima = $first->uang_yang_diterima ?? 0;
-            $kembalian    = $first->kembalian ?? 0;
-
-            // Format tanggal
-            $tanggalTransaksi = $first->tanggal_transaksi
-                ? (is_string($first->tanggal_transaksi)
-                    ? date('d-m-Y H:i', strtotime($first->tanggal_transaksi))
-                    : $first->tanggal_transaksi->format('d-m-Y H:i'))
-                : '-';
-
-            return [
-                'kode_transaksi'    => $first->kode_transaksi,
-                'nama_pasien'       => $first->pasien->nama_pasien ?? '-',
-                'nama_obat'         => $namaObat,
-                'jumlah'            => $jumlah,
-                'sub_total'         => $totalTagihan,
-                'total_tagihan'     => 'Rp ' . number_format($totalTagihan, 0, ',', '.'),
-                'uang_diterima'     => 'Rp ' . number_format($uangDiterima, 0, ',', '.'),
-                'kembalian'         => 'Rp ' . number_format($kembalian, 0, ',', '.'),
-                'metode_pembayaran' => $first->metodePembayaran->nama_metode ?? '-',
-                'status'            => $first->status ?? '-',
-                'tanggal_transaksi' => $tanggalTransaksi,
-            ];
-        })->values();
-
-        // Return ke DataTables
-        return DataTables::of($penjualanData)
+        return DataTables::eloquent($query)
             ->addIndexColumn()
-            // ->addColumn('action', function ($row) {
-            //     return '
-            //     <button class="text-blue-600 hover:text-blue-800 mr-2" title="Edit">
-            //         <i class="fa-regular fa-pen-to-square text-lg"></i>
-            //     </button>
-            //     <button class="text-red-600 hover:text-red-800" title="Hapus">
-            //         <i class="fa-regular fa-trash-can text-lg"></i>
-            //     </button>
-            // ';
-            // })
-            ->make(true);
+            ->addColumn('nama_pasien', function ($row) {
+                return $row->pasien->nama_pasien ?? '-';
+            })
+            ->addColumn('jumlah_item', function ($row) {
+                return $row->penjualanObatDetail->count();
+            })
+            ->addColumn('action', function ($row) {
+                return '
+                    <div class="flex items-center justify-center gap-2">
+                        <button type="button"
+                            class="btn-edit-order inline-flex items-center rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100"
+                            data-id="' . $row->id . '">
+                            Edit
+                        </button>
+                        <button type="button"
+                            class="btn-delete-order inline-flex items-center rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
+                            data-id="' . $row->id . '">
+                            Hapus
+                        </button>
+                    </div>
+                ';
+            })
+            ->filterColumn('nama_pasien', function ($query, $keyword) {
+                $query->whereHas('pasien', function ($q) use ($keyword) {
+                    $q->where('nama_pasien', 'like', "%{$keyword}%");
+                });
+            })
+            ->rawColumns(['action'])
+            ->toJson();
     }
 
-    public function getDataRiwayatTransaksiObat()
+    public function show($id)
     {
-        $rows = PenjualanObat::with(['pasien', 'obat', 'metodePembayaran'])
-            ->where('status', 'Sudah Bayar')
-            ->latest()
-            ->get()
-            ->groupBy('kode_transaksi');
+        $data = PenjualanObat::with([
+            'pasien',
+            'penjualanObatDetail.obat'
+        ])->findOrFail($id);
 
-        $penjualanData = $rows->map(function ($group) {
-            $first = $group->first();
-
-            // ✅ Nama & Dosis & Jumlah
-            $namaObat = $group->pluck('obat.nama_obat')->implode(', ');
-            $dosis = $group->pluck('obat.dosis')->map(fn($item) => number_format((float) $item, 2) . ' mg')->implode(', ');
-            $jumlah = $group->pluck('jumlah')->map(fn($item) => $item . ' capsul')->implode(', ');
-
-            // ✅ Nominal & tanggal
-            $totalTagihan = $group->sum('sub_total');
-            $uangDiterima = $first->uang_yang_diterima ?? 0;
-            $kembalian    = $first->kembalian ?? 0;
-            $tanggalISO   = $first->tanggal_transaksi
-                ? \Carbon\Carbon::parse($first->tanggal_transaksi)->toIso8601String()
-                : null;
-
-            // ✅ Bukti Pembayaran (foto + teks)
-            $buktiPembayaran = '-';
-            if (!empty($first->bukti_pembayaran)) {
-                $url = asset('storage/' . $first->bukti_pembayaran);
-                $buktiPembayaran = '
-                <div class="flex flex-col items-center text-center space-y-2">
-                    <img src="' . $url . '" alt="Bukti Pembayaran" 
-                        class="w-24 h-24 object-cover rounded-lg border border-gray-300 shadow-sm hover:scale-105 transition-transform duration-200 cursor-pointer"
-                        onclick="window.open(\'' . $url . '\', \'_blank\')" />
-                    <a href="' . $url . '" target="_blank" 
-                        class="text-sky-600 underline text-sm font-medium">
-                        Lihat Bukti Pembayaran
-                    </a>
-                </div>
-            ';
-            }
-
-            return [
-                'kode_transaksi'    => $first->kode_transaksi,
-                'nama_pasien'       => $first->pasien->nama_pasien ?? '-',
-                'nama_obat'         => $namaObat,
-                'dosis'             => $dosis,
-                'jumlah'            => $jumlah,
-                'sub_total'         => $totalTagihan,
-                'metode_pembayaran' => $first->metodePembayaran->nama_metode ?? '-',
-                'status'            => $first->status ?? '-',
-                'tanggal_transaksi' => $tanggalISO,
-                'bukti_pembayaran'  => $buktiPembayaran,
-                'action'            => '-',
-            ];
-        })->values();
-
-        return DataTables::of($penjualanData)
-            ->addIndexColumn()
-            ->rawColumns(['bukti_pembayaran', 'action']) // penting agar HTML tampil
-            ->make(true);
+        return response()->json([
+            'status' => 'success',
+            'data' => $data
+        ]);
     }
 
     public function search(Request $request)
     {
-        $query = $request->get('query');
-        $pasien = Pasien::where('nama_pasien', 'LIKE', "%{$query}%")->get(['id', 'nama_pasien', 'alamat', 'jenis_kelamin']);
+        $query = trim($request->get('query', ''));
+
+        $pasien = Pasien::query()
+            ->where(function ($q) use ($query) {
+                $q->where('nama_pasien', 'like', "%{$query}%")
+                    ->orWhere('no_emr', 'like', "%{$query}%");
+            })
+            ->get(['id', 'nama_pasien', 'alamat', 'jenis_kelamin', 'no_emr']);
+
         return response()->json($pasien);
     }
 
     public function searchObat(Request $request)
     {
-        $query = $request->get('query');
+        $query = trim($request->get('query', ''));
+
         $obat = Obat::where('nama_obat', 'like', "%{$query}%")
-            ->get(['id', 'nama_obat', 'dosis', 'total_harga', 'jumlah']);
+            ->where('jumlah', '>', 0)
+            ->get([
+                'id',
+                'kode_obat',
+                'nama_obat',
+                'dosis',
+                'jumlah',
+                'harga_jual_obat',
+                'harga_otc_obat',
+                'total_harga'
+            ])
+            ->map(function ($item) {
+                $item->harga_final = $item->harga_jual_obat
+                    ?? $item->harga_otc_obat
+                    ?? $item->total_harga
+                    ?? 0;
+
+                return $item;
+            });
 
         return response()->json($obat);
     }
-
-    // public function pesanObat(Request $request)
-    // {
-    //     $request->validate([
-    //         'pasien_id'   => 'required|exists:pasien,id',
-    //         'obat_id'     => 'required|array',
-    //         'obat_id.*'   => 'exists:obat,id',
-    //         'jumlah'      => 'required|array',
-    //         'jumlah.*'    => 'integer|min:1',
-    //     ]);
-
-    //     // Generate kode transaksi unik
-    //     $kodeTransaksi = 'TRX-' . strtoupper(uniqid());
-
-    //     // Loop untuk setiap obat yang dibeli
-    //     foreach ($request->obat_id as $index => $obatId) {
-    //         $jumlah = $request->jumlah[$index];
-
-    //         $obat = DB::table('obat')->where('id', $obatId)->first();
-
-    //         if (!$obat) continue;
-
-    //         // Hitung subtotal (jika harga ada di tabel obat)
-    //         $subTotal = property_exists($obat, 'total_harga') ? $jumlah * $obat->total_harga : 0;
-
-    //         // Simpan ke tabel penjualan_obat
-    //         DB::table('penjualan_obat')->insert([
-    //             'pasien_id'          => $request->pasien_id,
-    //             'obat_id'            => $obatId,
-    //             'kode_transaksi'     => $kodeTransaksi,
-    //             'jumlah'             => $jumlah,
-    //             'sub_total'          => $subTotal,
-    //             'tanggal_transaksi'  => now(),
-    //             'created_at'         => now(),
-    //             'updated_at'         => now(),
-    //         ]);
-
-    //         // Kurangi stok obat
-    //         DB::table('obat')->where('id', $obatId)->decrement('jumlah', $jumlah);
-    //     }
-
-    //     return response()->json([
-    //         'status'  => 'success',
-    //         'message' => 'Transaksi penjualan obat berhasil disimpan.',
-    //         'kode_transaksi' => $kodeTransaksi
-    //     ]);
-    // }
 
     public function pesanObat(Request $request)
     {
         $request->validate([
             'pasien_id' => ['required', 'exists:pasien,id'],
-            'obat_id'   => ['required', 'array', 'min:1'],
-            'obat_id.*' => ['required', 'exists:obat,id'],
-            'jumlah'    => ['required', 'array', 'min:1'],
-            'jumlah.*'  => ['required', 'integer', 'min:1'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.obat_id' => ['required', 'exists:obat,id'],
+            'items.*.jumlah' => ['required', 'integer', 'min:1'],
         ]);
 
-        if (count($request->obat_id) !== count($request->jumlah)) {
-            return response()->json([
-                'status' => 'error',
-                'message' => 'Jumlah item tidak sama dengan jumlah obat.'
-            ], 422);
-        }
-
-        $kodeTransaksi = 'TRX-' . strtoupper(uniqid());
-        $now = now();
-
         DB::beginTransaction();
+
         try {
-            // 🔹 1. Buatkan resep dummy TANPA pasien_id (karena kolom itu tidak ada)
-            $resepId = DB::table('resep')->insertGetId([
-                'kunjungan_id' => null, // ini yang membedakan dari resep dokter
-                'created_at'   => $now,
-                'updated_at'   => $now,
-            ]);
-
+            $now = now();
+            $kodeTransaksi = 'TRX-' . strtoupper(uniqid());
             $grandTotal = 0;
-            $items = [];
+            $detailRows = [];
 
-            // 🔹 2. Loop setiap obat yang dibeli
-            foreach ($request->obat_id as $i => $obatId) {
-                $qty = (int) $request->jumlah[$i];
-                $obat = DB::table('obat')->where('id', $obatId)->first();
+            foreach ($request->items as $item) {
+                $obat = Obat::lockForUpdate()->findOrFail($item['obat_id']);
+                $qty = (int) $item['jumlah'];
 
-                if (!$obat) continue;
+                if ($qty > (int) $obat->jumlah) {
+                    throw ValidationException::withMessages([
+                        'items' => "Stok obat {$obat->nama_obat} tidak mencukupi. Sisa stok: {$obat->jumlah}"
+                    ]);
+                }
 
-                $harga = $obat->harga ?? ($obat->total_harga ?? 0);
-                $subTotal = $qty * $harga;
+                $hargaSatuan = (float) (
+                    $obat->harga_jual_obat
+                    ?? $obat->harga_otc_obat
+                    ?? $obat->total_harga
+                    ?? 0
+                );
+
+                $subTotal = $hargaSatuan * $qty;
                 $grandTotal += $subTotal;
 
-                // Simpan ke penjualan_obat
-                DB::table('penjualan_obat')->insert([
-                    'pasien_id'         => $request->pasien_id,
-                    'obat_id'           => $obatId,
-                    'kode_transaksi'    => $kodeTransaksi,
-                    'jumlah'            => $qty,
-                    'sub_total'         => $subTotal,
-                    'total_tagihan'     => $subTotal,
-                    'status'            => 'Belum Bayar',
-                    'tanggal_transaksi' => $now,
+                $detailRows[] = [
+                    'obat_id'      => $obat->id,
+                    'jumlah'       => $qty,
+                    'harga_satuan' => $hargaSatuan,
+                    'sub_total'    => $subTotal,
+                ];
+            }
+
+            $header = PenjualanObat::create([
+                'pasien_id'            => $request->pasien_id,
+                'kode_transaksi'       => $kodeTransaksi,
+                'metode_pembayaran_id' => null,
+                'total_tagihan'        => $grandTotal,
+                'diskon_tipe'          => null,
+                'diskon_nilai'         => 0,
+                'total_setelah_diskon' => $grandTotal,
+                'uang_yang_diterima'   => null,
+                'kembalian'            => null,
+                'tanggal_transaksi'    => $now,
+                'bukti_pembayaran'     => null,
+                'status'               => 'Belum Bayar',
+                'created_at'           => $now,
+                'updated_at'           => $now,
+            ]);
+
+            foreach ($detailRows as $row) {
+                DB::table('penjualan_obat_detail')->insert([
+                    'penjualan_obat_id' => $header->id,
+                    'obat_id'           => $row['obat_id'],
+                    'jumlah'            => $row['jumlah'],
+                    'harga_satuan'      => $row['harga_satuan'],
+                    'sub_total'         => $row['sub_total'],
                     'created_at'        => $now,
                     'updated_at'        => $now,
                 ]);
 
-                // Simpan ke resep_obat agar tampil di menu Pengambilan Obat
-                DB::table('resep_obat')->insert([
-                    'resep_id'   => $resepId,
-                    'obat_id'    => $obatId,
-                    'jumlah'     => $qty,
-                    // 'status'     => 'Belum Diambil',
-                    'created_at' => $now,
-                    'updated_at' => $now,
-                ]);
-
-                $items[] = [
-                    'nama_obat' => $obat->nama_obat,
-                    'jumlah'    => $qty,
-                    'harga'     => $harga,
-                    'subtotal'  => $subTotal,
-                ];
+                Obat::where('id', $row['obat_id'])->decrement('jumlah', $row['jumlah']);
             }
 
             DB::commit();
 
             return response()->json([
-                'status'         => 'success',
-                'message'        => 'Transaksi obat berhasil disimpan dan siap diambil.',
-                'kode_transaksi' => $kodeTransaksi,
-                'total'          => $grandTotal,
-                'items'          => $items,
+                'status' => 'success',
+                'message' => 'Order obat berhasil disimpan.',
+                'data' => [
+                    'id' => $header->id,
+                    'kode_transaksi' => $header->kode_transaksi,
+                    'total_tagihan' => $header->total_tagihan,
+                ],
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();
+
             return response()->json([
                 'status' => 'error',
-                'message' => 'Gagal menyimpan transaksi: ' . $e->getMessage(),
+                'message' => $e instanceof ValidationException
+                    ? collect($e->errors())->flatten()->first()
+                    : 'Gagal menyimpan transaksi: ' . $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'pasien_id' => ['required', 'exists:pasien,id'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.obat_id' => ['required', 'exists:obat,id'],
+            'items.*.jumlah' => ['required', 'integer', 'min:1'],
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $header = PenjualanObat::with('penjualanObatDetail')->findOrFail($id);
+
+            if ($header->status === 'Sudah Bayar') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Transaksi yang sudah dibayar tidak dapat diedit.'
+                ], 422);
+            }
+
+            $now = now();
+
+            foreach ($header->penjualanObatDetail as $detail) {
+                Obat::where('id', $detail->obat_id)->increment('jumlah', $detail->jumlah);
+            }
+
+            DB::table('penjualan_obat_detail')
+                ->where('penjualan_obat_id', $header->id)
+                ->delete();
+
+            $grandTotal = 0;
+
+            foreach ($request->items as $item) {
+                $obat = Obat::lockForUpdate()->findOrFail($item['obat_id']);
+                $qty = (int) $item['jumlah'];
+
+                if ($qty > (int) $obat->jumlah) {
+                    throw ValidationException::withMessages([
+                        'items' => "Stok obat {$obat->nama_obat} tidak mencukupi. Sisa stok: {$obat->jumlah}"
+                    ]);
+                }
+
+                $hargaSatuan = (float) (
+                    $obat->harga_jual_obat
+                    ?? $obat->harga_otc_obat
+                    ?? $obat->total_harga
+                    ?? 0
+                );
+
+                $subTotal = $hargaSatuan * $qty;
+                $grandTotal += $subTotal;
+
+                DB::table('penjualan_obat_detail')->insert([
+                    'penjualan_obat_id' => $header->id,
+                    'obat_id'           => $obat->id,
+                    'jumlah'            => $qty,
+                    'harga_satuan'      => $hargaSatuan,
+                    'sub_total'         => $subTotal,
+                    'created_at'        => $now,
+                    'updated_at'        => $now,
+                ]);
+
+                Obat::where('id', $obat->id)->decrement('jumlah', $qty);
+            }
+
+            $header->update([
+                'pasien_id'            => $request->pasien_id,
+                'total_tagihan'        => $grandTotal,
+                'total_setelah_diskon' => $grandTotal,
+                'updated_at'           => $now,
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Order obat berhasil diperbarui.',
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'status' => 'error',
+                'message' => $e instanceof ValidationException
+                    ? collect($e->errors())->flatten()->first()
+                    : 'Gagal update transaksi: ' . $e->getMessage(),
+            ], 422);
+        }
+    }
+
+    public function destroy($id)
+    {
+        DB::beginTransaction();
+
+        try {
+            $header = PenjualanObat::with('penjualanObatDetail')->findOrFail($id);
+
+            if ($header->status === 'Sudah Bayar') {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Transaksi yang sudah dibayar tidak dapat dihapus.'
+                ], 422);
+            }
+
+            foreach ($header->penjualanObatDetail as $detail) {
+                Obat::where('id', $detail->obat_id)->increment('jumlah', $detail->jumlah);
+            }
+
+            DB::table('penjualan_obat_detail')
+                ->where('penjualan_obat_id', $header->id)
+                ->delete();
+
+            $header->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Transaksi berhasil dihapus.',
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Gagal menghapus transaksi: ' . $e->getMessage(),
             ], 500);
         }
     }
 
-    private function getOrCreateResepIdForPasien(int $pasienId): int
+    public function getDataRiwayatTransaksiObat()
     {
-        return DB::transaction(function () use ($pasienId) {
-            // 1) Cari kunjungan "terbaru" hari ini; sesuaikan kriteria jika perlu
-            $today = now()->toDateString();
+        $query = PenjualanObat::with(['pasien', 'penjualanObatDetail.obat', 'metodePembayaran'])
+            ->where('status', 'Sudah Bayar')
+            ->latest();
 
-            $kunjungan = Kunjungan::where('pasien_id', $pasienId)
-                ->whereDate('tanggal_kunjungan', $today)
-                ->latest('id')
-                ->first();
+        return DataTables::eloquent($query)
+            ->addIndexColumn()
+            ->addColumn('nama_pasien', fn($row) => $row->pasien->nama_pasien ?? '-')
+            ->addColumn('nama_obat', fn($row) => $row->penjualanObatDetail->pluck('obat.nama_obat')->implode(', '))
+            ->addColumn('jumlah', fn($row) => $row->penjualanObatDetail->pluck('jumlah')->implode(', '))
+            ->addColumn('dosis', fn($row) => $row->penjualanObatDetail->pluck('obat.dosis')->filter()->implode(', '))
+            ->addColumn('metode_pembayaran', fn($row) => $row->metodePembayaran->nama_metode ?? '-')
+            ->editColumn('tanggal_transaksi', function ($row) {
+                return $row->tanggal_transaksi
+                    ? Carbon::parse($row->tanggal_transaksi)->toIso8601String()
+                    : null;
+            })
+            ->addColumn('bukti_pembayaran', function ($row) {
+                if (!$row->bukti_pembayaran) {
+                    return '-';
+                }
 
-            if (!$kunjungan) {
-                // (opsional) cari poli khusus apotek/farmasi bila ada
-                $poliId = DB::table('poli')
-                    ->whereIn(DB::raw('LOWER(nama_poli)'), ['apotek', 'farmasi'])
-                    ->value('id'); // bisa null kalau tidak ada & kolom kunjungan.poli_id nullable
+                $url = asset('storage/' . $row->bukti_pembayaran);
 
-                // nomor antrian per hari (3 digit)
-                $lastNo = DB::table('kunjungan')
-                    ->whereDate('tanggal_kunjungan', $today)
-                    ->max('no_antrian');
-                $nextNo = str_pad(((int)$lastNo) + 1, 3, '0', STR_PAD_LEFT);
-
-                // **PASTIKAN** kolom berikut nullable jika tidak kamu isi (dokter_id, poli_id, dll.)
-                $kunjunganId = DB::table('kunjungan')->insertGetId([
-                    'pasien_id'         => $pasienId,
-                    'tanggal_kunjungan' => now(),
-                    'no_antrian'        => $nextNo,
-                    'poli_id'           => $poliId,     // null jika tidak ada
-                    // 'dokter_id'         => null,        // pastikan nullable
-                    'status'            => 'Order Obat', // sesuaikan enum/status mu
-                    'created_at'        => now(),
-                    'updated_at'        => now(),
-                ]);
-
-                $kunjungan = Kunjungan::find($kunjunganId);
-            }
-
-            // 2) Ambil/buat resep untuk kunjungan ini
-            $resep = Resep::firstOrCreate(
-                ['kunjungan_id' => $kunjungan->id],
-                ['created_at' => now(), 'updated_at' => now()]
-            );
-
-            return (int) $resep->id;
-        });
+                return '
+                    <div class="flex flex-col items-center text-center space-y-2">
+                        <img src="' . $url . '" alt="Bukti Pembayaran"
+                            class="w-24 h-24 object-cover rounded-lg border border-gray-300 shadow-sm hover:scale-105 transition cursor-pointer"
+                            onclick="window.open(\'' . $url . '\', \'_blank\')" />
+                        <a href="' . $url . '" target="_blank"
+                            class="text-sky-600 underline text-sm font-medium">
+                            Lihat Bukti Pembayaran
+                        </a>
+                    </div>
+                ';
+            })
+            ->rawColumns(['bukti_pembayaran'])
+            ->toJson();
     }
 
     public function ajaxResepAktif(Request $request)
     {
-        $request->validate(['pasien_id' => 'required|exists:pasien,id']);
-        $resepId = $this->getOrCreateResepIdForPasien((int)$request->pasien_id);
+        $request->validate([
+            'pasien_id' => 'required|exists:pasien,id'
+        ]);
 
-        $resep = Resep::with('kunjungan')->find($resepId);
         return response()->json([
-            'resep_id'         => $resepId,
-            'kunjungan_id'     => $resep->kunjungan_id,
-            'tanggal_kunjungan' => optional($resep->kunjungan)->tanggal_kunjungan,
-            'created'          => true,
+            'resep_id' => null,
+            'kunjungan_id' => null,
+            'tanggal_kunjungan' => null,
+            'created' => false,
         ]);
     }
 }

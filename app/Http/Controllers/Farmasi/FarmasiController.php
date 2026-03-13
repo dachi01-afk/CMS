@@ -4,251 +4,399 @@ namespace App\Http\Controllers\Farmasi;
 
 use App\Http\Controllers\Controller;
 use App\Models\Farmasi;
-use App\Models\Kasir;
 use App\Models\Obat;
-use App\Models\PenjualanObat;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Intervention\Image\Laravel\Facades\Image;
 
 class FarmasiController extends Controller
 {
+    protected $batasStokMenipis = 10;
+    
     public function index()
     {
-        return view('farmasi.dashboard');
+        $userId = Auth::id();
+        $namaFarmasi = Farmasi::where('user_id', $userId)->value('nama_farmasi') ?? 'Farmasi';
+
+        return view('farmasi.dashboard', compact('namaFarmasi'));
+    }
+
+    protected function penjualanObatJoinDetail()
+    {
+        return DB::table('penjualan_obat as po')
+            ->leftJoin('penjualan_obat_detail as pod', 'pod.penjualan_obat_id', '=', 'po.id');
+    }
+
+    protected function getModeLabel($periode)
+    {
+        if ($periode === 'harian') {
+            return 'Harian';
+        }
+
+        if ($periode === 'mingguan') {
+            return 'Mingguan';
+        }
+
+        if ($periode === 'bulanan') {
+            return 'Bulanan';
+        }
+
+        return 'Tahunan';
+    }
+
+    protected function parseWeekValue(?string $weekValue, string $tz): Carbon
+    {
+        try {
+            if ($weekValue && preg_match('/^(\d{4})-W(\d{2})$/', $weekValue, $matches)) {
+                $year = (int) $matches[1];
+                $week = (int) $matches[2];
+
+                return Carbon::now($tz)->setISODate($year, $week, 1)->startOfDay();
+            }
+        } catch (\Throwable $th) {
+        }
+
+        return Carbon::now($tz)->startOfWeek(Carbon::MONDAY);
+    }
+
+    protected function parseMonthValue(?string $monthValue, string $tz): Carbon
+    {
+        try {
+            if ($monthValue) {
+                return Carbon::createFromFormat('Y-m', $monthValue, $tz)->startOfMonth();
+            }
+        } catch (\Throwable $th) {
+        }
+
+        return Carbon::now($tz)->startOfMonth();
+    }
+
+    protected function getChartFilterContext(Request $request, string $tz = 'Asia/Jakarta'): array
+    {
+        $now = Carbon::now($tz);
+        $periode = $request->query('periode', $request->query('mode_periode', 'tahunan'));
+
+        if (!in_array($periode, ['harian', 'mingguan', 'bulanan', 'tahunan'])) {
+            $periode = 'tahunan';
+        }
+
+        if ($periode === 'harian') {
+            try {
+                $anchor = $request->query('tanggal')
+                    ? Carbon::parse($request->query('tanggal'), $tz)->startOfDay()
+                    : $now->copy()->startOfDay();
+            } catch (\Throwable $th) {
+                $anchor = $now->copy()->startOfDay();
+            }
+
+            return [
+                'periode' => $periode,
+                'anchor'  => $anchor,
+                'raw'     => $anchor->toDateString(),
+            ];
+        }
+
+        if ($periode === 'mingguan') {
+            $anchor = $this->parseWeekValue($request->query('minggu'), $tz);
+
+            return [
+                'periode' => $periode,
+                'anchor'  => $anchor,
+                'raw'     => sprintf('%d-W%02d', $anchor->isoWeekYear, $anchor->isoWeek),
+            ];
+        }
+
+        if ($periode === 'bulanan') {
+            $anchor = $this->parseMonthValue($request->query('bulan'), $tz);
+
+            return [
+                'periode' => $periode,
+                'anchor'  => $anchor,
+                'raw'     => $anchor->format('Y-m'),
+            ];
+        }
+
+        $tahun = (int) $request->query('tahun', $now->year);
+        if ($tahun < 2020 || $tahun > 2100) {
+            $tahun = (int) $now->year;
+        }
+
+        $anchor = Carbon::create($tahun, 1, 1, 0, 0, 0, $tz);
+
+        return [
+            'periode' => $periode,
+            'anchor'  => $anchor,
+            'raw'     => (string) $tahun,
+        ];
+    }
+
+    public function dashboardSummary()
+    {
+        $tz = 'Asia/Jakarta';
+        $today = Carbon::now($tz)->toDateString();
+
+        $transaksiHariIni = $this->penjualanObatJoinDetail()
+            ->whereDate('po.tanggal_transaksi', $today)
+            ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as total_transaksi')
+            ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
+            ->first();
+
+        $totalKeseluruhanTransaksi = DB::table('penjualan_obat')
+            ->distinct('kode_transaksi')
+            ->count('kode_transaksi');
+
+        return response()->json([
+            'data' => [
+                'total_jenis_obat'            => (int) Obat::count(),
+                'total_stok_obat'             => (int) Obat::sum('jumlah'),
+                'stok_menipis'                => (int) Obat::whereBetween('jumlah', [1, $this->batasStokMenipis])->count(),
+                'stok_habis'                  => (int) Obat::where('jumlah', '<=', 0)->count(),
+                'transaksi_hari_ini'          => (int) ($transaksiHariIni->total_transaksi ?? 0),
+                'pemasukan_hari_ini'          => (float) ($transaksiHariIni->total_pemasukan ?? 0),
+                'total_keseluruhan_transaksi' => (int) $totalKeseluruhanTransaksi,
+            ],
+            'meta' => [
+                'tanggal'            => $today,
+                'timezone'           => $tz,
+                'batas_stok_menipis' => $this->batasStokMenipis,
+            ],
+        ]);
+    }
+
+    public function dashboardStokKritis()
+    {
+        $data = Obat::query()
+            ->select('id', 'nama_obat', 'jumlah')
+            ->where('jumlah', '<=', $this->batasStokMenipis)
+            ->orderBy('jumlah', 'asc')
+            ->orderBy('nama_obat', 'asc')
+            ->limit(10)
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id'          => $item->id,
+                    'nama_obat'   => $item->nama_obat,
+                    'stok'        => (int) $item->jumlah,
+                    'status_stok' => ((int) $item->jumlah <= 0) ? 'Habis' : 'Menipis',
+                ];
+            });
+
+        return response()->json([
+            'data' => $data,
+            'meta' => [
+                'batas_stok_menipis' => $this->batasStokMenipis,
+            ],
+        ]);
+    }
+
+    public function dashboardTransaksiTerbaru()
+    {
+        $data = DB::table('penjualan_obat as po')
+            ->leftJoin('pasien as p', 'p.id', '=', 'po.pasien_id')
+            ->leftJoin('penjualan_obat_detail as pod', 'pod.penjualan_obat_id', '=', 'po.id')
+            ->select(
+                'po.id',
+                'po.kode_transaksi',
+                'po.tanggal_transaksi',
+                'po.status',
+                DB::raw('COALESCE(p.nama_pasien, "-") as nama_pasien'),
+                DB::raw('COALESCE(SUM(pod.sub_total), 0) as total')
+            )
+            ->groupBy('po.id', 'po.kode_transaksi', 'po.tanggal_transaksi', 'po.status', 'p.nama_pasien')
+            ->orderByDesc('po.tanggal_transaksi')
+            ->limit(8)
+            ->get();
+
+        return response()->json([
+            'data' => $data,
+        ]);
     }
 
     public function chartPenjualanObat(Request $request)
     {
-        $tz   = 'Asia/Jakarta';
-        $mode = $request->query('range', 'harian'); // harian | mingguan | bulanan | tahunan
-        $now  = Carbon::now($tz);
+        $tz = 'Asia/Jakarta';
+        $filter = $this->getChartFilterContext($request, $tz);
 
-        $label    = [];
-        $seriesA  = []; // jumlah transaksi
-        $seriesB  = []; // total pemasukan (Rp)
-        $mapTrans = [];
-        $mapTotal = [];
+        $periode = $filter['periode'];
+        $anchor = $filter['anchor'];
 
-        if ($mode === 'harian') {
-            $hari = $now->toDateString();
+        $labels = [];
+        $seriesJumlahTransaksi = [];
+        $seriesTotalPemasukan = [];
+        $mapTransaksi = [];
+        $mapPemasukan = [];
 
-            $rows = PenjualanObat::query()
-                ->selectRaw('HOUR(tanggal_transaksi) as idx')
-                ->selectRaw('COUNT(*) as jumlah_transaksi')
-                ->selectRaw('COALESCE(SUM(sub_total),0) as total')
-                ->whereDate('tanggal_transaksi', $hari)
+        $modeLabel = $this->getModeLabel($periode);
+        $filterLabel = '-';
+        $shortLabel = '-';
+        $xTitle = '';
+
+        if ($periode === 'harian') {
+            $hari = $anchor->copy()->toDateString();
+
+            $rows = $this->penjualanObatJoinDetail()
+                ->selectRaw('HOUR(po.tanggal_transaksi) as idx')
+                ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as jumlah_transaksi')
+                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
+                ->whereDate('po.tanggal_transaksi', $hari)
                 ->groupBy('idx')
                 ->orderBy('idx')
                 ->get();
 
-            foreach ($rows as $r) {
-                $mapTrans[(int)$r->idx] = (int)$r->jumlah_transaksi;
-                $mapTotal[(int)$r->idx] = (float)$r->total;
-            }
-            for ($h = 0; $h <= 23; $h++) {
-                $label[]   = sprintf('%02d:00', $h);
-                $seriesA[] = $mapTrans[$h] ?? 0;
-                $seriesB[] = $mapTotal[$h] ?? 0.0;
+            foreach ($rows as $row) {
+                $mapTransaksi[(int) $row->idx] = (int) $row->jumlah_transaksi;
+                $mapPemasukan[(int) $row->idx] = (float) $row->total_pemasukan;
             }
 
-            $meta = [
-                'range'    => 'harian',
-                'tanggal'  => $hari,
-                'timezone' => $tz,
-                'x_title'  => 'Jam',
-            ];
-        } elseif ($mode === 'mingguan') {
-            $start = $now->copy()->startOfWeek(Carbon::MONDAY);
-            $end   = $now->copy()->endOfWeek(Carbon::SUNDAY);
+            for ($hour = 0; $hour <= 23; $hour++) {
+                $labels[] = sprintf('%02d:00', $hour);
+                $seriesJumlahTransaksi[] = $mapTransaksi[$hour] ?? 0;
+                $seriesTotalPemasukan[] = $mapPemasukan[$hour] ?? 0;
+            }
 
-            $rows = PenjualanObat::query()
-                ->selectRaw('WEEKDAY(tanggal_transaksi) as idx') // 0=Mon..6=Sun
-                ->selectRaw('COUNT(*) as jumlah_transaksi')
-                ->selectRaw('COALESCE(SUM(sub_total),0) as total')
-                ->whereBetween(DB::raw('DATE(tanggal_transaksi)'), [$start->toDateString(), $end->toDateString()])
+            $filterLabel = $anchor->copy()->locale('id')->translatedFormat('d F Y');
+            $shortLabel = $anchor->format('d/m/Y');
+            $xTitle = 'Jam';
+        } elseif ($periode === 'mingguan') {
+            $start = $anchor->copy()->startOfWeek(Carbon::MONDAY);
+            $end = $anchor->copy()->endOfWeek(Carbon::SUNDAY);
+
+            $rows = $this->penjualanObatJoinDetail()
+                ->selectRaw('WEEKDAY(po.tanggal_transaksi) as idx')
+                ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as jumlah_transaksi')
+                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
+                ->whereBetween(DB::raw('DATE(po.tanggal_transaksi)'), [$start->toDateString(), $end->toDateString()])
                 ->groupBy('idx')
                 ->orderBy('idx')
                 ->get();
 
-            foreach ($rows as $r) {
-                $mapTrans[(int)$r->idx] = (int)$r->jumlah_transaksi;
-                $mapTotal[(int)$r->idx] = (float)$r->total;
+            foreach ($rows as $row) {
+                $mapTransaksi[(int) $row->idx] = (int) $row->jumlah_transaksi;
+                $mapPemasukan[(int) $row->idx] = (float) $row->total_pemasukan;
             }
 
             $hariIndo = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
-            for ($d = 0; $d <= 6; $d++) {
-                $label[]   = $hariIndo[$d];
-                $seriesA[] = $mapTrans[$d] ?? 0;
-                $seriesB[] = $mapTotal[$d] ?? 0.0;
+
+            for ($day = 0; $day <= 6; $day++) {
+                $labels[] = $hariIndo[$day];
+                $seriesJumlahTransaksi[] = $mapTransaksi[$day] ?? 0;
+                $seriesTotalPemasukan[] = $mapPemasukan[$day] ?? 0;
             }
 
-            $meta = [
-                'range'    => 'mingguan',
-                'start'    => $start->toDateString(),
-                'end'      => $end->toDateString(),
-                'timezone' => $tz,
-                'x_title'  => 'Hari (Minggu ini)',
-            ];
-        } elseif ($mode === 'bulanan') {
-            $start = $now->copy()->startOfMonth();
-            $end   = $now->copy()->endOfMonth();
-            $days  = $now->daysInMonth;
+            $filterLabel = $start->copy()->locale('id')->translatedFormat('d M Y') . ' - ' . $end->copy()->locale('id')->translatedFormat('d M Y');
+            $shortLabel = 'Minggu ' . $start->isoWeek;
+            $xTitle = 'Hari (Minggu Dipilih)';
+        } elseif ($periode === 'bulanan') {
+            $start = $anchor->copy()->startOfMonth();
+            $end = $anchor->copy()->endOfMonth();
+            $daysInMonth = $anchor->daysInMonth;
 
-            $rows = PenjualanObat::query()
-                ->selectRaw('DAY(tanggal_transaksi) as idx') // 1..31
-                ->selectRaw('COUNT(*) as jumlah_transaksi')
-                ->selectRaw('COALESCE(SUM(sub_total),0) as total')
-                ->whereBetween(DB::raw('DATE(tanggal_transaksi)'), [$start->toDateString(), $end->toDateString()])
+            $rows = $this->penjualanObatJoinDetail()
+                ->selectRaw('DAY(po.tanggal_transaksi) as idx')
+                ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as jumlah_transaksi')
+                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
+                ->whereBetween(DB::raw('DATE(po.tanggal_transaksi)'), [$start->toDateString(), $end->toDateString()])
                 ->groupBy('idx')
                 ->orderBy('idx')
                 ->get();
 
-            foreach ($rows as $r) {
-                $mapTrans[(int)$r->idx] = (int)$r->jumlah_transaksi;
-                $mapTotal[(int)$r->idx] = (float)$r->total;
+            foreach ($rows as $row) {
+                $mapTransaksi[(int) $row->idx] = (int) $row->jumlah_transaksi;
+                $mapPemasukan[(int) $row->idx] = (float) $row->total_pemasukan;
             }
 
-            for ($d = 1; $d <= $days; $d++) {
-                $label[]   = sprintf('%02d', $d);
-                $seriesA[] = $mapTrans[$d] ?? 0;
-                $seriesB[] = $mapTotal[$d] ?? 0.0;
+            for ($day = 1; $day <= $daysInMonth; $day++) {
+                $labels[] = sprintf('%02d', $day);
+                $seriesJumlahTransaksi[] = $mapTransaksi[$day] ?? 0;
+                $seriesTotalPemasukan[] = $mapPemasukan[$day] ?? 0;
             }
 
-            $meta = [
-                'range'    => 'bulanan',
-                'bulan'    => $now->format('Y-m'),
-                'timezone' => $tz,
-                'x_title'  => 'Tanggal (Bulan ini)',
-            ];
-        } else { // tahunan
-            $start = $now->copy()->startOfYear();
-            $end   = $now->copy()->endOfYear();
+            $filterLabel = $anchor->copy()->locale('id')->translatedFormat('F Y');
+            $shortLabel = $anchor->format('m/Y');
+            $xTitle = 'Tanggal (Bulan Dipilih)';
+        } else {
+            $start = $anchor->copy()->startOfYear();
+            $end = $anchor->copy()->endOfYear();
 
-            $rows = PenjualanObat::query()
-                ->selectRaw('MONTH(tanggal_transaksi) as idx') // 1..12
-                ->selectRaw('COUNT(*) as jumlah_transaksi')
-                ->selectRaw('COALESCE(SUM(sub_total),0) as total')
-                ->whereBetween(DB::raw('DATE(tanggal_transaksi)'), [$start->toDateString(), $end->toDateString()])
+            $rows = $this->penjualanObatJoinDetail()
+                ->selectRaw('MONTH(po.tanggal_transaksi) as idx')
+                ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as jumlah_transaksi')
+                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
+                ->whereBetween(DB::raw('DATE(po.tanggal_transaksi)'), [$start->toDateString(), $end->toDateString()])
                 ->groupBy('idx')
                 ->orderBy('idx')
                 ->get();
 
-            foreach ($rows as $r) {
-                $mapTrans[(int)$r->idx] = (int)$r->jumlah_transaksi;
-                $mapTotal[(int)$r->idx] = (float)$r->total;
+            foreach ($rows as $row) {
+                $mapTransaksi[(int) $row->idx] = (int) $row->jumlah_transaksi;
+                $mapPemasukan[(int) $row->idx] = (float) $row->total_pemasukan;
             }
 
-            $bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-            for ($m = 1; $m <= 12; $m++) {
-                $label[]   = $bulan[$m - 1];
-                $seriesA[] = $mapTrans[$m] ?? 0;
-                $seriesB[] = $mapTotal[$m] ?? 0.0;
+            $bulanIndo = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+            for ($month = 1; $month <= 12; $month++) {
+                $labels[] = $bulanIndo[$month - 1];
+                $seriesJumlahTransaksi[] = $mapTransaksi[$month] ?? 0;
+                $seriesTotalPemasukan[] = $mapPemasukan[$month] ?? 0;
             }
 
-            $meta = [
-                'range'    => 'tahunan',
-                'tahun'    => $now->year,
-                'timezone' => $tz,
-                'x_title'  => 'Bulan (Tahun ini)',
-            ];
+            $filterLabel = 'Tahun ' . $anchor->year;
+            $shortLabel = (string) $anchor->year;
+            $xTitle = 'Bulan (Tahun Dipilih)';
         }
 
-        return response()->json([
-            'label'   => $label,
-            'dataset' => [
-                [
-                    'label'           => 'Jumlah Transaksi',
-                    'type'            => 'bar',
-                    'data'            => $seriesA,
-                    'borderWidth'     => 1,
-                    'borderRadius'    => 6,
-                    'backgroundColor' => 'rgba(37,99,235,0.7)',
-                    'borderColor'     => 'rgba(37,99,235,1)',
-                ],
-                [
-                    'label'       => 'Total Pemasukan (Rp)',
-                    'type'        => 'line',
-                    'yAxisID'     => 'y1',
-                    'data'        => $seriesB,
-                    'borderWidth' => 2,
-                    'tension'     => 0.3,
-                    'pointRadius' => 3,
-                    'borderColor' => 'rgba(16,185,129,1)',
-                ],
+        $datasets = [
+            [
+                'label'   => 'Jumlah Transaksi',
+                'data'    => $seriesJumlahTransaksi,
+                'yAxisID' => 'y',
             ],
-            'meta' => $meta,
-        ]);
-    }
-
-    public function getJumlahPenjualanObatHariIni(Request $request)
-    {
-        $tz     = 'Asia/Jakarta';
-        $today  = Carbon::now($tz)->toDateString();
-
-        // Secara default hanya hitung transaksi yang Sudah Bayar.
-        // Bisa override dengan query ?paid=0 kalau ingin termasuk "Belum Bayar".
-        $onlyPaid = filter_var($request->query('paid', '1'), FILTER_VALIDATE_BOOLEAN);
-
-        $q = PenjualanObat::query()
-            ->whereDate('tanggal_transaksi', $today);
-
-        if ($onlyPaid) {
-            $q->where('status', 'Sudah Bayar');
-        }
-
-        // Hitung jumlah transaksi unik berdasarkan kode_transaksi
-        $totalTransaksi = $q->distinct('kode_transaksi')->count('kode_transaksi');
-
-        return response()->json([
-            'total' => (int) $totalTransaksi,
-            'meta'  => [
-                'tanggal'  => $today,
-                'timezone' => $tz,
-                'onlyPaid' => $onlyPaid,
+            [
+                'label'   => 'Total Pemasukan (Rp)',
+                'data'    => $seriesTotalPemasukan,
+                'yAxisID' => 'y1',
             ],
-        ]);
-    }
-
-    public function getJumlahKeseluruhanTransaksiObat()
-    {
-        // Hitung semua transaksi unik berdasarkan kode_transaksi
-        $totalTransaksi = PenjualanObat::distinct('kode_transaksi')->count('kode_transaksi');
+        ];
 
         return response()->json([
-            'total' => (int) $totalTransaksi,
-        ]);
-    }
+            'periode'      => $periode,
+            'mode_label'   => $modeLabel,
+            'filter_label' => $filterLabel,
+            'short_label'  => $shortLabel,
+            'chart_title'  => 'Grafik Penjualan Obat ' . $modeLabel . ' — ' . $filterLabel,
+            'labels'       => $labels,
+            'values'       => $seriesJumlahTransaksi,
+            'datasets'     => $datasets,
+            'meta'         => [
+                'x_title' => $xTitle,
+            ],
 
-    public function getTotalObat()
-    {
-        // Hitung total stok obat dari kolom 'jumlah'
-        $jumlahObat = Obat::sum('jumlah');
-
-        // Kembalikan hasil dalam format JSON
-        return response()->json([
-            'total' => $jumlahObat,
+            // backward compatibility
+            'label'   => $labels,
+            'dataset' => $datasets,
         ]);
     }
 
     public function createFarmasi(Request $request)
     {
         try {
-            // 🧩 Validasi input
             $request->validate([
                 'foto_apoteker'     => 'required|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
-                'username_apoteker' => 'required|string|max:255',
+                'username_apoteker' => ['required', 'string', 'max:255', 'unique:user,username'],
                 'nama_apoteker'     => 'required|string|max:255',
-                'email_apoteker'    => 'required|email',
+                'email_apoteker'    => ['required', 'email', 'unique:user,email'],
                 'no_hp_apoteker'    => 'nullable|string|max:20',
                 'password_apoteker' => 'required|string|min:8|confirmed',
             ]);
 
-            // 🧑‍💻 Buat user baru
+            DB::beginTransaction();
+
             $user = User::create([
                 'username' => $request->username_apoteker,
                 'email'    => $request->email_apoteker,
@@ -256,8 +404,8 @@ class FarmasiController extends Controller
                 'role'     => 'Farmasi',
             ]);
 
-            // 📸 Upload + Kompres Foto
             $fotoPath = null;
+
             if ($request->hasFile('foto_apoteker')) {
                 $file = $request->file('foto_apoteker');
 
@@ -280,31 +428,37 @@ class FarmasiController extends Controller
                 $fotoPath = $path;
             }
 
-            // 🏥 Buat data apoteker
             Farmasi::create([
-                'user_id'        => $user->id,
+                'user_id'       => $user->id,
                 'nama_farmasi'  => $request->nama_apoteker,
                 'foto_farmasi'  => $fotoPath,
                 'no_hp_farmasi' => $request->no_hp_apoteker,
             ]);
 
-            return response()->json(['message' => 'Data farmasi berhasil ditambahkan.']);
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Data farmasi berhasil ditambahkan.'
+            ]);
         } catch (\Illuminate\Http\Exceptions\PostTooLargeException $e) {
-            // 🚫 File terlalu besar
+            DB::rollBack();
+
             return response()->json([
                 'message' => 'Ukuran file terlalu besar! Maksimal 5 MB.'
             ], 413);
         } catch (\Illuminate\Validation\ValidationException $e) {
-            // ⚠️ Validasi gagal
+            DB::rollBack();
+
             return response()->json([
                 'message' => 'Validasi gagal.',
-                'errors' => $e->errors()
+                'errors'  => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            // 💥 Error umum
+            DB::rollBack();
+
             return response()->json([
-                'message' => 'Tidak ada respon dari server.', // 🔥 ini pesan yang kamu mau
-                'error_detail' => $e->getMessage(), // opsional, untuk debugging (bisa kamu hapus kalau gak mau tampil)
+                'message'      => 'Tidak ada respon dari server.',
+                'error_detail' => $e->getMessage(),
             ], 500);
         }
     }
@@ -312,34 +466,41 @@ class FarmasiController extends Controller
     public function getFarmasiById($id)
     {
         $data = Farmasi::with('user')->findOrFail($id);
-        return response()->json(['data' => $data]);
+
+        return response()->json([
+            'data' => $data
+        ]);
     }
 
     public function updateFarmasi(Request $request, $id)
     {
         try {
-            $apoteker = Farmasi::findOrFail($id);
-            $user = $apoteker->user;
+            $farmasi = Farmasi::findOrFail($id);
+            $user = $farmasi->user;
+            $oldPhoto = null;
 
             $request->validate([
-                'edit_username_apoteker'    => 'required|string|max:255',
-                'edit_nama_apoteker'        => 'required|string|max:255',
-                'edit_email_apoteker'       => 'required|email',
-                'edit_foto_apoteker'        => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
-                'edit_no_hp_apoteker'       => 'nullable|string|max:20',
-                'edit_password_apoteker'    => 'nullable|string|min:8|confirmed',
+                'edit_username_apoteker' => [
+                    'required',
+                    'string',
+                    'max:255',
+                    Rule::unique('user', 'username')->ignore($user->id),
+                ],
+                'edit_nama_apoteker'     => 'required|string|max:255',
+                'edit_email_apoteker'    => [
+                    'required',
+                    'email',
+                    Rule::unique('user', 'email')->ignore($user->id),
+                ],
+                'edit_foto_apoteker'     => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
+                'edit_no_hp_apoteker'    => 'nullable|string|max:20',
+                'edit_password_apoteker' => 'nullable|string|min:8|confirmed',
             ]);
 
-            // Update user
-            $user->username = $request->input('edit_username_apoteker');
-            $user->email    = $request->input('edit_email_apoteker');
+            DB::beginTransaction();
 
-            if ($request->filled('edit_password_apoteker')) {
-                $user->password = Hash::make($request->input('edit_password_apoteker'));
-            }
-
-            // Handle foto upload
             $fotoPath = null;
+
             if ($request->hasFile('edit_foto_apoteker')) {
                 $file = $request->file('edit_foto_apoteker');
 
@@ -348,8 +509,8 @@ class FarmasiController extends Controller
                     $extension = 'jpg';
                 }
 
-                $fileName = 'apoteker_' . time() . '.' . $extension;
-                $path = 'apoteker/' . $fileName;
+                $fileName = 'farmasi_' . time() . '.' . $extension;
+                $path = 'farmasi/' . $fileName;
 
                 if ($extension === 'svg') {
                     Storage::disk('public')->put($path, file_get_contents($file));
@@ -360,61 +521,199 @@ class FarmasiController extends Controller
                 }
 
                 $fotoPath = $path;
-
-                if ($apoteker->foto_apoteker && Storage::disk('public')->exists($apoteker->foto_apoteker)) {
-                    Storage::disk('public')->delete($apoteker->foto_apoteker);
-                }
             }
 
-            // Update apoteker
-            $updateData = [
+            $updateDataUser = [
+                'username' => $request->edit_username_apoteker,
+                'email'    => $request->edit_email_apoteker,
+            ];
+
+            if ($request->filled('edit_password_apoteker')) {
+                $updateDataUser['password'] = Hash::make($request->edit_password_apoteker);
+            }
+
+            $updateDataFarmasi = [
                 'nama_farmasi'  => $request->edit_nama_apoteker,
                 'no_hp_farmasi' => $request->edit_no_hp_apoteker,
             ];
 
-            $updateDataUser = ([
-                'username' => $request->edit_username_apoteker,
-            ]);
-
             if ($fotoPath) {
-                $updateData['foto_farmasi'] = $fotoPath;
+                $oldPhoto = $farmasi->foto_farmasi;
+                $updateDataFarmasi['foto_farmasi'] = $fotoPath;
             }
 
-            $apoteker->update($updateData);
             $user->update($updateDataUser);
+            $farmasi->update($updateDataFarmasi);
 
-            return response()->json(['message' => 'Data farmasi berhasil diperbarui.']);
+            DB::commit();
+
+            if (!empty($oldPhoto) && Storage::disk('public')->exists($oldPhoto)) {
+                Storage::disk('public')->delete($oldPhoto);
+            }
+
+            return response()->json([
+                'message' => 'Data farmasi berhasil diperbarui.'
+            ]);
         } catch (\Illuminate\Http\Exceptions\PostTooLargeException $e) {
-            // 📛 Jika file melebihi batas upload
+            DB::rollBack();
+
             return response()->json([
                 'message' => 'Ukuran file terlalu besar! Maksimal 5 MB.'
             ], 413);
         } catch (\Illuminate\Validation\ValidationException $e) {
-            // 📛 Jika validasi gagal
+            DB::rollBack();
+
             return response()->json([
                 'message' => 'Validasi gagal.',
-                'errors' => $e->errors()
+                'errors'  => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            // 💥 Error umum
+            DB::rollBack();
+
             return response()->json([
-                'message' => 'Tidak ada respon dari server.', // 🔥 ini pesan yang kamu mau
-                'error_detail' => $e->getMessage(), // opsional, untuk debugging (bisa kamu hapus kalau gak mau tampil)
+                'message'      => 'Tidak ada respon dari server.',
+                'error_detail' => $e->getMessage(),
             ], 500);
         }
     }
 
     public function deleteFarmasi($id)
     {
-        $farmasi = Farmasi::findOrFail($id);
+        try {
+            $farmasi = Farmasi::findOrFail($id);
+            $fotoPath = $farmasi->foto_farmasi;
+            $user = $farmasi->user;
 
-        $farmasi->user->delete();
-        $farmasi->delete();
-        // Hapus foto jika ada
-        if ($farmasi->foto_farmasi && Storage::disk('public')->exists($farmasi->foto_farmasi)) {
-            Storage::disk('public')->delete($farmasi->foto_farmasi);
+            DB::beginTransaction();
+
+            if ($user) {
+                $user->delete();
+            }
+
+            $farmasi->delete();
+
+            DB::commit();
+
+            if ($fotoPath && Storage::disk('public')->exists($fotoPath)) {
+                Storage::disk('public')->delete($fotoPath);
+            }
+
+            return response()->json([
+                'success' => 'Data farmasi berhasil dihapus.'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'message'      => 'Gagal menghapus data farmasi.',
+                'error_detail' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    protected function getDateRangeByFilter(array $filter): array
+    {
+        $periode = $filter['periode'];
+        $anchor = $filter['anchor'];
+
+        if ($periode === 'harian') {
+            $start = $anchor->copy()->startOfDay();
+            $end = $anchor->copy()->endOfDay();
+            $filterLabel = $anchor->copy()->locale('id')->translatedFormat('d F Y');
+        } elseif ($periode === 'mingguan') {
+            $start = $anchor->copy()->startOfWeek(Carbon::MONDAY);
+            $end = $anchor->copy()->endOfWeek(Carbon::SUNDAY);
+            $filterLabel = $start->copy()->locale('id')->translatedFormat('d M Y') . ' - ' . $end->copy()->locale('id')->translatedFormat('d M Y');
+        } elseif ($periode === 'bulanan') {
+            $start = $anchor->copy()->startOfMonth();
+            $end = $anchor->copy()->endOfMonth();
+            $filterLabel = $anchor->copy()->locale('id')->translatedFormat('F Y');
+        } else {
+            $start = $anchor->copy()->startOfYear();
+            $end = $anchor->copy()->endOfYear();
+            $filterLabel = 'Tahun ' . $anchor->year;
         }
 
-        return response()->json(['success' => 'Data farmasi berhasil dihapus.']);
+        return [
+            'start' => $start,
+            'end' => $end,
+            'filter_label' => $filterLabel,
+        ];
+    }
+
+    public function penjualanObatPage(Request $request)
+    {
+        $tz = 'Asia/Jakarta';
+        $isTodayOnly = (int) $request->query('today_only', 0) === 1;
+        $todayLabel = Carbon::now($tz)->locale('id')->translatedFormat('d F Y');
+
+        return view('farmasi.penjualan-obat.index', compact('isTodayOnly', 'todayLabel'));
+    }
+
+    public function penjualanObatData(Request $request)
+    {
+        $tz = 'Asia/Jakarta';
+        $isTodayOnly = (int) $request->query('today_only', 0) === 1;
+
+        $filter = $isTodayOnly
+            ? $this->getTodayOnlyFilterContext($tz)
+            : $this->getChartFilterContext($request, $tz);
+
+        $range = $this->getDateRangeByFilter($filter);
+
+        $start = $range['start'];
+        $end = $range['end'];
+        $filterLabel = $range['filter_label'];
+
+        $data = DB::table('penjualan_obat as po')
+            ->leftJoin('pasien as p', 'p.id', '=', 'po.pasien_id')
+            ->leftJoin('penjualan_obat_detail as pod', 'pod.penjualan_obat_id', '=', 'po.id')
+            ->select(
+                'po.id',
+                'po.kode_transaksi',
+                'po.tanggal_transaksi',
+                'po.status',
+                DB::raw('COALESCE(p.nama_pasien, "-") as nama_pasien'),
+                DB::raw('COALESCE(SUM(pod.sub_total), 0) as total')
+            )
+            ->whereBetween('po.tanggal_transaksi', [
+                $start->copy()->toDateTimeString(),
+                $end->copy()->toDateTimeString()
+            ])
+            ->groupBy('po.id', 'po.kode_transaksi', 'po.tanggal_transaksi', 'po.status', 'p.nama_pasien')
+            ->orderByDesc('po.tanggal_transaksi')
+            ->get();
+
+        $summary = $this->penjualanObatJoinDetail()
+            ->whereBetween('po.tanggal_transaksi', [
+                $start->copy()->toDateTimeString(),
+                $end->copy()->toDateTimeString()
+            ])
+            ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as total_transaksi')
+            ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
+            ->first();
+
+        return response()->json([
+            'data' => $data,
+            'meta' => [
+                'is_today_only'   => $isTodayOnly,
+                'periode'         => $filter['periode'],
+                'mode_label'      => $isTodayOnly ? 'Hari Ini' : $this->getModeLabel($filter['periode']),
+                'filter_label'    => $isTodayOnly ? 'Hari Ini - ' . $filterLabel : $filterLabel,
+                'total_transaksi' => (int) ($summary->total_transaksi ?? 0),
+                'total_pemasukan' => (float) ($summary->total_pemasukan ?? 0),
+            ],
+        ]);
+    }
+
+    protected function getTodayOnlyFilterContext(string $tz = 'Asia/Jakarta'): array
+    {
+        $anchor = Carbon::now($tz)->startOfDay();
+
+        return [
+            'periode' => 'harian',
+            'anchor'  => $anchor,
+            'raw'     => $anchor->toDateString(),
+        ];
     }
 }

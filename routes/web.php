@@ -34,6 +34,7 @@ use App\Http\Controllers\Farmasi\PesananDanStokMasuk;
 use App\Http\Controllers\Farmasi\RestockDanReturnController;
 use App\Http\Controllers\Farmasi\RestockDanReturnObatController;
 use App\Http\Controllers\Farmasi\SatuanObatController;
+use App\Http\Controllers\Farmasi\StokObatController;
 use App\Http\Controllers\Farmasi\SupplierController;
 use App\Http\Controllers\Farmasi\TipeDepotController;
 use App\Http\Controllers\JenisSpesialisController;
@@ -43,6 +44,7 @@ use App\Http\Controllers\Kasir\MetodePembayaranController;
 use App\Http\Controllers\Kasir\RiwayatTransaksiController;
 use App\Http\Controllers\Kasir\TransaksiLayananController;
 use App\Http\Controllers\Kasir\TransaksiObatController;
+use App\Http\Controllers\Management\AdminController;
 use App\Http\Controllers\Management\ApotekerController;
 use App\Http\Controllers\Management\DokterController;
 use App\Http\Controllers\Management\EMRController;
@@ -146,6 +148,14 @@ Route::middleware('auth')->group(function () {
     });
 });
 
+Route::middleware(['auth'])->group(function () {
+    Route::prefix('settings')->name('settings.')->group(function () {
+        Route::get('/', [SettingsController::class, 'index'])->name('index');
+        Route::put('/profile', [SettingsController::class, 'updateProfile'])->name('profile.update');
+        Route::put('/password', [SettingsController::class, 'updatePassword'])->name('password.update');
+    });
+});
+
 Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::post('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -212,6 +222,11 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::put('/update_user/{id}', [UserController::class, 'updateUser'])->name('update_user');
         Route::delete('/delete_user/{id}', [UserController::class, 'deleteUser'])->name('delete_user');
 
+        Route::get('/data_admin', [ManajemenPenggunaController::class, 'dataAdmin'])->name('data_admin');
+        Route::post('/add_admin', [AdminController::class, 'createAdmin'])->name('add_admin');
+        Route::get('/get_admin_by_id/{id}', [AdminController::class, 'getAdminById'])->name('get_admin_by_id');
+        Route::put('/update_admin/{id}', [AdminController::class, 'updateAdmin'])->name('update_admin');
+        Route::delete('/delete_admin/{id}', [AdminController::class, 'deleteAdmin'])->name('delete_admin');
         // crud dokter
         Route::get('/data_dokter', [ManajemenPenggunaController::class, 'dataDokter'])->name('data_dokter');
         Route::get('/get_dokter_by_id/{id}', [DokterController::class, 'getDokterById'])->name('get_dokter_by_id');
@@ -282,10 +297,6 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::get('/detail-emr/pasien/{noEMR}', [DataMedisPasienController::class, 'detailEMRPasien'])->name('detail.emr.pasien');
     });
 
-    Route::prefix('settings')->name('settings.')->group(function () {
-        Route::get('/', [SettingsController::class, 'index'])->name('index');
-    });
-
     Route::prefix('jadwal_kunjungan')->name('jadwal_kunjungan.')->group(function () {
         Route::get('/', [JadwalKunjunganController::class, 'index'])->name('index');
         Route::post('/create', [JadwalKunjunganController::class, 'store'])->name('create');
@@ -323,11 +334,19 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
 
     Route::prefix('farmasi')->group(function () {
         Route::get('/dashboard', [FarmasiController::class, 'index'])->name('farmasi.dashboard');
-
+        Route::get('/dashboard/summary', [FarmasiController::class, 'dashboardSummary'])->name('farmasi.dashboard.summary');
+        Route::get('/dashboard/stok-kritis', [FarmasiController::class, 'dashboardStokKritis'])->name('farmasi.dashboard.stok.kritis');
+        Route::get('/dashboard/transaksi-terbaru', [FarmasiController::class, 'dashboardTransaksiTerbaru'])->name('farmasi.dashboard.transaksi.terbaru');
         Route::get('/chart/penjualan-obat', [FarmasiController::class, 'chartPenjualanObat'])->name('chart.penjualan');
-        Route::get('/get-jumlah-stok-obat', [FarmasiController::class, 'getTotalObat'])->name('get.jumlah.stok.obat');
-        Route::get('/get-jumlah-penjualan-obat-hari-ini', [FarmasiController::class, 'getJumlahPenjualanObatHariIni'])->name('get.jumlah.penjualan.obat.hari.ini');
-        Route::get('/get-jumlah-keseluruhan-penjualan-obat', [FarmasiController::class, 'getJumlahKeseluruhanTransaksiObat'])->name('get.jumlah.keseluruhan.penjualan.obat');
+
+        Route::get('/stok-obat', [StokObatController::class, 'stokObatPage'])->name('farmasi.stok.obat.index');
+        Route::get('/stok-obat/data', [StokObatController::class, 'stokObatData'])->name('farmasi.stok-obat.data');
+        Route::get('/stok-obat/{id}/detail', [StokObatController::class, 'stokObatDetail'])->name('farmasi.stok-obat.detail');
+
+        Route::get('/penjualan-obat', [PenjualanObatController::class, 'penjualanObatPage'])->name('farmasi.penjualan.obat.index');
+        Route::get('/penjualan-obat/hari-ini', [PenjualanObatController::class, 'penjualanObatHariIniPage'])->name('farmasi.penjualan.obat.hari.ini.index');
+        Route::get('/get-data-penjualan-obat/hari-ini', [PenjualanObatController::class, 'penjualanObatHariIni'])->name('farmasi.penjualan.obat.hari.ini.data');
+        Route::get('/penjualan-obat/data', [PenjualanObatController::class, 'penjualanObatData'])->name('farmasi.penjualan-obat.data');
 
         // Route Kategori Obat
         Route::prefix('kategori-obat')->group(function () {
@@ -350,12 +369,18 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('/export-data-obat', [ObatController::class, 'export'])->name('export.data.obat');
             Route::post('/import-data-obat', [ObatController::class, 'importExcel'])->name('import.data.obat');
             Route::get('/print-data-obat', [ObatController::class, 'printPDF'])->name('print.data.obat');
+        });
 
+        Route::prefix('order-obat')->group(function () {
             Route::get('/get-data-penjualan-obat', [OrderObatController::class, 'getDataPenjualanObat'])->name('obat.penjualan.obat');
             Route::get('/search-data-pasien', [OrderObatController::class, 'search'])->name('obat.search.data.pasien');
             Route::get('/search-data-obat', [OrderObatController::class, 'searchObat'])->name('obat.search.data.obat');
-            Route::post('/pesan-obat', [OrderObatController::class, 'pesanObat'])->name('obat.pesan.obat');
             Route::get('/resep-aktif', [OrderObatController::class, 'ajaxResepAktif'])->name('resep.aktif');
+
+            Route::post('/pesan-obat', [OrderObatController::class, 'pesanObat'])->name('obat.pesan.obat');
+            Route::get('/order/{id}', [OrderObatController::class, 'show']);
+            Route::put('/order/{id}', [OrderObatController::class, 'update']);
+            Route::delete('/order/{id}', [OrderObatController::class, 'destroy']);
         });
 
         // Route Penggunaan Obat

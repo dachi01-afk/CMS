@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Admin;
 use App\Models\Apoteker;
 use App\Models\Dokter;
 use App\Models\Farmasi;
@@ -40,6 +41,76 @@ class ManajemenPenggunaController extends Controller
                 ';
             })
             ->rawColumns(['action'])
+            ->make(true);
+    }
+
+    public function dataAdmin()
+    {
+        $user = Auth::user();
+        $isSuperAdmin = $user && strtolower(str_replace(' ', '', $user->role)) === 'superadmin';
+
+        $query = Admin::with('user')
+            ->select('admin.*')
+            ->latest('admin.id');
+
+        return DataTables::eloquent($query)
+            ->addIndexColumn()
+            ->addColumn('foto', function ($row) {
+                if ($row->foto_admin) {
+                    $url = asset('storage/' . $row->foto_admin);
+                    return '<img src="' . $url . '" alt="Foto Admin" class="w-12 h-12 rounded-lg object-cover mx-auto shadow">';
+                }
+
+                return '
+                <div class="w-12 h-12 rounded-lg bg-slate-100 text-slate-400 flex items-center justify-center mx-auto shadow-sm">
+                    <i class="fa-solid fa-user"></i>
+                </div>
+            ';
+            })
+            ->addColumn('nama_admin', function ($row) {
+                return $row->nama_admin ?? '-';
+            })
+            ->addColumn('username', function ($row) {
+                return optional($row->user)->username ?? '-';
+            })
+            ->addColumn('email_user', function ($row) {
+                return optional($row->user)->email ?? '-';
+            })
+            ->addColumn('role', function ($row) {
+                $role = optional($row->user)->role ?? '-';
+
+                return '<span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-200">'
+                    . e($role) .
+                    '</span>';
+            })
+            ->addColumn('no_hp', function ($row) {
+                return $row->no_hp ?? '-';
+            })
+            ->addColumn('action', function ($row) use ($isSuperAdmin) {
+                $buttons = '
+                <div class="flex items-center justify-center gap-2">
+                    <button type="button"
+                        class="btn-edit-admin inline-flex items-center justify-center w-9 h-9 rounded-lg bg-amber-50 text-amber-600 hover:bg-amber-100 hover:text-amber-700"
+                        data-id="' . $row->id . '" title="Edit">
+                        <i class="fa-regular fa-pen-to-square"></i>
+                    </button>
+            ';
+
+                if ($isSuperAdmin) {
+                    $buttons .= '
+                    <button type="button"
+                        class="btn-delete-admin inline-flex items-center justify-center w-9 h-9 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 hover:text-red-700"
+                        data-id="' . $row->id . '" title="Hapus">
+                        <i class="fa-regular fa-trash-can"></i>
+                    </button>
+                ';
+                }
+
+                $buttons .= '</div>';
+
+                return $buttons;
+            })
+            ->rawColumns(['foto', 'role', 'action'])
             ->make(true);
     }
 
@@ -237,7 +308,7 @@ class ManajemenPenggunaController extends Controller
             ->rawColumns(['foto', 'action'])
             ->make(true);
     }
-    
+
     public function dataPerawat()
     {
         $user = Auth::user();

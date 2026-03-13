@@ -24,4 +24,9 @@ class PenjualanObat extends Model
     {
         return $this->belongsTo(MetodePembayaran::class);
     }
+
+    public function penjualanObatDetail()
+    {
+        return $this->hasMany(PenjualanObatDetail::class);
+    }
 }

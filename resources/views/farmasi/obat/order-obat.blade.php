@@ -1,227 +1,219 @@
 <!-- Header -->
-<div class="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-    <h2 class="text-2xl font-bold text-gray-700">Order Obat</h2>
+<div class="mb-6">
+    <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+        <div>
+            <h2 class="text-2xl font-bold text-slate-800">Order Obat</h2>
+            <p class="text-sm text-slate-500 mt-1">Kelola transaksi order obat pasien dengan tampilan yang lebih rapi dan
+                cepat.</p>
+        </div>
 
-    <!-- Modal toggle -->
-    <button id="btn-open-modal-penjualan-obat"
-        class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg shadow hover:bg-blue-700 focus:outline-none">
-        + Tambah Data
-    </button>
+        <div class="flex items-center gap-2">
+            <button id="btn-open-modal-penjualan-obat"
+                class="inline-flex items-center gap-2 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-300">
+                <span class="text-base">+</span>
+                Tambah Order
+            </button>
+        </div>
+    </div>
 </div>
 
-<!-- Tabel -->
-<div class="overflow-hidden rounded-lg shadow-md">
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 p-4 border-b border-gray-200">
-        <div>
-            <select id="penjualan-obat-page-length"
-                class="border border-gray-300 text-sm rounded-lg focus:ring-sky-500 focus:border-sky-500 block w-24 p-1">
-                <option value="10">10</option>
-                <option value="25">25</option>
-                <option value="50">50</option>
-                <option value="100">100</option>
-            </select>
-        </div>
-        <div class="relative">
-            <input type="text" id="penjualan-obat-search-input"
-                class="block w-60 p-2 pl-3 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-sky-500 focus:border-sky-500"
-                placeholder="Cari data...">
+<!-- Table Card -->
+<div class="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+    <div class="border-b border-slate-200 bg-slate-50/70 px-5 py-4">
+        <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div class="flex items-center gap-3">
+                <div>
+                    <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
+                        Tampilkan
+                    </label>
+                    <select id="penjualan-obat-page-length"
+                        class="rounded-xl border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100">
+                        <option value="10">10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="w-full lg:w-80">
+                <label class="mb-1 block text-xs font-medium uppercase tracking-wide text-slate-500">
+                    Cari transaksi
+                </label>
+                <input type="text" id="penjualan-obat-search-input"
+                    class="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 placeholder:text-slate-400 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+                    placeholder="Cari kode transaksi / pasien / obat...">
+            </div>
         </div>
     </div>
 
     <div class="overflow-x-auto">
-        <table id="penjualanObatTable" class="w-full text-sm text-left text-gray-600">
-            <thead class="text-xs uppercase bg-sky-500 text-white">
+        <table id="penjualanObatTable" class="w-full text-sm text-left text-slate-700">
+            <thead class="bg-slate-800 text-xs uppercase tracking-wider text-white">
                 <tr>
-                    <th class="px-6 py-3">No</th>
-                    <th class="px-6 py-3">Nama Pasien</th>
-                    <th class="px-6 py-3">Nama Obat</th>
-                    <th class="px-6 py-3">Kode Transaksi</th>
-                    <th class="px-6 py-3">Jumlah Obat</th>
-                    <th class="px-6 py-3">Sub Total</th>
-                    <th class="px-6 py-3">Tanggal Transaksi</th>
-                    {{-- <th class="px-6 py-3 text-center">Aksi</th> --}}
+                    <th class="px-5 py-4">No</th>
+                    <th class="px-5 py-4">Kode Transaksi</th>
+                    <th class="px-5 py-4">Pasien</th>
+                    <th class="px-5 py-4">Jumlah Item</th>
+                    <th class="px-5 py-4">Total Tagihan</th>
+                    <th class="px-5 py-4">Status</th>
+                    <th class="px-5 py-4">Tanggal Transaksi</th>
+                    <th class="px-5 py-4 text-center">Aksi</th>
                 </tr>
             </thead>
             <tbody></tbody>
         </table>
     </div>
 
-    <div class="flex flex-col md:flex-row md:items-center md:justify-between px-4 py-3 border-t border-gray-200 gap-3">
-        <div id="penjualan-obat-custom-info" class="text-sm text-gray-700 dark:text-gray-300"></div>
+    <div class="flex flex-col gap-3 border-t border-slate-200 px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
+        <div id="penjualan-obat-custom-info" class="text-sm text-slate-600"></div>
         <ul id="penjualan-obat-custom-paginate" class="inline-flex -space-x-px text-sm"></ul>
     </div>
 </div>
 
-
+<!-- Modal -->
 <div id="modalJualObat" tabindex="-1" aria-hidden="true"
-    class="hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 bg-black bg-opacity-50 overflow-y-auto overflow-x-hidden">
-    <div class="relative w-full max-w-xl max-h-full">
-        <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
-
+    class="hidden fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 p-4 overflow-y-auto">
+    <div class="relative w-full max-w-6xl">
+        <div class="overflow-hidden rounded-2xl bg-white shadow-2xl">
             <!-- Header -->
-            <div class="flex items-center justify-between p-4 border-b dark:border-gray-600">
-                <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                    Form Penjualan Obat
-                </h3>
+            <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                <div>
+                    <h3 id="modal-title-penjualan-obat" class="text-xl font-bold text-slate-800">Tambah Order Obat</h3>
+                    <p class="text-sm text-slate-500">Pilih pasien, tambahkan obat, lalu simpan transaksi.</p>
+                </div>
+
                 <button type="button" id="closeModalBtn"
-                    class="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm w-8 h-8 inline-flex justify-center items-center">
+                    class="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-700">
                     ✕
                 </button>
             </div>
 
-            <!-- Form -->
-            <form method="POST" class="px-6 py-2 space-y-4"
-                id="form-penjualan-obat">
+            <form id="form-penjualan-obat" class="p-6">
                 @csrf
-                <input type="hidden" name="resep_id" id="resep_id">
-                <input type="hidden" name="tanggal_kunjungan" id="tanggal_kunjungan">
+                <input type="hidden" id="penjualan_obat_id" name="penjualan_obat_id">
+                <input type="hidden" id="pasien_id" name="pasien_id">
+                <input type="hidden" id="resep_id" name="resep_id">
+                <input type="hidden" id="tanggal_kunjungan" name="tanggal_kunjungan">
 
-                <!-- Cari Obat -->
-                <div>
-                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Cari Obat</label>
-                    <input type="text" id="search_obat" placeholder="Ketik nama obat..."
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
+                <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+                    <!-- LEFT -->
+                    <div class="xl:col-span-2 space-y-6">
+                        <!-- Cari Pasien -->
+                        <div class="rounded-2xl border border-slate-200 p-5">
+                            <h4 class="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-600">Data Pasien
+                            </h4>
 
-                    <div id="obat_results"
-                        class="mt-2 bg-white border border-gray-200 rounded-lg shadow max-h-40 overflow-y-auto hidden">
-                        <!-- hasil pencarian obat -->
+                            <div>
+                                <label class="mb-2 block text-sm font-medium text-slate-700">Cari Pasien</label>
+                                <input type="text" id="search_pasien" name="search_pasien"
+                                    placeholder="Ketik nama pasien..."
+                                    class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100">
+                                <div id="search_results"
+                                    class="mt-2 hidden max-h-48 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+                                </div>
+                            </div>
+
+                            <div id="pasien_data" class="mt-4 hidden rounded-2xl bg-slate-50 p-4">
+                                <div class="grid grid-cols-1 gap-3 md:grid-cols-3">
+                                    <div>
+                                        <p class="text-xs uppercase tracking-wide text-slate-500">Nama Pasien</p>
+                                        <p id="nama_pasien" class="mt-1 font-semibold text-slate-800"></p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs uppercase tracking-wide text-slate-500">Jenis Kelamin</p>
+                                        <p id="jk_pasien" class="mt-1 font-semibold text-slate-800"></p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs uppercase tracking-wide text-slate-500">No EMR</p>
+                                        <p id="no_emr_pasien" class="mt-1 font-semibold text-slate-800"></p>
+                                    </div>
+                                    <div class="md:col-span-2">
+                                        <p class="text-xs uppercase tracking-wide text-slate-500">Alamat</p>
+                                        <p id="alamat_pasien" class="mt-1 font-semibold text-slate-800"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cari Obat -->
+                        <div class="rounded-2xl border border-slate-200 p-5">
+                            <h4 class="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-600">Daftar Obat
+                            </h4>
+
+                            <div>
+                                <label class="mb-2 block text-sm font-medium text-slate-700">Cari Obat</label>
+                                <input type="text" id="search_obat" placeholder="Ketik nama obat..."
+                                    class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100">
+                                <div id="obat_results"
+                                    class="mt-2 hidden max-h-48 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
+                                </div>
+                            </div>
+
+                            <div class="mt-5 overflow-x-auto">
+                                <table class="min-w-full overflow-hidden rounded-2xl border border-slate-200">
+                                    <thead class="bg-slate-100 text-xs uppercase tracking-wide text-slate-600">
+                                        <tr>
+                                            <th class="px-4 py-3 text-left">Obat</th>
+                                            <th class="px-4 py-3 text-left">Harga</th>
+                                            <th class="px-4 py-3 text-left">Stok</th>
+                                            <th class="px-4 py-3 text-left">Qty</th>
+                                            <th class="px-4 py-3 text-left">Subtotal</th>
+                                            <th class="px-4 py-3 text-center">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="selected_obat_list" class="bg-white"></tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
-                </div>
 
-                <!-- Tabel Daftar Obat yang Dipilih -->
-                <div class="mt-4">
-                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Daftar Obat</label>
-                    <table
-                        class="w-full text-sm text-left text-gray-700 dark:text-gray-300 border border-gray-300 rounded-lg">
-                        <thead class="bg-gray-100 dark:bg-gray-600">
-                            <tr>
-                                <th class="px-3 py-2">Nama Obat</th>
-                                <th class="px-3 py-2">Stok</th>
-                                <th class="px-3 py-2">Jumlah</th>
-                                <th class="px-3 py-2">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="selected_obat_list">
-                            <!-- Obat yang ditambahkan akan muncul di sini -->
-                        </tbody>
-                    </table>
-                </div>
+                    <!-- RIGHT -->
+                    <div class="space-y-6">
+                        <div class="rounded-2xl border border-slate-200 p-5">
+                            <h4 class="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-600">Ringkasan
+                                Transaksi</h4>
 
+                            <div class="space-y-4">
+                                <div class="rounded-xl bg-slate-50 p-4">
+                                    <p class="text-xs uppercase tracking-wide text-slate-500">Jumlah Item</p>
+                                    <p id="summary-total-item" class="mt-1 text-2xl font-bold text-slate-800">0</p>
+                                </div>
 
-                <!-- Cari Pasien -->
-                <div>
-                    <label class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Cari Pasien</label>
-                    <input type="text" id="search_pasien" name="search_pasien" placeholder="Ketik nama pasien..."
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white">
-                    <div id="search_results"
-                        class="mt-2 bg-white border border-gray-200 rounded-lg shadow max-h-40 overflow-y-auto hidden">
-                        <!-- hasil pencarian -->
+                                <div class="rounded-xl bg-sky-50 p-4">
+                                    <p class="text-xs uppercase tracking-wide text-sky-700">Grand Total</p>
+                                    <p id="summary-grand-total" class="mt-1 text-2xl font-bold text-sky-700">Rp 0</p>
+                                </div>
+
+                                <div class="rounded-xl border border-amber-200 bg-amber-50 p-4">
+                                    <p class="text-sm text-amber-800">
+                                        Status transaksi otomatis dibuat sebagai
+                                        <span class="font-semibold">Belum Bayar</span>.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="rounded-2xl border border-slate-200 p-5">
+                            <h4 class="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-600">Aksi</h4>
+
+                            <div class="flex flex-col gap-3">
+                                <button type="button" id="btn-close-modal-penjualan-obat"
+                                    class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50">
+                                    Batal
+                                </button>
+
+                                <button type="submit" id="btn-submit-penjualan-obat"
+                                    class="w-full rounded-xl bg-sky-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-300">
+                                    Simpan Order
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                </div>
-
-                <!-- Data Pasien -->
-                <div id="pasien_data" class="hidden space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                    <input type="hidden" name="pasien_id" id="pasien_id">
-                    <p><strong>Nama:</strong> <span id="nama_pasien"></span></p>
-                    <p><strong>Alamat:</strong> <span id="alamat_pasien"></span></p>
-                    <p><strong>Jenis Kelamin:</strong> <span id="jk_pasien"></span></p>
-                </div>
-
-                <!-- Footer -->
-                <div class="flex justify-end space-x-2 border-t border-gray-200 dark:border-gray-600 py-4">
-                    <button type="button" id="btn-close-modal-penjualan-obat"
-                        class="px-4 py-2 text-sm bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white">
-                        Close
-                    </button>
-                    <button type="submit"
-                        class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 focus:ring-2 focus:ring-indigo-400">
-                        Save
-                    </button>
                 </div>
             </form>
         </div>
     </div>
 </div>
-
-<!-- Modal Edit Obat -->
-{{-- <div id="editObatModal" aria-hidden="true"
-    class="hidden overflow-y-auto overflow-x-hidden fixed inset-0 z-50 flex justify-center items-center w-full h-full p-4 bg-black bg-opacity-50">
-    <div class="relative w-full max-w-xl max-h-full">
-        <div class="relative bg-white rounded-lg shadow-xl dark:bg-gray-700">
-
-            <!-- Header -->
-            <div class="flex items-center justify-between p-5 border-b border-gray-200 dark:border-gray-600">
-                <h3 class="text-xl font-bold text-gray-900 dark:text-white">Edit Data Obat</h3>
-            </div>
-
-            <!-- Form -->
-            <form id="formEditObat" class="p-5 flex flex-col gap-4"
-                data-url="{{ route('pengaturan_klinik.update_obat', ['id' => 0]) }}" method="POST">
-                @csrf
-                @method('PUT')
-                <input type="hidden" name="obat_id" id="obat_id_edit">
-
-                <!-- Nama Obat -->
-                <div>
-                    <label for="nama_obat_edit"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Nama
-                        Obat</label>
-                    <input type="text" name="nama_obat_edit" id="nama_obat_edit"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="Nama Obat" required>
-                    <div id="nama_obat_edit-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
-
-                <!-- Jumlah -->
-                <div>
-                    <label for="jumlah_edit"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Jumlah</label>
-                    <input type="number" name="jumlah_edit" id="jumlah_edit"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="Jumlah Obat" required>
-                    <div id="jumlah_edit-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
-
-                <!-- Dosis -->
-                <div>
-                    <label for="dosis_edit" class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Dosis
-                        (mg/ml)</label>
-                    <input type="number" step="0.01" name="dosis_edit" id="dosis_edit"
-                        class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white"
-                        placeholder="Masukkan Dosis" required>
-                    <div id="dosis_edit-error" class="text-red-600 text-sm mt-1"></div>
-                </div>
-
-                <!-- Harga -->
-                <div>
-                    <label for="total_harga_edit"
-                        class="block mb-2 text-sm font-medium text-gray-900 dark:text-white">Harga</label>
-                    <div class="relative mt-1">
-                        <span
-                            class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-300">Rp</span>
-                        <input type="text" name="total_harga_edit" id="total_harga_edit"
-                            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg w-full p-2.5 focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-600 dark:border-gray-500 dark:text-white pl-10"
-                            placeholder="Masukkan Harga" required>
-                        <div id="total_harga_edit-error" class="text-red-600 text-sm mt-1"></div>
-                    </div>
-                </div>
-
-                <!-- Buttons -->
-                <div class="flex justify-end gap-3 mt-5 border-t border-gray-200 pt-4 dark:border-gray-600">
-                    <button type="button" id="closeEditObatModal"
-                        class="px-5 py-2.5 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-white dark:hover:bg-gray-500">
-                        Close
-                    </button>
-                    <button type="submit" id="updateObatButton"
-                        class="px-5 py-2.5 text-sm font-medium text-white bg-blue-700 rounded-lg hover:bg-blue-800">
-                        Save
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div> --}}
-
-
 
 @vite(['resources/js/farmasi/obat/order-obat.js'])

@@ -65,6 +65,14 @@
                         Data Pasien
                     </button>
                 </li>
+
+                <li role="presentation">
+                    <button class="inline-block p-4 border-b-2 rounded-t-lg" id="admin-tab"
+                        data-tabs-target="#data-admin" type="button" role="tab" aria-controls="data-admin"
+                        aria-selected="{{ $activeTab === 'admin' ? 'true' : 'false' }}">
+                        Data Admin
+                    </button>
+                </li>
             </ul>
         </div>
 
@@ -94,6 +102,11 @@
                 <div class="p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2 {{ $activeTab === 'pasien' ? '' : 'hidden' }}"
                     id="data-pasien" role="tabpanel" aria-labelledby="pasien-tab">
                     @include('admin.manajemenPengguna.data_pasien')
+                </div>
+
+                <div class="p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2 {{ $activeTab === 'admin' ? '' : 'hidden' }}"
+                    id="data-admin" role="tabpanel" aria-labelledby="admin-tab">
+                    @include('admin.manajemenPengguna.data_admin')
                 </div>
             </div>
         </div>
