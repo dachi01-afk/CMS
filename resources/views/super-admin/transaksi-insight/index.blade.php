@@ -360,7 +360,7 @@
                 </div>
 
                 <div class="flex flex-wrap gap-3">
-                    <a href="{{ url()->previous() }}" class="glass-btn glass-btn-light">
+                    <a href="{{ route('super.admin.index') }}" class="glass-btn glass-btn-light">
                         <i class="fa-solid fa-arrow-left"></i>
                         Kembali
                     </a>
