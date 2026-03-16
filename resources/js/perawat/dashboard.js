@@ -1,163 +1,200 @@
-// resources/js/perawat/dashboard.js
-// pastikan chart.js sudah dimuat di layout
+import $ from "jquery";
 
 $(function () {
-    // Helper aman untuk parse JSON dari attribute
-    function parseJsonAttr(raw, fallback = []) {
-        if (!raw) return fallback;
+    const $chartSection = $("#perawatChartSection");
+    const $canvas = $("#perawatDashboardChart");
+    const $filter = $("#filterPerawatChart");
+    const $range = $("#perawatChartRange");
 
-        // Kalau sudah array, langsung balikin
-        if (Array.isArray(raw)) return raw;
+    const $summaryAssigned = $("#summaryAssignedTotal");
+    const $summaryHandled = $("#summaryHandledTotal");
 
-        try {
-            return JSON.parse(raw);
-        } catch (e) {
-            console.error("Gagal parse JSON dari data-attr:", raw, e);
-            return fallback;
-        }
+    const initialDataEl = document.getElementById("perawatChartInitialData");
+
+    if (
+        !$chartSection.length ||
+        !$canvas.length ||
+        !$filter.length ||
+        !initialDataEl
+    ) {
+        return;
     }
 
-    /* ============================================================
-     *  LINE CHART – Grafik Triage 7 Hari Terakhir
-     * ============================================================ */
-    const $triageCanvas = $("#triageChart");
+    let dashboardChart = null;
+    let initialChartData = null;
 
-    if ($triageCanvas.length && typeof Chart !== "undefined") {
-        // Pakai .attr supaya selalu dapat string mentah dari HTML
-        const rawLabels = $triageCanvas.attr("data-labels");
-        const rawValues = $triageCanvas.attr("data-values");
+    try {
+        initialChartData = JSON.parse(initialDataEl.textContent);
+    } catch (error) {
+        console.error("Gagal membaca initial chart data:", error);
+        return;
+    }
 
-        const labels = parseJsonAttr(rawLabels, []);
-        const values = parseJsonAttr(rawValues, []);
+    function formatNumber(number) {
+        return new Intl.NumberFormat("id-ID").format(number || 0);
+    }
 
-        new Chart($triageCanvas, {
-            type: "line",
+    function updateSummaryCards(payload) {
+        $summaryAssigned.text(formatNumber(payload.summary_assigned_total));
+        $summaryHandled.text(formatNumber(payload.summary_handled_total));
+    }
+
+    function getMaxTicksLimit(filter) {
+        if (filter === "harian") return 12;
+        if (filter === "mingguan") return 8;
+        if (filter === "bulanan") return 12;
+        return 6;
+    }
+
+    function chartConfig(payload) {
+        return {
+            type: "bar",
             data: {
-                labels: labels,
+                labels: payload.labels,
                 datasets: [
                     {
-                        label: "Jumlah Triage",
-                        data: values,
+                        type: "bar",
+                        label: "Area Tugas",
+                        data: payload.assigned_total,
+                        backgroundColor: "#0ea5e9",
                         borderColor: "#0ea5e9",
-                        backgroundColor: "rgba(14,165,233,0.15)",
-                        borderWidth: 2,
-                        pointRadius: 3,
-                        pointHoverRadius: 4,
-                        pointBackgroundColor: "#0ea5e9",
+                        borderWidth: 1,
+                        borderRadius: 8,
+                        borderSkipped: false,
+                        categoryPercentage: 0.68,
+                        barPercentage: 0.85,
+                    },
+                    {
+                        type: "line",
+                        label: "Sudah Ditangani",
+                        data: payload.handled_total,
+                        borderColor: "#10b981",
+                        backgroundColor: "rgba(16,185,129,0.15)",
+                        borderWidth: 3,
                         tension: 0.35,
-                        fill: true,
+                        fill: false,
+                        pointRadius: 4,
+                        pointHoverRadius: 5,
+                        pointBackgroundColor: "#10b981",
                     },
                 ],
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: { mode: "index", intersect: false },
-                },
+                resizeDelay: 100,
                 interaction: {
                     mode: "index",
                     intersect: false,
                 },
-                scales: {
-                    x: {
-                        grid: { display: false },
-                        ticks: { color: "#6b7280", font: { size: 11 } },
-                    },
-                    y: {
-                        beginAtZero: true,
-                        grid: { color: "rgba(148,163,184,0.25)" },
-                        ticks: {
-                            stepSize: 1,
-                            color: "#6b7280",
-                            font: { size: 11 },
-                        },
+                layout: {
+                    padding: {
+                        top: 8,
+                        right: 8,
+                        bottom: 0,
+                        left: 0,
                     },
                 },
-            },
-        });
-    }
-
-    /* ============================================================
-     *  DONUT CHART – Status Triage (Menunggu / Selesai / Konsultasi)
-     * ============================================================ */
-    const $statusCanvas = $("#chartStatusTriage");
-
-    if ($statusCanvas.length && typeof Chart !== "undefined") {
-        const menunggu = parseInt($statusCanvas.data("menunggu") || 0, 10);
-        const triage = parseInt($statusCanvas.data("triage") || 0, 10);
-        const konsultasi = parseInt($statusCanvas.data("konsultasi") || 0, 10);
-        const total = menunggu + triage + konsultasi;
-
-        new Chart($statusCanvas, {
-            type: "doughnut",
-            data: {
-                labels: [
-                    "Menunggu Triage",
-                    "Selesai Triage",
-                    "Sedang Konsultasi",
-                ],
-                datasets: [
-                    {
-                        data: [menunggu, triage, konsultasi],
-                        backgroundColor: [
-                            "rgba(59,130,246,0.9)",
-                            "rgba(16,185,129,0.9)",
-                            "rgba(234,179,8,0.9)",
-                        ],
-                        borderColor: [
-                            "rgba(59,130,246,1)",
-                            "rgba(16,185,129,1)",
-                            "rgba(234,179,8,1)",
-                        ],
-                        borderWidth: 1,
-                    },
-                ],
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: "70%",
                 plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        callbacks: {
-                            label: function (ctx) {
-                                const value = ctx.parsed;
-                                if (!total) return `${ctx.label}: ${value}`;
-                                const percent = ((value / total) * 100).toFixed(
-                                    1
-                                );
-                                return `${ctx.label}: ${value} pasien (${percent}%)`;
+                    legend: {
+                        position: "top",
+                        align: "start",
+                        labels: {
+                            usePointStyle: true,
+                            boxWidth: 10,
+                            boxHeight: 10,
+                            color: "#475569",
+                            font: {
+                                size: 12,
                             },
                         },
                     },
+                    tooltip: {
+                        backgroundColor: "#0f172a",
+                        titleColor: "#ffffff",
+                        bodyColor: "#e2e8f0",
+                        padding: 12,
+                    },
                 },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false,
+                            drawBorder: false,
+                        },
+                        ticks: {
+                            color: "#64748b",
+                            maxRotation: 0,
+                            minRotation: 0,
+                            autoSkip: true,
+                            maxTicksLimit: getMaxTicksLimit(payload.filter),
+                            font: {
+                                size: 11,
+                            },
+                        },
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grace: "10%",
+                        ticks: {
+                            precision: 0,
+                            color: "#64748b",
+                            font: {
+                                size: 11,
+                            },
+                        },
+                        grid: {
+                            color: "rgba(148, 163, 184, 0.15)",
+                            drawBorder: false,
+                        },
+                    },
+                },
+            },
+        };
+    }
+
+    function renderChart(payload) {
+        $range.text(payload.range_text);
+        updateSummaryCards(payload);
+
+        if (dashboardChart) {
+            dashboardChart.destroy();
+        }
+
+        const ctx = $canvas[0].getContext("2d");
+        dashboardChart = new Chart(ctx, chartConfig(payload));
+    }
+
+    function loadChartData(filter) {
+        $.ajax({
+            url: $chartSection.data("chart-url"),
+            type: "GET",
+            data: { filter },
+            beforeSend: function () {
+                $filter.prop("disabled", true);
+            },
+            success: function (response) {
+                renderChart(response);
+            },
+            error: function (xhr) {
+                console.error(xhr);
+                alert("Gagal memuat data grafik dashboard perawat.");
+            },
+            complete: function () {
+                $filter.prop("disabled", false);
             },
         });
     }
 
-    /* ============================================================
-     *  PROGRESS BAR – Animasi Persentase Triage
-     * ============================================================ */
-    const $progress = $("#triageProgressInner");
+    renderChart(initialChartData);
 
-    if ($progress.length) {
-        const target = parseInt($progress.data("percent") || 0, 10);
-        let current = 0;
+    $filter.on("change", function () {
+        loadChartData($(this).val());
+    });
 
-        function animateProgress() {
-            current += 2;
-            if (current > target) current = target;
-
-            $progress.css("width", current + "%");
-
-            if (current < target) {
-                requestAnimationFrame(animateProgress);
-            }
+    $(window).on("resize", function () {
+        if (dashboardChart) {
+            dashboardChart.resize();
         }
-
-        setTimeout(() => requestAnimationFrame(animateProgress), 200);
-    }
+    });
 });

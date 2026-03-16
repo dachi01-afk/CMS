@@ -29,7 +29,6 @@ class DashboardController extends Controller
 
         return response()->json([
             'kunjungan_hari_ini' => Kunjungan::whereDate('tanggal_kunjungan', $today)
-                ->where('status', 'Pending')
                 ->count(),
             'dokter'  => Dokter::count(),
             'pasien'  => Pasien::count(),

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\SuperAdmin;
+namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Carbon\Carbon;
@@ -16,7 +16,6 @@ class PasienHariIniController extends Controller
 
         $baseQuery = $this->baseQuery($today, $search);
 
-        // Statistik tetap total harian, bukan hasil filter search
         $totalPasienHariIni = $this->baseQuery($today)->count();
 
         $totalMenunggu = $this->baseQuery($today)
@@ -32,15 +31,7 @@ class PasienHariIniController extends Controller
             ->paginate(10)
             ->withQueryString();
 
-        if ($request->ajax()) {
-            return response()->json([
-                'table_body' => view('super-admin.pasien-hari-ini.partials.table-body', compact('pasienHariIni'))->render(),
-                'pagination' => view('super-admin.pasien-hari-ini.partials.pagination', compact('pasienHariIni'))->render(),
-                'filtered_total' => $pasienHariIni->total(),
-            ]);
-        }
-
-        return view('super-admin.pasien-hari-ini.index', compact(
+        return view('admin.pasien-hari-ini.index', compact(
             'pasienHariIni',
             'totalPasienHariIni',
             'totalMenunggu',

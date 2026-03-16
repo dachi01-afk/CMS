@@ -6,6 +6,7 @@ use App\Helpers\NotificationHelper;
 use App\Http\Controllers\Controller;
 use App\Models\DiskonApproval;
 use App\Models\Kasir;
+use App\Models\Kunjungan;
 use App\Models\MetodePembayaran;
 use App\Models\Pembayaran;
 use App\Models\User;
@@ -14,6 +15,7 @@ use Illuminate\Http\Exceptions\PostTooLargeException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -24,9 +26,325 @@ use Yajra\DataTables\DataTables;
 
 class KasirController extends Controller
 {
+    private function getNamaKasir(): string
+    {
+        $user = Auth::user();
+
+        return $user->name ?? $user->nama ?? 'Kasir';
+    }
+
     public function dashboard()
     {
-        return view('kasir.dashboard');
+        $namaKasir = $this->getNamaKasir();
+        $serverStatus = 'Online';
+        $hariIni = now()->toDateString();
+
+        $summary = $this->getDashboardSummary($hariIni);
+
+        $chartFilter = 'bulanan';
+        $chartData = $this->buildTransaksiChart($chartFilter);
+
+        return view('kasir.dashboard', compact(
+            'namaKasir',
+            'serverStatus',
+            'summary',
+            'chartFilter',
+            'chartData'
+        ));
+    }
+
+    public function chartTransaksi(Request $request)
+    {
+        $filter = $this->normalizeChartFilter($request->get('filter'));
+
+        return response()->json($this->buildTransaksiChart($filter));
+    }
+
+    private function normalizeChartFilter(?string $filter): string
+    {
+        $allowed = ['harian', 'mingguan', 'bulanan', 'tahunan'];
+
+        return in_array($filter, $allowed, true) ? $filter : 'bulanan';
+    }
+
+    private function getDashboardSummary(string $hariIni): array
+    {
+        // =========================
+        // 1. PEMBAYARAN (alur default)
+        // =========================
+        $pembayaranHariIni = DB::table('pembayaran')
+            ->whereDate('tanggal_pembayaran', $hariIni)
+            ->count();
+
+        $pembayaranTotal = DB::table('pembayaran')->count();
+
+        $pembayaranBerhasilHariIni = DB::table('pembayaran')
+            ->where('status', 'Sudah Bayar')
+            ->whereDate('tanggal_pembayaran', $hariIni)
+            ->sum('total_setelah_diskon');
+
+        $pembayaranBerhasilTotal = DB::table('pembayaran')
+            ->where('status', 'Sudah Bayar')
+            ->sum('total_setelah_diskon');
+
+        // =========================
+        // 2. PENJUALAN OBAT
+        // =========================
+        $obatHariIni = DB::table('penjualan_obat')
+            ->whereDate('tanggal_transaksi', $hariIni)
+            ->count();
+
+        $obatTotal = DB::table('penjualan_obat')->count();
+
+        $obatBerhasilHariIni = DB::table('penjualan_obat')
+            ->where('status', 'Sudah Bayar')
+            ->whereDate('tanggal_transaksi', $hariIni)
+            ->sum('total_setelah_diskon');
+
+        $obatBerhasilTotal = DB::table('penjualan_obat')
+            ->where('status', 'Sudah Bayar')
+            ->sum('total_setelah_diskon');
+
+        // =========================
+        // 3. ORDER LAYANAN NON-PEMERIKSAAN
+        // =========================
+        $layananBaseQuery = DB::table('order_layanan as ol')
+            ->join('order_layanan_detail as old', 'old.order_layanan_id', '=', 'ol.id')
+            ->join('layanan as l', 'l.id', '=', 'old.layanan_id')
+            ->join('kategori_layanan as kl', 'kl.id', '=', 'l.kategori_layanan_id')
+            ->whereRaw('LOWER(kl.nama_kategori) NOT LIKE ?', ['%pemeriksaan%']);
+
+        $layananHariIni = (clone $layananBaseQuery)
+            ->whereDate('ol.tanggal_order', $hariIni)
+            ->distinct('ol.id')
+            ->count('ol.id');
+
+        $layananTotal = (clone $layananBaseQuery)
+            ->distinct('ol.id')
+            ->count('ol.id');
+
+        $layananBerhasilHariIni = (clone $layananBaseQuery)
+            ->where('ol.status_order_layanan', 'Sudah Bayar')
+            ->whereDate('ol.tanggal_order', $hariIni)
+            ->distinct()
+            ->sum('ol.total_bayar');
+
+        $layananBerhasilTotal = (clone $layananBaseQuery)
+            ->where('ol.status_order_layanan', 'Sudah Bayar')
+            ->distinct()
+            ->sum('ol.total_bayar');
+
+        // =========================
+        // TOTAL
+        // =========================
+        $totalTransaksiHariIni = $pembayaranHariIni + $obatHariIni + $layananHariIni;
+        $totalTransaksi = $pembayaranTotal + $obatTotal + $layananTotal;
+
+        $pendapatanHariIni = $pembayaranBerhasilHariIni + $obatBerhasilHariIni + $layananBerhasilHariIni;
+        $pendapatanTotal = $pembayaranBerhasilTotal + $obatBerhasilTotal + $layananBerhasilTotal;
+
+        return [
+            'total_transaksi_hari_ini' => $totalTransaksiHariIni,
+            'total_transaksi' => $totalTransaksi,
+            'pendapatan_hari_ini' => $pendapatanHariIni,
+            'pendapatan_total' => $pendapatanTotal,
+
+            'pembayaran_hari_ini' => $pembayaranHariIni,
+            'pembayaran_total' => $pembayaranTotal,
+            'pembayaran_pendapatan_hari_ini' => $pembayaranBerhasilHariIni,
+            'pembayaran_pendapatan_total' => $pembayaranBerhasilTotal,
+
+            'obat_hari_ini' => $obatHariIni,
+            'obat_total' => $obatTotal,
+            'obat_pendapatan_hari_ini' => $obatBerhasilHariIni,
+            'obat_pendapatan_total' => $obatBerhasilTotal,
+
+            'layanan_hari_ini' => $layananHariIni,
+            'layanan_total' => $layananTotal,
+            'layanan_pendapatan_hari_ini' => $layananBerhasilHariIni,
+            'layanan_pendapatan_total' => $layananBerhasilTotal,
+        ];
+    }
+
+    private function getChartFilterLabel(string $filter): string
+    {
+        return match ($filter) {
+            'harian' => 'Harian',
+            'mingguan' => 'Mingguan',
+            'tahunan' => 'Tahunan',
+            default => 'Bulanan',
+        };
+    }
+
+    private function buildTransaksiChart(string $filter): array
+    {
+        Carbon::setLocale('id');
+        $now = now();
+
+        switch ($filter) {
+            case 'harian':
+                $start = $now->copy()->startOfMonth();
+                $end = $now->copy()->endOfMonth();
+                $bucketType = 'day';
+                break;
+
+            case 'mingguan':
+                $start = $now->copy()->subWeeks(11)->startOfWeek(Carbon::MONDAY);
+                $end = $now->copy()->endOfWeek(Carbon::SUNDAY);
+                $bucketType = 'week';
+                break;
+
+            case 'tahunan':
+                $start = $now->copy()->subYears(4)->startOfYear();
+                $end = $now->copy()->endOfYear();
+                $bucketType = 'year';
+                break;
+
+            case 'bulanan':
+            default:
+                $start = $now->copy()->startOfYear();
+                $end = $now->copy()->endOfYear();
+                $bucketType = 'month';
+                break;
+        }
+
+        $labels = [];
+        $keys = [];
+        $cursor = $start->copy();
+
+        if ($bucketType === 'day') {
+            while ($cursor->lte($end)) {
+                $keys[] = $cursor->format('Y-m-d');
+                $labels[] = $cursor->translatedFormat('d M');
+                $cursor->addDay();
+            }
+        } elseif ($bucketType === 'week') {
+            while ($cursor->lte($end)) {
+                $weekStart = $cursor->copy()->startOfWeek(Carbon::MONDAY);
+                $weekEnd = $cursor->copy()->endOfWeek(Carbon::SUNDAY);
+
+                $keys[] = $weekStart->format('Y-m-d');
+                $labels[] = $weekStart->translatedFormat('d M') . ' - ' . $weekEnd->translatedFormat('d M');
+
+                $cursor->addWeek();
+            }
+        } elseif ($bucketType === 'month') {
+            while ($cursor->lte($end)) {
+                $keys[] = $cursor->format('Y-m');
+                $labels[] = $cursor->translatedFormat('M Y');
+                $cursor->addMonth();
+            }
+        } else {
+            while ($cursor->lte($end)) {
+                $keys[] = $cursor->format('Y');
+                $labels[] = $cursor->format('Y');
+                $cursor->addYear();
+            }
+        }
+
+        $pembayaranMap = array_fill_keys($keys, 0);
+        $obatMap = array_fill_keys($keys, 0);
+        $layananMap = array_fill_keys($keys, 0);
+        $totalMap = array_fill_keys($keys, 0);
+
+        // =========================
+        // PEMBAYARAN
+        // =========================
+        $pembayaranRows = DB::table('pembayaran')
+            ->select('tanggal_pembayaran')
+            ->whereNotNull('tanggal_pembayaran')
+            ->whereDate('tanggal_pembayaran', '>=', $start->toDateString())
+            ->whereDate('tanggal_pembayaran', '<=', $end->toDateString())
+            ->get();
+
+        foreach ($pembayaranRows as $row) {
+            $tanggal = Carbon::parse($row->tanggal_pembayaran);
+            $key = $this->resolveBucketKey($tanggal, $bucketType);
+
+            if (array_key_exists($key, $pembayaranMap)) {
+                $pembayaranMap[$key]++;
+                $totalMap[$key]++;
+            }
+        }
+
+        // =========================
+        // PENJUALAN OBAT
+        // =========================
+        $obatRows = DB::table('penjualan_obat')
+            ->select('tanggal_transaksi')
+            ->whereNotNull('tanggal_transaksi')
+            ->whereDate('tanggal_transaksi', '>=', $start->toDateString())
+            ->whereDate('tanggal_transaksi', '<=', $end->toDateString())
+            ->get();
+
+        foreach ($obatRows as $row) {
+            $tanggal = Carbon::parse($row->tanggal_transaksi);
+            $key = $this->resolveBucketKey($tanggal, $bucketType);
+
+            if (array_key_exists($key, $obatMap)) {
+                $obatMap[$key]++;
+                $totalMap[$key]++;
+            }
+        }
+
+        // =========================
+        // ORDER LAYANAN NON-PEMERIKSAAN
+        // =========================
+        $layananRows = DB::table('order_layanan as ol')
+            ->join('order_layanan_detail as old', 'old.order_layanan_id', '=', 'ol.id')
+            ->join('layanan as l', 'l.id', '=', 'old.layanan_id')
+            ->join('kategori_layanan as kl', 'kl.id', '=', 'l.kategori_layanan_id')
+            ->whereRaw('LOWER(kl.nama_kategori) NOT LIKE ?', ['%pemeriksaan%'])
+            ->whereNotNull('ol.tanggal_order')
+            ->whereDate('ol.tanggal_order', '>=', $start->toDateString())
+            ->whereDate('ol.tanggal_order', '<=', $end->toDateString())
+            ->select('ol.id', 'ol.tanggal_order')
+            ->distinct()
+            ->get();
+
+        foreach ($layananRows as $row) {
+            $tanggal = Carbon::parse($row->tanggal_order);
+            $key = $this->resolveBucketKey($tanggal, $bucketType);
+
+            if (array_key_exists($key, $layananMap)) {
+                $layananMap[$key]++;
+                $totalMap[$key]++;
+            }
+        }
+
+        return [
+            'filter' => $filter,
+            'filter_label' => $this->getChartFilterLabel($filter),
+            'labels' => $labels,
+            'range_text' => $start->translatedFormat('d M Y') . ' - ' . $end->translatedFormat('d M Y'),
+
+            'pembayaran' => array_values($pembayaranMap),
+            'obat' => array_values($obatMap),
+            'layanan' => array_values($layananMap),
+            'total_transaksi' => array_values($totalMap),
+
+            'summary_total' => array_sum($totalMap),
+            'summary_pembayaran' => array_sum($pembayaranMap),
+            'summary_obat' => array_sum($obatMap),
+            'summary_layanan' => array_sum($layananMap),
+        ];
+    }
+
+    private function resolveBucketKey(Carbon $tanggal, string $bucketType): string
+    {
+        if ($bucketType === 'day') {
+            return $tanggal->format('Y-m-d');
+        }
+
+        if ($bucketType === 'week') {
+            return $tanggal->copy()->startOfWeek(Carbon::MONDAY)->format('Y-m-d');
+        }
+
+        if ($bucketType === 'month') {
+            return $tanggal->format('Y-m');
+        }
+
+        return $tanggal->format('Y');
     }
 
     public function index()
@@ -490,7 +808,6 @@ class KasirController extends Controller
         ]);
     }
 
-
     public function getDataRiwayatPembayaran()
     {
         $dataPembayaran = Pembayaran::with([
@@ -694,7 +1011,9 @@ HTML;
 
             DB::transaction(function () use ($request, $pembayaranId, &$pembayaran) {
 
-                $pemb = Pembayaran::with(['emr.kunjungan.pasien.user'])
+                $pemb = Pembayaran::with([
+                    'emr.kunjungan.pasien.user'
+                ])
                     ->lockForUpdate()
                     ->findOrFail($pembayaranId);
 
@@ -772,6 +1091,7 @@ HTML;
                 $kembalian = $uangDiterima - $totalSetelahDiskon;
                 $diskonPersenGlobal = $totalAwal > 0 ? ($potonganTotal / $totalAwal) * 100 : 0;
 
+                // Update pembayaran
                 $pemb->update([
                     'total_tagihan'        => $totalAwal,
                     'diskon_tipe'          => $potonganTotal > 0 ? 'persen' : null,
@@ -782,6 +1102,28 @@ HTML;
                     'tanggal_pembayaran'   => now(),
                     'status'               => 'Sudah Bayar',
                     'metode_pembayaran_id' => $request->metode_pembayaran_id,
+                ]);
+
+                // Update status kunjungan: Payment -> Succeed
+                $kunjunganId = optional($pemb->emr)->kunjungan_id;
+
+                if (!$kunjunganId) {
+                    throw ValidationException::withMessages([
+                        'id' => 'Kunjungan tidak ditemukan dari relasi pembayaran -> emr.',
+                    ]);
+                }
+
+                $kunjungan = Kunjungan::lockForUpdate()->find($kunjunganId);
+
+                if (!$kunjungan) {
+                    throw ValidationException::withMessages([
+                        'id' => 'Data kunjungan tidak ditemukan.',
+                    ]);
+                }
+
+                $kunjungan->update([
+                    'status' => 'Succeed',
+                    'updated_at' => now(),
                 ]);
 
                 $pembayaran = $pemb->fresh([
@@ -930,7 +1272,9 @@ HTML;
                 if ($request->hasFile('bukti_pembayaran')) {
                     $file = $request->file('bukti_pembayaran');
                     $ext = strtolower($file->getClientOriginalExtension());
-                    if ($ext === 'jfif') $ext = 'jpg';
+                    if ($ext === 'jfif') {
+                        $ext = 'jpg';
+                    }
 
                     $fileName = time() . '_' . uniqid() . '.' . $ext;
                     $path = 'bukti-transaksi/' . $fileName;
@@ -940,16 +1284,24 @@ HTML;
                     } else {
                         $image = Image::read($file);
                         $image->scale(width: 800);
-                        Storage::disk('public')->put($path, (string) $image->encodeByExtension($ext, quality: 80));
+                        Storage::disk('public')->put(
+                            $path,
+                            (string) $image->encodeByExtension($ext, quality: 80)
+                        );
                     }
 
                     $fotoPath = $path;
 
-                    Log::info('Bukti transfer uploaded', ['path' => $fotoPath]);
+                    Log::info('Bukti transfer uploaded', [
+                        'path' => $fotoPath,
+                    ]);
                 }
 
-                $diskonPersenGlobal = $totalAwal > 0 ? ($potonganTotal / $totalAwal) * 100 : 0;
+                $diskonPersenGlobal = $totalAwal > 0
+                    ? ($potonganTotal / $totalAwal) * 100
+                    : 0;
 
+                // Update pembayaran
                 $pemb->update([
                     'total_tagihan'        => $totalAwal,
                     'diskon_tipe'          => $potonganTotal > 0 ? 'persen' : null,
@@ -966,6 +1318,40 @@ HTML;
                 Log::info('Pembayaran updated to Sudah Bayar (Transfer)', [
                     'pembayaran_id' => $pemb->id,
                     'kode_transaksi' => $pemb->kode_transaksi,
+                ]);
+
+                // Update status kunjungan: Payment -> Succeed
+                $kunjunganId = optional($pemb->emr)->kunjungan_id;
+
+                if (!$kunjunganId) {
+                    throw ValidationException::withMessages([
+                        'id' => 'Kunjungan tidak ditemukan dari relasi pembayaran -> emr.',
+                    ]);
+                }
+
+                $kunjungan = Kunjungan::lockForUpdate()->find($kunjunganId);
+
+                if (!$kunjungan) {
+                    throw ValidationException::withMessages([
+                        'id' => 'Data kunjungan tidak ditemukan.',
+                    ]);
+                }
+
+                if ($kunjungan->status !== 'Payment') {
+                    throw ValidationException::withMessages([
+                        'id' => 'Status kunjungan harus Payment sebelum diubah menjadi Succeed.',
+                    ]);
+                }
+
+                $kunjungan->update([
+                    'status' => 'Succeed',
+                    'updated_at' => now(),
+                ]);
+
+                Log::info('Kunjungan status updated to Succeed (Transfer)', [
+                    'kunjungan_id' => $kunjungan->id,
+                    'status_lama' => 'Payment',
+                    'status_baru' => 'Succeed',
                 ]);
 
                 $pembayaran = $pemb->fresh([

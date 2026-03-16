@@ -8,7 +8,7 @@
                 <div class="xl:col-span-8">
                     <div
                         class="mb-4 inline-flex items-center rounded-full border border-white/20 bg-white/10 px-4 py-1 text-[11px] font-bold uppercase tracking-[0.2em] text-white/90">
-                        Farmasi Panel
+                        Apotek Panel
                     </div>
 
                     <h1 class="text-3xl font-extrabold leading-tight text-white lg:text-4xl">
@@ -16,7 +16,7 @@
                     </h1>
 
                     <p class="mt-3 max-w-2xl text-sm leading-7 text-emerald-50/95 lg:text-base">
-                        Pusat kendali operasional farmasi untuk memantau stok obat, penjualan, dan alert stok kritis
+                        Pusat kendali operasional apotek untuk memantau stok obat, penjualan, dan alert stok kritis
                         secara menyeluruh.
                     </p>
 
@@ -30,7 +30,7 @@
                         <div
                             class="inline-flex items-center gap-2 rounded-xl border border-lime-300/20 bg-lime-400/10 px-4 py-2 text-sm font-semibold text-lime-100 shadow-sm">
                             <span class="h-2.5 w-2.5 rounded-full bg-lime-300"></span>
-                            <span>Data Dashboard Farmasi</span>
+                            <span>Data Dashboard Apotek</span>
                         </div>
 
                         <div
@@ -55,7 +55,7 @@
                             <p class="text-[11px] font-bold uppercase tracking-wide text-white/60">
                                 5 KPI Utama
                             </p>
-                            <h3 class="mt-2 text-2xl font-extrabold text-white">Farmasi</h3>
+                            <h3 class="mt-2 text-2xl font-extrabold text-white">Apotek</h3>
                             <p class="mt-1 text-xs text-white/70">Stok, transaksi, alert, pemasukan, total penjualan</p>
                         </div>
                     </div>
@@ -265,7 +265,7 @@
 
             <div class="xl:col-span-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                 <div class="mb-4">
-                    <h2 class="text-2xl font-extrabold text-slate-900">Distribusi Farmasi</h2>
+                    <h2 class="text-2xl font-extrabold text-slate-900">Distribusi Apotek</h2>
                     <p class="mt-1 text-sm text-slate-500">
                         Perbandingan cepat antara transaksi harian dan alert stok utama.
                     </p>

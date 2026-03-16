@@ -182,7 +182,7 @@
 
         {{-- KPI --}}
         <section class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <a href="{{ route('jadwal_kunjungan.index', ['tab' => 'proses_kunjungan']) }}"
+            <a href="{{ route('admin.pasien.hari.ini') }}"
                 class="group relative block overflow-hidden rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-amber-100">
                 <div
                     class="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-amber-100/60 transition group-hover:scale-110">
@@ -243,9 +243,9 @@
                 </div>
                 <div class="relative z-10 flex items-start justify-between">
                     <div>
-                        <p class="text-sm font-semibold text-slate-500">Jumlah Farmasi</p>
+                        <p class="text-sm font-semibold text-slate-500">Jumlah Apoteker</p>
                         <h3 id="totalFarmasi" class="mt-3 text-3xl font-extrabold text-slate-900">0</h3>
-                        <p class="mt-2 text-xs text-slate-400">Klik untuk buka data farmasi</p>
+                        <p class="mt-2 text-xs text-slate-400">Klik untuk buka data apoteker</p>
                     </div>
                     <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-600">
                         <i class="fa-solid fa-prescription-bottle-medical text-xl"></i>
@@ -350,7 +350,7 @@
 
                         <div>
                             <div class="mb-2 flex items-center justify-between text-sm">
-                                <span class="font-medium text-slate-600">Farmasi</span>
+                                <span class="font-medium text-slate-600">Apoteker</span>
                                 <span id="totalFarmasiMini" class="font-bold text-slate-800">0</span>
                             </div>
                             <div class="h-2 overflow-hidden rounded-full bg-slate-100">

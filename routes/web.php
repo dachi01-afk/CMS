@@ -70,6 +70,8 @@ use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Yajra\DataTables\Facades\DataTables;
+use App\Http\Controllers\Admin\PasienHariIniController as AdminPasienHariIniController;
+use App\Http\Controllers\Kasir\TransaksiInsightController as KasirTransaksiInsightController;
 
 // Rest of your web routes remain the same...
 Route::get('/')->middleware('checkAuth');
@@ -172,6 +174,9 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::patch('/antrian/{kunjungan}/proses', [DashboardController::class, 'proses'])->name('admin.antrian.proses');
         Route::patch('/antrian/{kunjungan}/batalkan', [DashboardController::class, 'batalkan'])->name('admin.antrian.batalkan');
         Route::get('/antrian/data', [DashboardController::class, 'getDataAntrean'])->name('antrian.data');
+
+        Route::get('/pasien-hari-ini', [AdminPasienHariIniController::class, 'index'])->name('pasien.hari.ini');
+        Route::get('/detail-pasien-hari-ini/{no_emr}', [AdminPasienHariIniController::class, 'detail'])->name('detail.pasien.hari.ini');
     });
 
     Route::prefix('jenis-spesialis')->group(function () {
@@ -549,6 +554,8 @@ Route::middleware(['auth', 'role:Kasir'])->group(function () {
     Route::prefix('kasir')->group(function () {
         // Menu Dashboard
         Route::get('/dasboard', [KasirController::class, 'dashboard'])->name('kasir.dashboard');
+        Route::get('/chart-transaksi', [KasirController::class, 'chartTransaksi'])->name('kasir.chart.transaksi');
+
         Route::get('/get-data-pemasukan', [KasirController::class, 'chartKeuangan'])->name('kasir.chart.keuangan');
         Route::get('/get-data-transaksi-hari-ini', [KasirController::class, 'totalTransaksiHariIni'])->name('kasir.get.data.pemasukan.hari.ini');
         Route::get('/get-data-total-keseluruhan-transaksi', [KasirController::class, 'totalKeseluruhanTransaksi'])->name('kasir.get.data.total.keseluruhan.transaksi');
@@ -556,6 +563,24 @@ Route::middleware(['auth', 'role:Kasir'])->group(function () {
         Route::get('/get-data-total-keseluruhan-transaksi-obat', [KasirController::class, 'totalKeseluruhanTransaksiObat'])->name('kasir.get.data.total.keseluruhan.transaksi.obat');
 
         Route::get('/pembayaran', [KasirController::class, 'index'])->name('kasir.pembayaran');
+
+        Route::get('/insight-pembayaran', [KasirTransaksiInsightController::class, 'pembayaran'])->name('kasir.insight.pembayaran');
+
+        Route::get('/insight/obat', [KasirTransaksiInsightController::class, 'obat'])
+            ->name('kasir.insight.obat');
+
+        Route::get('/insight/layanan', [KasirTransaksiInsightController::class, 'layanan'])
+            ->name('kasir.insight.layanan');
+
+        Route::get('/insight/pembayaran/chart', [KasirTransaksiInsightController::class, 'chartPembayaran'])
+            ->name('kasir.insight.pembayaran.chart');
+
+        Route::get('/insight/obat/chart', [KasirTransaksiInsightController::class, 'chartObat'])
+            ->name('kasir.insight.obat.chart');
+
+        Route::get('/insight/layanan/chart', [KasirTransaksiInsightController::class, 'chartLayanan'])
+            ->name('kasir.insight.layanan.chart');
+
         Route::get('/get-data-pembayaran', [KasirController::class, 'getDataPembayaran'])->name('get.data.pembayaran');
         Route::get('/transaksi/{kode_transaksi}', [KasirController::class, 'transaksi'])->name('kasir.transaksi');
         Route::get('/kwitansi/{kodeTransaksi}', [KasirController::class, 'showKwitansi'])->name('show.kwitansi');
@@ -615,6 +640,8 @@ Route::middleware(['auth', 'role:Kasir'])->group(function () {
 Route::middleware(['auth', 'role:Perawat'])->group(function () {
     Route::prefix('perawat')->group(function () {
         Route::get('/dashboard', [PerawatController::class, 'dashboard'])->name('perawat.dashboard');
+        Route::get('/chart', [PerawatController::class, 'chartDashboard'])->name('perawat.chart');
+
 
         Route::get('/kunjungan', [KunjunganController::class, 'index'])->name('perawat.kunjungan');
         Route::get('/getDataKunjunganHariIni', [KunjunganController::class, 'getDataKunjunganHariIni'])->name('perawat.get.data.kunjungan.hari.ini');
@@ -686,6 +713,7 @@ Route::middleware(['auth', 'superAdmin'])->prefix('super-admin')->group(function
     Route::get('/pasien/insight', [PasienInsightController::class, 'index'])->name('super.admin.pasien.insight.index');
     Route::get('/pasien/insight/{id}', [PasienInsightController::class, 'show'])->name('super.admin.pasien.insight.show');
     Route::get('/pasien-hari-ini', [PasienHariIniController::class, 'index'])->name('super.admin.pasien.hari.ini.index');
+    Route::get('/detail-pasien-hari-ini/{no_emr}', [PasienHariIniController::class, 'detail'])->name('super.admin.detail.pasien.hari.ini');
 
     Route::get('/transaksi/insight', [TransaksiInsightController::class, 'index'])->name('super.admin.transaksi.insight.index');
     Route::get('/transaksi/insight/{id}', [TransaksiInsightController::class, 'show'])->name('super.admin.transaksi.insight.show');

@@ -55,7 +55,7 @@
 
             {{-- Header Hero --}}
             <section
-                class="relative overflow-hidden rounded-[30px] bg-gradient-to-r from-slate-950 via-emerald-950 to-emerald-700 p-6 shadow-xl md:p-8">
+                class="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-slate-900 via-blue-900 to-blue-600 p-6 md:p-8 shadow-xl">
                 <div class="absolute -right-16 -top-16 h-52 w-52 rounded-full bg-white/10 blur-3xl"></div>
                 <div class="absolute bottom-0 right-24 h-28 w-28 rounded-full bg-emerald-300/10 blur-2xl"></div>
 
@@ -63,7 +63,7 @@
                     <div class="max-w-3xl">
                         <span
                             class="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/90 glass-blur">
-                            Super Admin Panel
+                            Admin Panel
                         </span>
 
                         <h1 class="mt-4 text-3xl font-bold leading-tight text-white md:text-4xl">
@@ -72,7 +72,7 @@
 
                         <p class="mt-3 max-w-2xl text-sm leading-6 text-emerald-50/80 md:text-base">
                             Pantau daftar kunjungan pasien operasional hari ini secara cepat, rapi, dan terpusat
-                            dari halaman super admin.
+                            dari halaman admin.
                         </p>
 
                         <div class="mt-5 flex flex-wrap items-center gap-3">
@@ -95,7 +95,7 @@
                     </div>
 
                     <div class="flex items-start">
-                        <a href="{{ route('super.admin.index') }}"
+                        <a href="{{ route('admin.index') }}"
                             class="inline-flex items-center justify-center rounded-2xl border border-white/15 bg-white/10 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20">
                             <svg xmlns="http://www.w3.org/2000/svg" class="mr-2 h-4 w-4" fill="none"
                                 viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
@@ -175,11 +175,12 @@
                         <div>
                             <h2 class="text-lg font-bold text-slate-800">Daftar Pasien Hari Ini</h2>
                             <p class="mt-1 text-sm text-slate-500">
-                                Cari berdasarkan nama pasien, nomor rekam medis, nomor HP, atau nomor antrian.
+                                Cari berdasarkan nama pasien, nomor rekam medis, nomor HP, nomor antrian, poli, atau
+                                dokter.
                             </p>
                         </div>
 
-                        <form method="GET" action="{{ route('super.admin.pasien.hari.ini.index') }}"
+                        <form method="GET" action="{{ route('admin.pasien.hari.ini') }}"
                             class="flex w-full flex-col gap-3 md:flex-row xl:w-auto">
                             <div class="relative w-full md:min-w-[360px]">
                                 <span
@@ -192,7 +193,7 @@
                                 </span>
 
                                 <input type="text" name="search" value="{{ request('search') }}"
-                                    placeholder="Cari nama pasien / no RM / no HP / no antrian"
+                                    placeholder="Cari nama pasien / no RM / no HP / no antrian / poli / dokter"
                                     class="w-full rounded-2xl border border-slate-300 bg-white py-3 pl-11 pr-4 text-sm text-slate-700 outline-none transition focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100">
                             </div>
 
@@ -202,7 +203,7 @@
                                     Cari
                                 </button>
 
-                                <a href="{{ route('super.admin.pasien.hari.ini.index') }}"
+                                <a href="{{ route('admin.pasien.hari.ini') }}"
                                     class="inline-flex items-center justify-center rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50">
                                     Reset
                                 </a>
@@ -237,7 +238,7 @@
                                 </th>
                                 <th
                                     class="whitespace-nowrap px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
-                                    Tanggal Kunjungan
+                                    Waktu Kunjungan
                                 </th>
                                 <th
                                     class="whitespace-nowrap px-4 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
@@ -265,7 +266,12 @@
                                             </div>
                                             <div>
                                                 <p class="font-semibold text-slate-800">{{ $item->nama_pasien }}</p>
-                                                <p class="text-xs text-slate-500">Pasien kunjungan hari ini</p>
+                                                <p class="text-xs text-slate-500">
+                                                    {{ $item->nama_poli ?: 'Poli belum tersedia' }}
+                                                    @if ($item->nama_dokter)
+                                                        • {{ $item->nama_dokter }}
+                                                    @endif
+                                                </p>
                                             </div>
                                         </div>
                                     </td>
@@ -286,7 +292,22 @@
                                     </td>
 
                                     <td class="px-4 py-4 text-sm text-slate-600">
-                                        {{ \Illuminate\Support\Carbon::parse($item->tanggal_kunjungan)->format('d M Y') }}
+                                        <div class="font-medium">
+                                            {{ \Illuminate\Support\Carbon::parse($item->tanggal_kunjungan)->format('d M Y') }}
+                                        </div>
+
+                                        @if ($item->jam_awal && $item->jam_selesai)
+                                            <div class="text-xs text-slate-500">
+                                                {{ \Illuminate\Support\Carbon::parse($item->jam_awal)->format('H:i') }}
+                                                -
+                                                {{ \Illuminate\Support\Carbon::parse($item->jam_selesai)->format('H:i') }}
+                                            </div>
+                                        @elseif ($item->created_at)
+                                            <div class="text-xs text-slate-500">
+                                                Input:
+                                                {{ \Illuminate\Support\Carbon::parse($item->created_at)->format('H:i') }}
+                                            </div>
+                                        @endif
                                     </td>
 
                                     <td class="px-4 py-4">
@@ -331,7 +352,7 @@
                                     <td class="px-4 py-4 text-center">
                                         <button type="button"
                                             class="btn-lihat-detail inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700"
-                                            data-detail-url="{{ route('super.admin.detail.pasien.hari.ini', $item->no_emr) }}">
+                                            data-detail-url="{{ route('admin.detail.pasien.hari.ini', $item->no_emr) }}">
                                             <i class="fas fa-eye mr-2"></i>
                                             Lihat Detail
                                         </button>
@@ -339,7 +360,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="7" class="px-6 py-16">
+                                    <td colspan="8" class="px-6 py-16">
                                         <div class="flex flex-col items-center justify-center text-center">
                                             <div
                                                 class="flex h-20 w-20 items-center justify-center rounded-full bg-emerald-50 text-emerald-500">
@@ -442,6 +463,8 @@
                 day: '2-digit',
                 month: 'long',
                 year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
             });
         }
 

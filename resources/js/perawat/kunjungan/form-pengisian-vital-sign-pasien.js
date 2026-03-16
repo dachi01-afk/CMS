@@ -238,12 +238,13 @@ document.addEventListener("DOMContentLoaded", () => {
             const data = await response.json().catch(() => null);
 
             if (!response.ok) {
-                // Error Handling
                 let message = "Terjadi kesalahan server.";
-                if (data?.message) message = data.message;
-                else if (data?.errors) {
+
+                if (data?.errors && Object.keys(data.errors).length > 0) {
                     const firstField = Object.keys(data.errors)[0];
                     message = data.errors[firstField][0];
+                } else if (data?.message) {
+                    message = data.message;
                 }
 
                 Swal.fire({
@@ -251,6 +252,7 @@ document.addEventListener("DOMContentLoaded", () => {
                     title: "Gagal!",
                     text: message,
                 });
+
                 return;
             }
 

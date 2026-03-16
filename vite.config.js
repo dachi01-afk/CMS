@@ -82,6 +82,9 @@ export default defineConfig({
                 // Riwayat Transaksi Layanan
                 "resources/js/kasir/riwayat-transaksi/data-riwayat-transaksi-layanan.js",
 
+                // Insight Transaksi (Alur Default, Transaksi Obat, Transaksi Layanan)
+                "resources/js/kasir/insight-transaksi.js",
+
                 // End Role Kasir
 
                 // Role Perawat

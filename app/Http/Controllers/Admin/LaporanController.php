@@ -85,11 +85,12 @@ class LaporanController extends Controller
             })
             ->editColumn('status', function ($kunjungan) {
                 return match ($kunjungan->status) {
-                    'Pending'  => '<span class="px-2 py-1 text-xs font-semibold text-yellow-700 bg-yellow-100 rounded">Pending</span>',
-                    'Waiting'  => '<span class="px-2 py-1 text-xs font-semibold text-blue-700 bg-blue-100 rounded">Waiting</span>',
-                    'Engaged'  => '<span class="px-2 py-1 text-xs font-semibold text-sky-700 bg-sky-100 rounded">Engaged</span>',
-                    'Succeed'  => '<span class="px-2 py-1 text-xs font-semibold text-green-700 bg-green-100 rounded">Succeed</span>',
-                    'Canceled' => '<span class="px-2 py-1 text-xs font-semibold text-red-700 bg-red-100 rounded">Canceled</span>',
+                    'Pending'  => '<span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700">Pending</span>',
+                    'Waiting'  => '<span class="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">Waiting</span>',
+                    'Engaged'  => '<span class="inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-700">Engaged</span>',
+                    'Payment'  => '<span class="inline-flex rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-700">Payment</span>',
+                    'Succeed'  => '<span class="inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-700">Succeed</span>',
+                    'Canceled' => '<span class="inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">Canceled</span>',
                     default    => '<span class="px-2 py-1 text-xs font-semibold text-gray-700 bg-gray-100 rounded">-</span>',
                 };
             })

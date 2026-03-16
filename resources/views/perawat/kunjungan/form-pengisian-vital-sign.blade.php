@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+f<!DOCTYPE html>
 <html lang="id">
 
 <head>
@@ -59,21 +59,21 @@
                             (mmHg)</label>
                         <input type="text" name="tekanan_darah"
                             value="{{ old('tekanan_darah', $dataEMR->tekanan_darah) }}"
-                            class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            class="placeholder:text-slate-400 w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                             placeholder="0">
                     </div>
                     {{-- Nadi --}}
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Nadi (x/mnt)</label>
                         <input type="number" name="nadi" value="{{ old('nadi', $dataEMR->nadi) }}"
-                            class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            class="placeholder:text-slate-400 w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                             placeholder="0">
                     </div>
                     {{-- RR --}}
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Pernapasan (x/mnt)</label>
                         <input type="number" name="pernapasan" value="{{ old('pernapasan', $dataEMR->pernapasan) }}"
-                            class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            class="placeholder:text-slate-400 w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                             placeholder="0">
                     </div>
                     {{-- Suhu --}}
@@ -81,7 +81,7 @@
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Suhu (°C)</label>
                         <input type="number" step="0.1" name="suhu_tubuh"
                             value="{{ old('suhu_tubuh', $dataEMR->suhu_tubuh) }}"
-                            class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            class="placeholder:text-slate-400 w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                             placeholder="0">
                     </div>
 
@@ -90,7 +90,7 @@
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-2">SpO2 (%)</label>
                         <input type="number" name="saturasi_oksigen"
                             value="{{ old('saturasi_oksigen', $dataEMR->saturasi_oksigen) }}"
-                            class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            class="placeholder:text-slate-400 w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                             placeholder="0">
                     </div>
 
@@ -99,14 +99,14 @@
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Berat Badan (kg)</label>
                         <input type="number" step="0.1" id="bb" name="berat_badan"
                             value="{{ old('berat_badan', $dataEMR->berat_badan) }}"
-                            class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-slate-50"
+                            class="placeholder:text-slate-400 w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-slate-50"
                             placeholder="0">
                     </div>
                     <div>
                         <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Tinggi Badan (cm)</label>
                         <input type="number" id="tb" name="tinggi_badan"
                             value="{{ old('tinggi_badan', $dataEMR->tinggi_badan) }}"
-                            class="w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-slate-50"
+                            class="placeholder:text-slate-400 w-full rounded-lg border-slate-300 focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm bg-slate-50"
                             placeholder="0">
                     </div>
                     <div>
@@ -311,7 +311,7 @@
                             <label class="block text-xs font-bold text-slate-500 uppercase mb-2">Intervensi
                                 Keperawatan</label>
                             <textarea name="intervensi" rows="5"
-                                class="w-full rounded-lg border-slate-300 text-sm focus:ring-indigo-500 focus:border-indigo-500"
+                                class="placeholder:text-slate-400 w-full rounded-lg border-slate-300 text-sm focus:ring-indigo-500 focus:border-indigo-500"
                                 placeholder="1. Monitor TTV per jam&#10;2. Berikan posisi semi fowler&#10;3. Kolaborasi pemberian analgesik..."></textarea>
                         </div>
                     </div>

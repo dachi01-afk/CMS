@@ -343,10 +343,14 @@ class KunjunganController extends Controller
                 ->with('success', 'Data vital sign berhasil disimpan.');
         } catch (ValidationException $e) {
             if ($request->ajax()) {
+                $errors = $e->errors();
+                $firstField = array_key_first($errors);
+                $firstMessage = $firstField ? $errors[$firstField][0] : 'Terjadi kesalahan validasi.';
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'Validasi gagal.',
-                    'errors'  => $e->errors(),
+                    'message' => $firstMessage,
+                    'errors'  => $errors,
                 ], 422);
             }
 
