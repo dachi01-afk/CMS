@@ -421,10 +421,10 @@ class ManajemenPenggunaController extends Controller
                 if ($search) {
                     $query->where(function ($q) use ($search) {
                         $q->where('nama_perawat', 'like', '%' . $search . '%')
-                            ->orWhereHas('perawatDokterPoli.poli', function ($qq) use ($search) {
+                            ->orWhereHas('perawatDokterPoli.dokterPoli.poli', function ($qq) use ($search) {
                                 $qq->where('nama_poli', 'like', '%' . $search . '%');
                             })
-                            ->orWhereHas('perawatDokterPoli.dokter', function ($qq) use ($search) {
+                            ->orWhereHas('perawatDokterPoli.dokterPoli.dokter', function ($qq) use ($search) {
                                 $qq->where('nama_dokter', 'like', '%' . $search . '%');
                             });
                     });
