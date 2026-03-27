@@ -37,17 +37,14 @@ $(function () {
                 orderable: false,
                 searchable: false,
             },
-
             {
                 data: "kode",
                 name: "kode",
             },
-
             {
                 data: "nama_obat",
                 name: "nama_obat",
             },
-
             {
                 data: "farmasi",
                 name: "farmasi",
@@ -56,7 +53,6 @@ $(function () {
                     return `<span class="text-xs">${val}</span>`;
                 },
             },
-
             {
                 data: "jenis",
                 name: "jenis",
@@ -65,7 +61,6 @@ $(function () {
                     return `<span class="text-xs">${val}</span>`;
                 },
             },
-
             {
                 data: "kategori",
                 name: "kategori",
@@ -75,7 +70,6 @@ $(function () {
                     return `<span class="text-xs">${val}</span>`;
                 },
             },
-
             {
                 data: "stok",
                 name: "stok",
@@ -99,7 +93,6 @@ $(function () {
                     `;
                 },
             },
-
             {
                 data: "harga_umum",
                 name: "harga_umum",
@@ -109,7 +102,6 @@ $(function () {
                             </span>`;
                 },
             },
-
             {
                 data: "harga_beli",
                 name: "harga_beli",
@@ -119,7 +111,6 @@ $(function () {
                             </span>`;
                 },
             },
-
             {
                 data: "avg_hpp",
                 name: "avg_hpp",
@@ -129,7 +120,6 @@ $(function () {
                             </span>`;
                 },
             },
-
             {
                 data: "harga_otc",
                 name: "harga_otc",
@@ -139,7 +129,6 @@ $(function () {
                             </span>`;
                 },
             },
-
             {
                 data: "margin_profit",
                 name: "margin_profit",
@@ -149,7 +138,6 @@ $(function () {
                             </span>`;
                 },
             },
-
             {
                 data: "action",
                 name: "action",
@@ -159,7 +147,7 @@ $(function () {
             },
         ],
         dom: "t",
-        rowCallback: function (row, data) {
+        rowCallback: function (row) {
             $(row).addClass(
                 "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600",
             );
@@ -171,51 +159,36 @@ $(function () {
     // GLOBAL SEARCH OBAT
     // ==========================
     const $globalSearchObat = $("#globalSearchObat");
-
-    // wajib simpan instance datatable kamu ke variable `table`
     let searchTimer = null;
     let lastValue = "";
     let inflightXhr = null;
 
-    // kalau tabel kamu serverSide, aktifkan processing biar user paham lagi load
-    // (opsional) di inisialisasi DataTable:
-    // processing: true,
-    // serverSide: true,
-
     if ($globalSearchObat.length && table) {
-        // tangkap XHR DataTables yg sedang jalan, biar bisa di-abort saat user ngetik lagi
-        table.on("preXhr.dt", function (e, settings, data) {
-            // jqXHR yg sedang dipakai DataTables tersimpan di settings.jqXHR
+        table.on("preXhr.dt", function (e, settings) {
             if (settings.jqXHR) inflightXhr = settings.jqXHR;
         });
 
         const runSearch = (value) => {
-            // hindari draw kalau inputnya sama
             if (value === lastValue) return;
             lastValue = value;
 
-            // minimal karakter untuk server-side biar gak spam request
             if (value.length < 2) {
-                // kosongkan search
                 table.search("").draw();
                 return;
             }
 
-            // tembak search
             table.search(value).draw();
         };
 
         $globalSearchObat.on("input", function () {
             const value = $(this).val().trim();
 
-            // kalau masih ada request sebelumnya, abort dulu
             if (inflightXhr && inflightXhr.readyState !== 4) {
                 try {
                     inflightXhr.abort();
                 } catch (e) {}
             }
 
-            // debounce adaptif: makin panjang input, makin cepat tembak
             const delay =
                 value.length <= 2 ? 300 : value.length <= 5 ? 180 : 120;
 
@@ -223,7 +196,6 @@ $(function () {
             searchTimer = setTimeout(() => runSearch(value), delay);
         });
 
-        // Enter = langsung cari tanpa nunggu debounce
         $globalSearchObat.on("keydown", function (e) {
             if (e.key === "Enter") {
                 e.preventDefault();
@@ -234,11 +206,10 @@ $(function () {
     }
 
     // ==========================
-    // HELPER: AMBIL DATA UNTUK EXPORT
-    // (header + baris dari halaman yang sedang tampil)
+    // HELPER EXPORT
     // ==========================
     function decodeHtml(html) {
-        var txt = document.createElement("textarea");
+        const txt = document.createElement("textarea");
         txt.innerHTML = html;
         return txt.value;
     }
@@ -253,13 +224,11 @@ $(function () {
             .toArray()
             .filter((idx) => idx !== table.columns().count() - 1);
 
-        // Header
         colIndexes.forEach((idx) => {
             const text = $(table.column(idx).header()).text().trim();
             headers.push(text);
         });
 
-        // Semua baris hasil filter
         table.rows({ search: "applied" }).every(function () {
             const rowIdx = this.index();
             const rowData = [];
@@ -270,19 +239,15 @@ $(function () {
                 if (cellData === null || cellData === undefined) {
                     cellData = "";
                 } else if (typeof cellData === "object") {
-                    // ambil text dari object HTML
                     cellData = $(cellData).text().trim();
                 } else {
-                    // hapus HTML tag
                     cellData = cellData
                         .toString()
                         .replace(/<[^>]*>/g, "")
                         .trim();
-                    // decode HTML entities
                     cellData = decodeHtml(cellData);
                 }
 
-                // escape CSV
                 if (
                     cellData.includes('"') ||
                     cellData.includes(",") ||
@@ -301,7 +266,7 @@ $(function () {
     }
 
     // ==========================
-    // EXPORT CSV (halaman yg sedang tampil)
+    // EXPORT CSV
     // ==========================
     $("#btn-export-csv").on("click", function () {
         if (!table) return;
@@ -312,9 +277,9 @@ $(function () {
         csvContent += headers.join(",") + "\n";
         rows.forEach((r) => {
             const escapedRow = r.map((cell) => {
-                if (cell == null) return ""; // ganti null/undefined jadi kosong
-                const str = String(cell).replace(/"/g, '""'); // escape tanda kutip
-                return `"${str}"`; // bungkus dengan tanda kutip
+                if (cell == null) return "";
+                const str = String(cell).replace(/"/g, '""');
+                return `"${str}"`;
             });
             csvContent += escapedRow.join(",") + "\n";
         });
@@ -339,28 +304,29 @@ $(function () {
     });
 
     // ==========================
-    // PRINT (halaman yg sedang tampil)
+    // PRINT PDF
     // ==========================
     $("#btn-print-obat").on("click", function () {
-        var url = $(this).data("url"); // ambil URL dari data-attribute
-        window.open(url, "_blank"); // buka PDF di tab baru
+        const url = $(this).data("url");
+        window.open(url, "_blank");
     });
 
     // ==========================
-    // IMPORT (trigger input file)
+    // IMPORT
     // ==========================
     $("#btn-import").on("click", function () {
-        // Klik input file
         $("#file-input").click();
     });
 
-    // Setelah file dipilih, submit form otomatis
     $("#file-input").on("change", function () {
         if ($(this).val()) {
             $("#import-form").submit();
         }
     });
 
+    // ==========================
+    // PAGINATION CUSTOM
+    // ==========================
     const $info = $("#obat-customInfo");
     const $pagination = $("#obat-customPagination");
     const $perPage = $("#obat-pageLength");
@@ -386,8 +352,9 @@ $(function () {
         const maxVisible = 5;
         let start = Math.max(currentPage - Math.floor(maxVisible / 2), 1);
         let end = Math.min(start + maxVisible - 1, totalPages);
-        if (end - start < maxVisible - 1)
+        if (end - start < maxVisible - 1) {
             start = Math.max(end - maxVisible + 1, 1);
+        }
 
         for (let i = start; i <= end; i++) {
             const active =
@@ -410,15 +377,18 @@ $(function () {
         e.preventDefault();
         const $link = $(this);
         if ($link.hasClass("opacity-50")) return;
-        if ($link.attr("id") === "btnPrev") table.page("previous").draw("page");
-        else if ($link.attr("id") === "btnNext")
+
+        if ($link.attr("id") === "btnPrev") {
+            table.page("previous").draw("page");
+        } else if ($link.attr("id") === "btnNext") {
             table.page("next").draw("page");
-        else if ($link.hasClass("page-number"))
-            table.page(parseInt($link.data("page")) - 1).draw("page");
+        } else if ($link.hasClass("page-number")) {
+            table.page(parseInt($link.data("page"), 10) - 1).draw("page");
+        }
     });
 
     $perPage.on("change", function () {
-        table.page.len(parseInt($(this).val())).draw();
+        table.page.len(parseInt($(this).val(), 10)).draw();
     });
 
     table.on("draw", updatePagination);
@@ -440,7 +410,6 @@ $(function () {
     const $formCreate = $("#formModalCreate");
     const $depotContainer = $("#depot-container");
 
-    // simpan template awal row depot untuk di-clone (sebelum TomSelect di-init)
     const $depotTemplate = $depotContainer.length
         ? $depotContainer.find(".depot-row").first().clone(false)
         : null;
@@ -449,9 +418,6 @@ $(function () {
     let jenisObatSelect = null;
     let satuanObatSelect = null;
 
-    // ==========================
-    // HELPER: HITUNG STOK GLOBAL DARI SEMUA DEPOT
-    // ==========================
     function updateGlobalStock() {
         if (!$depotContainer.length) return;
 
@@ -467,9 +433,6 @@ $(function () {
         $("#stok_obat").val(total);
     }
 
-    // ==========================
-    // HELPER: FORMAT RUPIAH
-    // ==========================
     function initRupiahFormatter(selector) {
         $(selector).on("input", function () {
             let nilai = $(this).val().replace(/\D/g, "");
@@ -480,17 +443,12 @@ $(function () {
         });
     }
 
-    // helper: string rupiah -> number
     function parseRupiahNumber(val) {
-        val = (val || "").toString();
-        val = val.replace(/\D/g, "");
+        val = (val || "").toString().replace(/\D/g, "");
         if (!val) return 0;
         return parseInt(val, 10);
     }
 
-    // ==========================
-    // INIT TOMSELECT: BRAND
-    // ==========================
     function initBrandFarmasiSelect() {
         const el = document.getElementById("brand_farmasi_id");
         const btnClear = document.getElementById("btn-clear-brand");
@@ -526,7 +484,7 @@ $(function () {
                 axios
                     .post(urlStore, { nama_brand: input })
                     .then((res) => {
-                        callback(res.data); // {id, nama_brand}
+                        callback(res.data);
                     })
                     .catch((err) => {
                         console.error("CREATE BRAND ERROR", err);
@@ -589,9 +547,6 @@ $(function () {
         }
     }
 
-    // ==========================
-    // INIT TOMSELECT: KATEGORI
-    // ==========================
     function initKategoriObatSelect() {
         const el = document.getElementById("kategori_obat");
         const btnClear = document.getElementById("btn-clear-kategori");
@@ -620,6 +575,11 @@ $(function () {
                         console.error("LOAD KATEGORI ERROR", err);
                         callback([]);
                     });
+            },
+
+            onChange: function (value) {
+                if (!btnClear) return;
+                btnClear.classList.toggle("hidden", !value);
             },
         });
 
@@ -666,9 +626,6 @@ $(function () {
         }
     }
 
-    // ==========================
-    // INIT TOMSELECT: JENIS
-    // ==========================
     function initJenisObatSelect() {
         const el = document.getElementById("jenis_id");
         const btnClear = document.getElementById("btn-clear-jenis");
@@ -767,9 +724,6 @@ $(function () {
         }
     }
 
-    // ==========================
-    // INIT TOMSELECT: SATUAN
-    // ==========================
     function initSatuanObatSelect() {
         const el = document.getElementById("satuan_id");
         const btnClear = document.getElementById("btn-clear-satuan");
@@ -881,9 +835,6 @@ $(function () {
         }
     }
 
-    // ==========================
-    // INIT TOMSELECT: NAMA DEPOT
-    // ==========================
     function initNamaDepotSelect($row) {
         const el = $row.find(".select-nama-depot")[0];
         const btnClear = $row.find(".btn-clear-depot")[0];
@@ -979,9 +930,6 @@ $(function () {
         }
     }
 
-    // ==========================
-    // INIT TOMSELECT: TIPE DEPOT
-    // ==========================
     function initTipeDepotSelect($row) {
         const el = $row.find(".select-tipe-depot")[0];
         const btnClear = $row.find(".btn-clear-tipe-depot")[0];
@@ -1054,7 +1002,7 @@ $(function () {
 
                     axios
                         .post(urlDelete, { id: value })
-                        .then((res) => {
+                        .then(() => {
                             ts.clear();
                             ts.removeOption(value);
                             btnClear.classList.add("hidden");
@@ -1074,9 +1022,6 @@ $(function () {
         }
     }
 
-    // ==========================
-    // RESET DEPOT ROWS
-    // ==========================
     function resetDepotRows() {
         if (!$depotContainer.length) return;
 
@@ -1084,7 +1029,6 @@ $(function () {
 
         const $row = $depotContainer.find(".depot-row").first();
 
-        // reset TomSelect nama depot
         const selectDepot = $row.find(".select-nama-depot")[0];
         if (selectDepot && selectDepot.tomselect) {
             selectDepot.tomselect.clear();
@@ -1093,7 +1037,6 @@ $(function () {
         }
         $row.find(".btn-clear-depot").addClass("hidden");
 
-        // reset TomSelect tipe depot
         const selectTipe = $row.find(".select-tipe-depot")[0];
         if (selectTipe && selectTipe.tomselect) {
             selectTipe.tomselect.clear();
@@ -1103,20 +1046,15 @@ $(function () {
         $row.find(".btn-clear-tipe-depot").addClass("hidden");
 
         $row.find(".input-stok-depot").val(0);
-
-        // 👉 pastikan stok global ikut 0
         updateGlobalStock();
     }
 
-    // ==========================
-    // RESET FORM
-    // ==========================
     function resetFormCreate() {
         if ($formCreate.length === 0) return;
 
         $formCreate[0].reset();
         $formCreate.find(".is-invalid").removeClass("is-invalid");
-        $formCreate.find(".text-danger").empty();
+        $(".text-danger").empty();
 
         $("#stok_obat").val(0);
 
@@ -1125,17 +1063,17 @@ $(function () {
 
         if (
             brandFarmasiSelect &&
-            document.getElementById("brand_farmasi_id").tomselect
+            document.getElementById("brand_farmasi_id")?.tomselect
         ) {
             document.getElementById("brand_farmasi_id").tomselect.clear();
         }
 
         $("#btn-clear-brand").addClass("hidden");
+        $("#btn-clear-kategori").addClass("hidden");
+        $("#btn-clear-jenis").addClass("hidden");
+        $("#btn-clear-satuan").addClass("hidden");
     }
 
-    // ==========================
-    // INISIALISASI AWAL
-    // ==========================
     initRupiahFormatter("#harga_beli_satuan");
     initRupiahFormatter("#harga_jual_umum");
     initRupiahFormatter("#harga_otc");
@@ -1146,9 +1084,6 @@ $(function () {
         initTipeDepotSelect($firstRow);
     }
 
-    // ==========================
-    // LOGIC HARGA BELI -> HARGA JUAL
-    // ==========================
     const DEFAULT_MARGIN_PERCENT = 30;
 
     $("#harga_beli_satuan").on("input", function () {
@@ -1181,9 +1116,6 @@ $(function () {
         }
     });
 
-    // ==========================
-    // EVENT: BUKA / TUTUP MODAL
-    // ==========================
     $("#btn-open-modal-create-obat").on("click", function () {
         resetFormCreate();
         initBrandFarmasiSelect();
@@ -1191,7 +1123,6 @@ $(function () {
         initJenisObatSelect();
         initSatuanObatSelect();
 
-        // init ulang depot row pertama
         if ($depotContainer.length) {
             const $firstRow = $depotContainer.find(".depot-row").first();
             initNamaDepotSelect($firstRow);
@@ -1209,9 +1140,6 @@ $(function () {
         },
     );
 
-    // ==========================
-    // LOGIC TAMBAH DEPOT
-    // ==========================
     $("#btn-add-depot").on("click", function () {
         if (!$depotContainer.length || !$depotTemplate) return;
 
@@ -1219,46 +1147,34 @@ $(function () {
 
         $newRow.find(".select-nama-depot").val("");
         $newRow.find(".btn-clear-depot").addClass("hidden");
-
         $newRow.find(".select-tipe-depot").val("");
         $newRow.find(".btn-clear-tipe-depot").addClass("hidden");
-
         $newRow.find(".input-stok-depot").val(0);
 
         $depotContainer.append($newRow);
 
         initNamaDepotSelect($newRow);
         initTipeDepotSelect($newRow);
-
-        // jika nantinya default stok != 0, ini akan jaga supaya global ikut update
         updateGlobalStock();
     });
 
-    // Hapus depot row
     $(document).on("click", ".btn-remove-depot", function () {
         if (!$depotContainer.length) return;
 
         const $rows = $depotContainer.find(".depot-row");
-
         if ($rows.length <= 1) {
             resetDepotRows();
             return;
         }
 
         $(this).closest(".depot-row").remove();
-        // setelah hapus, update stok global
         updateGlobalStock();
     });
 
-    // >>> TAMBAHKAN INI (setelah handler .btn-remove-depot juga boleh)
-    // setiap stok per depot diubah, update stok global
     $(document).on("input", ".input-stok-depot", function () {
         updateGlobalStock();
     });
 
-    // ==========================
-    // SUBMIT FORM
-    // ==========================
     $formCreate.on("submit", function (e) {
         e.preventDefault();
         const route = $formCreate.data("url");
@@ -1296,13 +1212,10 @@ $(function () {
             stok_obat: $("#stok_obat").val(),
             expired_date: $("#expired_date").val(),
             nomor_batch: $("#nomor_batch").val(),
-
             harga_beli_satuan: parseRupiah($("#harga_beli_satuan").val()),
             harga_jual_umum: parseRupiah($("#harga_jual_umum").val()),
             harga_otc: parseRupiah($("#harga_otc").val()),
-
             kandungan: $("#kandungan").val(),
-
             depot_id: depot_id,
             tipe_depot: tipe_depot,
             stok_depot: stok_depot,
@@ -1360,6 +1273,222 @@ $(function () {
 });
 
 // ==========================
+// MODAL DETAIL OBAT
+// ==========================
+$(function () {
+    const elementModalDetail = document.getElementById("modalDetailObat");
+    const modalDetail = elementModalDetail
+        ? new Modal(elementModalDetail, {
+              backdrop: "static",
+              closable: false,
+          })
+        : null;
+
+    function formatRupiahDetail(value) {
+        if (value === null || value === undefined || value === "") return "-";
+        const num = Number(value) || 0;
+        return num.toLocaleString("id-ID", {
+            style: "currency",
+            currency: "IDR",
+            minimumFractionDigits: 0,
+        });
+    }
+
+    function formatTanggalDetail(value) {
+        if (!value) return "-";
+
+        const date = new Date(value);
+        if (isNaN(date.getTime())) return value;
+
+        return date.toLocaleDateString("id-ID", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+        });
+    }
+
+    function resetDetailModal() {
+        $("#detail_obat_id").val("");
+        $("#detail_kode_obat").text("-");
+        $("#detail_barcode").text("-");
+        $("#detail_nama_obat").text("-");
+        $("#detail_brand").text("-");
+        $("#detail_kategori").text("-");
+        $("#detail_jenis").text("-");
+        $("#detail_satuan").text("-");
+        $("#detail_dosis").text("-");
+        $("#detail_kandungan").text("-");
+        $("#detail_stok").text("-");
+        $("#detail_harga_beli").text("-");
+        $("#detail_harga_umum").text("-");
+        $("#detail_harga_otc").text("-");
+        $("#detail_expired_date").text("-");
+        $("#detail_nomor_batch").text("-");
+
+        $("#detail_batch_list").html(`
+            <tr>
+                <td colspan="4" class="px-3 py-4 text-center text-gray-500">
+                    Belum ada data batch
+                </td>
+            </tr>
+        `);
+
+        $("#detail_depot_list").html(`
+            <tr>
+                <td colspan="4" class="px-3 py-4 text-center text-gray-500">
+                    Belum ada data depot
+                </td>
+            </tr>
+        `);
+    }
+
+    function renderBatchRows(batchs = [], obatId = null) {
+        if (!Array.isArray(batchs) || batchs.length === 0) {
+            $("#detail_batch_list").html(`
+                <tr>
+                    <td colspan="4" class="px-3 py-4 text-center text-gray-500">
+                        Belum ada data batch
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+
+        const html = batchs
+            .map((item, index) => {
+                const namaBatch = item?.nama_batch || "-";
+                const expired = formatTanggalDetail(
+                    item?.tanggal_kadaluarsa_obat,
+                );
+
+                return `
+                    <tr class="bg-white dark:bg-gray-900">
+                        <td class="px-3 py-2">${index + 1}</td>
+                        <td class="px-3 py-2">${namaBatch}</td>
+                        <td class="px-3 py-2">${expired}</td>
+                    </tr>
+                `;
+            })
+            .join("");
+
+        $("#detail_batch_list").html(html);
+    }
+
+    function renderDepotRows(depots = []) {
+        if (!Array.isArray(depots) || depots.length === 0) {
+            $("#detail_depot_list").html(`
+                <tr>
+                    <td colspan="4" class="px-3 py-4 text-center text-gray-500">
+                        Belum ada data depot
+                    </td>
+                </tr>
+            `);
+            return;
+        }
+
+        const html = depots
+            .map((item, index) => {
+                const namaDepot = item?.nama_depot || "-";
+                const tipeDepot = item?.tipe_depot?.nama_tipe_depot || "-";
+                const stokDepot =
+                    item?.pivot?.stok_obat ?? item?.jumlah_stok_depot ?? 0;
+
+                return `
+                    <tr class="bg-white dark:bg-gray-900">
+                        <td class="px-3 py-2">${index + 1}</td>
+                        <td class="px-3 py-2">${namaDepot}</td>
+                        <td class="px-3 py-2">${tipeDepot}</td>
+                        <td class="px-3 py-2">${stokDepot}</td>
+                    </tr>
+                `;
+            })
+            .join("");
+
+        $("#detail_depot_list").html(html);
+    }
+
+    $(document).on("click", ".btn-detail-obat", function () {
+        const id = $(this).data("id");
+        if (!id) return;
+
+        resetDetailModal();
+
+        axios
+            .get(`/farmasi/obat/get-data-obat-by/${id}`)
+            .then((response) => {
+                const data = response.data.data || {};
+                const batchPertama =
+                    Array.isArray(data.batch_obat) && data.batch_obat.length
+                        ? data.batch_obat[0]
+                        : null;
+
+                $("#detail_obat_id").val(data.id || "");
+
+                $("#detail_kode_obat").text(data.kode_obat || "-");
+                $("#detail_barcode").text(data.barcode || "-");
+                $("#detail_nama_obat").text(data.nama_obat || "-");
+                $("#detail_brand").text(data.brand_farmasi?.nama_brand || "-");
+                $("#detail_kategori").text(
+                    data.kategori_obat?.nama_kategori_obat || "-",
+                );
+                $("#detail_jenis").text(
+                    data.jenis_obat?.nama_jenis_obat || "-",
+                );
+                $("#detail_satuan").text(
+                    data.satuan_obat?.nama_satuan_obat || "-",
+                );
+                $("#detail_dosis").text(data.dosis || "-");
+                $("#detail_kandungan").text(data.kandungan_obat || "-");
+
+                $("#detail_stok").text(data.jumlah ?? 0);
+                $("#detail_harga_beli").text(
+                    formatRupiahDetail(data.total_harga),
+                );
+                $("#detail_harga_umum").text(
+                    formatRupiahDetail(data.harga_jual_obat),
+                );
+                $("#detail_harga_otc").text(
+                    formatRupiahDetail(data.harga_otc_obat),
+                );
+
+                $("#detail_expired_date").text(
+                    formatTanggalDetail(batchPertama?.tanggal_kadaluarsa_obat),
+                );
+                $("#detail_nomor_batch").text(batchPertama?.nama_batch || "-");
+
+                renderBatchRows(data.batch_obat || [], data.id);
+                renderDepotRows(data.depot_obat || []);
+
+                if (modalDetail) modalDetail.show();
+            })
+            .catch((error) => {
+                console.error("LOAD DETAIL OBAT ERROR", error);
+                Swal.fire({
+                    icon: "error",
+                    title: "Gagal memuat detail obat",
+                    text: "Tidak dapat mengambil data detail obat. Silakan coba lagi.",
+                });
+            });
+    });
+
+    $("#btn-close-modal-detail-obat, #btn-cancel-modal-detail-obat").on(
+        "click",
+        function () {
+            resetDetailModal();
+            if (modalDetail) modalDetail.hide();
+        },
+    );
+
+    window.getDetailObatId = function () {
+        return $("#detail_obat_id").val();
+    };
+
+    window.hideDetailObatModal = function () {
+        if (modalDetail) modalDetail.hide();
+    };
+});
+
+// ==========================
 // MODAL UPDATE OBAT
 // ==========================
 $(function () {
@@ -1384,9 +1513,6 @@ $(function () {
 
     const DEFAULT_MARGIN_PERCENT = 30;
 
-    // =====================================
-    // ✅ [BARU] HELPER HITUNG TOTAL STOK DEPOT -> STOK OBAT
-    // =====================================
     function toIntSafe(val) {
         const n = parseInt((val ?? "").toString().replace(/[^\d-]/g, ""), 10);
         return Number.isFinite(n) ? n : 0;
@@ -1406,7 +1532,6 @@ $(function () {
         return total;
     }
 
-    // ✅ [BARU] realtime ketika stok depot diketik
     $(document).on(
         "input change",
         "#depot-container-update .input-stok-depot",
@@ -1415,9 +1540,6 @@ $(function () {
         },
     );
 
-    // =====================================
-    // HELPER KHUSUS UPDATE
-    // =====================================
     function initRupiahFormatterUpdate(selector) {
         $(selector).on("input", function () {
             let nilai = $(this).val().replace(/\D/g, "");
@@ -1433,9 +1555,6 @@ $(function () {
         return val ? parseInt(val, 10) : 0;
     }
 
-    // ==========================
-    // INIT TOMSELECT UPDATE: BRAND
-    // ==========================
     function initBrandFarmasiSelectUpdate() {
         const el = document.getElementById("edit_brand_farmasi_id");
         const btnClear = document.getElementById("btn-clear-brand-update");
@@ -1532,9 +1651,6 @@ $(function () {
         }
     }
 
-    // ==========================
-    // INIT TOMSELECT UPDATE: KATEGORI
-    // ==========================
     function initKategoriObatSelectUpdate() {
         const el = document.getElementById("edit_kategori_obat");
         const btnClear = document.getElementById("btn-clear-kategori-update");
@@ -1563,6 +1679,11 @@ $(function () {
                         console.error("LOAD KATEGORI UPDATE ERROR", err);
                         callback([]);
                     });
+            },
+
+            onChange: function (value) {
+                if (!btnClear) return;
+                btnClear.classList.toggle("hidden", !value);
             },
         });
 
@@ -1609,9 +1730,6 @@ $(function () {
         }
     }
 
-    // ==========================
-    // INIT TOMSELECT UPDATE: JENIS
-    // ==========================
     function initJenisObatSelectUpdate() {
         const el = document.getElementById("edit_jenis_id");
         const btnClear = document.getElementById("btn-clear-jenis-update");
@@ -1708,9 +1826,6 @@ $(function () {
         }
     }
 
-    // ==========================
-    // INIT TOMSELECT UPDATE: SATUAN
-    // ==========================
     function initSatuanObatSelectUpdate() {
         const el = document.getElementById("edit_satuan_id");
         const btnClear = document.getElementById("btn-clear-satuan-update");
@@ -1822,9 +1937,6 @@ $(function () {
         }
     }
 
-    // ==========================
-    // INIT TOMSELECT: NAMA DEPOT (UPDATE)
-    // ==========================
     function initNamaDepotSelectUpdate($row) {
         const el = $row.find(".select-nama-depot")[0];
         const btnClear = $row.find(".btn-clear-depot")[0];
@@ -1920,9 +2032,6 @@ $(function () {
         }
     }
 
-    // ==========================
-    // INIT TOMSELECT: TIPE DEPOT (UPDATE)
-    // ==========================
     function initTipeDepotSelectUpdate($row) {
         const el = $row.find(".select-tipe-depot")[0];
         const btnClear = $row.find(".btn-clear-tipe-depot")[0];
@@ -1995,7 +2104,7 @@ $(function () {
 
                     axios
                         .post(urlDelete, { id: value })
-                        .then((res) => {
+                        .then(() => {
                             ts.clear();
                             ts.removeOption(value);
                             btnClear.classList.add("hidden");
@@ -2015,9 +2124,6 @@ $(function () {
         }
     }
 
-    // ==========================
-    // RESET DEPOT ROWS UPDATE
-    // ==========================
     function resetDepotRowsUpdate() {
         if (!$depotContainerUpdate.length) return;
 
@@ -2041,28 +2147,65 @@ $(function () {
         $row.find(".btn-clear-tipe-depot").addClass("hidden");
 
         $row.find(".input-stok-depot").val(0);
-
-        // ✅ [BARU] setelah reset depot, hitung ulang stok global
         hitungTotalStokDepotUpdate();
     }
 
-    // ==========================
-    // RESET FORM UPDATE
-    // ==========================
+    function enableDepotSection() {
+        const $container = $("#depot-container-update");
+
+        $container.find("input, select").prop("disabled", false);
+        $container.find(".depot-row").removeClass("bg-gray-100/80 opacity-80");
+        $container.find("input, select").removeClass("cursor-not-allowed");
+
+        $container
+            .find(".select-nama-depot, .select-tipe-depot")
+            .each(function () {
+                if (this.tomselect) {
+                    this.tomselect.enable();
+                }
+            });
+
+        $container.find(".btn-remove-depot-update").removeClass("hidden");
+        $("#btn-add-depot-update").removeClass("hidden");
+    }
+
+    function disableDepotSection() {
+        const $container = $("#depot-container-update");
+
+        $container.find("input, select").prop("disabled", true);
+        $container.find(".depot-row").addClass("bg-gray-100/80 opacity-80");
+        $container.find("input, select").addClass("cursor-not-allowed");
+
+        $container
+            .find(".select-nama-depot, .select-tipe-depot")
+            .each(function () {
+                if (this.tomselect) {
+                    this.tomselect.disable();
+                }
+            });
+
+        $container.find(".btn-remove-depot-update").addClass("hidden");
+        $container
+            .find(".btn-clear-depot, .btn-clear-tipe-depot")
+            .addClass("hidden");
+        $("#btn-add-depot-update").addClass("hidden");
+    }
+
     function resetFormUpdate() {
         if ($formUpdate.length === 0) return;
 
         $formUpdate[0].reset();
         $formUpdate.find(".is-invalid").removeClass("is-invalid");
-        $formUpdate.find(".text-danger").empty();
+        $(".text-danger").empty();
 
         $("#edit_stok_obat").val(0);
+        $("#edit_batch_id").val("");
 
         resetDepotRowsUpdate();
 
         if (
             brandFarmasiSelectUpdate &&
-            document.getElementById("edit_brand_farmasi_id").tomselect
+            document.getElementById("edit_brand_farmasi_id")?.tomselect
         ) {
             document.getElementById("edit_brand_farmasi_id").tomselect.clear();
         }
@@ -2072,13 +2215,10 @@ $(function () {
         $("#btn-clear-jenis-update").addClass("hidden");
         $("#btn-clear-satuan-update").addClass("hidden");
 
-        // ✅ [BARU] pastikan stok global 0 setelah reset
+        enableDepotSection();
         hitungTotalStokDepotUpdate();
     }
 
-    // ==========================
-    // INISIALISASI AWAL UPDATE
-    // ==========================
     initRupiahFormatterUpdate("#edit_harga_beli_satuan");
     initRupiahFormatterUpdate("#edit_harga_jual_umum");
     initRupiahFormatterUpdate("#edit_harga_otc");
@@ -2091,9 +2231,6 @@ $(function () {
         initTipeDepotSelectUpdate($firstRowUpdate);
     }
 
-    // ==========================
-    // LOGIC HARGA BELI -> HARGA JUAL (UPDATE)
-    // ==========================
     $("#edit_harga_beli_satuan").on("input", function () {
         const beli = parseRupiahNumberUpdate($(this).val());
         const $jual = $("#edit_harga_jual_umum");
@@ -2126,40 +2263,7 @@ $(function () {
         }
     });
 
-    function disableDepotSection() {
-        const $container = $("#depot-container-update");
-
-        // 1. Disable semua input dan select (Native HTML)
-        // Menggunakan .find() agar semua baris terkena, bukan cuma satu
-        $container.find("input, select").prop("disabled", true);
-
-        // 2. Tambahkan class visual (Tailwind) agar user tahu ini tidak bisa diedit
-        $container.find(".depot-row").addClass("bg-gray-100/80 opacity-80");
-        $container.find("input, select").addClass("cursor-not-allowed");
-
-        // 3. Matikan TomSelect (Wajib karena TomSelect punya UI sendiri)
-        $container
-            .find(".select-nama-depot, .select-tipe-depot")
-            .each(function () {
-                if (this.tomselect) {
-                    this.tomselect.disable();
-                }
-            });
-
-        // 4. Sembunyikan elemen aksi (Tombol Hapus & Tombol Tambah)
-        $container.find(".btn-remove-depot-update").addClass("hidden");
-        $container
-            .find(".btn-clear-depot, .btn-clear-tipe-depot")
-            .addClass("hidden");
-        $("#btn-add-depot-update").addClass("hidden");
-    }
-
-    // ==========================
-    // EVENT: BUKA / TUTUP MODAL UPDATE
-    // ==========================
-    $(document).on("click", ".btn-edit-obat", function () {
-        const id = $(this).data("id");
-
+    function openUpdateObatModal(id, selectedBatch = null) {
         if (!id) {
             console.error("data id kosong");
             return;
@@ -2177,18 +2281,29 @@ $(function () {
             .then((response) => {
                 const data = response.data.data || response.data;
 
+                const batchTerpilih = selectedBatch
+                    ? {
+                          id: selectedBatch.batch_id || "",
+                          nama_batch: selectedBatch.nama_batch || "",
+                          tanggal_kadaluarsa_obat:
+                              selectedBatch.expired_date || "",
+                      }
+                    : Array.isArray(data.batch_obat) && data.batch_obat.length
+                      ? data.batch_obat[0]
+                      : null;
+
                 $("#edit_obat_id").val(data.id);
-                $("#kode_obat").text(data.kode_obat);
+                $("#edit_batch_id").val(batchTerpilih?.id || "");
+                $("#kode_obat").text(data.kode_obat || "-");
                 $("#edit_barcode").val(data.barcode || "");
                 $("#edit_nama_obat").val(data.nama_obat || "");
                 $("#edit_kandungan").val(data.kandungan_obat || "");
                 $("#edit_dosis").val(data.dosis || "");
-
-                // ❗ tetap isi dulu dari data lama, tapi nanti akan ditimpa hasil sum depot
                 $("#edit_stok_obat").val(data.jumlah || 0);
-
-                $("#edit_expired_date").val(data.tanggal_kadaluarsa_obat || "");
-                $("#edit_nomor_batch").val(data.nomor_batch_obat || "");
+                $("#edit_expired_date").val(
+                    batchTerpilih?.tanggal_kadaluarsa_obat || "",
+                );
+                $("#edit_nomor_batch").val(batchTerpilih?.nama_batch || "");
 
                 if (data.total_harga != null) {
                     $("#edit_harga_beli_satuan").val(
@@ -2214,9 +2329,6 @@ $(function () {
                     );
                 }
 
-                // ================== TOMSELECT ==================
-
-                // BRAND FARMASI
                 if (brandFarmasiSelectUpdate && data.brand_farmasi) {
                     brandFarmasiSelectUpdate.clearOptions();
                     brandFarmasiSelectUpdate.addOption({
@@ -2228,7 +2340,6 @@ $(function () {
                     );
                 }
 
-                // JENIS OBAT -> di JSON: jenis_obat
                 if (jenisObatSelectUpdate && data.jenis_obat) {
                     jenisObatSelectUpdate.clearOptions();
                     jenisObatSelectUpdate.addOption({
@@ -2238,7 +2349,6 @@ $(function () {
                     jenisObatSelectUpdate.setValue(String(data.jenis_obat.id));
                 }
 
-                // SATUAN OBAT -> di JSON: satuan_obat
                 if (satuanObatSelectUpdate && data.satuan_obat) {
                     satuanObatSelectUpdate.clearOptions();
                     satuanObatSelectUpdate.addOption({
@@ -2250,7 +2360,6 @@ $(function () {
                     );
                 }
 
-                // KATEGORI OBAT
                 const kategoriSelectEl =
                     document.getElementById("edit_kategori_obat");
                 if (
@@ -2259,7 +2368,6 @@ $(function () {
                     data.kategori_obat
                 ) {
                     const tsKategori = kategoriSelectEl.tomselect;
-
                     tsKategori.clearOptions();
                     tsKategori.addOption({
                         id: data.kategori_obat.id,
@@ -2269,27 +2377,19 @@ $(function () {
                     tsKategori.setValue(String(data.kategori_obat.id));
                 }
 
-                // ================== DEPOT (many to many: depot_obat) ==================
                 if ($depotContainerUpdate.length) {
-                    // kosongkan row lama (sisa 1 row template kosong)
                     resetDepotRowsUpdate();
 
-                    // ambil array depot dari response (sesuai JSON kamu)
                     const depots = Array.isArray(data.depot_obat)
                         ? data.depot_obat
-                        : Array.isArray(data.depots)
-                          ? data.depots
-                          : [];
+                        : [];
 
                     if (depots.length === 0) {
-                        // tidak ada depot: tetap 1 row kosong
                         const $row = $depotContainerUpdate
                             .find(".depot-row")
                             .first();
                         initNamaDepotSelectUpdate($row);
                         initTipeDepotSelectUpdate($row);
-
-                        // ✅ [BARU] stok global jadi 0
                         hitungTotalStokDepotUpdate();
                     } else {
                         depots.forEach((depotItem, index) => {
@@ -2307,19 +2407,16 @@ $(function () {
                                 $newRow
                                     .find(".btn-clear-depot")
                                     .addClass("hidden");
-
                                 $newRow.find(".select-tipe-depot").val("");
                                 $newRow
                                     .find(".btn-clear-tipe-depot")
                                     .addClass("hidden");
-
                                 $newRow.find(".input-stok-depot").val(0);
 
                                 $depotContainerUpdate.append($newRow);
                                 $row = $newRow;
                             }
 
-                            // init TomSelect utk row ini
                             initNamaDepotSelectUpdate($row);
                             initTipeDepotSelectUpdate($row);
 
@@ -2328,61 +2425,49 @@ $(function () {
                             const tipeSelect =
                                 $row.find(".select-tipe-depot")[0];
 
-                            // ========== NAMA DEPOT (dari depotItem.nama_depot) ==========
                             if (depotSelect && depotSelect.tomselect) {
                                 const tsDepot = depotSelect.tomselect;
-
                                 tsDepot.clearOptions();
                                 tsDepot.addOption({
                                     id: depotItem.id,
                                     nama_depot: depotItem.nama_depot,
                                 });
                                 tsDepot.setValue(String(depotItem.id));
-                            } else {
-                                $row.find(".select-nama-depot").val(
-                                    depotItem.id ?? "",
-                                );
                             }
-
-                            // ========== TIPE DEPOT ==========
-                            if (tipeSelect && tipeSelect.tomselect) {
-                                const tsTipe = tipeSelect.tomselect;
-                                tsTipe.clearOptions();
-
-                                if (depotItem.tipe_depot) {
-                                    tsTipe.addOption({
-                                        id: depotItem.tipe_depot.id,
-                                        nama_tipe_depot:
-                                            depotItem.tipe_depot
-                                                .nama_tipe_depot,
-                                    });
-                                    tsTipe.setValue(
-                                        String(depotItem.tipe_depot.id),
-                                    );
-                                }
-                            } else if (depotItem.tipe_depot) {
-                                $row.find(".select-tipe-depot").val(
-                                    depotItem.tipe_depot.id ?? "",
-                                );
-                            }
-
-                            // ========== STOK DEPOT ==========
-                            let stok = 0;
 
                             if (
-                                depotItem.jumlah_stok_depot !== null &&
-                                depotItem.jumlah_stok_depot !== undefined
+                                tipeSelect &&
+                                tipeSelect.tomselect &&
+                                depotItem.tipe_depot
                             ) {
-                                stok = depotItem.jumlah_stok_depot;
+                                const tsTipe = tipeSelect.tomselect;
+                                tsTipe.clearOptions();
+                                tsTipe.addOption({
+                                    id: depotItem.tipe_depot.id,
+                                    nama_tipe_depot:
+                                        depotItem.tipe_depot.nama_tipe_depot,
+                                });
+                                tsTipe.setValue(
+                                    String(depotItem.tipe_depot.id),
+                                );
                             }
+
+                            const stok =
+                                depotItem?.pivot?.stok_obat ??
+                                depotItem?.jumlah_stok_depot ??
+                                0;
 
                             $row.find(".input-stok-depot").val(stok);
                         });
 
-                        // ✅ [BARU] setelah semua row depot di-set, hitung totalnya
                         hitungTotalStokDepotUpdate();
                     }
+
                     disableDepotSection();
+                }
+
+                if (window.hideDetailObatModal) {
+                    window.hideDetailObatModal();
                 }
 
                 if (modalUpdate) modalUpdate.show();
@@ -2395,6 +2480,43 @@ $(function () {
                     text: "Tidak dapat mengambil data obat. Silakan coba lagi.",
                 });
             });
+    }
+
+    $(document).on("click", ".btn-update-batch", function () {
+        const obatId = $(this).data("obat-id");
+        const batchId = $(this).data("batch-id");
+        const namaBatch = $(this).data("nama-batch");
+        const expiredDate = $(this).data("expired-date");
+
+        if (!obatId) {
+            Swal.fire({
+                icon: "warning",
+                title: "Data tidak ditemukan",
+                text: "ID obat tidak tersedia.",
+            });
+            return;
+        }
+
+        openUpdateObatModal(obatId, {
+            batch_id: batchId,
+            nama_batch: namaBatch,
+            expired_date: expiredDate,
+        });
+    });
+
+    $("#btn-open-modal-update-from-detail").on("click", function () {
+        const id = window.getDetailObatId ? window.getDetailObatId() : null;
+
+        if (!id) {
+            Swal.fire({
+                icon: "warning",
+                title: "Data tidak ditemukan",
+                text: "ID obat tidak tersedia.",
+            });
+            return;
+        }
+
+        openUpdateObatModal(id);
     });
 
     $("#btn-close-modal-update-obat, #btn-cancel-modal-update-obat").on(
@@ -2405,9 +2527,6 @@ $(function () {
         },
     );
 
-    // ==========================
-    // LOGIC TAMBAH DEPOT UPDATE
-    // ==========================
     $("#btn-add-depot-update").on("click", function () {
         if (!$depotContainerUpdate.length || !$depotTemplateUpdate) return;
 
@@ -2415,22 +2534,17 @@ $(function () {
 
         $newRow.find(".select-nama-depot").val("");
         $newRow.find(".btn-clear-depot").addClass("hidden");
-
         $newRow.find(".select-tipe-depot").val("");
         $newRow.find(".btn-clear-tipe-depot").addClass("hidden");
-
         $newRow.find(".input-stok-depot").val(0);
 
         $depotContainerUpdate.append($newRow);
 
         initNamaDepotSelectUpdate($newRow);
         initTipeDepotSelectUpdate($newRow);
-
-        // ✅ [BARU] update stok global
         hitungTotalStokDepotUpdate();
     });
 
-    // Hapus depot row UPDATE
     $(document).on("click", ".btn-remove-depot-update", function () {
         if (!$depotContainerUpdate.length) return;
 
@@ -2442,19 +2556,12 @@ $(function () {
         }
 
         $(this).closest(".depot-row").remove();
-
-        // ✅ [BARU] update stok global setelah remove row
         hitungTotalStokDepotUpdate();
     });
-
-    // ==========================
-    // SUBMIT FORM UPDATE
-    // ==========================
 
     $formUpdate.on("submit", function (e) {
         e.preventDefault();
 
-        // ambil id obat dari hidden input
         const obat_id = $("#edit_obat_id").val();
 
         if (!obat_id) {
@@ -2467,10 +2574,8 @@ $(function () {
             return;
         }
 
-        // bikin URL ke controller update
         const route = `/farmasi/obat/update-data-obat/${obat_id}`;
 
-        // bersihkan error lama
         $(".text-danger").empty();
         $formUpdate.find(".is-invalid").removeClass("is-invalid");
 
@@ -2490,10 +2595,10 @@ $(function () {
             });
         }
 
-        // ✅ [BARU] pastikan stok_obat yg dikirim = SUM stok depot
         const totalStok = hitungTotalStokDepotUpdate();
 
         const formData = {
+            batch_id: $("#edit_batch_id").val(),
             barcode: $("#edit_barcode").val(),
             nama_obat: $("#edit_nama_obat").val(),
             brand_farmasi_id: $("#edit_brand_farmasi_id").val(),
@@ -2501,13 +2606,9 @@ $(function () {
             jenis: $("#edit_jenis_id").val(),
             satuan: $("#edit_satuan_id").val(),
             dosis: $("#edit_dosis").val(),
-
-            // ✅ [REVISI] kirim total sum depot, bukan nilai manual
             stok_obat: totalStok,
-
             expired_date: $("#edit_expired_date").val(),
             nomor_batch: $("#edit_nomor_batch").val(),
-
             harga_beli_satuan: parseRupiahNumberUpdate(
                 $("#edit_harga_beli_satuan").val(),
             ),
@@ -2515,12 +2616,10 @@ $(function () {
                 $("#edit_harga_jual_umum").val(),
             ),
             harga_otc: parseRupiahNumberUpdate($("#edit_harga_otc").val()),
-
             kunci_harga_obat: $("#edit_kunci_harga_obat").is(":checked")
                 ? 1
                 : 0,
             kandungan: $("#edit_kandungan").val(),
-
             depot_id: depot_id,
             tipe_depot: tipe_depot,
             stok_depot: stok_depot,
@@ -2618,19 +2717,19 @@ $(function () {
                             showConfirmButton: false,
                             timer: 2000,
                         }).then(() => {
-                            if ($("#dataObatTable".length)) {
+                            if ($("#dataObatTable").length) {
                                 $("#dataObatTable")
                                     .DataTable()
                                     .ajax.reload(null, false);
                             } else {
-                                window.reload();
+                                window.location.reload();
                             }
                         });
                     })
                     .catch((error) => {
                         console.error("SERVER ERROR", error);
                         Swal.fire({
-                            icons: "error",
+                            icon: "error",
                             title: "ERROR!",
                             text: "Terjadi kesalahan Server. Silahkan Coba Lagi",
                         });

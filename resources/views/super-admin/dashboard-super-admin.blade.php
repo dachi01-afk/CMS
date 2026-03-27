@@ -220,9 +220,9 @@
 
                         <select id="filterKunjunganChart"
                             class="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 shadow-sm outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100">
-                            <option value="harian" {{ $chartFilter === 'harian' ? 'selected' : '' }}>Harian</option>
+                            {{-- <option value="harian" {{ $chartFilter === 'harian' ? 'selected' : '' }}>Harian</option>
                             <option value="mingguan" {{ $chartFilter === 'mingguan' ? 'selected' : '' }}>Mingguan
-                            </option>
+                            </option> --}}
                             <option value="bulanan" {{ $chartFilter === 'bulanan' ? 'selected' : '' }}>Bulanan
                             </option>
                             <option value="tahunan" {{ $chartFilter === 'tahunan' ? 'selected' : '' }}>Tahunan

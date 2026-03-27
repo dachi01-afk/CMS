@@ -6,10 +6,6 @@ $(function () {
     const $tableEl = $("#transaksiLayananTable");
     if (!$tableEl.length) return;
 
-    // ⬇️ ambil URL dari Blade, fallback ke path lama kalau belum diset
-    const dataUrl =
-        window.transaksiLayananDataUrl || "/kasir/get-data-transaksi-layanan";
-
     const table = $tableEl.DataTable({
         processing: true,
         serverSide: true,
@@ -21,7 +17,7 @@ $(function () {
         info: false,
         scrollX: true,
         ajax: {
-            url: dataUrl,
+            url: "/kasir/get-data-transaksi-layanan",
             type: "GET",
         },
         columns: [

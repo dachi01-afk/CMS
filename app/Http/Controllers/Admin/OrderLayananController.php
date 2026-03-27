@@ -2,21 +2,22 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Models\Poli;
-use App\Models\Pasien;
-use App\Models\Layanan;
-use App\Models\Kunjungan;
-use App\Models\JadwalDokter;
-use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
-use App\Models\KategoriLayanan;
-use App\Models\PenjualanLayanan;
-use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Models\JadwalDokter;
+use App\Models\KategoriLayanan;
+use App\Models\Kunjungan;
+use App\Models\Layanan;
 use App\Models\OrderLayanan;
 use App\Models\OrderLayananDetail;
-use Yajra\DataTables\Facades\DataTables;
+use App\Models\Pasien;
+use App\Models\PenjualanLayanan;
+use App\Models\Poli;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Yajra\DataTables\Facades\DataTables;
 
 class OrderLayananController extends Controller
 {
@@ -44,6 +45,9 @@ class OrderLayananController extends Controller
                 'pasien.nama_pasien',
             ])
             ->orderByDesc('order_layanan.tanggal_order');
+
+        $user = Auth::user();
+        $isSuperAdmin = $user && strtolower(str_replace(' ', '', $user->role)) === 'superadmin';
 
         return DataTables::of($query)
             ->addIndexColumn()
@@ -120,20 +124,23 @@ class OrderLayananController extends Controller
             })
 
             // 8. Action
-            ->addColumn('action', function ($order) {
-                return '
-                <div class="flex items-center justify-center gap-1">
-                    <button type="button" 
-                data-id="' . $order->id . '" 
-                data-kode-transaksi="' . $order->kode_transaksi . '" 
-                class="btn-update-order-layanan px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 transition-colors">
-                <i class="fa-solid fa-pen-to-square"></i> Edit
-            </button>
-                    <button type="button" data-id="' . $order->id . '" data-kode="' . $order->kode_transaksi . '"
-                        class="btn-delete-order-layanan px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition-colors">
-                        <i class="fa-solid fa-trash-can"></i> Hapus
-                    </button>
-                </div>';
+            ->addColumn('action', function ($order) use ($isSuperAdmin) {
+                $buttons = '
+                        <button type="button" data-id="' . $order->id . '" data-kode-transaksi="' . $order->kode_transaksi . '" 
+                            class="btn-update-order-layanan px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 transition-colors">
+                        <i class="fa-solid fa-pen-to-square"></i> Edit
+                        </button>
+                ';
+
+                if ($isSuperAdmin) {
+                    $buttons = '
+                        <button type="button" data-id="' . $order->id . '" data-kode="' . $order->kode_transaksi . '"
+                            class="btn-delete-order-layanan px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition-colors">
+                            <i class="fa-solid fa-trash-can"></i> Hapus
+                        </button>
+                ';
+                }
+                return $buttons;
             })
             ->rawColumns(['status', 'action', 'nama_layanan'])
             ->make(true);

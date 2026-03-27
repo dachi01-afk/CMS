@@ -608,6 +608,198 @@
     </div>
 </div>
 
+<!-- Modal Detail Obat -->
+<div id="modalDetailObat" aria-hidden="true"
+    class="hidden fixed inset-0 z-50 flex items-center justify-center w-full h-full px-4 bg-black/40">
+    <div class="relative w-full max-w-5xl">
+        <div
+            class="relative flex flex-col bg-white rounded-2xl shadow-2xl dark:bg-gray-900 border border-gray-100 dark:border-gray-700 max-h-[90vh]">
+
+            <!-- Header -->
+            <div
+                class="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700 sticky top-0 bg-white dark:bg-gray-900 z-10 rounded-t-2xl">
+                <div>
+                    <h3 class="text-base md:text-lg font-semibold text-gray-900 dark:text-white">
+                        Detail Data Obat
+                    </h3>
+                    <p class="text-[11px] md:text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Informasi lengkap data obat.
+                    </p>
+                </div>
+                <button type="button" id="btn-close-modal-detail-obat"
+                    class="inline-flex items-center justify-center w-8 h-8 rounded-full border border-gray-200 text-gray-500 hover:bg-gray-100 hover:text-gray-700 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-800">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="px-6 py-5 overflow-y-auto space-y-6">
+                <input type="hidden" id="detail_obat_id">
+
+                <!-- Identitas -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                        <h4
+                            class="text-xs font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-200 mb-3">
+                            Identitas Obat
+                        </h4>
+
+                        <div class="space-y-3 text-sm">
+                            <div class="grid grid-cols-3 gap-3">
+                                <span class="text-gray-500">Kode Obat</span>
+                                <span class="col-span-2 font-medium text-gray-900 dark:text-white"
+                                    id="detail_kode_obat">-</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3">
+                                <span class="text-gray-500">Barcode</span>
+                                <span class="col-span-2 font-medium text-gray-900 dark:text-white"
+                                    id="detail_barcode">-</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3">
+                                <span class="text-gray-500">Nama Obat</span>
+                                <span class="col-span-2 font-medium text-gray-900 dark:text-white"
+                                    id="detail_nama_obat">-</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3">
+                                <span class="text-gray-500">Brand</span>
+                                <span class="col-span-2 font-medium text-gray-900 dark:text-white"
+                                    id="detail_brand">-</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3">
+                                <span class="text-gray-500">Kategori</span>
+                                <span class="col-span-2 font-medium text-gray-900 dark:text-white"
+                                    id="detail_kategori">-</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3">
+                                <span class="text-gray-500">Jenis</span>
+                                <span class="col-span-2 font-medium text-gray-900 dark:text-white"
+                                    id="detail_jenis">-</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3">
+                                <span class="text-gray-500">Satuan</span>
+                                <span class="col-span-2 font-medium text-gray-900 dark:text-white"
+                                    id="detail_satuan">-</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3">
+                                <span class="text-gray-500">Dosis</span>
+                                <span class="col-span-2 font-medium text-gray-900 dark:text-white"
+                                    id="detail_dosis">-</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3">
+                                <span class="text-gray-500">Kandungan</span>
+                                <span class="col-span-2 font-medium text-gray-900 dark:text-white whitespace-pre-line"
+                                    id="detail_kandungan">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                        <h4
+                            class="text-xs font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-200 mb-3">
+                            Harga & Stok
+                        </h4>
+
+                        <div class="space-y-3 text-sm">
+                            <div class="grid grid-cols-3 gap-3">
+                                <span class="text-gray-500">Stok Global</span>
+                                <span class="col-span-2 font-medium text-gray-900 dark:text-white"
+                                    id="detail_stok">-</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3">
+                                <span class="text-gray-500">Harga Beli</span>
+                                <span class="col-span-2 font-medium text-gray-900 dark:text-white"
+                                    id="detail_harga_beli">-</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3">
+                                <span class="text-gray-500">Harga Umum</span>
+                                <span class="col-span-2 font-medium text-gray-900 dark:text-white"
+                                    id="detail_harga_umum">-</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3">
+                                <span class="text-gray-500">Harga OTC</span>
+                                <span class="col-span-2 font-medium text-gray-900 dark:text-white"
+                                    id="detail_harga_otc">-</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3">
+                                <span class="text-gray-500">Expired Date</span>
+                                <span class="col-span-2 font-medium text-gray-900 dark:text-white"
+                                    id="detail_expired_date">-</span>
+                            </div>
+                            <div class="grid grid-cols-3 gap-3">
+                                <span class="text-gray-500">Nomor Batch</span>
+                                <span class="col-span-2 font-medium text-gray-900 dark:text-white"
+                                    id="detail_nomor_batch">-</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tabel Batch Obat -->
+                <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                    <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-200 mb-3">
+                        Detail Batch Obat
+                    </h4>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-xs md:text-sm">
+                            <thead class="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-300">
+                                <tr>
+                                    <th class="px-3 py-2 text-left">No</th>
+                                    <th class="px-3 py-2 text-left">Nomor Batch</th>
+                                    <th class="px-3 py-2 text-left">Expired Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detail_batch_list" class="divide-y divide-gray-100 dark:divide-gray-800">
+                                <tr>
+                                    <td colspan="4" class="px-3 py-4 text-center text-gray-500">
+                                        Belum ada data batch
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tabel Depot -->
+                <div class="rounded-xl border border-gray-200 dark:border-gray-700 p-4">
+                    <h4 class="text-xs font-semibold uppercase tracking-wide text-gray-700 dark:text-gray-200 mb-3">
+                        Detail Stok per Depot
+                    </h4>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-xs md:text-sm">
+                            <thead class="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-300">
+                                <tr>
+                                    <th class="px-3 py-2 text-left">No</th>
+                                    <th class="px-3 py-2 text-left">Nama Depot</th>
+                                    <th class="px-3 py-2 text-left">Tipe Depot</th>
+                                    <th class="px-3 py-2 text-left">Stok</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detail_depot_list" class="divide-y divide-gray-100 dark:divide-gray-800">
+                                <tr>
+                                    <td colspan="4" class="px-3 py-4 text-center text-gray-500">
+                                        Belum ada data depot
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div
+                class="sticky bottom-0 -mx-0 pt-3 pb-4 px-6 bg-gradient-to-t from-white via-white/95 to-white/40 dark:from-gray-900 dark:via-gray-900/95 dark:to-gray-900/40 border-t border-gray-200 dark:border-gray-700 flex justify-end gap-2 rounded-b-2xl">
+                <button type="button" id="btn-cancel-modal-detail-obat"
+                    class="px-4 md:px-5 py-2.5 text-xs font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 border border-gray-200 dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700 dark:hover:bg-gray-700">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modal Update Obat -->
 <div id="modalUpdateObat" aria-hidden="true"
     class="hidden fixed inset-0 z-50 flex items-center justify-center w-full h-full px-4 bg-black/40">
@@ -637,6 +829,7 @@
             <form id="formModalUpdate" class="px-6 py-5 space-y-7 overflow-y-auto" data-url="" method="POST">
                 @csrf
                 <input type="hidden" name="obat_id" id="edit_obat_id">
+                <input type="hidden" name="obat_id" id="edit_batch_id">
 
                 <!-- Section: Identitas Obat -->
                 <div class="space-y-4">
@@ -873,6 +1066,53 @@
                                 Stok ini otomatis bertambah dari per depot.
                             </p>
                             <div id="edit_stok_obat-error" class="text-red-600 text-[11px] mt-1"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Divider -->
+                <div class="border-t border-dashed border-gray-200 dark:border-gray-700"></div>
+
+                <!-- Section: Batch & Kedaluwarsa -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2">
+                        <div class="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center text-rose-600">
+                            <i class="fa-solid fa-calendar-xmark text-xs"></i>
+                        </div>
+                        <div>
+                            <h4 class="text-xs font-semibold tracking-wide text-gray-800 uppercase dark:text-gray-200">
+                                Batch & Kedaluwarsa
+                            </h4>
+                            <p class="text-[11px] text-gray-500 dark:text-gray-400">
+                                Informasi batch dan tanggal kedaluwarsa obat.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="edit_expired_date"
+                                class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                Expired Date
+                            </label>
+                            <input type="date" name="expired_date" id="edit_expired_date"
+                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
+                       focus:border-blue-500 focus:ring-1 focus:ring-blue-500
+                       dark:border-gray-700 dark:bg-gray-900 dark:text-white">
+                            <div id="edit_expired_date-error" class="text-red-600 text-[11px] mt-1"></div>
+                        </div>
+
+                        <div>
+                            <label for="edit_nomor_batch"
+                                class="block text-xs font-medium text-gray-600 dark:text-gray-300">
+                                Nomor Batch
+                            </label>
+                            <input type="text" name="nomor_batch" id="edit_nomor_batch"
+                                class="mt-1 block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2
+                       focus:border-blue-500 focus:ring-1 focus:ring-blue-500
+                       dark:border-gray-700 dark:bg-gray-900 dark:text-white"
+                                placeholder="Nomor batch">
+                            <div id="edit_nomor_batch-error" class="text-red-600 text-[11px] mt-1"></div>
                         </div>
                     </div>
                 </div>

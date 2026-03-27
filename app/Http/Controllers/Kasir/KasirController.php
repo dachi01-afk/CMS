@@ -9,6 +9,7 @@ use App\Models\Kasir;
 use App\Models\Kunjungan;
 use App\Models\MetodePembayaran;
 use App\Models\Pembayaran;
+use App\Models\PenjualanObat;
 use App\Models\User;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Exceptions\PostTooLargeException;
@@ -706,6 +707,9 @@ class KasirController extends Controller
             ->latest()
             ->get();
 
+        $user = Auth::user();
+        $isSuperAdmin = $user && strtolower(str_replace(' ', '', $user->role)) === 'superadmin';
+
         return DataTables::of($dataPembayaran)
             ->addIndexColumn()
 
@@ -745,7 +749,7 @@ class KasirController extends Controller
                 $p->kode_transaksi ?? '-'
             )
 
-            ->addColumn('action', function ($p) {
+            ->addColumn('action', function ($p) use ($isSuperAdmin) {
 
                 $urlBayar = route('kasir.transaksi', [
                     'kode_transaksi' => $p->kode_transaksi
@@ -755,7 +759,7 @@ class KasirController extends Controller
                     'id' => $p->id
                 ]);
 
-                return '
+                $buttons = '
                 <div class="flex items-center justify-center gap-3">
                     <button class="bayarSekarang text-blue-600 hover:text-blue-800"
                             data-url="' . $urlBayar . '"
@@ -763,15 +767,32 @@ class KasirController extends Controller
                             title="Bayar Sekarang">
                         <i class="fa-regular fa-pen-to-square"></i> Bayar
                     </button>
-
-                    <button class="hapusTransaksi text-rose-600 hover:text-rose-800"
-                            data-url="' . $urlDelete . '"
-                            data-kode="' . e($p->kode_transaksi) . '"
-                            title="Hapus Transaksi">
-                        <i class="fa-solid fa-trash"></i> Hapus
-                    </button>
                 </div>
-            ';
+                ';
+
+                if ($isSuperAdmin) {
+                    $buttons = '
+                    <div class="flex items-center justify-center gap-3">
+                    <button class="bayarSekarang text-blue-600 hover:text-blue-800"
+                            data-url="' . $urlBayar . '"
+                            data-id="' . $p->id . '"
+                            title="Bayar Sekarang">
+                        <i class="fa-regular fa-pen-to-square"></i> Bayar
+                    </button>
+
+                          <button class="hapusTransaksi text-rose-600 hover:text-rose-800"
+                                data-url="' . $urlDelete . '"
+                                data-kode="' . e($p->kode_transaksi) . '"
+                                title="Hapus Transaksi">
+                                <i class="fa-solid fa-trash"></i> Hapus
+                            </button>
+                </div>
+
+                    
+                    ';
+                }
+
+                return $buttons;
             })
 
             ->rawColumns(['items', 'action'])
@@ -1686,11 +1707,11 @@ HTML;
             $user->update($updateDataUser);
 
             return response()->json(['message' => 'Data kasir berhasil diperbarui.']);
-        } catch (\Illuminate\Http\Exceptions\PostTooLargeException $e) {
+        } catch (PostTooLargeException $e) {
             return response()->json([
                 'message' => 'Ukuran file terlalu besar! Maksimal 5 MB.',
             ], 413);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validasi gagal.',
                 'errors' => $e->errors(),

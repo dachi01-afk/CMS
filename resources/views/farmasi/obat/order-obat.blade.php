@@ -79,8 +79,17 @@
             <!-- Header -->
             <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
                 <div>
-                    <h3 id="modal-title-penjualan-obat" class="text-xl font-bold text-slate-800">Tambah Order Obat</h3>
-                    <p class="text-sm text-slate-500">Pilih pasien, tambahkan obat, lalu simpan transaksi.</p>
+                    <div class="flex items-center gap-3">
+                        <h3 id="modal-title-penjualan-obat" class="text-xl font-bold text-slate-800">Tambah Order Obat
+                        </h3>
+                        <span id="badge-mode-penjualan-obat"
+                            class="hidden rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-700">
+                            Mode Edit
+                        </span>
+                    </div>
+                    <p id="modal-subtitle-penjualan-obat" class="text-sm text-slate-500">
+                        Pilih pasien, tambahkan obat, lalu simpan transaksi.
+                    </p>
                 </div>
 
                 <button type="button" id="closeModalBtn"
@@ -101,14 +110,23 @@
                     <div class="xl:col-span-2 space-y-6">
                         <!-- Cari Pasien -->
                         <div class="rounded-2xl border border-slate-200 p-5">
-                            <h4 class="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-600">Data Pasien
+                            <h4 class="mb-4 text-sm font-semibold uppercase tracking-wide text-slate-600">
+                                Data Pasien
                             </h4>
 
                             <div>
-                                <label class="mb-2 block text-sm font-medium text-slate-700">Cari Pasien</label>
+                                <div class="mb-2 flex items-center justify-between">
+                                    <label class="block text-sm font-medium text-slate-700">Cari Pasien</label>
+                                    <button type="button" id="btn-reset-pasien"
+                                        class="hidden rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-200">
+                                        Ganti Pasien
+                                    </button>
+                                </div>
+
                                 <input type="text" id="search_pasien" name="search_pasien"
                                     placeholder="Ketik nama pasien..."
                                     class="w-full rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm text-slate-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100">
+
                                 <div id="search_results"
                                     class="mt-2 hidden max-h-48 overflow-y-auto rounded-xl border border-slate-200 bg-white shadow-lg">
                                 </div>
@@ -186,7 +204,7 @@
                                 </div>
 
                                 <div class="rounded-xl border border-amber-200 bg-amber-50 p-4">
-                                    <p class="text-sm text-amber-800">
+                                    <p id="transaction-status-info" class="text-sm text-amber-800">
                                         Status transaksi otomatis dibuat sebagai
                                         <span class="font-semibold">Belum Bayar</span>.
                                     </p>

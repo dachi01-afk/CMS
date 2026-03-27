@@ -88,6 +88,79 @@
             </div>
         </section>
 
+        {{-- KPI --}}
+        <section class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <a href="{{ route('admin.pasien.hari.ini') }}"
+                class="group relative block overflow-hidden rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-amber-100">
+                <div
+                    class="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-amber-100/60 transition group-hover:scale-110">
+                </div>
+                <div class="relative z-10 flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-semibold text-slate-500">Pasien Hari Ini</p>
+                        <h3 id="totalKunjunganHariIni" class="mt-3 text-3xl font-extrabold text-slate-900">0</h3>
+                        <p class="mt-2 text-xs text-slate-400">
+                            Klik untuk buka proses kunjungan hari ini
+                        </p>
+                    </div>
+                    <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
+                        <i class="fa-solid fa-calendar-check text-xl"></i>
+                    </div>
+                </div>
+            </a>
+
+            <a href="{{ route('manajemen_pengguna.index', ['tab' => 'dokter']) }}"
+                class="group relative block overflow-hidden rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-100">
+                <div
+                    class="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-blue-100/60 transition group-hover:scale-110">
+                </div>
+                <div class="relative z-10 flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-semibold text-slate-500">Jumlah Dokter</p>
+                        <h3 id="totalDokter" class="mt-3 text-3xl font-extrabold text-slate-900">0</h3>
+                        <p class="mt-2 text-xs text-slate-400">Klik untuk buka data dokter</p>
+                    </div>
+                    <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
+                        <i class="fa-solid fa-user-doctor text-xl"></i>
+                    </div>
+                </div>
+            </a>
+
+            <a href="{{ route('manajemen_pengguna.index', ['tab' => 'pasien']) }}"
+                class="group relative block overflow-hidden rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-emerald-100">
+                <div
+                    class="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-emerald-100/60 transition group-hover:scale-110">
+                </div>
+                <div class="relative z-10 flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-semibold text-slate-500">Jumlah Pasien</p>
+                        <h3 id="totalPasien" class="mt-3 text-3xl font-extrabold text-slate-900">0</h3>
+                        <p class="mt-2 text-xs text-slate-400">Klik untuk buka data pasien</p>
+                    </div>
+                    <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
+                        <i class="fa-solid fa-users text-xl"></i>
+                    </div>
+                </div>
+            </a>
+
+            <a href="{{ route('manajemen_pengguna.index', ['tab' => 'farmasi']) }}"
+                class="group relative block overflow-hidden rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-cyan-100">
+                <div
+                    class="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-cyan-100/60 transition group-hover:scale-110">
+                </div>
+                <div class="relative z-10 flex items-start justify-between">
+                    <div>
+                        <p class="text-sm font-semibold text-slate-500">Jumlah Apoteker</p>
+                        <h3 id="totalFarmasi" class="mt-3 text-3xl font-extrabold text-slate-900">0</h3>
+                        <p class="mt-2 text-xs text-slate-400">Klik untuk buka data apoteker</p>
+                    </div>
+                    <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-600">
+                        <i class="fa-solid fa-prescription-bottle-medical text-xl"></i>
+                    </div>
+                </div>
+            </a>
+        </section>
+
         {{-- FILTER PANEL --}}
         <section class="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm">
             <div class="mb-5 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
@@ -178,80 +251,6 @@
                     </button>
                 </div>
             </div>
-        </section>
-
-        {{-- KPI --}}
-        <section class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <a href="{{ route('admin.pasien.hari.ini') }}"
-                class="group relative block overflow-hidden rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-amber-100">
-                <div
-                    class="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-amber-100/60 transition group-hover:scale-110">
-                </div>
-                <div class="relative z-10 flex items-start justify-between">
-                    <div>
-                        <p class="text-sm font-semibold text-slate-500">Pasien Hari Ini</p>
-                        <h3 id="totalKunjunganHariIni" class="mt-3 text-3xl font-extrabold text-slate-900">0</h3>
-                        <p class="mt-2 text-xs text-slate-400">
-                            Klik untuk buka proses kunjungan hari ini
-                        </p>
-                    </div>
-                    <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
-                        <i class="fa-solid fa-calendar-check text-xl"></i>
-                    </div>
-                </div>
-            </a>
-
-            <a href="{{ route('manajemen_pengguna.index', ['tab' => 'dokter']) }}"
-                class="group relative block overflow-hidden rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-100">
-                <div
-                    class="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-blue-100/60 transition group-hover:scale-110">
-                </div>
-                <div class="relative z-10 flex items-start justify-between">
-                    <div>
-                        <p class="text-sm font-semibold text-slate-500">Jumlah Dokter</p>
-                        <h3 id="totalDokter" class="mt-3 text-3xl font-extrabold text-slate-900">0</h3>
-                        <p class="mt-2 text-xs text-slate-400">Klik untuk buka data dokter</p>
-                    </div>
-                    <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
-                        <i class="fa-solid fa-user-doctor text-xl"></i>
-                    </div>
-                </div>
-            </a>
-
-            <a href="{{ route('manajemen_pengguna.index', ['tab' => 'pasien']) }}"
-                class="group relative block overflow-hidden rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-emerald-100">
-                <div
-                    class="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-emerald-100/60 transition group-hover:scale-110">
-                </div>
-                <div class="relative z-10 flex items-start justify-between">
-                    <div>
-                        <p class="text-sm font-semibold text-slate-500">Jumlah Pasien</p>
-                        <h3 id="totalPasien" class="mt-3 text-3xl font-extrabold text-slate-900">0</h3>
-                        <p class="mt-2 text-xs text-slate-400">Klik untuk buka data pasien</p>
-                    </div>
-                    <div
-                        class="flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
-                        <i class="fa-solid fa-users text-xl"></i>
-                    </div>
-                </div>
-            </a>
-
-            <a href="{{ route('manajemen_pengguna.index', ['tab' => 'farmasi']) }}"
-                class="group relative block overflow-hidden rounded-[24px] border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-cyan-100">
-                <div
-                    class="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-cyan-100/60 transition group-hover:scale-110">
-                </div>
-                <div class="relative z-10 flex items-start justify-between">
-                    <div>
-                        <p class="text-sm font-semibold text-slate-500">Jumlah Apoteker</p>
-                        <h3 id="totalFarmasi" class="mt-3 text-3xl font-extrabold text-slate-900">0</h3>
-                        <p class="mt-2 text-xs text-slate-400">Klik untuk buka data apoteker</p>
-                    </div>
-                    <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-cyan-100 text-cyan-600">
-                        <i class="fa-solid fa-prescription-bottle-medical text-xl"></i>
-                    </div>
-                </div>
-            </a>
         </section>
 
         {{-- MAIN --}}

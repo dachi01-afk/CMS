@@ -4,219 +4,207 @@ namespace App\Http\Controllers\Kasir;
 
 use App\Http\Controllers\Controller;
 use App\Models\MetodePembayaran;
-use App\Models\Pasien;
 use App\Models\PenjualanObat;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Laravel\Facades\Image;
 use Yajra\DataTables\Facades\DataTables;
 
 class TransaksiObatController extends Controller
 {
-    public function getDataTransaksiObat()
+    public function getDataTransaksiObat(Request $request)
     {
-        // Ambil data dari tabel penjualan_obat + relasi
-        $dataTransaksi = PenjualanObat::with(['pasien', 'obat', 'metodePembayaran'])
+        $query = PenjualanObat::with([
+            'pasien',
+            'penjualanObatDetail.obat',
+            'metodePembayaran'
+        ])
             ->where('status', 'Belum Bayar')
-            ->latest()
-            ->get()
-            ->groupBy('kode_transaksi'); // 🔥 Gabungkan berdasarkan kode_transaksi
+            ->select('penjualan_obat.*')
+            ->latest();
 
-        // Map hasil group ke bentuk tabel
-        $transaksiData = $dataTransaksi->map(function ($group) {
-            // Ambil data pertama dari grup (untuk data pasien, tanggal, dll)
-            $first = $group->first();
-
-            // Gabungkan semua nama obat dan jumlah dalam satu baris
-            $namaObat = $group->pluck('obat.nama_obat')->implode(', ');
-            $dosis    = $group->pluck('obat.dosis')->implode(', ');
-            $jumlah   = $group->pluck('jumlah')->implode(', ');
-
-            // Hitung total keseluruhan dari semua item
-            $totalSub = $group->sum('sub_total');
-
-            // Ambil metode pembayaran & status
-            $namaMetode = $first->metodePembayaran->nama_metode ?? '-';
-            $status     = $first->status ?? '-';
-
-            // Ambil tanggal transaksi
-            $tanggalTransaksi = $first->tanggal_transaksi
-                ? (is_string($first->tanggal_transaksi)
-                    ? date('d-m-Y H:i', strtotime($first->tanggal_transaksi))
-                    : $first->tanggal_transaksi->format('d-m-Y H:i'))
-                : '-';
-
-            // Bukti pembayaran (ambil salah satu)
-            $buktiPembayaranUrl = $first->bukti_pembayaran
-                ? asset('storage/' . $first->bukti_pembayaran)
-                : null;
-
-            $buktiPembayaranHTML = $buktiPembayaranUrl
-                ? '<img src="' . $buktiPembayaranUrl . '" alt="Bukti Pembayaran" class="w-12 h-12 rounded-lg object-cover mx-auto shadow">'
-                : '<span class="text-gray-400 italic">Tidak ada</span>';
-
-            return [
-                'nama_pasien'       => $first->pasien->nama_pasien ?? '-',
-                'nama_obat'         => $namaObat,
-                'dosis'             => $dosis,
-                'jumlah'            => $jumlah,
-                'sub_total'         => $totalSub,
-                'metode_pembayaran' => $namaMetode,
-                'kode_transaksi'    => $first->kode_transaksi,
-                'tanggal_transaksi' => $tanggalTransaksi,
-                'status'            => $status,
-                'bukti_pembayaran'  => $buktiPembayaranHTML,
-            ];
-        })->values();
-
-        // Kirim ke DataTables
-        return DataTables::of($transaksiData)
+        return DataTables::eloquent($query)
             ->addIndexColumn()
-            ->addColumn('action', function ($row) {
-                $kode = $row['kode_transaksi'] ?? '';
-                $url = route('kasir.transaksi.obat', ['kodeTransaksi' => $kode]);
+            ->addColumn('nama_pasien', function ($row) {
+                return $row->pasien->nama_pasien ?? '-';
+            })
+            ->addColumn('nama_obat', function ($row) {
+                return $row->penjualanObatDetail
+                    ->map(function ($detail) {
+                        $nama = $detail->obat->nama_obat ?? '-';
+                        $qty = (int) ($detail->jumlah ?? 0);
+                        return "{$nama} ({$qty})";
+                    })
+                    ->implode(', ');
+            })
+            ->addColumn('jumlah_item', function ($row) {
+                return $row->penjualanObatDetail->count();
+            })
+            ->addColumn('metode_pembayaran', function ($row) {
+                return $row->metodePembayaran->nama_metode ?? '-';
+            })
+            ->editColumn('tanggal_transaksi', function ($row) {
+                return $row->tanggal_transaksi
+                    ? Carbon::parse($row->tanggal_transaksi)->toIso8601String()
+                    : null;
+            })
+            ->addColumn('bukti_pembayaran', function ($row) {
+                if (!$row->bukti_pembayaran) {
+                    return '<span class="text-slate-400 italic">Belum ada</span>';
+                }
 
-                $namaPasien = e($row['nama_pasien'] ?? '-');
-                $namaObat   = e($row['nama_obat'] ?? '-');
-                $jumlah     = e($row['jumlah'] ?? '-');
-                $subTotal   = $row['sub_total'] ?? 0;
-                $tanggal    = e($row['tanggal_transaksi'] ?? '-');
-                $subTotalFormatted = number_format($subTotal, 0, ',', '.');
+                $url = asset('storage/' . $row->bukti_pembayaran);
 
                 return '
-                <button 
-                    class="text-green-600 hover:text-green-800 mr-2 bayarSekarang"
-                    title="Bayar Sekarang"
-                    data-url="' . $url . '"
-                    data-kode="' . $kode . '"
-                    data-nama-pasien="' . $namaPasien . '"
-                    data-nama-obat="' . $namaObat . '"
-                    data-jumlah="' . $jumlah . '"
-                    data-subtotal="' . $subTotal . '"
-                    data-subtotal-formatted="Rp ' . $subTotalFormatted . '"
-                    data-tanggal="' . $tanggal . '"
-                >
-                    <i class="fa-solid fa-money-bill text-lg"></i> Bayar Sekarang
-                </button>
-            ';
+                    <div class="flex flex-col items-center gap-2">
+                        <img src="' . $url . '" alt="Bukti Pembayaran"
+                            class="w-14 h-14 rounded-lg object-cover border border-slate-200 shadow-sm cursor-pointer"
+                            onclick="window.open(\'' . $url . '\', \'_blank\')" />
+                        <a href="' . $url . '" target="_blank"
+                            class="text-xs text-sky-600 hover:underline">
+                            Lihat
+                        </a>
+                    </div>
+                ';
+            })
+            ->addColumn('action', function ($row) {
+                $url = route('kasir.transaksi.obat', ['kodeTransaksi' => $row->kode_transaksi]);
+
+                return '
+                    <button
+                        class="bayarSekarang inline-flex items-center gap-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100"
+                        data-url="' . $url . '">
+                        <i class="fa-solid fa-money-bill-wave"></i>
+                        Bayar Sekarang
+                    </button>
+                ';
+            })
+            ->filterColumn('nama_pasien', function ($query, $keyword) {
+                $query->whereHas('pasien', function ($q) use ($keyword) {
+                    $q->where('nama_pasien', 'like', "%{$keyword}%");
+                });
             })
             ->rawColumns(['bukti_pembayaran', 'action'])
-            ->make(true);
+            ->toJson();
     }
 
     public function transaksiObat($kodeTransaksi)
     {
-        $dataTransaksiObat = PenjualanObat::with([
+        $transaksi = PenjualanObat::with([
             'pasien',
-            'obat',
+            'penjualanObatDetail.obat',
             'metodePembayaran'
-        ])->where('kode_transaksi', $kodeTransaksi)->get();
+        ])->where('kode_transaksi', $kodeTransaksi)->first();
 
-        if ($dataTransaksiObat->isEmpty()) {
+        if (!$transaksi) {
             abort(404, 'Transaksi tidak ditemukan');
         }
 
-        $first = $dataTransaksiObat->first();
-
-        $tanggalTransaksi = $first->first()->tanggalTransaksi;
-
-        // Ambil data pasien dari salah satu record (semuanya sama)
-        $dataPasien = $dataTransaksiObat->first()->pasien;
-
-        $subTotal = $dataTransaksiObat->sum('sub_total');
-
-        $id = $dataTransaksiObat->first()->id;
-
-        $kodeTransaksi = $first->kode_transaksi;
-
+        $dataPasien = $transaksi->pasien;
         $dataMetodePembayaran = MetodePembayaran::all();
-        // Debug (kalau masih mau cek hasil, bisa pakai info log biar nggak ganggu tampilan)
-        Log::info($dataTransaksiObat);
 
-        // dd($dataTransaksiObat);
+        $subTotal = (float) $transaksi->penjualanObatDetail->sum(function ($detail) {
+            return (float) ($detail->sub_total ?? 0);
+        });
+
+        $totalSetelahDiskon = (float) $transaksi->penjualanObatDetail->sum(function ($detail) {
+            return $detail->total_setelah_diskon !== null
+                ? (float) $detail->total_setelah_diskon
+                : (float) ($detail->sub_total ?? 0);
+        });
+
+        $tanggalTransaksi = $transaksi->tanggal_transaksi;
+        $id = $transaksi->id;
+
+        // default awal, nanti bisa diisi dari tabel diskon_approval kalau sudah siap
+        $approvalStatus = null;
+        $approvalItemsRaw = [];
 
         return view('kasir.pembayaran.detail-transaksi-obat', compact(
-            'dataTransaksiObat',
+            'transaksi',
             'dataMetodePembayaran',
             'dataPasien',
             'subTotal',
+            'totalSetelahDiskon',
             'tanggalTransaksi',
             'id',
             'kodeTransaksi',
+            'approvalStatus',
+            'approvalItemsRaw',
         ));
     }
 
     public function transaksiCash(Request $request)
     {
         $request->validate([
-            'uang_yang_diterima' => ['required', 'numeric'],
-            'kembalian' => ['required', 'numeric'],
-            'metode_pembayaran' => ['required', 'exists:metode_pembayaran,id'],
-            'kode_transaksi' => ['required', 'string'],
+            'uang_yang_diterima'    => ['required', 'numeric'],
+            'kembalian'             => ['required', 'numeric'],
+            'metode_pembayaran_id'  => ['required', 'exists:metode_pembayaran,id'],
+            'kode_transaksi'        => ['required', 'string'],
+            'total_tagihan'         => ['nullable', 'numeric'],
+            'total_setelah_diskon'  => ['nullable', 'numeric'],
+            'diskon_tipe'           => ['nullable', 'in:persen,nominal'],
+            'diskon_nilai'          => ['nullable', 'numeric'],
         ]);
 
-        // 🔍 Ambil semua data transaksi berdasarkan kode_transaksi
-        $transaksiList = PenjualanObat::where('kode_transaksi', $request->kode_transaksi)->get();
+        $transaksi = PenjualanObat::where('kode_transaksi', $request->kode_transaksi)->first();
 
-        if ($transaksiList->isEmpty()) {
+        if (!$transaksi) {
             return response()->json([
                 'success' => false,
                 'message' => 'Transaksi dengan kode tersebut tidak ditemukan.',
             ], 404);
         }
 
-        // 🔄 Update semua data dengan kode transaksi yang sama
-        PenjualanObat::where('kode_transaksi', $request->kode_transaksi)->update([
-            'total_tagihan' => $request->uang_yang_diterima,
-            'uang_yang_diterima' => $request->uang_yang_diterima,
-            'kembalian' => $request->kembalian,
-            'tanggal_transaksi' => now(),
-            'status' => 'Sudah Bayar',
-            'metode_pembayaran_id' => $request->metode_pembayaran,
+        $transaksi->update([
+            'metode_pembayaran_id' => $request->metode_pembayaran_id,
+            'total_tagihan'        => $request->total_tagihan ?? $transaksi->total_tagihan,
+            'diskon_tipe'          => $request->diskon_tipe ?: null,
+            'diskon_nilai'         => $request->diskon_nilai ?? 0,
+            'total_setelah_diskon' => $request->total_setelah_diskon ?? $transaksi->total_tagihan,
+            'uang_yang_diterima'   => $request->uang_yang_diterima,
+            'kembalian'            => $request->kembalian,
+            'tanggal_transaksi'    => now(),
+            'status'               => 'Sudah Bayar',
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Transaksi berhasil! Kembalian Rp ' . number_format($request->kembalian, 0, ',', '.') . '. Terimakasih 😊😊😊',
+            'message' => 'Transaksi berhasil! Kembalian Rp ' . number_format($request->kembalian, 0, ',', '.') . '.',
         ]);
     }
 
     public function transaksiTransfer(Request $request)
     {
         $request->validate([
-            'kode_transaksi' => ['required', 'string'],
-            'bukti_pembayaran' => ['required', 'file', 'mimes:jpeg,jpg,png,gif,webp,svg,jfif', 'max:5120'],
-            'metode_pembayaran' => ['required', 'exists:metode_pembayaran,id'],
+            'kode_transaksi'       => ['required', 'string'],
+            'total_tagihan'        => ['required', 'numeric'],
+            'total_setelah_diskon' => ['nullable', 'numeric'],
+            'diskon_tipe'          => ['nullable', 'in:persen,nominal'],
+            'diskon_nilai'         => ['nullable', 'numeric'],
+            'bukti_pembayaran'     => ['required', 'file', 'mimes:jpeg,jpg,png,gif,webp,svg,jfif', 'max:5120'],
+            'metode_pembayaran'    => ['required', 'exists:metode_pembayaran,id'],
         ]);
 
-        // Ambil salah satu record berdasarkan kode_transaksi
-        $record = PenjualanObat::where('kode_transaksi', $request->kode_transaksi)->get();
+        $transaksi = PenjualanObat::where('kode_transaksi', $request->kode_transaksi)->first();
 
-        if (!$record) {
+        if (!$transaksi) {
             return response()->json([
                 'success' => false,
                 'message' => 'Transaksi dengan kode tersebut tidak ditemukan.',
             ], 404);
         }
 
-        // Ambil nominal dari salah satu kolom total/subtotal
-        $amount = $request->total_tagihan;
-
-        if (!$amount) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Kolom sub_total / total_tagihan tidak ditemukan di record transaksi.',
-            ], 422);
-        }
-
-        // Upload + kompres gambar
         $fotoPath = null;
+
         if ($request->hasFile('bukti_pembayaran')) {
             $file = $request->file('bukti_pembayaran');
             $extension = strtolower($file->getClientOriginalExtension());
-            if ($extension === 'jfif') $extension = 'jpg';
+
+            if ($extension === 'jfif') {
+                $extension = 'jpg';
+            }
 
             $fileName = time() . '_' . uniqid() . '.' . $extension;
             $path = 'bukti-transaksi/' . $fileName;
@@ -226,26 +214,31 @@ class TransaksiObatController extends Controller
             } else {
                 $image = Image::read($file);
                 $image->scale(width: 800);
-                Storage::disk('public')->put($path, (string) $image->encodeByExtension($extension, quality: 80));
+                Storage::disk('public')->put(
+                    $path,
+                    (string) $image->encodeByExtension($extension, quality: 80)
+                );
             }
 
             $fotoPath = $path;
         }
 
-        // Update SEMUA data yang punya kode_transaksi sama
-        PenjualanObat::where('kode_transaksi', $request->kode_transaksi)->update([
-            'bukti_pembayaran'     => $fotoPath,
-            'uang_yang_diterima'   => $amount,
+        $transaksi->update([
+            'metode_pembayaran_id' => $request->metode_pembayaran,
+            'total_tagihan'        => $request->total_tagihan,
+            'diskon_tipe'          => $request->diskon_tipe ?: null,
+            'diskon_nilai'         => $request->diskon_nilai ?? 0,
+            'total_setelah_diskon' => $request->total_setelah_diskon ?? $request->total_tagihan,
+            'uang_yang_diterima'   => $request->total_setelah_diskon ?? $request->total_tagihan,
             'kembalian'            => 0,
-            'sub_total'            => $amount,
+            'bukti_pembayaran'     => $fotoPath,
             'tanggal_transaksi'    => now(),
             'status'               => 'Sudah Bayar',
-            'metode_pembayaran_id' => $request->metode_pembayaran,
         ]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Transaksi dengan kode ' . $request->kode_transaksi . ' berhasil diperbarui. Nominal: Rp' . number_format($amount, 0, ',', '.') . ' ✅',
+            'message' => 'Transaksi dengan kode ' . $request->kode_transaksi . ' berhasil diperbarui.',
         ]);
     }
 }

@@ -122,26 +122,27 @@ class ObatController extends Controller
             })
 
             // AKSI
+            // AKSI
             ->addColumn('action', function ($obat) {
                 return '
-                <div class="flex items-center justify-center gap-2">
-                    <button 
-                        class="btn-edit-obat inline-flex items-center justify-center w-8 h-8 rounded-lg 
-                               bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100"
-                        data-id="' . $obat->id . '" 
-                        title="Edit">
-                        <i class="fa-regular fa-pen-to-square text-xs"></i>
-                    </button>
+                        <div class="flex items-center justify-center gap-2">
+                            <button 
+                                class="btn-detail-obat inline-flex items-center justify-center w-8 h-8 rounded-lg 
+                                    bg-sky-50 text-sky-600 hover:bg-sky-100 border border-sky-100"
+                                data-id="' . $obat->id . '" 
+                                title="Lihat Detail">
+                                <i class="fa-solid fa-eye text-xs"></i>
+                            </button>
 
-                    <button 
-                        class="btn-delete-obat inline-flex items-center justify-center w-8 h-8 rounded-lg 
-                               bg-red-50 text-red-600 hover:bg-red-100 border border-red-100"
-                        data-id="' . $obat->id . '" 
-                        title="Hapus">
-                        <i class="fa-regular fa-trash-can text-xs"></i>
-                    </button>
-                </div>
-            ';
+                            <button 
+                                class="btn-delete-obat inline-flex items-center justify-center w-8 h-8 rounded-lg 
+                                    bg-red-50 text-red-600 hover:bg-red-100 border border-red-100"
+                                data-id="' . $obat->id . '" 
+                                title="Hapus">
+                                <i class="fa-regular fa-trash-can text-xs"></i>
+                            </button>
+                        </div>
+                    ';
             })
 
             ->rawColumns(['action'])
@@ -215,15 +216,14 @@ class ObatController extends Controller
 
     public function getObatById($id)
     {
-        $obat = Obat::with(
+        $obat = Obat::with([
             'brandFarmasi',
             'kategoriObat',
             'jenisObat',
             'satuanObat',
-            'depot',
-            // MANY TO MANY: semua depot yang terkait obat ini
-            'depotObat.tipeDepot'
-        )->findOrFail($id);
+            'depotObat.tipeDepot',
+            'batchObat',
+        ])->findOrFail($id);
 
         return response()->json([
             'success' => true,

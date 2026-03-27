@@ -262,19 +262,39 @@
                                         Cetak Resep Obat
                                     </x-mycomponents.sidebar_link>
 
-                                    <x-mycomponents.sidebar_link href="index.restock.obat"
-                                        class="fa-solid fa-arrows-rotate" :active="Request::routeIs('index.restock.obat')">
-                                        Restock & Return Obat
+                                    <x-mycomponents.sidebar_link href="farmasi.restock.obat"
+                                        class="fa-solid fa-arrows-rotate" :active="Request::routeIs('farmasi.restock.obat')">
+                                        Restock Obat
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="farmasi.stok.masuk.obat"
+                                        class="fa-solid fa-truck-medical" :active="Request::routeIs('farmasi.stok.masuk.obat')">
+                                        Stok Masuk Obat
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="farmasi.restock.bahan-habis-pakai"
+                                        class="fa-solid fa-arrows-rotate" :active="Request::routeIs('farmasi.restock.bahan-habis-pakai')">
+                                        Restock Bahan Habis Pakai
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="farmasi.restock.bahan-habis-pakai"
+                                        class="fa-solid fa-arrows-rotate" :active="Request::routeIs('farmasi.restock.bahan-habis-pakai')">
+                                        Stok Masuk Bahan Habis Pakai
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="farmasi.return.obat"
+                                        class="fa-solid fa-solid fa-undo" :active="Request::routeIs('farmasi.return.obat')">
+                                        Return Obat
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="farmasi.return.bahan.habis.pakai"
+                                        class="fa-solid fa-solid fa-undo" :active="Request::routeIs('farmasi.return.bahan.habis.pakai')">
+                                        Return Bahan Habis Pakai
                                     </x-mycomponents.sidebar_link>
 
                                     <x-mycomponents.sidebar_link href="depot.index" class="fa-solid fa-capsules"
                                         :active="Request::routeIs('depot.index')">
                                         Depot
-                                    </x-mycomponents.sidebar_link>
-
-                                    <x-mycomponents.sidebar_link href="pesanan.dan.stok.masuk.index"
-                                        class="fa-solid fa-truck-medical" :active="Request::routeIs('pesanan.dan.stok.masuk.index')">
-                                        Pesanan Dan Stok Masuk
                                     </x-mycomponents.sidebar_link>
                                 </ul>
                             </div>
@@ -301,6 +321,11 @@
                                         Approve Diskon
                                     </x-mycomponents.sidebar_link>
 
+                                    <x-mycomponents.sidebar_link href="super.admin.approve.diskon.penjualan.obat"
+                                        class="fa-solid fa-circle-check" :active="Request::routeIs('super.admin.approve.diskon.penjualan.obat')">
+                                        Approve Diskon Penjualan Obat
+                                    </x-mycomponents.sidebar_link>
+
                                     <x-mycomponents.sidebar_link href="kasir.metode.pembayaran" class="fa-solid fa-wallet"
                                         :active="Request::routeIs('kasir.metode.pembayaran')">
                                         Metode Pembayaran
@@ -310,6 +335,27 @@
                                         class="fa-solid fa-file-invoice" :active="Request::routeIs('kasir.riwayat.transaksi')">
                                         Riwayat Transaksi
                                     </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="kasir.hutang" class="fa-solid fa-file-invoice"
+                                        :active="Request::routeIs('kasir.hutang')">
+                                        Hutang Obat
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="kasir.hutang.bahan.habis.pakai"
+                                        class="fa-solid fa-file-invoice" :active="Request::routeIs('kasir.hutang.bahan.habis.pakai')">
+                                        Hutang Bahan Habis Pakai
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="kasir.piutang.obat"
+                                        class="fa-solid fa-file-invoice" :active="Request::routeIs('kasir.piutang.obat')">
+                                        Piutang Obat
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="kasir.piutang.bahan.habis.pakai"
+                                        class="fa-solid fa-file-invoice" :active="Request::routeIs('kasir.piutang.bahan.habis.pakai')">
+                                        Piutang Bahan Habis Pakai
+                                    </x-mycomponents.sidebar_link>
+
                                 </ul>
                             </div>
 
@@ -583,19 +629,39 @@
                                         Cetak Resep Obat
                                     </x-mycomponents.sidebar_link>
 
-                                    <x-mycomponents.sidebar_link href="index.restock.obat" class="fa-solid fa-arrows-rotate"
-                                        :active="Request::routeIs('index.restock.obat')">
-                                        Restock & Return Obat dan BHP
+                                    <x-mycomponents.sidebar_link href="farmasi.restock.obat" class="fa-solid fa-arrows-rotate"
+                                        :active="Request::routeIs('farmasi.restock.obat')">
+                                        Restock Obat
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="farmasi.stok.masuk.obat"
+                                        class="fa-solid fa-truck-medical" :active="Request::routeIs('farmasi.stok.masuk.obat')">
+                                        Stok Masuk Obat
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="farmasi.restock.bahan-habis-pakai"
+                                        class="fa-solid fa-arrows-rotate" :active="Request::routeIs('farmasi.restock.bahan-habis-pakai')">
+                                        Restock Bahan Habis Pakai
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="farmasi.stok.masuk.bahan.habis.pakai"
+                                        class="fa-solid fa-truck-medical" :active="Request::routeIs('farmasi.stok.masuk.bahan.habis.pakai')">
+                                        Stok Masuk Bahan Habis Pakai
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="farmasi.return.obat" class="fa-solid fa-solid fa-undo"
+                                        :active="Request::routeIs('farmasi.return.obat')">
+                                        Return Obat
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="farmasi.return.bahan.habis.pakai"
+                                        class="fa-solid fa-solid fa-undo" :active="Request::routeIs('farmasi.return.bahan.habis.pakai')">
+                                        Return Bahan Habis Pakai
                                     </x-mycomponents.sidebar_link>
 
                                     <x-mycomponents.sidebar_link href="depot.index" class="fa-solid fa-capsules"
                                         :active="Request::routeIs('depot.index')">
                                         Depot
-                                    </x-mycomponents.sidebar_link>
-
-                                    <x-mycomponents.sidebar_link href="pesanan.dan.stok.masuk.index"
-                                        class="fa-solid fa-truck-medical" :active="Request::routeIs('pesanan.dan.stok.masuk.index')">
-                                        Pesanan Dan Stok Masuk
                                     </x-mycomponents.sidebar_link>
 
                                     <hr class="my-3 border-slate-200 dark:border-slate-700">
@@ -691,6 +757,25 @@
                                             Riwayat Transaksi
                                         </x-mycomponents.sidebar_link>
 
+                                        <x-mycomponents.sidebar_link href="kasir.hutang" class="fa-solid fa-file-invoice"
+                                            :active="Request::routeIs('kasir.hutang')">
+                                            Hutang Obat
+                                        </x-mycomponents.sidebar_link>
+
+                                        <x-mycomponents.sidebar_link href="kasir.hutang.bahan.habis.pakai"
+                                            class="fa-solid fa-file-invoice" :active="Request::routeIs('kasir.hutang.bahan.habis.pakai')">
+                                            Hutang Bahan Habis Pakai
+                                        </x-mycomponents.sidebar_link>
+
+                                        <x-mycomponents.sidebar_link href="kasir.piutang.obat" class="fa-solid fa-pills"
+                                            :active="Request::routeIs('kasir.piutang.obat')">
+                                            Piutang Obat
+                                        </x-mycomponents.sidebar_link>
+
+                                        <x-mycomponents.sidebar_link href="kasir.piutang.bahan.habis.pakai"
+                                            class="fa-solid fa-box-open" :active="Request::routeIs('kasir.piutang.bahan.habis.pakai')">
+                                            Piutang Bahan Habis Pakai
+                                        </x-mycomponents.sidebar_link>
                                     </ul>
                                 </div>
 

@@ -35,6 +35,14 @@ $(function () {
     const pasienIdInput = document.getElementById("pasien_id");
     const penjualanObatIdInput = document.getElementById("penjualan_obat_id");
 
+    const badgeMode = document.getElementById("badge-mode-penjualan-obat");
+    const modalTitle = document.getElementById("modal-title-penjualan-obat");
+    const modalSubtitle = document.getElementById(
+        "modal-subtitle-penjualan-obat",
+    );
+    const statusInfo = document.getElementById("transaction-status-info");
+    const btnResetPasien = document.getElementById("btn-reset-pasien");
+
     function getHargaObat(obat) {
         return Number(
             obat?.harga_jual_obat ??
@@ -43,6 +51,56 @@ $(function () {
                 obat?.harga_satuan ??
                 0,
         );
+    }
+
+    function setModeTambah() {
+        editMode = false;
+        modalTitle.textContent = "Tambah Order Obat";
+        modalSubtitle.textContent =
+            "Pilih pasien, tambahkan obat, lalu simpan transaksi.";
+        $("#btn-submit-penjualan-obat").text("Simpan Order");
+        badgeMode.classList.add("hidden");
+        statusInfo.innerHTML = `
+            Status transaksi otomatis dibuat sebagai
+            <span class="font-semibold">Belum Bayar</span>.
+        `;
+    }
+
+    function setModeEdit() {
+        editMode = true;
+        modalTitle.textContent = "Edit Order Obat";
+        modalSubtitle.textContent =
+            "Perbarui pasien atau daftar obat, lalu simpan perubahan transaksi.";
+        $("#btn-submit-penjualan-obat").text("Update Order");
+        badgeMode.classList.remove("hidden");
+        statusInfo.innerHTML = `
+            Anda sedang mengubah data order obat yang masih
+            <span class="font-semibold">Belum Bayar</span>.
+        `;
+    }
+
+    function clearPasien() {
+        pasienIdInput.value = "";
+        resepIdInput.value = "";
+        $("#tanggal_kunjungan").val("");
+        searchPasienInput.value = "";
+        $("#nama_pasien").text("");
+        $("#alamat_pasien").text("");
+        $("#jk_pasien").text("");
+        $("#no_emr_pasien").text("");
+        pasienDataDiv.classList.add("hidden");
+        pasienResultsDiv.classList.add("hidden");
+    }
+
+    function fillPasien(pasien) {
+        pasienIdInput.value = pasien.id ?? "";
+        $("#nama_pasien").text(pasien.nama_pasien ?? "-");
+        $("#alamat_pasien").text(pasien.alamat ?? "-");
+        $("#jk_pasien").text(pasien.jenis_kelamin ?? "-");
+        $("#no_emr_pasien").text(pasien.no_emr ?? "-");
+        searchPasienInput.value = pasien.nama_pasien ?? "";
+        pasienDataDiv.classList.remove("hidden");
+        pasienResultsDiv.classList.add("hidden");
     }
 
     const table = $table.DataTable({
@@ -214,22 +272,20 @@ $(function () {
     }
 
     function resetForm() {
-        editMode = false;
         selectedItems = [];
-
         $form[0].reset();
+
         penjualanObatIdInput.value = "";
-        pasienIdInput.value = "";
-        resepIdInput.value = "";
+        clearPasien();
 
-        $("#modal-title-penjualan-obat").text("Tambah Order Obat");
-        $("#btn-submit-penjualan-obat").text("Simpan Order");
-
-        pasienDataDiv.classList.add("hidden");
-        pasienResultsDiv.classList.add("hidden");
-        obatResultsDiv.classList.add("hidden");
         selectedObatList.innerHTML = "";
+        obatResultsDiv.classList.add("hidden");
+        searchObatInput.value = "";
 
+        btnResetPasien.classList.add("hidden");
+
+        setModeTambah();
+        renderSelectedItems();
         updateSummary();
     }
 
@@ -239,12 +295,11 @@ $(function () {
             0,
         );
 
-        const grandTotal = selectedItems.reduce(
-            (sum, item) =>
-                sum +
-                Number(item.jumlah || 0) * Number(item.harga_jual_obat || 0),
-            0,
-        );
+        const grandTotal = selectedItems.reduce((sum, item) => {
+            const harga = Number(item.harga_jual_obat || 0);
+            const jumlah = Number(item.jumlah || 0);
+            return sum + harga * jumlah;
+        }, 0);
 
         $("#summary-total-item").text(totalItem);
         $("#summary-grand-total").text(rupiah(grandTotal));
@@ -313,11 +368,22 @@ $(function () {
             return;
         }
 
+        const stok = Number(obat.jumlah ?? 0);
+
+        if (stok < 1) {
+            Swal.fire({
+                icon: "warning",
+                title: "Stok habis",
+                text: "Obat ini tidak memiliki stok yang cukup.",
+            });
+            return;
+        }
+
         selectedItems.push({
             obat_id: obat.id,
             nama_obat: obat.nama_obat,
             harga_jual_obat: getHargaObat(obat),
-            stok: Number(obat.jumlah ?? 0),
+            stok,
             jumlah: 1,
         });
 
@@ -335,6 +401,9 @@ $(function () {
             if (res.data?.resep_id) {
                 resepIdInput.value = res.data.resep_id;
                 $("#tanggal_kunjungan").val(res.data.tanggal_kunjungan ?? "");
+            } else {
+                resepIdInput.value = "";
+                $("#tanggal_kunjungan").val("");
             }
         } catch (error) {
             console.error("Gagal mengambil resep aktif", error);
@@ -377,16 +446,8 @@ $(function () {
                 `;
 
                 item.onclick = async () => {
-                    pasienIdInput.value = pasien.id;
-                    $("#nama_pasien").text(pasien.nama_pasien);
-                    $("#alamat_pasien").text(pasien.alamat ?? "-");
-                    $("#jk_pasien").text(pasien.jenis_kelamin ?? "-");
-                    $("#no_emr_pasien").text(pasien.no_emr ?? "-");
-
-                    pasienDataDiv.classList.remove("hidden");
-                    pasienResultsDiv.classList.add("hidden");
-                    searchPasienInput.value = pasien.nama_pasien;
-
+                    fillPasien(pasien);
+                    btnResetPasien.classList.remove("hidden");
                     await fetchResepAktif(pasien.id);
                 };
 
@@ -448,11 +509,16 @@ $(function () {
     searchPasienInput.addEventListener("keyup", onSearchPasien);
     searchObatInput.addEventListener("keyup", onSearchObat);
 
+    btnResetPasien.addEventListener("click", () => {
+        clearPasien();
+        btnResetPasien.classList.add("hidden");
+    });
+
     $(document).on("input", ".qty-input", function () {
         const index = Number($(this).data("index"));
         let qty = Number($(this).val());
 
-        if (qty < 1) qty = 1;
+        if (Number.isNaN(qty) || qty < 1) qty = 1;
         if (qty > selectedItems[index].stok) qty = selectedItems[index].stok;
 
         selectedItems[index].jumlah = qty;
@@ -467,7 +533,6 @@ $(function () {
 
     $("#btn-open-modal-penjualan-obat").on("click", function () {
         resetForm();
-        renderSelectedItems();
         if (modal) modal.show();
     });
 
@@ -484,26 +549,30 @@ $(function () {
 
         try {
             resetForm();
-            editMode = true;
+            setModeEdit();
 
             const res = await axios.get(`/farmasi/order-obat/order/${id}`);
             const data = res.data.data;
-
-            $("#modal-title-penjualan-obat").text("Edit Order Obat");
-            $("#btn-submit-penjualan-obat").text("Update Order");
 
             penjualanObatIdInput.value = data.id;
             pasienIdInput.value = data.pasien_id;
             resepIdInput.value = data.resep_id ?? "";
 
-            searchPasienInput.value = data.pasien?.nama_pasien ?? "";
-            $("#nama_pasien").text(data.pasien?.nama_pasien ?? "-");
-            $("#alamat_pasien").text(data.pasien?.alamat ?? "-");
-            $("#jk_pasien").text(data.pasien?.jenis_kelamin ?? "-");
-            $("#no_emr_pasien").text(data.pasien?.no_emr ?? "-");
-            pasienDataDiv.classList.remove("hidden");
+            fillPasien({
+                id: data.pasien_id,
+                nama_pasien: data.pasien?.nama_pasien ?? "-",
+                alamat: data.pasien?.alamat ?? "-",
+                jenis_kelamin: data.pasien?.jenis_kelamin ?? "-",
+                no_emr: data.pasien?.no_emr ?? "-",
+            });
 
-            selectedItems = (data.details || []).map((item) => ({
+            btnResetPasien.classList.remove("hidden");
+
+            selectedItems = (
+                data.penjualan_obat_detail ||
+                data.details ||
+                []
+            ).map((item) => ({
                 obat_id: item.obat_id,
                 nama_obat: item.obat?.nama_obat ?? "-",
                 harga_jual_obat: getHargaObat(item),
@@ -512,6 +581,7 @@ $(function () {
             }));
 
             renderSelectedItems();
+
             if (modal) modal.show();
         } catch (error) {
             console.error(error);
@@ -556,6 +626,21 @@ $(function () {
 
         if (!selectedItems.length) {
             Swal.fire("Validasi", "Minimal pilih 1 obat", "warning");
+            return;
+        }
+
+        const invalidQty = selectedItems.find(
+            (item) =>
+                Number(item.jumlah) < 1 ||
+                Number(item.jumlah) > Number(item.stok),
+        );
+
+        if (invalidQty) {
+            Swal.fire(
+                "Validasi",
+                `Qty obat ${invalidQty.nama_obat} tidak valid`,
+                "warning",
+            );
             return;
         }
 

@@ -18,7 +18,7 @@ use Intervention\Image\Laravel\Facades\Image;
 class FarmasiController extends Controller
 {
     protected $batasStokMenipis = 10;
-    
+
     public function index()
     {
         $userId = Auth::id();
@@ -144,7 +144,7 @@ class FarmasiController extends Controller
         $transaksiHariIni = $this->penjualanObatJoinDetail()
             ->whereDate('po.tanggal_transaksi', $today)
             ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as total_transaksi')
-            ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
+            ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.total_setelah_diskon ELSE 0 END), 0) as total_pemasukan")
             ->first();
 
         $totalKeseluruhanTransaksi = DB::table('penjualan_obat')
@@ -206,7 +206,7 @@ class FarmasiController extends Controller
                 'po.tanggal_transaksi',
                 'po.status',
                 DB::raw('COALESCE(p.nama_pasien, "-") as nama_pasien'),
-                DB::raw('COALESCE(SUM(pod.sub_total), 0) as total')
+                DB::raw('COALESCE(SUM(pod.total_setelah_diskon), 0) as total')
             )
             ->groupBy('po.id', 'po.kode_transaksi', 'po.tanggal_transaksi', 'po.status', 'p.nama_pasien')
             ->orderByDesc('po.tanggal_transaksi')
@@ -243,7 +243,7 @@ class FarmasiController extends Controller
             $rows = $this->penjualanObatJoinDetail()
                 ->selectRaw('HOUR(po.tanggal_transaksi) as idx')
                 ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as jumlah_transaksi')
-                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
+                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.total_setelah_diskon ELSE 0 END), 0) as total_pemasukan")
                 ->whereDate('po.tanggal_transaksi', $hari)
                 ->groupBy('idx')
                 ->orderBy('idx')
@@ -270,7 +270,7 @@ class FarmasiController extends Controller
             $rows = $this->penjualanObatJoinDetail()
                 ->selectRaw('WEEKDAY(po.tanggal_transaksi) as idx')
                 ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as jumlah_transaksi')
-                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
+                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.total_setelah_diskon ELSE 0 END), 0) as total_pemasukan")
                 ->whereBetween(DB::raw('DATE(po.tanggal_transaksi)'), [$start->toDateString(), $end->toDateString()])
                 ->groupBy('idx')
                 ->orderBy('idx')
@@ -300,7 +300,7 @@ class FarmasiController extends Controller
             $rows = $this->penjualanObatJoinDetail()
                 ->selectRaw('DAY(po.tanggal_transaksi) as idx')
                 ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as jumlah_transaksi')
-                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
+                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.total_setelah_diskon ELSE 0 END), 0) as total_pemasukan")
                 ->whereBetween(DB::raw('DATE(po.tanggal_transaksi)'), [$start->toDateString(), $end->toDateString()])
                 ->groupBy('idx')
                 ->orderBy('idx')
@@ -327,7 +327,7 @@ class FarmasiController extends Controller
             $rows = $this->penjualanObatJoinDetail()
                 ->selectRaw('MONTH(po.tanggal_transaksi) as idx')
                 ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as jumlah_transaksi')
-                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
+                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.total_setelah_diskon ELSE 0 END), 0) as total_pemasukan")
                 ->whereBetween(DB::raw('DATE(po.tanggal_transaksi)'), [$start->toDateString(), $end->toDateString()])
                 ->groupBy('idx')
                 ->orderBy('idx')
@@ -674,7 +674,7 @@ class FarmasiController extends Controller
                 'po.tanggal_transaksi',
                 'po.status',
                 DB::raw('COALESCE(p.nama_pasien, "-") as nama_pasien'),
-                DB::raw('COALESCE(SUM(pod.sub_total), 0) as total')
+                DB::raw('COALESCE(SUM(pod.total_setelah_diskon), 0) as total')
             )
             ->whereBetween('po.tanggal_transaksi', [
                 $start->copy()->toDateTimeString(),
@@ -690,7 +690,7 @@ class FarmasiController extends Controller
                 $end->copy()->toDateTimeString()
             ])
             ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as total_transaksi')
-            ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
+            ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.total_setelah_diskon ELSE 0 END), 0) as total_pemasukan")
             ->first();
 
         return response()->json([

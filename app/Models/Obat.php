@@ -73,6 +73,11 @@ class Obat extends Model
         return $this->hasMany(BatchObat::class);
     }
 
+    public function restockObatDetail()
+    {
+        return $this->hasMany(RestockObatDetail::class);
+    }
+
     public function scopeGetWarningKadaluarsa($query, $threshold = 90, $limit = 5)
     {
         $today = Carbon::today()->startOfDay();
@@ -178,8 +183,13 @@ class Obat extends Model
             // 3. Proses Depot dan Batch Depot
             foreach ($data['depot_id'] as $index => $depId) {
                 $stokInput = (int) ($data['stok_depot'][$index] ?? 0);
+                $tipeDepotId = $data['tipe_depot'][$index] ?? null;
 
-                // Simpan stok per batch di depot tertentu (Tabel: batch_obat_depot)
+                if (empty($depId)) {
+                    continue;
+                }
+
+                // Simpan stok per batch di depot tertentu
                 DB::table('batch_obat_depot')->insert([
                     'batch_obat_id' => $batch->id,
                     'depot_id'      => $depId,
@@ -188,15 +198,40 @@ class Obat extends Model
                     'updated_at'    => now(),
                 ]);
 
-                // Update stok global di tabel pivot depot_obat (untuk relasi belongsToMany)
-                $obat->depotObat()->syncWithoutDetaching([
-                    $depId => ['stok_obat' => DB::raw("stok_obat + $stokInput")]
-                ]);
+                // Update stok global di tabel pivot depot_obat
+                $existingDepotObat = DB::table('depot_obat')
+                    ->where('obat_id', $obat->id)
+                    ->where('depot_id', $depId)
+                    ->first();
 
-                // Update akumulasi total di tabel 'depot'
-                $totalStokDepot = DB::table('depot_obat')->where('depot_id', $depId)->sum('stok_obat');
+                if ($existingDepotObat) {
+                    DB::table('depot_obat')
+                        ->where('obat_id', $obat->id)
+                        ->where('depot_id', $depId)
+                        ->update([
+                            'stok_obat'  => $existingDepotObat->stok_obat + $stokInput,
+                            'updated_at' => now(),
+                        ]);
+                } else {
+                    DB::table('depot_obat')->insert([
+                        'obat_id'    => $obat->id,
+                        'depot_id'   => $depId,
+                        'stok_obat'  => $stokInput,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                // Hitung ulang total stok depot
+                $totalStokDepot = DB::table('depot_obat')
+                    ->where('depot_id', $depId)
+                    ->sum('stok_obat');
+
+                // INI BAGIAN PENTING:
+                // update tipe_depot_id ke tabel depot
                 \App\Models\Depot::where('id', $depId)->update([
-                    'jumlah_stok_depot' => $totalStokDepot
+                    'tipe_depot_id'    => $tipeDepotId,
+                    'jumlah_stok_depot' => $totalStokDepot,
                 ]);
             }
 

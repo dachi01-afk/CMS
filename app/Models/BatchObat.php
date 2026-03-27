@@ -19,4 +19,9 @@ class BatchObat extends Model
     {
         return $this->hasMany(BatchObatDepot::class);
     }
+
+    public function restockObatDetail()
+    {
+        return $this->hasMany(RestockObatDetail::class);
+    }
 }

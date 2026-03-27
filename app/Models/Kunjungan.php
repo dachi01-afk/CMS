@@ -2,8 +2,18 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use App\Models\Dokter;
+use App\Models\EMR;
+use App\Models\JadwalDokter;
+use App\Models\Layanan;
+use App\Models\OrderLab;
+use App\Models\OrderRadiologi;
+use App\Models\Pasien;
+use App\Models\PenjualanLayanan;
+use App\Models\Poli;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Kunjungan extends Model
 {
@@ -37,28 +47,28 @@ class Kunjungan extends Model
     // Dokter langsung belongsTo lewat poli_id
     public function dokter()
     {
-        return $this->belongsTo(Dokter::class);
+        return $this->belongsTo(Dokter::class, 'dokter_id');
     }
 
     public function poli()
     {
-        return $this->belongsTo(Poli::class);
+        return $this->belongsTo(Poli::class, 'poli_id');
     }
 
     public function pasien()
     {
-        return $this->belongsTo(Pasien::class);
+        return $this->belongsTo(Pasien::class, 'pasien_id');
     }
 
     public function jadwalDokter()
     {
-        return $this->belongsTo(JadwalDokter::class);
+        return $this->belongsTo(JadwalDokter::class, 'jadwal_dokter_id');
     }
 
     // Tambahkan relasi untuk EMR
     public function emr()
     {
-        return $this->hasOne(EMR::class);
+        return $this->hasOne(EMR::class, 'kunjungan_id');
     }
 
     public function kunjunganLayanan()
@@ -67,15 +77,40 @@ class Kunjungan extends Model
     }
 
     // Scope untuk filter berdasarkan status
-    public function scopeByStatus($query, $status)
+    public function scopeByStatus(Builder $query, string|array $status)
     {
+        if (is_array($status)) {
+            return $query->whereIn('status', $status);
+        }
+
         return $query->where('status', $status);
     }
 
-    // Scope untuk kunjungan hari ini
-    public function scopeToday($query)
+    public function scopeUntukPerawat(Builder $query, Perawat $perawat)
     {
-        return $query->whereDate('tanggal_kunjungan', today());
+        $penugasan = $perawat->dokterPoli()
+            ->get(['dokter_poli.dokter_id', 'dokter_poli.poli_id']);
+
+        if ($penugasan->isEmpty()) {
+            return $query->whereKey(-1);
+        }
+
+        return $query->where(function ($q) use ($penugasan) {
+            foreach ($penugasan as $item) {
+                $q->orWhere(function ($sub) use ($item) {
+                    $sub->where('dokter_id', $item->dokter_id)
+                        ->where('poli_id', $item->poli_id);
+                });
+            }
+        });
+    }
+
+    // Scope untuk kunjungan hari ini
+    public function scopeHariIni(Builder $query, $tanggal = null)
+    {
+        $tanggal = $tanggal ?? now()->toDateString();
+
+        return $query->whereDate('tanggal_kunjungan', $tanggal);
     }
 
     // Scope untuk kunjungan pasien tertentu

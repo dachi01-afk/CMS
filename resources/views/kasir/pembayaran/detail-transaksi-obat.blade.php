@@ -9,129 +9,298 @@
     <title>CMS-Royal-Klinik</title>
     <link href='{{ asset('storage/assets/royal_klinik.svg') }}' rel='shortcut icon'>
 
-    {{-- vite --}}
     @vite(['resources/css/app.css', 'resources/js/app.js'])
 
-    <!-- Font-Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
         crossorigin="anonymous" referrerpolicy="no-referrer" />
 
-    <!-- Flowbite JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/1.8.1/flowbite.min.js" defer></script>
-
-    <!-- SweetAlert -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
-<body>
-    <section class="bg-white py-8 antialiased dark:bg-gray-900 md:py-16">
-        <div class="mx-auto max-w-screen-xl px-4 2xl:px-0">
-            <div class="mx-auto max-w-3xl">
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-white sm:text-2xl">Detail Transaksi</h2>
+<body class="bg-slate-50 dark:bg-slate-950">
+    <section class="min-h-screen py-8 md:py-10">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
-                <div class="mt-6 space-y-4 border-b border-t border-gray-200 py-8 dark:border-gray-700 sm:mt-8">
-                    <h4 class="text-lg font-semibold text-gray-900 dark:text-white">
-                        {{ $dataPasien->nama_pasien }}
-                    </h4>
-
-                    <dl>
-                        <dt class="text-base font-medium text-gray-900 dark:text-white">Tanggal Pemesanan</dt>
-                        <dd class="mt-1 text-base font-normal text-gray-500 dark:text-gray-400">
-                            {{ \Carbon\Carbon::parse($tanggalTransaksi)->timezone('Asia/Jakarta')->translatedFormat('l, d F Y') }}
-                        </dd>
-                    </dl>
-                </div>
-
-                <div class="mt-6 sm:mt-8">
-                    <div class="relative overflow-x-auto border-b border-gray-200 dark:border-gray-800">
-                        <table class="w-full text-left font-medium text-gray-900 dark:text-white md:table-fixed">
-                            <tbody class="divide-y divide-gray-200 dark:divide-gray-800">
-                                @foreach ($dataTransaksiObat as $transaksi)
-                                    <tr>
-                                        <td class="whitespace-nowrap py-4 md:w-[384px]">
-                                            <label>{{ $transaksi->obat->nama_obat }}</label>
-                                        </td>
-                                        <td class="p-4 text-base font-normal text-gray-900 dark:text-white">
-                                            x{{ $transaksi->jumlah }}
-                                        </td>
-                                        <td class="p-4 text-right text-base font-bold text-gray-900 dark:text-white">
-                                            Rp{{ number_format($transaksi->sub_total, 0, ',', '.') }}
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
+            {{-- Header --}}
+            <div
+                class="mb-6 rounded-3xl bg-gradient-to-r from-sky-600 via-cyan-600 to-teal-600 p-6 text-white shadow-lg">
+                <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex items-start gap-4">
+                        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 backdrop-blur">
+                            <i class="fa-solid fa-capsules text-2xl"></i>
+                        </div>
+                        <div>
+                            <h1 class="text-2xl font-bold md:text-3xl">Detail Transaksi Obat</h1>
+                            <p class="mt-1 text-sm text-sky-50/90 md:text-base">
+                                Periksa rincian order obat pasien dan lanjutkan proses pembayaran.
+                            </p>
+                        </div>
                     </div>
 
-                    <div class="mt-4 space-y-6">
-                        <h4 class="text-xl font-semibold text-gray-900 dark:text-white">Ringkasan Transaksi</h4>
+                    <div
+                        class="flex flex-col items-start gap-2 rounded-2xl bg-white/10 px-4 py-3 backdrop-blur sm:items-end">
+                        <p class="text-xs uppercase tracking-[0.2em] text-sky-100/80">Kode Transaksi</p>
+                        <p class="text-lg font-semibold">{{ $kodeTransaksi }}</p>
+                        <span
+                            class="inline-flex rounded-full px-3 py-1 text-xs font-semibold
+                            {{ $transaksi->status === 'Sudah Bayar' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                            {{ $transaksi->status }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-6 xl:grid-cols-3">
+                <div class="xl:col-span-2 space-y-6">
+
+                    {{-- Informasi Pasien --}}
+                    <div
+                        class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <div class="mb-5 flex items-center gap-3">
+                            <div
+                                class="flex h-11 w-11 items-center justify-center rounded-2xl bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
+                                <i class="fa-solid fa-user"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-bold text-slate-800 dark:text-white">Informasi Pasien</h2>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Data pasien dan informasi
+                                    transaksi utama.</p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800">
+                                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Nama
+                                    Pasien</p>
+                                <p class="mt-1 text-base font-semibold text-slate-800 dark:text-white">
+                                    {{ $dataPasien->nama_pasien ?? '-' }}
+                                </p>
+                            </div>
+
+                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800">
+                                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Tanggal
+                                    Transaksi</p>
+                                <p class="mt-1 text-base font-semibold text-slate-800 dark:text-white">
+                                    {{ $tanggalTransaksi ? \Carbon\Carbon::parse($tanggalTransaksi)->timezone('Asia/Jakarta')->translatedFormat('l, d F Y H:i') : '-' }}
+                                </p>
+                            </div>
+
+                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800">
+                                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Alamat</p>
+                                <p class="mt-1 text-base font-semibold text-slate-800 dark:text-white">
+                                    {{ $dataPasien->alamat ?? '-' }}
+                                </p>
+                            </div>
+
+                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800">
+                                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Jenis
+                                    Kelamin</p>
+                                <p class="mt-1 text-base font-semibold text-slate-800 dark:text-white">
+                                    {{ $dataPasien->jenis_kelamin ?? '-' }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Daftar Obat --}}
+                    <div
+                        class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <div class="mb-5 flex items-center gap-3">
+                            <div
+                                class="flex h-11 w-11 items-center justify-center rounded-2xl bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-300">
+                                <i class="fa-solid fa-pills"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-bold text-slate-800 dark:text-white">Daftar Obat</h2>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">
+                                    Diskon dibuat per item. Jika ada diskon, wajib diajukan dulu sebelum pembayaran.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700">
+                            <div class="overflow-x-auto">
+                                <table class="min-w-full text-left text-sm text-slate-700 dark:text-slate-200">
+                                    <thead
+                                        class="bg-slate-100 text-xs uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                        <tr>
+                                            <th class="px-4 py-3">Obat</th>
+                                            <th class="px-4 py-3">Qty</th>
+                                            <th class="px-4 py-3">Harga</th>
+                                            <th class="px-4 py-3 text-right">Subtotal</th>
+                                            <th class="px-4 py-3 text-center">Diskon (%)</th>
+                                            <th class="px-4 py-3 text-right">Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-slate-200 dark:divide-slate-800">
+                                        @forelse ($transaksi->penjualanObatDetail as $detail)
+                                            @php
+                                                $subtotalItem = (float) ($detail->sub_total ?? 0);
+                                                $diskonItem = (float) ($detail->diskon_nilai ?? 0);
+                                                $afterItem =
+                                                    $detail->total_setelah_diskon !== null
+                                                        ? (float) $detail->total_setelah_diskon
+                                                        : $subtotalItem;
+                                            @endphp
+                                            <tr class="item-row bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800/60"
+                                                data-detail-id="{{ $detail->id }}"
+                                                data-subtotal="{{ $subtotalItem }}">
+                                                <td class="px-4 py-4 align-top">
+                                                    <div class="font-semibold text-slate-800 dark:text-white">
+                                                        {{ $detail->obat->nama_obat ?? '-' }}
+                                                    </div>
+                                                    <div class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                                        Dosis: {{ $detail->obat->dosis ?? '-' }}
+                                                    </div>
+                                                </td>
+
+                                                <td class="px-4 py-4 align-top">
+                                                    <span
+                                                        class="inline-flex rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
+                                                        x{{ $detail->jumlah }}
+                                                    </span>
+                                                </td>
+
+                                                <td class="px-4 py-4 align-top">
+                                                    Rp{{ number_format($detail->harga_satuan, 0, ',', '.') }}
+                                                </td>
+
+                                                <td
+                                                    class="px-4 py-4 text-right align-top font-semibold text-slate-800 dark:text-white">
+                                                    Rp{{ number_format($subtotalItem, 0, ',', '.') }}
+                                                </td>
+
+                                                <td class="px-4 py-4 text-center align-top">
+                                                    <input type="number" min="0" max="100" step="0.01"
+                                                        value="{{ $diskonItem }}"
+                                                        class="diskon-item w-24 rounded-xl border border-slate-300 bg-white px-3 py-2 text-right text-sm font-semibold text-slate-800 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
+                                                </td>
+
+                                                <td
+                                                    class="px-4 py-4 text-right align-top font-bold text-slate-800 dark:text-white">
+                                                    <span class="row-total-display">
+                                                        Rp{{ number_format($afterItem, 0, ',', '.') }}
+                                                    </span>
+                                                    <div
+                                                        class="row-discount-note mt-1 hidden text-xs font-medium text-emerald-700 dark:text-emerald-300">
+                                                        Hemat Rp 0
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="6"
+                                                    class="px-4 py-8 text-center text-slate-500 dark:text-slate-400">
+                                                    Tidak ada detail obat.
+                                                </td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Right Sidebar --}}
+                <div class="space-y-6">
+                    <div
+                        class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+                        <div class="mb-5 flex items-center gap-3">
+                            <div
+                                class="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">
+                                <i class="fa-solid fa-file-invoice-dollar"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-lg font-bold text-slate-800 dark:text-white">Ringkasan Transaksi</h2>
+                                <p class="text-sm text-slate-500 dark:text-slate-400">Diskon item & pembayaran.</p>
+                            </div>
+                        </div>
 
                         <div class="space-y-4">
-                            {{-- Total awal (sebelum diskon) --}}
-                            <dl class="flex items-center justify-between gap-4">
-                                <dt class="text-gray-500 dark:text-gray-400">Total Harga</dt>
-                                <dd class="text-base font-medium text-gray-900 dark:text-white">
+                            <div class="rounded-2xl bg-slate-50 p-4 dark:bg-slate-800">
+                                <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Total
+                                    Harga</p>
+                                <p id="total_harga_display"
+                                    class="mt-1 text-2xl font-bold text-slate-800 dark:text-white">
                                     Rp{{ number_format($subTotal, 0, ',', '.') }}
-                                </dd>
-                            </dl>
+                                </p>
+                            </div>
 
-                            {{-- Input Diskon (%) --}}
-                            <dl class="flex items-center justify-between gap-4">
-                                <dt class="text-gray-500 dark:text-gray-400">Diskon (%)</dt>
-                                <dd class="flex-1 text-right">
-                                    <input type="number" id="diskon_persen" min="0" max="100" value="0"
-                                        class="w-32 text-right rounded-lg border-gray-300 dark:bg-gray-700 dark:text-white" />
-                                </dd>
-                            </dl>
+                            <div class="rounded-2xl bg-rose-50 p-4 dark:bg-rose-900/20">
+                                <p class="text-xs uppercase tracking-wide text-rose-700 dark:text-rose-300">Total
+                                    Diskon</p>
+                                <p id="potongan_display"
+                                    class="mt-1 text-2xl font-bold text-rose-700 dark:text-rose-300">
+                                    Rp0
+                                </p>
+                            </div>
 
-                            {{-- Subtotal setelah diskon (realtime) --}}
-                            <dl class="flex items-center justify-between gap-4">
-                                <dt class="text-gray-500 dark:text-gray-400">Subtotal Setelah Diskon</dt>
-                                <dd id="subtotal_setelah_diskon_display"
-                                    class="text-base font-semibold text-gray-900 dark:text-white">
-                                    Rp{{ number_format($subTotal, 0, ',', '.') }}
-                                </dd>
-                            </dl>
+                            <div class="rounded-2xl bg-emerald-50 p-4 dark:bg-emerald-900/20">
+                                <p class="text-xs uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Total
+                                    Bayar</p>
+                                <p id="total_tagihan_display"
+                                    class="mt-1 text-2xl font-bold text-emerald-700 dark:text-emerald-300">
+                                    Rp{{ number_format($totalSetelahDiskon ?? $subTotal, 0, ',', '.') }}
+                                </p>
+                            </div>
 
-                            {{-- Hidden untuk dipakai JS & dikirim ke backend --}}
-                            <input type="hidden" id="total_setelah_diskon" value="{{ $subTotal }}">
-                        </div>
+                            <input type="hidden" id="total_setelah_diskon"
+                                value="{{ $totalSetelahDiskon ?? $subTotal }}">
+                            <input type="hidden" id="total_tagihan_awal" value="{{ $subTotal }}">
+                            <input type="hidden" id="pasien-id" value="{{ $dataPasien->id ?? '' }}">
 
-                        <div class="space-y-4 mt-4">
-                            {{-- Metode Pembayar --}}
-                            <dl
-                                class="flex items-center justify-between gap-4 border-t border-gray-200 pt-4 dark:border-gray-700">
-                                <dt class="text-lg font-bold text-gray-900 dark:text-white">Metode Pembayaran</dt>
-                                <select class="text-lg font-bold text-gray-900 dark:text-white rounded-md"
-                                    id="pilih-metode-pembayaran">
+                            <div class="rounded-2xl border border-slate-200 p-4 dark:border-slate-700">
+                                <label for="pilih-metode-pembayaran"
+                                    class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
+                                    Metode Pembayaran
+                                </label>
+                                <select id="pilih-metode-pembayaran"
+                                    class="w-full rounded-xl border border-slate-300 px-4 py-3 text-sm text-slate-800 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white">
+                                    <option value="">-- Pilih Metode Pembayaran --</option>
                                     @foreach ($dataMetodePembayaran as $metodePembayaran)
                                         <option value="{{ $metodePembayaran->id }}">
-                                            {{ $metodePembayaran->nama_metode }}</option>
+                                            {{ $metodePembayaran->nama_metode }}
+                                        </option>
                                     @endforeach
                                 </select>
-                            </dl>
+                            </div>
 
-                            {{-- Total Tagihan akhir (mengikuti subtotal setelah diskon) --}}
-                            <dl
-                                class="flex items-center justify-between gap-4 border-t border-gray-200 pt-6 dark:border-gray-700">
-                                <dt class="text-lg font-bold text-gray-900 dark:text-white">Total Tagihan</dt>
-                                <dd class="text-lg font-bold text-gray-900 dark:text-white"
-                                    id="total_tagihan_display">
-                                    Rp{{ number_format($subTotal, 0, ',', '.') }}
-                                </dd>
-                            </dl>
+                            <div id="diskon_approval_box"
+                                class="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
+                                <div class="flex items-center justify-between">
+                                    <span class="font-semibold">Status Diskon</span>
+                                    <span id="diskon_status_badge"
+                                        class="rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-800 dark:bg-slate-700 dark:text-slate-100">
+                                        Normal
+                                    </span>
+                                </div>
+
+                                <p id="diskon_status_desc" class="mt-2 text-xs text-slate-600 dark:text-slate-300">
+                                    Jika ada diskon per item, wajib ajukan approval dulu.
+                                </p>
+
+                                <button type="button" id="btnAjukanDiskon"
+                                    class="mt-3 hidden w-full rounded-xl bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-amber-700">
+                                    <i class="fa-solid fa-user-check mr-2"></i>
+                                    Ajukan Diskon
+                                </button>
+                            </div>
                         </div>
 
-                        <div class="gap-4 sm:flex sm:items-center">
-                            <a href="{{ route('kasir.pembayaran') }}"
-                                class="w-full rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white">
-                                Kembali ke halaman kasir
-                            </a>
-
+                        <div class="mt-6 flex flex-col gap-3">
                             <button type="button" id="btnLanjutPembayaran"
-                                class="mt-4 flex w-full items-center justify-center rounded-lg bg-primary-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-primary-800 sm:mt-0">
+                                class="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-sky-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-sky-700 focus:outline-none focus:ring-2 focus:ring-sky-300">
+                                <i class="fa-solid fa-credit-card"></i>
                                 Lanjutkan Pembayaran
                             </button>
+
+                            <a href="{{ route('kasir.pembayaran') }}"
+                                class="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-300 bg-white px-5 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
+                                <i class="fa-solid fa-arrow-left"></i>
+                                Kembali ke halaman kasir
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -139,74 +308,69 @@
         </div>
     </section>
 
-    {{-- Total awal & pasien id (hidden) --}}
-    <input type="hidden" id="total_tagihan_awal" value="{{ $subTotal }}">
-    <input type="hidden" id="pasien-id" value="{{ $dataPasien->id }}">
-
-    <!-- Modal Pembayaran Cash -->
+    {{-- Modal Cash --}}
     <div id="pembayaranCash" tabindex="-1" aria-hidden="true"
-        class="hidden fixed inset-0 z-50 items-center justify-center bg-black bg-opacity-50">
-        <div class="relative w-full max-w-md p-4">
-            <div class="relative bg-white rounded-lg shadow dark:bg-gray-800">
-                <!-- Header -->
-                <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Konfirmasi Pembayar Metode Cash</h3>
-                    <button type="button" data-modal-hide="pembayaranModal"
-                        class="text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg text-sm p-1.5">✖</button>
+        class="hidden fixed inset-0 z-50 items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4">
+        <div class="relative w-full max-w-md">
+            <div class="overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-slate-900">
+                <div
+                    class="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-800">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800 dark:text-white">Pembayaran Cash</h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Masukkan nominal uang dari pasien.</p>
+                    </div>
+                    <button type="button" data-close-modal="cash"
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
 
-                <!-- Body -->
                 <form id="formPembayaranCash" action="{{ route('kasir.transaksi.obat.cash') }}" method="POST">
                     @csrf
-                    <div class="p-4 space-y-4">
+                    <div class="space-y-4 p-6">
                         <input type="hidden" name="id" value="{{ $id }}">
-                        <input type="hidden" name="metode_pembayaran" id="metode-pembayaran-cash" value="">
-                        <input type="hidden" name="kode_transaksi" id="kode-transaksi"
-                            value="{{ $kodeTransaksi }}">
+                        <input type="hidden" name="metode_pembayaran_id" id="metode-pembayaran-cash"
+                            value="">
+                        <input type="hidden" name="kode_transaksi" value="{{ $kodeTransaksi }}">
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Total
+                            <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Total
                                 Tagihan</label>
-                            <div class="relative mt-1">
-                                <span
-                                    class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-300">Rp</span>
-                                <!-- akan diupdate JS sesuai total setelah diskon -->
-                                <input type="text" id="total_tagihan" readonly
-                                    value="{{ number_format($subTotal, 0, ',', '.') }}"
-                                    class="w-full pl-10 rounded-lg border-gray-300 dark:bg-gray-700 dark:text-white" />
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500">Rp</span>
+                                <input type="text" id="total_tagihan_cash_display" readonly
+                                    value="{{ number_format($totalSetelahDiskon ?? $subTotal, 0, ',', '.') }}"
+                                    class="w-full rounded-2xl border border-slate-300 py-3 pl-10 pr-4 text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Uang yang
+                            <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Uang
                                 Diterima</label>
-                            <div class="relative mt-1">
-                                <span
-                                    class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-300">Rp</span>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500">Rp</span>
                                 <input type="text" name="uang_yang_diterima" id="uang_diterima"
                                     placeholder="Masukkan nominal"
-                                    class="w-full pl-10 rounded-lg border-gray-300 dark:bg-gray-700 dark:text-white" />
+                                    class="w-full rounded-2xl border border-slate-300 py-3 pl-10 pr-4 text-slate-800 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Uang
-                                Kembalian</label>
-                            <div class="relative mt-1">
-                                <input type="text" name="kembalian" id="uang_kembalian" readonly
-                                    class="w-full mt-1 rounded-lg border-gray-300 dark:bg-gray-700 dark:text-white" />
-                            </div>
+                            <label
+                                class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Kembalian</label>
+                            <input type="text" name="kembalian" id="uang_kembalian" readonly
+                                class="w-full rounded-2xl border border-slate-300 px-4 py-3 text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
                         </div>
                     </div>
 
-                    <!-- Footer -->
-                    <div class="flex justify-end items-center p-4 border-t dark:border-gray-700">
-                        <button data-modal-hide="pembayaranModal" type="button"
-                            class="text-gray-500 bg-white hover:bg-gray-100 border border-gray-200 rounded-lg px-5 py-2.5 text-sm dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600">
+                    <div
+                        class="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4 dark:border-slate-800">
+                        <button data-close-modal="cash" type="button"
+                            class="rounded-2xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
                             Batal
                         </button>
                         <button type="submit"
-                            class="ms-2 text-white bg-primary-700 hover:bg-primary-800 font-medium rounded-lg text-sm px-5 py-2.5">
+                            class="rounded-2xl bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">
                             Bayar Sekarang
                         </button>
                     </div>
@@ -215,86 +379,83 @@
         </div>
     </div>
 
-    <!-- Modal Transfer -->
+    {{-- Modal Transfer --}}
     <div id="pembayaranTransfer" tabindex="-1" aria-hidden="true"
-        class="hidden fixed inset-0 z-50 items-center justify-center bg-black bg-opacity-50">
-        <div class="relative w-full max-w-2xl p-4">
-            <div class="relative bg-white rounded-lg shadow dark:bg-gray-800">
-                <!-- Header -->
-                <div class="flex justify-between items-center p-4 border-b dark:border-gray-700">
-                    <h3 class="text-lg font-semibold text-gray-900 dark:text-white">Konfirmasi Pembayar Metode Transfer
-                    </h3>
-                    <button type="button" data-modal-hide="transferModal"
-                        class="text-gray-400 hover:text-gray-900 dark:hover:text-white rounded-lg text-sm p-1.5">✖</button>
+        class="hidden fixed inset-0 z-50 items-center justify-center bg-slate-950/70 backdrop-blur-sm p-4">
+        <div class="relative w-full max-w-2xl">
+            <div class="overflow-hidden rounded-3xl bg-white shadow-2xl dark:bg-slate-900">
+                <div
+                    class="flex items-center justify-between border-b border-slate-200 px-6 py-4 dark:border-slate-800">
+                    <div>
+                        <h3 class="text-lg font-bold text-slate-800 dark:text-white">Pembayaran Transfer</h3>
+                        <p class="text-sm text-slate-500 dark:text-slate-400">Upload bukti transfer untuk menyelesaikan
+                            transaksi.</p>
+                    </div>
+                    <button type="button" data-close-modal="transfer"
+                        class="inline-flex h-10 w-10 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </div>
 
-                <!-- Body -->
                 <form id="formPembayaranTransfer" action="{{ route('kasir.transaksi.obat.transfer') }}"
                     method="POST" enctype="multipart/form-data">
                     @csrf
-                    <div class="p-4 space-y-4">
+                    <div class="space-y-5 p-6">
                         <input type="hidden" name="id" value="{{ $id }}">
                         <input type="hidden" name="metode_pembayaran_id" id="metode-pembayaran-transfer"
                             value="">
                         <input type="hidden" name="kode_transaksi" value="{{ $kodeTransaksi }}">
                         <input type="hidden" name="total_tagihan" id="total_tagihan_hidden"
-                            value="{{ $subTotal }}">
+                            value="{{ $totalSetelahDiskon ?? $subTotal }}">
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">Total
+                            <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">Total
                                 Tagihan</label>
-                            <div class="relative mt-1">
-                                <span
-                                    class="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-300">Rp</span>
-                                <!-- akan diupdate JS sesuai total setelah diskon -->
-                                <input type="text" id="total_tagihan" readonly
-                                    value="{{ number_format($subTotal, 0, ',', '.') }}"
-                                    class="w-full pl-10 rounded-lg border-gray-300 dark:bg-gray-700 dark:text-white" />
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-500">Rp</span>
+                                <input type="text" id="total_tagihan_transfer_display" readonly
+                                    value="{{ number_format($totalSetelahDiskon ?? $subTotal, 0, ',', '.') }}"
+                                    class="w-full rounded-2xl border border-slate-300 py-3 pl-10 pr-4 text-slate-800 dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
                             </div>
                         </div>
 
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                            <label class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
                                 Upload Bukti Transfer
                             </label>
-                            <div class="flex items-center justify-center w-full px-5 py-3">
-                                <label for="upload"
-                                    class="flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-gray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500">
-                                    <div class="flex flex-col items-center justify-center w-full h-full pt-5 pb-6"
-                                        id="preview-bukti-pembayaran">
-                                        <svg class="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400" aria-hidden="true"
-                                            xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                                            <path stroke="currentColor" stroke-linecap="round"
-                                                stroke-linejoin="round" stroke-width="2"
-                                                d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
-                                        </svg>
-                                        <p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                                            <span class="font-semibold">Click to upload</span> or drag and drop
-                                        </p>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">
-                                            SVG, PNG, JPG or GIF (MAX. 800x400px)
-                                        </p>
+                            <label for="upload"
+                                class="flex min-h-[260px] w-full cursor-pointer flex-col items-center justify-center rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 p-6 text-center transition hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:hover:bg-slate-800/70">
+                                <div id="preview-bukti-pembayaran"
+                                    class="flex h-full w-full flex-col items-center justify-center">
+                                    <div
+                                        class="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-100 text-sky-700 dark:bg-sky-900/40 dark:text-sky-300">
+                                        <i class="fa-solid fa-cloud-arrow-up text-xl"></i>
                                     </div>
-                                    <input id="upload" type="file" class="hidden" accept="image/*"
-                                        name="bukti_pembayaran" />
-                                </label>
-                            </div>
+                                    <p class="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                        Klik untuk upload bukti transfer
+                                    </p>
+                                    <p class="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                        Format gambar: JPG, PNG, GIF, SVG, WEBP
+                                    </p>
+                                </div>
+                                <input id="upload" type="file" class="hidden" accept="image/*"
+                                    name="bukti_pembayaran" />
+                            </label>
                             <p id="text-ganti-gambar"
-                                class="mt-2 text-sm text-gray-500 dark:text-gray-400 text-center hidden">
-                                Klik untuk ganti gambar
+                                class="mt-2 hidden text-center text-sm text-slate-500 dark:text-slate-400">
+                                Klik area gambar untuk mengganti file
                             </p>
                         </div>
-
                     </div>
 
-                    <!-- Footer -->
-                    <div class="flex justify-end items-center p-4 border-t dark:border-gray-700">
-                        <button data-modal-hide="transferModal" type="button"
-                            class="text-gray-500 bg-white hover:bg-gray-100 border border-gray-200 rounded-lg px-5 py-2.5 text-sm dark:bg-gray-700 dark:text-gray-300 dark:border-gray-600">
+                    <div
+                        class="flex items-center justify-end gap-3 border-t border-slate-200 px-6 py-4 dark:border-slate-800">
+                        <button data-close-modal="transfer" type="button"
+                            class="rounded-2xl border border-slate-300 bg-white px-5 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">
                             Batal
                         </button>
                         <button type="submit"
-                            class="ms-2 text-white bg-primary-700 hover:bg-primary-800 font-medium rounded-lg text-sm px-5 py-2.5">
+                            class="rounded-2xl bg-sky-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-700">
                             Kirim Bukti Pembayaran
                         </button>
                     </div>
@@ -303,9 +464,15 @@
         </div>
     </div>
 
-    <!-- JS Section -->
+    <script>
+        window.__SERVER_APPROVAL_STATUS__ = @json($approvalStatus ?? null);
+        window.__SERVER_APPROVAL_ITEMS__ = @json($approvalItemsRaw ?? []);
+    </script>
+
     <script>
         document.addEventListener('DOMContentLoaded', function() {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
             const uangDiterimaInput = document.getElementById('uang_diterima');
             const uangKembalianInput = document.getElementById('uang_kembalian');
 
@@ -315,60 +482,359 @@
             const modalCash = document.getElementById('pembayaranCash');
             const modalTransfer = document.getElementById('pembayaranTransfer');
 
-            // === DISKON & TOTAL ===
             const totalAwalInput = document.getElementById('total_tagihan_awal');
-            const diskonInput = document.getElementById('diskon_persen');
-            const subtotalDisplay = document.getElementById('subtotal_setelah_diskon_display');
-            const totalSetelahDiskonHidden = document.getElementById('total_setelah_diskon');
+            const totalHargaDisplay = document.getElementById('total_harga_display');
+            const potonganDisplay = document.getElementById('potongan_display');
             const totalTagihanDisplay = document.getElementById('total_tagihan_display');
-            const totalInputsAll = document.querySelectorAll('input#total_tagihan');
+            const totalSetelahDiskonHidden = document.getElementById('total_setelah_diskon');
+            const totalTagihanCashDisplay = document.getElementById('total_tagihan_cash_display');
+            const totalTagihanTransferDisplay = document.getElementById('total_tagihan_transfer_display');
+            const totalTagihanHiddenTransfer = document.getElementById('total_tagihan_hidden');
+
+            const btnAjukanDiskon = document.getElementById('btnAjukanDiskon');
+            const badge = document.getElementById('diskon_status_badge');
+            const desc = document.getElementById('diskon_status_desc');
 
             const totalAwal = parseFloat(totalAwalInput?.value || '0') || 0;
+
+            const urlStatus = "{{ route('kasir.transaksi.obat.diskon.status', $id) }}";
+            const urlRequest = "{{ route('kasir.transaksi.obat.diskon.request', $id) }}";
+
+            let approvalStatus = window.__SERVER_APPROVAL_STATUS__ || null;
+            let approvalSnapshotStr = JSON.stringify(normalizeDiskonItems(window.__SERVER_APPROVAL_ITEMS__ || []));
 
             function onlyDigits(value) {
                 return value ? String(value).replace(/[^\d]/g, '') : '';
             }
 
             function formatRupiah(value) {
-                return new Intl.NumberFormat("id-ID").format(value);
+                const n = Number(value) || 0;
+                return new Intl.NumberFormat("id-ID").format(n);
             }
 
-            // Hitung total setelah diskon & update ke semua tampilan
-            function updateTotalSetelahDiskon() {
-                const persen = parseFloat(diskonInput?.value) || 0;
+            function clamp(n, min, max) {
+                return Math.min(Math.max(n, min), max);
+            }
 
-                let potongan = totalAwal * (persen / 100);
-                if (potongan > totalAwal) potongan = totalAwal;
+            function getFirstErrorMessage(data) {
+                if (!data) return null;
+                if (data.message) return data.message;
+                if (data.errors && typeof data.errors === 'object') {
+                    const firstKey = Object.keys(data.errors)[0];
+                    if (firstKey && Array.isArray(data.errors[firstKey]) && data.errors[firstKey][0]) {
+                        return data.errors[firstKey][0];
+                    }
+                }
+                return null;
+            }
 
-                const totalSetelah = totalAwal - potongan;
+            function normalizeDiskonItems(items) {
+                return (items || [])
+                    .map(item => ({
+                        id: Number(item.id) || 0,
+                        persen: clamp(Number(item.persen) || 0, 0, 100),
+                    }))
+                    .filter(item => item.id > 0 && item.persen > 0)
+                    .sort((a, b) => a.id - b.id);
+            }
 
-                if (subtotalDisplay) {
-                    subtotalDisplay.textContent = "Rp" + formatRupiah(totalSetelah);
+            function getCurrentNormalizedDiskonItems() {
+                return normalizeDiskonItems(window.__DISKON_ITEMS__ || []);
+            }
+
+            function setDiskonInputsDisabled(disabled) {
+                document.querySelectorAll('.diskon-item').forEach(inp => {
+                    inp.disabled = !!disabled;
+                    if (disabled) {
+                        inp.classList.add('opacity-60', 'cursor-not-allowed');
+                    } else {
+                        inp.classList.remove('opacity-60', 'cursor-not-allowed');
+                    }
+                });
+            }
+
+            function setBadge(status) {
+                if (!badge || !desc) return;
+
+                if (!status) {
+                    badge.textContent = 'Normal';
+                    badge.className =
+                        'rounded-full bg-slate-200 px-3 py-1 text-xs font-semibold text-slate-800 dark:bg-slate-700 dark:text-slate-100';
+                    desc.textContent = 'Jika ada diskon per item, wajib ajukan approval dulu.';
+                    return;
                 }
 
-                if (totalTagihanDisplay) {
-                    totalTagihanDisplay.textContent = "Rp" + formatRupiah(totalSetelah);
+                if (status === 'pending') {
+                    badge.textContent = 'Menunggu Approval';
+                    badge.className =
+                        'rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-900/30 dark:text-amber-200';
+                    desc.textContent = 'Diskon sudah diajukan. Menunggu approval manager.';
+                } else if (status === 'approved') {
+                    badge.textContent = 'Approved';
+                    badge.className =
+                        'rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-200';
+                    desc.textContent = 'Diskon sudah disetujui manager. Kasir bisa lanjut pembayaran.';
+                } else if (status === 'rejected') {
+                    badge.textContent = 'Ditolak';
+                    badge.className =
+                        'rounded-full bg-rose-100 px-3 py-1 text-xs font-semibold text-rose-800 dark:bg-rose-900/30 dark:text-rose-200';
+                    desc.textContent = 'Pengajuan diskon ditolak. Silakan input ulang diskon.';
                 }
+            }
 
-                if (totalSetelahDiskonHidden) {
-                    totalSetelahDiskonHidden.value = totalSetelah;
-                }
-
-                // update semua input total_tagihan di modal cash & transfer
-                totalInputsAll.forEach(inp => {
-                    inp.value = formatRupiah(totalSetelah);
+            function applyDiskonItems(items = []) {
+                const map = {};
+                normalizeDiskonItems(items).forEach(item => {
+                    map[String(item.id)] = item.persen;
                 });
 
-                // setiap total berubah, kembalian harus dihitung ulang
+                document.querySelectorAll('.item-row').forEach(row => {
+                    const detailId = String(row.dataset.detailId || '');
+                    const input = row.querySelector('.diskon-item');
+                    if (!input) return;
+                    input.value = map[detailId] ?? 0;
+                });
+
+                recalcAll(false);
+            }
+
+            function recalcAll(manageUi = true) {
+                const rows = document.querySelectorAll('.item-row');
+                let totalBase = 0;
+                let totalAfter = 0;
+                const diskonItems = [];
+
+                rows.forEach(row => {
+                    const detailId = row.dataset.detailId;
+                    const baseSubtotal = parseFloat(row.dataset.subtotal || '0') || 0;
+                    totalBase += baseSubtotal;
+
+                    const input = row.querySelector('.diskon-item');
+                    let persen = parseFloat(input?.value || '0') || 0;
+                    persen = clamp(persen, 0, 100);
+                    if (input && Number(input.value) !== persen) input.value = persen;
+
+                    const diskonNominal = baseSubtotal * (persen / 100);
+                    const after = Math.max(baseSubtotal - diskonNominal, 0);
+                    totalAfter += after;
+
+                    const totalDisplay = row.querySelector('.row-total-display');
+                    if (totalDisplay) {
+                        totalDisplay.textContent = "Rp" + formatRupiah(after);
+                    }
+
+                    const note = row.querySelector('.row-discount-note');
+                    if (note) {
+                        if (diskonNominal > 0) {
+                            note.classList.remove('hidden');
+                            note.textContent = "Hemat Rp " + formatRupiah(diskonNominal);
+                        } else {
+                            note.classList.add('hidden');
+                            note.textContent = "Hemat Rp 0";
+                        }
+                    }
+
+                    if (detailId) {
+                        diskonItems.push({
+                            id: Number(detailId),
+                            persen: persen
+                        });
+                    }
+                });
+
+                const potongan = Math.max(totalBase - totalAfter, 0);
+
+                if (totalHargaDisplay) totalHargaDisplay.textContent = "Rp" + formatRupiah(totalBase || totalAwal);
+                if (potonganDisplay) potonganDisplay.textContent = "Rp" + formatRupiah(potongan);
+                if (totalTagihanDisplay) totalTagihanDisplay.textContent = "Rp" + formatRupiah(totalAfter);
+                if (totalSetelahDiskonHidden) totalSetelahDiskonHidden.value = totalAfter;
+                if (totalTagihanCashDisplay) totalTagihanCashDisplay.value = formatRupiah(totalAfter);
+                if (totalTagihanTransferDisplay) totalTagihanTransferDisplay.value = formatRupiah(totalAfter);
+                if (totalTagihanHiddenTransfer) totalTagihanHiddenTransfer.value = totalAfter;
+
+                window.__DISKON_ITEMS__ = diskonItems;
+
+                if (manageUi) {
+                    const normalized = getCurrentNormalizedDiskonItems();
+
+                    if (approvalStatus === 'pending') {
+                        setBadge('pending');
+                        setDiskonInputsDisabled(true);
+                        btnAjukanDiskon?.classList.add('hidden');
+                    } else if (approvalStatus === 'approved') {
+                        setBadge('approved');
+                        setDiskonInputsDisabled(true);
+                        btnAjukanDiskon?.classList.add('hidden');
+                    } else if (approvalStatus === 'rejected') {
+                        setBadge('rejected');
+                        setDiskonInputsDisabled(false);
+                        if (normalized.length > 0) btnAjukanDiskon?.classList.remove('hidden');
+                        else btnAjukanDiskon?.classList.add('hidden');
+                    } else {
+                        setBadge(null);
+                        setDiskonInputsDisabled(false);
+                        if (normalized.length > 0) btnAjukanDiskon?.classList.remove('hidden');
+                        else btnAjukanDiskon?.classList.add('hidden');
+                    }
+                }
+
                 hitungKembalian();
             }
 
-            if (diskonInput) {
-                diskonInput.addEventListener('input', updateTotalSetelahDiskon);
+            function applyApprovalState(status, items = []) {
+                approvalStatus = status || null;
+                approvalSnapshotStr = JSON.stringify(normalizeDiskonItems(items));
+
+                if (approvalStatus === 'pending') {
+                    applyDiskonItems(items);
+                    setBadge('pending');
+                    setDiskonInputsDisabled(true);
+                    btnAjukanDiskon?.classList.add('hidden');
+                    return;
+                }
+
+                if (approvalStatus === 'approved') {
+                    applyDiskonItems(items);
+                    setBadge('approved');
+                    setDiskonInputsDisabled(true);
+                    btnAjukanDiskon?.classList.add('hidden');
+                    return;
+                }
+
+                if (approvalStatus === 'rejected') {
+                    setBadge('rejected');
+                    setDiskonInputsDisabled(false);
+                    recalcAll(true);
+                    return;
+                }
+
+                recalcAll(true);
             }
 
-            // inisialisasi awal (tanpa diskon)
-            updateTotalSetelahDiskon();
+            async function fetchApprovalStatus() {
+                try {
+                    const res = await fetch(urlStatus, {
+                        method: 'GET',
+                        credentials: 'same-origin',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    const ct = res.headers.get('Content-Type') || '';
+                    const data = ct.includes('application/json') ? await res.json() : null;
+
+                    const status = data?.data?.status || null;
+                    const serverItems = normalizeDiskonItems(data?.data?.diskon_items || []);
+
+                    applyApprovalState(status, serverItems);
+
+                    return status;
+                } catch (e) {
+                    console.error(e);
+                    return approvalStatus;
+                }
+            }
+
+            async function requestApprovalDiskon() {
+                recalcAll(true);
+
+                const normalized = getCurrentNormalizedDiskonItems();
+
+                if (normalized.length === 0) {
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Tidak ada diskon',
+                        text: 'Diskon 0% tidak perlu diajukan.'
+                    });
+                    return;
+                }
+
+                if (approvalStatus === 'pending') {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Masih menunggu approval',
+                        text: 'Pengajuan diskon ini masih menunggu keputusan manager.'
+                    });
+                    return;
+                }
+
+                const {
+                    value: reason
+                } = await Swal.fire({
+                    title: 'Ajukan Diskon',
+                    input: 'textarea',
+                    inputLabel: 'Alasan diskon (wajib)',
+                    inputPlaceholder: 'Contoh: pelanggan tetap / promo / koreksi harga...',
+                    showCancelButton: true,
+                    confirmButtonText: 'Kirim',
+                    cancelButtonText: 'Batal',
+                    inputValidator: (value) => {
+                        if (!value || value.trim().length < 3) return 'Alasan minimal 3 karakter.';
+                        return null;
+                    }
+                });
+
+                if (!reason) return;
+
+                try {
+                    const res = await fetch(urlRequest, {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            reason: reason.trim(),
+                            diskon_items: JSON.stringify(normalized),
+                        })
+                    });
+
+                    const ct = res.headers.get('Content-Type') || '';
+                    const data = ct.includes('application/json') ? await res.json() : {
+                        success: res.ok,
+                        message: res.ok ? 'OK' : 'Gagal'
+                    };
+
+                    if (!data.success) {
+                        const msg = getFirstErrorMessage(data) || 'Gagal mengajukan diskon.';
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal',
+                            text: msg
+                        });
+                        return;
+                    }
+
+                    await fetchApprovalStatus();
+
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Berhasil',
+                        text: data.message || 'Diskon berhasil diajukan.'
+                    });
+                } catch (e) {
+                    console.error(e);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Tidak dapat terhubung ke server.'
+                    });
+                }
+            }
+
+            function hitungKembalian() {
+                const totalBayar = parseFloat(totalSetelahDiskonHidden?.value || 0) || 0;
+                const diterima = parseFloat(onlyDigits(uangDiterimaInput?.value)) || 0;
+                const kembalian = diterima - totalBayar;
+
+                if (uangKembalianInput) {
+                    uangKembalianInput.value = "Rp " + formatRupiah(Math.max(kembalian, 0));
+                }
+            }
 
             function openModal(modal) {
                 if (!modal) return;
@@ -389,67 +855,23 @@
                 closeModal(modalTransfer);
             }
 
-            // === OPEN MODAL SESUAI METODE ===
-            if (btnLanjut) {
-                btnLanjut.addEventListener("click", (e) => {
-                    e.preventDefault();
-                    const selected = pilihMetode?.options[pilihMetode.selectedIndex];
-                    if (!selected) return alert("Pilih metode pembayaran dulu.");
+            btnAjukanDiskon?.addEventListener('click', requestApprovalDiskon);
 
-                    const metodeID = selected.value;
-                    const metodeText = selected.textContent.toLowerCase();
-
-                    // Masukkan ID ke input hidden
-                    const cashInput = document.getElementById("metode-pembayaran-cash");
-                    const transferInput = document.getElementById("metode-pembayaran-transfer");
-                    if (cashInput) cashInput.value = metodeID;
-                    if (transferInput) transferInput.value = metodeID;
-
-                    closeAll();
-                    if (metodeText.includes("cash")) openModal(modalCash);
-                    else if (metodeText.includes("transfer")) openModal(modalTransfer);
-                    else alert("Metode pembayaran belum dikenali: " + selected.textContent);
+            document.querySelectorAll('.diskon-item').forEach(inp => {
+                inp.addEventListener('input', function() {
+                    if (approvalStatus === 'approved' || approvalStatus === 'pending') return;
+                    recalcAll(true);
                 });
-            }
+            });
 
-            // === TOMBOL CLOSE SAJA YANG NGE-TUTUP MODAL (bukan semua button!) ===
-            document.querySelectorAll("#pembayaranCash [data-modal-hide], #pembayaranTransfer [data-modal-hide]")
-                .forEach(btn => {
-                    btn.addEventListener("click", () => {
-                        const modal = btn.closest("#pembayaranCash") || btn.closest("#pembayaranTransfer");
+            document.querySelectorAll('[data-close-modal="cash"]').forEach(btn => {
+                btn.addEventListener('click', () => closeModal(modalCash));
+            });
 
-                        // reset form & preview hanya saat explicit close
-                        if (modal) {
-                            const forms = modal.querySelectorAll("form");
-                            forms.forEach(form => form.reset());
+            document.querySelectorAll('[data-close-modal="transfer"]').forEach(btn => {
+                btn.addEventListener('click', () => closeModal(modalTransfer));
+            });
 
-                            const preview = modal.querySelector("#preview-bukti-pembayaran");
-                            if (preview) {
-                                preview.innerHTML = `
-              <svg class="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400" aria-hidden="true"
-                  xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16">
-                <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                      d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2" />
-              </svg>
-              <p class="mb-2 text-sm text-gray-500 dark:text-gray-400">
-                <span class="font-semibold">Click to upload</span> or drag and drop
-              </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">SVG, PNG, JPG or GIF (MAX. 800x400px)</p>`;
-                            }
-                            const textGanti = modal.querySelector("#text-ganti-gambar");
-                            if (textGanti) textGanti.classList.add("hidden");
-
-                            // setelah reset, apply lagi total setelah diskon supaya tidak balik ke total awal
-                            if (typeof updateTotalSetelahDiskon === 'function') {
-                                updateTotalSetelahDiskon();
-                            }
-
-                            closeModal(modal);
-                        }
-                    });
-                });
-
-            // === TUTUP MODAL LEWAT KLIK OVERLAY ===
             [modalCash, modalTransfer].forEach(modal => {
                 if (!modal) return;
                 modal.addEventListener("click", (ev) => {
@@ -457,22 +879,82 @@
                 });
             });
 
-            // === ESC ngetutup semua modal ===
             document.addEventListener("keydown", (ev) => {
                 if (ev.key === "Escape") closeAll();
             });
 
-            // === FORMAT UANG CASH ===
-            if (uangKembalianInput) uangKembalianInput.classList.add('pl-3');
+            btnLanjut?.addEventListener("click", async (e) => {
+                e.preventDefault();
 
-            function hitungKembalian() {
-                const totalSesudahDiskon = parseFloat(totalSetelahDiskonHidden?.value || totalAwal) || 0;
-                const diterima = parseFloat(onlyDigits(uangDiterimaInput?.value)) || 0;
-                const kembalian = diterima - totalSesudahDiskon;
-                if (uangKembalianInput) {
-                    uangKembalianInput.value = (kembalian >= 0) ? "Rp " + formatRupiah(kembalian) : "Rp 0";
+                recalcAll(true);
+
+                const selected = pilihMetode?.options[pilihMetode.selectedIndex];
+                if (!selected || !selected.value) {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Metode kosong',
+                        text: 'Pilih metode pembayaran dulu.'
+                    });
+                    return;
                 }
-            }
+
+                const latestStatus = await fetchApprovalStatus();
+                const normalized = getCurrentNormalizedDiskonItems();
+
+                if (latestStatus === 'pending') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Pengajuan masih diproses',
+                        text: 'Diskon item sedang menunggu approval manager.'
+                    });
+                    return;
+                }
+
+                if (normalized.length > 0 && latestStatus !== 'approved') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Diskon belum diajukan / disetujui',
+                        text: 'Ada item yang diberi diskon. Silakan klik "Ajukan Diskon" dulu dan tunggu approval.'
+                    });
+                    btnAjukanDiskon?.classList.remove('hidden');
+                    return;
+                }
+
+                if (latestStatus === 'approved') {
+                    const currentStr = JSON.stringify(normalized);
+                    if (currentStr !== approvalSnapshotStr) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Data diskon berubah',
+                            text: 'Data diskon tidak sesuai approval. Silakan refresh halaman.'
+                        });
+                        return;
+                    }
+                }
+
+                const metodeID = selected.value;
+                const metodeText = (selected.textContent || "").toLowerCase();
+
+                const cashInput = document.getElementById("metode-pembayaran-cash");
+                const transferInput = document.getElementById("metode-pembayaran-transfer");
+
+                if (cashInput) cashInput.value = metodeID;
+                if (transferInput) transferInput.value = metodeID;
+
+                closeAll();
+
+                if (metodeText.includes("cash")) {
+                    openModal(modalCash);
+                } else if (metodeText.includes("transfer")) {
+                    openModal(modalTransfer);
+                } else {
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Metode belum dikenali',
+                        text: 'Metode pembayaran belum dikenali sistem.'
+                    });
+                }
+            });
 
             if (uangDiterimaInput) {
                 uangDiterimaInput.addEventListener("input", (e) => {
@@ -482,7 +964,6 @@
                 });
             }
 
-            // === PREVIEW GAMBAR (TRANSFER) ===
             const fileInput = document.getElementById("upload");
             const previewContainer = document.getElementById("preview-bukti-pembayaran");
             const textGantiGambar = document.getElementById("text-ganti-gambar");
@@ -491,101 +972,146 @@
                 fileInput.addEventListener("change", (event) => {
                     const file = event.target.files[0];
                     if (!file) return;
+
                     if (!file.type.startsWith("image/")) {
                         Swal.fire({
                             icon: 'warning',
                             title: 'File bukan gambar',
-                            text: 'Unggah file gambar (jpg/png/gif/dll).'
+                            text: 'Unggah file gambar yang valid.'
                         });
                         fileInput.value = "";
                         return;
                     }
+
                     const reader = new FileReader();
                     reader.onload = (ev) => {
                         previewContainer.innerHTML = `
-          <img src="${ev.target.result}" alt="Preview Bukti Pembayaran"
-               class="object-cover w-full h-64 rounded-lg shadow-md" />`;
-                        textGantiGambar.classList.remove("hidden");
+                            <img src="${ev.target.result}" alt="Preview Bukti Pembayaran"
+                                 class="h-[260px] w-full rounded-2xl object-cover shadow-md" />
+                        `;
+                        textGantiGambar?.classList.remove("hidden");
                     };
                     reader.readAsDataURL(file);
                 });
             }
 
-            // === SUBMIT CASH ===
-            const formPembayaranCash = document.getElementById('formPembayaranCash');
-            if (formPembayaranCash) {
-                formPembayaranCash.addEventListener('submit', async function(e) {
+            const formCash = document.getElementById('formPembayaranCash');
+            if (formCash) {
+                formCash.addEventListener('submit', async function(e) {
                     e.preventDefault();
 
-                    const totalSesudahDiskon = parseFloat(totalSetelahDiskonHidden?.value || totalAwal) || 0;
-                    const uangDiterimaClean = parseFloat(onlyDigits(uangDiterimaInput?.value)) || 0;
-                    const kembalianClean = uangDiterimaClean - totalSesudahDiskon;
                     const metodeCash = document.getElementById('metode-pembayaran-cash');
-                    const pasienId = document.getElementById('pasien-id')?.value;
-                    const diskonPersen = parseFloat(diskonInput?.value) || 0;
+                    const selectedStatus = await fetchApprovalStatus();
+                    const normalized = getCurrentNormalizedDiskonItems();
 
-                    if (uangDiterimaClean === 0 || uangDiterimaClean < totalSesudahDiskon) {
+                    if (selectedStatus === 'pending') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Masih menunggu approval',
+                            text: 'Diskon item sedang menunggu approval manager.'
+                        });
+                        return;
+                    }
+
+                    if (normalized.length > 0 && selectedStatus !== 'approved') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Diskon belum disetujui',
+                            text: 'Ada diskon item yang belum disetujui manager.'
+                        });
+                        return;
+                    }
+
+                    if (selectedStatus === 'approved') {
+                        const currentStr = JSON.stringify(normalized);
+                        if (currentStr !== approvalSnapshotStr) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Data diskon berubah',
+                                text: 'Data diskon tidak sesuai approval. Silakan refresh halaman.'
+                            });
+                            return;
+                        }
+                    }
+
+                    const totalSesudahDiskon = parseFloat(totalSetelahDiskonHidden?.value ||
+                        totalAwal) || 0;
+                    const uangDiterima = parseFloat(onlyDigits(uangDiterimaInput?.value)) || 0;
+                    const kembalianClean = uangDiterima - totalSesudahDiskon;
+
+                    if (!metodeCash?.value) {
                         Swal.fire({
                             icon: 'warning',
-                            title: 'Uang Kurang',
+                            title: 'Metode belum dipilih',
+                            text: 'Pilih metode pembayaran dulu.'
+                        });
+                        return;
+                    }
+
+                    if (uangDiterima < totalSesudahDiskon) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Uang kurang',
                             text: 'Nominal uang yang diterima belum cukup.'
                         });
                         return;
                     }
 
-                    const formData = new FormData(formPembayaranCash);
-                    formData.set('uang_yang_diterima', uangDiterimaClean);
+                    const formData = new FormData(formCash);
+                    formData.set('uang_yang_diterima', uangDiterima);
                     formData.set('kembalian', kembalianClean);
-                    formData.set('total_tagihan', totalAwal); // sebelum diskon
+                    formData.set('total_tagihan', totalAwal);
                     formData.set('total_setelah_diskon', totalSesudahDiskon);
-                    formData.set('diskon_tipe', diskonPersen > 0 ? 'persen' : '');
-                    formData.set('diskon_nilai', diskonPersen);
-                    // kirim kedua nama field untuk jaga-jaga
-                    formData.set('metode_pembayaran', metodeCash?.value);
-                    formData.set('metode_pembayaran_id', metodeCash?.value);
-                    if (pasienId) formData.set('pasien_id', pasienId);
+                    formData.set('metode_pembayaran_id', metodeCash.value);
+                    formData.set('diskon_items', JSON.stringify(normalized));
 
-                    const submitBtn = this.querySelector('button[type="submit"]');
+                    const submitBtn = formCash.querySelector('button[type="submit"]');
                     if (submitBtn) {
                         submitBtn.disabled = true;
                         submitBtn.classList.add('opacity-60', 'cursor-not-allowed');
                     }
 
                     try {
-                        const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
-                        const response = await fetch(this.action, {
+                        const res = await fetch(formCash.action, {
                             method: 'POST',
                             credentials: 'same-origin',
                             headers: {
-                                'X-CSRF-TOKEN': csrf,
+                                'X-CSRF-TOKEN': csrfToken,
                                 'Accept': 'application/json'
                             },
                             body: formData
                         });
-                        const data = await response.json();
+
+                        const ct = res.headers.get('Content-Type') || '';
+                        const data = ct.includes('application/json') ? await res.json() : {
+                            success: res.ok,
+                            message: res.ok ? 'OK' : 'Gagal'
+                        };
+
                         if (data.success) {
+                            closeModal(modalCash);
                             await Swal.fire({
                                 icon: 'success',
-                                title: 'Berhasil!',
-                                text: data.message || 'Pembayaran berhasil.'
+                                title: 'Pembayaran berhasil',
+                                text: data.message || 'Pembayaran cash berhasil diproses.'
                             });
                             window.location.href = "{{ route('kasir.pembayaran') }}";
                         } else {
+                            const msg = getFirstErrorMessage(data) || 'Gagal memproses pembayaran.';
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Gagal',
-                                text: data.message || 'Gagal memproses pembayaran.'
+                                text: msg
                             });
                         }
                     } catch (err) {
-                        console.error('Fetch error:', err);
+                        console.error(err);
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
                             text: 'Tidak dapat terhubung ke server.'
                         });
                     } finally {
-                        const submitBtn = this.querySelector('button[type="submit"]');
                         if (submitBtn) {
                             submitBtn.disabled = false;
                             submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
@@ -594,110 +1120,116 @@
                 });
             }
 
-            // === SUBMIT TRANSFER ===
-            const formPembayaranTransfer = document.getElementById('formPembayaranTransfer');
-            if (formPembayaranTransfer) {
-                formPembayaranTransfer.addEventListener('submit', async function(e) {
+            const formTransfer = document.getElementById('formPembayaranTransfer');
+            if (formTransfer) {
+                formTransfer.addEventListener('submit', async function(e) {
                     e.preventDefault();
 
-                    const metodeInput = document.getElementById('metode-pembayaran-transfer');
-                    const formData = new FormData(this);
-                    if (metodeInput) {
-                        // kirim dua field sekaligus untuk fleksibilitas backend
-                        formData.set('metode_pembayaran_id', metodeInput.value);
-                        formData.set('metode_pembayaran', metodeInput.value);
+                    const metodeTransfer = document.getElementById('metode-pembayaran-transfer');
+                    const selectedStatus = await fetchApprovalStatus();
+                    const normalized = getCurrentNormalizedDiskonItems();
+
+                    if (selectedStatus === 'pending') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Masih menunggu approval',
+                            text: 'Diskon item sedang menunggu approval manager.'
+                        });
+                        return;
                     }
 
-                    const totalSesudahDiskon = parseFloat(totalSetelahDiskonHidden?.value || totalAwal) || 0;
-                    const diskonPersen = parseFloat(diskonInput?.value) || 0;
-
-                    formData.set('total_tagihan', totalAwal);
-                    formData.set('total_setelah_diskon', totalSesudahDiskon);
-                    formData.set('diskon_tipe', diskonPersen > 0 ? 'persen' : '');
-                    formData.set('diskon_nilai', diskonPersen);
-
-                    // === FIX UNTUK FILE ===
-                    const fileInput = document.getElementById('upload');
-                    if (fileInput && fileInput.files.length > 0) {
-                        formData.set('bukti_pembayaran', fileInput.files[0]);
+                    if (normalized.length > 0 && selectedStatus !== 'approved') {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Diskon belum disetujui',
+                            text: 'Ada diskon item yang belum disetujui manager.'
+                        });
+                        return;
                     }
 
-                    // === VALIDASI FILE ===
+                    if (selectedStatus === 'approved') {
+                        const currentStr = JSON.stringify(normalized);
+                        if (currentStr !== approvalSnapshotStr) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Data diskon berubah',
+                                text: 'Data diskon tidak sesuai approval. Silakan refresh halaman.'
+                            });
+                            return;
+                        }
+                    }
+
+                    if (!metodeTransfer?.value) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: 'Metode belum dipilih',
+                            text: 'Pilih metode pembayaran dulu.'
+                        });
+                        return;
+                    }
+
+                    const formData = new FormData(formTransfer);
+                    formData.set('metode_pembayaran_id', metodeTransfer.value);
+                    formData.set('total_setelah_diskon', totalSetelahDiskonHidden?.value || totalAwal);
+                    formData.set('diskon_items', JSON.stringify(normalized));
+
                     const bukti = formData.get('bukti_pembayaran');
                     if (!(bukti instanceof File) || bukti.size === 0) {
                         Swal.fire({
                             icon: 'warning',
-                            title: 'Bukti Transfer Belum Diupload',
-                            text: 'Silakan unggah bukti pembayaran sebelum mengirim.'
-                        });
-                        return;
-                    }
-                    if (bukti.type && !bukti.type.startsWith('image/')) {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Format tidak didukung',
-                            text: 'File harus berupa gambar.'
-                        });
-                        return;
-                    }
-                    const MAX_MB = 5;
-                    if (bukti.size > MAX_MB * 1024 * 1024) {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'File terlalu besar',
-                            text: `Maksimal ukuran ${MAX_MB} MB.`
+                            title: 'Bukti transfer belum dipilih',
+                            text: 'Silakan upload bukti transfer.'
                         });
                         return;
                     }
 
-                    const submitBtn = this.querySelector('button[type="submit"]');
+                    const submitBtn = formTransfer.querySelector('button[type="submit"]');
                     if (submitBtn) {
                         submitBtn.disabled = true;
                         submitBtn.classList.add('opacity-60', 'cursor-not-allowed');
                     }
 
                     try {
-                        const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
-                        const response = await fetch(this.action, {
+                        const res = await fetch(formTransfer.action, {
                             method: 'POST',
                             credentials: 'same-origin',
                             headers: {
-                                'X-CSRF-TOKEN': csrf,
+                                'X-CSRF-TOKEN': csrfToken,
                                 'Accept': 'application/json'
                             },
                             body: formData
                         });
 
-                        let data = null;
-                        const ct = response.headers.get('Content-Type') || '';
-                        data = ct.includes('application/json') ? await response.json() : {
-                            success: response.ok,
-                            message: response.ok ? 'OK' : 'Gagal'
+                        const ct = res.headers.get('Content-Type') || '';
+                        const data = ct.includes('application/json') ? await res.json() : {
+                            success: res.ok,
+                            message: res.ok ? 'OK' : 'Gagal'
                         };
 
-                        if (data && data.success) {
+                        if (data.success) {
+                            closeModal(modalTransfer);
                             await Swal.fire({
                                 icon: 'success',
-                                title: 'Berhasil!',
-                                text: data.message || 'Bukti transfer terkirim.'
+                                title: 'Bukti terkirim',
+                                text: data.message || 'Bukti transfer berhasil dikirim.'
                             });
                             window.location.href = "{{ route('kasir.pembayaran') }}";
                         } else {
+                            const msg = getFirstErrorMessage(data) || 'Gagal mengirim bukti.';
                             Swal.fire({
                                 icon: 'error',
                                 title: 'Gagal',
-                                text: (data && data.message) || 'Gagal mengirim data.'
+                                text: msg
                             });
                         }
                     } catch (err) {
-                        console.error('Fetch error:', err);
+                        console.error(err);
                         Swal.fire({
                             icon: 'error',
                             title: 'Error',
                             text: 'Tidak dapat terhubung ke server.'
                         });
                     } finally {
-                        const submitBtn = this.querySelector('button[type="submit"]');
                         if (submitBtn) {
                             submitBtn.disabled = false;
                             submitBtn.classList.remove('opacity-60', 'cursor-not-allowed');
@@ -705,8 +1237,22 @@
                     }
                 });
             }
+
+            applyApprovalState(window.__SERVER_APPROVAL_STATUS__, window.__SERVER_APPROVAL_ITEMS__ || []);
+            recalcAll(true);
+
+            setTimeout(() => {
+                fetchApprovalStatus();
+            }, 300);
+
+            setInterval(async () => {
+                if (approvalStatus === 'pending') {
+                    await fetchApprovalStatus();
+                }
+            }, 3000);
         });
     </script>
+
 </body>
 
 </html>

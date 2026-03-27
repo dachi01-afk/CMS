@@ -19,12 +19,6 @@
         </div>
 
         <div class="flex items-center gap-2 md:gap-3">
-            <button type="button"
-                class="hidden md:inline-flex items-center gap-2 px-3 py-2 text-xs md:text-sm rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-600">
-                <i class="fa-regular fa-circle-question text-sm"></i>
-                <span>Panduan Manajemen Farmasi</span>
-            </button>
-
             <button id="btnAddApoteker" type="button"
                 class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl shadow-md
                        bg-gradient-to-r from-sky-500 to-emerald-600 hover:from-sky-600 hover:to-emerald-700
@@ -63,7 +57,7 @@
                         <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs"></i>
                     </span>
                     <input type="text" id="apoteker_searchInput"
-                        class="block w-full md:w-80 pl-9 pr-3 py-2 text-sm text-slate-800 dark:text-slate-100
+                        class="placeholder:text-slate-400 block w-full md:w-80 pl-9 pr-3 py-2 text-sm text-slate-800 dark:text-slate-100
                                border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700
                                focus:ring-sky-500 focus:border-sky-500"
                         placeholder="Cari nama, email, username, atau no HP...">

@@ -1,11 +1,9 @@
 <section class="space-y-5">
 
-    {{-- ============== HEADER ============== --}}
     <div
         class="flex flex-col md:flex-row md:items-center md:justify-between gap-3
                bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700
                rounded-2xl px-4 md:px-6 py-4 shadow-sm">
-
         <div class="flex items-start gap-3">
             <div
                 class="mt-1 flex h-10 w-10 items-center justify-center rounded-xl
@@ -17,30 +15,27 @@
                     Transaksi Layanan
                 </h2>
                 <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                    Rekap transaksi layanan klinik, termasuk kategori, metode pembayaran, status, dan bukti pembayaran.
+                    Rekap order layanan pasien, termasuk kategori, total pembayaran, dan status transaksi.
                 </p>
             </div>
         </div>
     </div>
 
-    {{-- ============== CARD TABEL ============== --}}
     <div
         class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700
                rounded-2xl shadow-sm overflow-hidden">
 
-        {{-- Toolbar: page length + search --}}
         <div
             class="flex flex-col md:flex-row md:items-center md:justify-between gap-3
                    px-4 md:px-6 py-3 border-b border-slate-200 dark:border-slate-700">
 
-            {{-- Page length --}}
             <div class="flex items-center gap-2 text-sm">
                 <span class="text-slate-600 dark:text-slate-300 hidden sm:inline">Tampil</span>
                 <select id="transaksi-layanan-page-length"
                     class="border border-slate-300 dark:border-slate-600 text-sm rounded-lg
-                               focus:ring-sky-500 focus:border-sky-500
-                               bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100
-                               px-2 py-1 w-28">
+                           focus:ring-sky-500 focus:border-sky-500
+                           bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100
+                           px-2 py-1 w-28">
                     <option value="10">10 baris</option>
                     <option value="25">25 baris</option>
                     <option value="50">50 baris</option>
@@ -49,7 +44,6 @@
                 <span class="text-slate-600 dark:text-slate-300 hidden sm:inline">per halaman</span>
             </div>
 
-            {{-- Search --}}
             <div class="w-full md:w-auto">
                 <div class="relative">
                     <span class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
@@ -69,10 +63,9 @@
             </div>
         </div>
 
-        {{-- Tabel (dibungkus overflow-x-auto supaya bisa scroll kanan-kiri) --}}
         <div class="overflow-x-auto">
             <table id="transaksiLayananTable"
-                class="w-full min-w-[1500px] text-sm text-left text-slate-700 dark:text-slate-100
+                class="w-full min-w-[1600px] text-sm text-left text-slate-700 dark:text-slate-100
                           border-t border-slate-100 dark:border-slate-700">
                 <thead
                     class="text-[11px] md:text-xs font-semibold uppercase
@@ -84,22 +77,22 @@
                         <th class="px-4 md:px-6 py-3 whitespace-nowrap">Nama Layanan</th>
                         <th class="px-4 md:px-6 py-3 whitespace-nowrap">Kategori Layanan</th>
                         <th class="px-4 md:px-6 py-3">Jumlah</th>
-                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Total Tagihan</th>
+                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Subtotal</th>
+                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Potongan</th>
+                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Total Bayar</th>
                         <th class="px-4 md:px-6 py-3 whitespace-nowrap">Metode Pembayaran</th>
                         <th class="px-4 md:px-6 py-3 whitespace-nowrap">Kode Transaksi</th>
-                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Tanggal Transaksi</th>
+                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Tanggal Order</th>
+                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Tanggal Pembayaran</th>
                         <th class="px-4 md:px-6 py-3">Status</th>
                         <th class="px-4 md:px-6 py-3 whitespace-nowrap">Bukti Pembayaran</th>
                         <th class="px-4 md:px-6 py-3 text-center whitespace-nowrap">Aksi</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-slate-100 dark:divide-slate-700">
-                    {{-- Diisi via DataTables --}}
-                </tbody>
+                <tbody class="divide-y divide-slate-100 dark:divide-slate-700"></tbody>
             </table>
         </div>
 
-        {{-- Info + pagination custom --}}
         <div
             class="flex flex-col md:flex-row md:items-center md:justify-between gap-3
                    px-4 md:px-6 py-3 border-t border-slate-200 dark:border-slate-700
@@ -111,10 +104,6 @@
             </ul>
         </div>
     </div>
-
-    <script>
-        window.transaksiLayananDataUrl = "{{ route('kasir.get.data.transaksi.layanan') }}";
-    </script>
 
 </section>
 

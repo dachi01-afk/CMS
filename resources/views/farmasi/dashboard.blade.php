@@ -383,5 +383,5 @@
         </div>
     </div>
 
-    @vite(['resources/js/farmasi/dashboard.js'])
 </x-mycomponents.layout>
+@vite(['resources/js/farmasi/dashboard.js'])

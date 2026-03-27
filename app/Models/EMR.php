@@ -2,6 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Dokter;
+use App\Models\Kunjungan;
+use App\Models\Pasien;
+use App\Models\Pembayaran;
+use App\Models\Perawat;
+use App\Models\Poli;
+use App\Models\Resep;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class EMR extends Model
@@ -57,5 +65,12 @@ class EMR extends Model
     public function scopeFilterByPerawat($query, $perawatId)
     {
         return $query->where('perawat_id', $perawatId);
+    }
+
+    public function scopeHariIni(Builder $query, $tanggal = null)
+    {
+        $tanggal = $tanggal ?? now()->toDateString();
+
+        return $query->whereDate('created_at', $tanggal);
     }
 }

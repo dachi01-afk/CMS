@@ -316,8 +316,8 @@ class ManajemenPenggunaController extends Controller
 
         $query = Perawat::with([
             'user',
-            'perawatDokterPoli.dokter',
-            'perawatDokterPoli.poli',
+            'perawatDokterPoli.dokterPoli.dokter',
+            'perawatDokterPoli.dokterPoli.poli',
         ])
             ->select('perawat.*')
             ->latest();
@@ -360,7 +360,7 @@ class ManajemenPenggunaController extends Controller
             ->addColumn('nama_poli', function (Perawat $row) {
                 $items = $row->perawatDokterPoli
                     ->filter(function ($rel) {
-                        return !empty($rel->poli?->nama_poli);
+                        return !empty($rel->dokterPoli->poli->nama_poli);
                     })
                     ->values();
 
@@ -369,7 +369,7 @@ class ManajemenPenggunaController extends Controller
                 }
 
                 $html = $items->map(function ($rel, $idx) {
-                    $nama = $rel->poli->nama_poli ?? 'Tanpa nama poli';
+                    $nama = $rel->dokterPoli->poli->nama_poli ?? 'Tanpa nama poli';
 
                     return '
                     <div class="flex items-start gap-1 mb-0.5">
@@ -389,7 +389,7 @@ class ManajemenPenggunaController extends Controller
             ->addColumn('nama_dokter', function (Perawat $row) {
                 $items = $row->perawatDokterPoli
                     ->filter(function ($rel) {
-                        return !empty($rel->dokter?->nama_dokter);
+                        return !empty($rel->dokterPoli->dokter->nama_dokter);
                     })
                     ->values();
 
@@ -398,7 +398,7 @@ class ManajemenPenggunaController extends Controller
                 }
 
                 $html = $items->map(function ($rel, $idx) {
-                    $nama = $rel->dokter->nama_dokter ?? 'Tanpa nama dokter';
+                    $nama = $rel->dokterPoli->dokter->nama_dokter ?? 'Tanpa nama dokter';
 
                     return '
                     <div class="flex items-start gap-1 mb-0.5">

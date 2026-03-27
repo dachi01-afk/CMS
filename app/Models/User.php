@@ -27,7 +27,7 @@ class User extends Authenticatable
         ];
     }
 
-    protected $guarded = []; 
+    protected $guarded = [];
 
     public function dokter()
     {
@@ -57,5 +57,24 @@ class User extends Authenticatable
     public function kasir()
     {
         return $this->hasOne(Kasir::class);
+    }
+
+    public function perawat()
+    {
+        return $this->hasOne(Perawat::class);
+    }
+
+    public function getNamaRoleAttribute()
+    {
+        return match ($this->role) {
+            'Super Admin' => $this->superAdmin?->nama_super_admin ?? '-',
+            'Admin' => $this->admin?->nama_admin ?? '-',
+            'Dokter' => $this->dokter?->nama_dokter ?? '-',
+            'Pasien' => $this->pasien?->nama_pasien ?? '-',
+            'Farmasi' => $this->farmasi?->nama_farmasi ?? '-',
+            'Perawat' => $this->perawat?->nama_perawat ?? '-',
+            'Kasir' => $this->kasir?->nama_kasir ?? '-',
+            default => $this->name ?? '-',
+        };
     }
 }

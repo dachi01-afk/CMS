@@ -2,6 +2,10 @@
 
 namespace App\Models;
 
+use App\Models\Dokter;
+use App\Models\DokterPoli;
+use App\Models\Perawat;
+use App\Models\Poli;
 use Illuminate\Database\Eloquent\Model;
 
 class PerawatDokterPoli extends Model
