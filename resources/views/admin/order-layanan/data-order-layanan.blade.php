@@ -1,5 +1,3 @@
-<!-- resources/views/kasir/order-layanan/order-layanan.blade.php -->
-
 <section class="space-y-5">
 
     <!-- ================= HEADER + CTA ================= -->
@@ -80,13 +78,10 @@
                         <th class="px-4 md:px-6 py-3">No</th>
                         <th class="px-4 md:px-6 py-3">Kode Transaksi</th>
                         <th class="px-4 md:px-6 py-3">Nama Pasien</th>
-                        <th class="px-4 md:px-6 py-3">Layanan</th>
-                        <th class="px-4 md:px-6 py-3">Kategori</th>
-                        <th class="px-4 md:px-6 py-3">Jumlah</th>
                         <th class="px-4 md:px-6 py-3">Total Tagihan</th>
                         <th class="px-4 md:px-6 py-3">Status</th>
-                        <th class="px-4 md:px-6 py-3">Tanggal</th>
-                        <th class="px-4 md:px-6 py-3 text-center">Aksi</th>
+                        <th class="px-4 md:px-6 py-3">Tanggal Order</th>
+                        <th class="px-4 md:px-6 py-3">Aksi</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700"></tbody>
@@ -742,6 +737,173 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</div>
+
+<div id="modal-detail-order-layanan"
+    class="hidden fixed inset-0 z-50 flex items-start md:items-center justify-center 
+           w-full h-full p-4 md:p-6 bg-slate-900/60 backdrop-blur-sm overflow-y-auto overflow-x-auto">
+
+    <div class="relative w-full max-w-6xl">
+        <div
+            class="bg-white rounded-2xl shadow-2xl border border-slate-200
+                   flex flex-col max-h-[90vh] overflow-y-auto overflow-x-hidden">
+
+            <!-- Header -->
+            <div
+                class="bg-gradient-to-r from-sky-500 to-teal-600 px-5 md:px-6 pt-4 pb-3 flex items-start justify-between gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="h-9 w-9 rounded-xl bg-white/20 flex items-center justify-center shadow-md text-white">
+                        <i class="fa-solid fa-file-medical text-sm"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base md:text-lg font-semibold text-white">Detail Order Layanan</h3>
+                        <p class="text-[11px] text-sky-50/90 mt-0.5">
+                            Informasi order, pembayaran, dan daftar layanan pasien.
+                        </p>
+                    </div>
+                </div>
+
+                <button type="button" id="buttonCloseModalDetailOrderLayanan"
+                    class="inline-flex items-center justify-center h-8 w-8 rounded-full text-slate-100 hover:text-white hover:bg-white/10 transition">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-4 md:p-6 space-y-6">
+
+                <!-- Info utama -->
+                <div class="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                    <!-- Informasi Order -->
+                    <div class="xl:col-span-2 rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <h4 class="text-sm font-semibold text-slate-700">Informasi Order</h4>
+                            <span id="detail-status-order-layanan"
+                                class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold bg-slate-100 text-slate-700">
+                                -
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                            <div>
+                                <p class="text-slate-500 text-xs mb-1">Kode Transaksi</p>
+                                <p id="detail-kode-transaksi" class="font-semibold text-slate-800">-</p>
+                            </div>
+                            <div>
+                                <p class="text-slate-500 text-xs mb-1">Tanggal Order</p>
+                                <p id="detail-tanggal-order" class="font-semibold text-slate-800">-</p>
+                            </div>
+                            <div>
+                                <p class="text-slate-500 text-xs mb-1">Pasien</p>
+                                <p id="detail-pasien" class="font-semibold text-slate-800">-</p>
+                            </div>
+                            <div>
+                                <p class="text-slate-500 text-xs mb-1">Metode Pembayaran</p>
+                                <p id="detail-metode-pembayaran" class="font-semibold text-slate-800">-</p>
+                            </div>
+                            <div>
+                                <p class="text-slate-500 text-xs mb-1">Tanggal Pembayaran</p>
+                                <p id="detail-tanggal-pembayaran" class="font-semibold text-slate-800">-</p>
+                            </div>
+                            <div>
+                                <p class="text-slate-500 text-xs mb-1">Bukti Pembayaran</p>
+                                <p id="detail-label-bukti-pembayaran" class="font-semibold text-slate-800">-</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Ringkasan pembayaran -->
+                    <div class="rounded-2xl border border-slate-200 bg-white p-4">
+                        <h4 class="text-sm font-semibold text-slate-700 mb-4">Ringkasan Pembayaran</h4>
+
+                        <div class="space-y-3 text-sm">
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-slate-500">Subtotal</span>
+                                <span id="detail-subtotal" class="font-semibold text-slate-800">Rp 0</span>
+                            </div>
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-slate-500">Diskon</span>
+                                <span id="detail-diskon" class="font-semibold text-slate-800">Rp 0</span>
+                            </div>
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-slate-500">Potongan Pesanan</span>
+                                <span id="detail-potongan-pesanan" class="font-semibold text-slate-800">Rp 0</span>
+                            </div>
+                            <div
+                                class="flex items-center justify-between gap-3 border-t border-dashed border-slate-200 pt-3">
+                                <span class="text-slate-600 font-medium">Total Bayar</span>
+                                <span id="detail-total-bayar" class="font-bold text-teal-600">Rp 0</span>
+                            </div>
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-slate-500">Uang Diterima</span>
+                                <span id="detail-uang-diterima" class="font-semibold text-slate-800">Rp 0</span>
+                            </div>
+                            <div class="flex items-center justify-between gap-3">
+                                <span class="text-slate-500">Kembalian</span>
+                                <span id="detail-kembalian" class="font-semibold text-slate-800">Rp 0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bukti pembayaran -->
+                <div id="wrapper-detail-bukti-pembayaran"
+                    class="hidden rounded-2xl border border-slate-200 bg-white p-4">
+                    <div class="flex items-center justify-between gap-3 mb-4">
+                        <h4 class="text-sm font-semibold text-slate-700">Preview Bukti Pembayaran</h4>
+                        <a id="link-detail-bukti-pembayaran" href="#" target="_blank"
+                            class="inline-flex items-center gap-2 rounded-xl bg-sky-50 px-3 py-2 text-xs font-medium text-sky-700 hover:bg-sky-100 transition">
+                            <i class="fa-solid fa-up-right-from-square"></i>
+                            Lihat File
+                        </a>
+                    </div>
+
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                        <img id="img-detail-bukti-pembayaran" src="" alt="Bukti Pembayaran"
+                            class="max-h-[400px] w-auto mx-auto rounded-xl object-contain">
+                    </div>
+                </div>
+
+                <!-- Tabel detail layanan -->
+                <div class="rounded-2xl border border-slate-200 bg-white overflow-hidden">
+                    <div class="px-4 py-3 border-b border-slate-200 bg-slate-50">
+                        <h4 class="text-sm font-semibold text-slate-700">Daftar Layanan</h4>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-slate-100 text-slate-700">
+                                <tr>
+                                    <th class="px-4 py-3 text-left font-semibold">No</th>
+                                    <th class="px-4 py-3 text-left font-semibold">Layanan</th>
+                                    <th class="px-4 py-3 text-center font-semibold">Qty</th>
+                                    <th class="px-4 py-3 text-right font-semibold">Harga Satuan</th>
+                                    <th class="px-4 py-3 text-right font-semibold">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detail-order-layanan-items" class="divide-y divide-slate-100">
+                                <tr>
+                                    <td colspan="5" class="px-4 py-6 text-center text-slate-500">
+                                        Belum ada data detail layanan.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" id="buttonTutupModalDetailOrderLayanan"
+                        class="inline-flex items-center gap-2 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 transition">
+                        <i class="fa-solid fa-xmark"></i>
+                        Tutup
+                    </button>
+                </div>
+
+            </div>
         </div>
     </div>
 </div>

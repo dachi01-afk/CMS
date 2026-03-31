@@ -67,6 +67,8 @@ use App\Http\Controllers\Perawat\PerawatController;
 use App\Http\Controllers\Perawat\RiwayatPemeriksaanController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QrCodeController;
+use App\Http\Controllers\SuperAdmin\ApproveDiskonOrderLayananController;
+use App\Http\Controllers\SuperAdmin\ApproveDiskonOrderLayananManagerController;
 use App\Http\Controllers\SuperAdmin\ApproveDiskonPenjualanObatManagerController;
 use App\Http\Controllers\SuperAdmin\DiskonApprovalManagerController;
 use App\Http\Controllers\SuperAdmin\PasienHariIniController;
@@ -333,6 +335,9 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::prefix('/order-layanan')->group(function () {
         Route::get('/', [OrderLayananController::class, 'index'])->name('order.layanan.index');
         Route::get('/get-data-order-layanan', [OrderLayananController::class, 'getDataOrderLayanan'])->name('order.layanan.get.data.order.layanan');
+
+        Route::get('/get-data-detail/{kodeTransaksi}', [OrderLayananController::class, 'getDetailOrderLayanan'])->name('get.data.detail.order.layanan');
+
         Route::get('/get-data-pasien', [OrderLayananController::class, 'searchPasien'])->name('order.layanan.get.data.pasien');
         Route::get('/get-data-poli', [OrderLayananController::class, 'getDataPoli'])->name('order.layanan.get.data.poli');
         Route::get('/get-data-jadwal-dokter-hari-ini', [OrderLayananController::class, 'getJadwalDokterHariIni'])->name('order.layanan.get.data.jadwal.dokter.hari.ini');
@@ -393,6 +398,7 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
 
             Route::post('/pesan-obat', [OrderObatController::class, 'pesanObat'])->name('obat.pesan.obat');
             Route::get('/order/{id}', [OrderObatController::class, 'show']);
+            Route::get('/get-data-detail-order-obat/{kodeTransaksi}', [OrderObatController::class, 'getDataDetailOrderObat'])->name('get.data.detail.order.obat');
             Route::put('/order/{id}', [OrderObatController::class, 'update']);
             Route::delete('/order/{id}', [OrderObatController::class, 'destroy']);
         });
@@ -662,27 +668,36 @@ Route::middleware(['auth', 'role:Kasir'])->group(function () {
         Route::post('/pembayaran-transfer-transaksi-obat', [TransaksiObatController::class, 'transaksiTransfer'])->name('kasir.transaksi.obat.transfer');
 
         // Route Untuk Riwayat Transaksi Obat
-        Route::get('/get-data-riwayat-transaksi-obat', [PenjualanObatController::class, 'getDataRiwayatTransaksiObat'])->name('get.data.riwayat.transaksi.obat');
-        Route::get('/');
+        Route::prefix('riwayat-transaksi-obat')->group(function () {
+            Route::get('/get-data', [TransaksiObatController::class, 'getDataRiwayatTransaksiObat'])->name('get.data.riwayat.transaksi.obat');
+            Route::get('/kwitansi-transaksi-obat/{kodeTransaksi}', [TransaksiObatController::class, 'kwitansiTransaksiObat'])->name('get.show.kwitansi.transaksi.obat');
+        });
 
         // Riwayat Transaksi
         Route::get('/riwayat-transaksi', [RiwayatTransaksiController::class, 'index'])->name('kasir.riwayat.transaksi');
         Route::get('/get-data-riwayat-pembayaran', [KasirController::class, 'getDataRiwayatPembayaran'])->name('get.data.riwayat.pembayaran');
 
         // Transaksi Layanan
-        Route::get('/get-data-transaksi-layanan', [TransaksiLayananController::class, 'getDataTransaksiLayanan'])->name('kasir.get.data.transaksi.layanan');
-
-        Route::get('/transaksi-layanan/{kodeTransaksi}/detail', [TransaksiLayananController::class, 'showDetailTransaksiLayanan'])->name('kasir.show.detail.transaksi.layanan');
+        Route::prefix('transaksi-layanan')->group(function () {
+            Route::get('/get-data', [TransaksiLayananController::class, 'getDataTransaksiLayanan'])->name('kasir.get.data.transaksi.layanan');
+            Route::get('/detail-orderan/{kodeTransaksi}', [TransaksiLayananController::class, 'detailTransaksiLayanan'])->name('kasir.detail.orderan.transaksi.layanan');
+            Route::post('/pembayaran/cash', [TransaksiLayananController::class, 'pembayaranLayananCash'])->name('kasir.pembayaran.cash.layanan');
+            Route::post('/pembayaran/transfer', [TransaksiLayananController::class, 'pembayaranLayananTransfer'])->name('kasir.pembayaran.transfer.layanan');
+            Route::post('/pembayaran/{orderLayanan}/diskon/request', [ApproveDiskonOrderLayananController::class, 'requestApproval'])->name('kasir.request.diskon.order.layanan');
+            Route::get('/pembayaran/{orderLayanan}/diskon/status', [ApproveDiskonOrderLayananController::class, 'status'])->name('kasir.status.diskon.order.layanan');
+        });
 
         Route::get('/transaksi-layanan/{kodeTransaksi}/proses', [TransaksiLayananController::class, 'prosesPembayaranLayanan'])->name('kasir.proses.pembayaran.layanan');
 
-        Route::post('/transaksi-layanan/pembayaran/cash', [TransaksiLayananController::class, 'pembayaranLayananCash'])->name('kasir.layanan.pembayaran.cash');
 
-        Route::post('/transaksi-layanan/pembayaran/transfer', [TransaksiLayananController::class, 'pembayaranLayananTransfer'])->name('kasir.layanan.pembayaran.transfer');
+        Route::prefix('riwayat-transaksi-layanan')->group(function () {
+            Route::get('/get-data', [TransaksiLayananController::class, 'getDataRiwayatTransaksiLayanan'])->name('kasir.get.data.riwaya.transaksi.layanan');
+            Route::get('/kwitansi-transaksi-layanan/{kodeTransaksi}', [TransaksiLayananController::class, 'kwitansiTransaksiLayanan'])->name('kasir.show.kwitansi.transaksi.layanan');
+        });
 
-        Route::get('/riwayat-transaksi-layanan', [TransaksiLayananController::class, 'getDataRiwayatTransaksiLayanan'])->name('kasir.get.data.riwayat.transaksi.layanan');
+        // Route::get('/riwayat-transaksi-layanan', [TransaksiLayananController::class, 'getDataRiwayatTransaksiLayanan'])->name('kasir.get.data.riwayat.transaksi.layanan');
 
-        Route::get('/kwitansi-transaksi-layanan/{kodeTransaksi}', [TransaksiLayananController::class, 'kwitansiTransaksiLayanan'])->name('kasir.show.kwitansi.transaksi.layanan');
+
 
         // Route::get('/show-detail-transaksi-layanan/{kodeTransaksi}', [TransaksiLayananCofntroller::class, 'showDetailTransaksiLayanan'])->name('kasir.show.detail.transaksi.layanan');
 
@@ -833,6 +848,16 @@ Route::middleware(['auth', 'superAdmin'])->prefix('super-admin')->group(function
 
     Route::get('/transaksi/insight', [TransaksiInsightController::class, 'index'])->name('super.admin.transaksi.insight.index');
     Route::get('/transaksi/insight/{id}', [TransaksiInsightController::class, 'show'])->name('super.admin.transaksi.insight.show');
+
+    Route::prefix('approve-diskon-order-layanan')->group(function () {
+        Route::get('/', [ApproveDiskonOrderLayananManagerController::class, 'index'])->name('super.admin.approve.diskon.order.layanan.index');
+        Route::get('/get-data-belum-approve', [ApproveDiskonOrderLayananManagerController::class, 'getDataBelumApprove'])->name('super.admin.get.data.diskon.order.layanan.belum.approve');
+        Route::get('/get-data-sudah-approve', [ApproveDiskonOrderLayananManagerController::class, 'getDataSudahApprove'])->name('super.admin.get.data.diskon.order.layanan.sudah.approve');
+        Route::get('/get-data-detail/{approval}', [ApproveDiskonOrderLayananManagerController::class, 'getDetailDiskonOrderLayanan'])->name('super.admin.get.data.detail.diskon.order.layanan.belum.approve');
+
+        Route::post('/approve/{approval}', [ApproveDiskonOrderLayananManagerController::class, 'approve'])->name('super.admin.approve.diskon.order.layanan');
+        Route::post('/reject/{approval}', [ApproveDiskonOrderLayananManagerController::class, 'reject'])->name('super.admin.reject.diskon.order.layanan');
+    });
 });
 
 Route::get('/login-dokter', [AuthController::class, 'login'])->name('login.dokter');

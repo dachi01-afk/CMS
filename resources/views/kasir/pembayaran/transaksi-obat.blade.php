@@ -99,5 +99,5 @@
         </div>
     </div>
 
-    @vite(['resources/js/kasir/pembayaran/transaksi-obat.js'])
 </section>
+@vite(['resources/js/kasir/pembayaran/transaksi-obat.js'])

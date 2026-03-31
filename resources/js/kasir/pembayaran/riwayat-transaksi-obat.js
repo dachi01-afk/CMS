@@ -2,7 +2,7 @@ import axios from "axios";
 import $ from "jquery";
 
 $(function () {
-    var table = $("#riwayatTransaksiObatTable").DataTable({
+    const table = $("#riwayatTransaksiObatTable").DataTable({
         processing: true,
         responsive: true,
         serverSide: true,
@@ -12,7 +12,7 @@ $(function () {
         pageLength: 10,
         lengthChange: false,
         info: false,
-        ajax: "/kasir/get-data-riwayat-transaksi-obat",
+        ajax: "/kasir/riwayat-transaksi-obat/get-data",
         columns: [
             {
                 data: "DT_RowIndex",
@@ -21,44 +21,38 @@ $(function () {
                 searchable: false,
             },
 
+            { data: "kode_transaksi", name: "kode_transaksi" },
+            { data: "nama_pasien", name: "nama_pasien" },
+            { data: "tanggal_pembayaran", name: "tanggal_pembayaran" },
             {
-                data: "nama_pasien",
-                name: "nama_pasien",
-            },
-
-            {
-                data: "nama_obat",
-                name: "nama_obat",
-            },
-
-            {
-                data: "dosis",
-                name: "dosis",
-                render: function (data, type, row) {
-                    if (!data) return "-";
-                    return data + " mg";
-                },
-            },
-
-            {
-                data: "jumlah",
-                name: "jumlah",
+                data: "total_tagihan",
+                name: "total_tagihan",
                 render: function (data) {
                     if (!data) return "-";
-                    // Jika data sudah mengandung "capsul", jangan tambah lagi
-                    if (/\bcapsul\b/i.test(data)) return data;
-                    // Kalau backend kirim "2, 1", ubah jadi "2 capsul, 1 capsul"
-                    return data
-                        .toString()
-                        .split(",")
-                        .map((s) => `${s.trim()} capsul`)
-                        .join(", ");
+                    const n = Number(data) || 0;
+                    return n.toLocaleString("id-ID", {
+                        style: "currency",
+                        currency: "IDR",
+                        minimumFractionDigits: 0,
+                    });
                 },
             },
-
             {
-                data: "sub_total",
-                name: "sub_total",
+                data: "diskon_nilai",
+                name: "diskon_nilai",
+                render: function (data) {
+                    if (!data) return "-";
+                    const n = Number(data) || 0;
+                    return n.toLocaleString("id-ID", {
+                        style: "currency",
+                        currency: "IDR",
+                        minimumFractionDigits: 0,
+                    });
+                },
+            },
+            {
+                data: "total_setelah_diskon",
+                name: "total_setelah_diskon",
                 render: function (data) {
                     if (!data) return;
                     const formatRupiah = Number(data).toLocaleString("id-ID", {
@@ -73,30 +67,6 @@ $(function () {
             {
                 data: "metode_pembayaran",
                 name: "metode_pembayaran",
-            },
-
-            {
-                data: "kode_transaksi",
-                name: "kode_transaksi",
-            },
-
-            {
-                data: "tanggal_transaksi",
-                name: "tanggal_transaksi",
-                render: function (data) {
-                    if (!data) return "-";
-                    const date = new Date(data);
-                    const waktuIndonesia = date.toLocaleString("id-ID", {
-                        timeZone: "Asia/Jakarta",
-                        day: "2-digit",
-                        month: "long",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                    });
-
-                    return waktuIndonesia;
-                },
             },
 
             {
@@ -123,7 +93,7 @@ $(function () {
         dom: "t",
         rowCallback: function (row, data) {
             $(row).addClass(
-                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600",
             );
             $("td", row).addClass("px-6 py-4 text-gray-900 dark:text-white");
         },

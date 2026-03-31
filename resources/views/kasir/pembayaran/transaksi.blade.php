@@ -492,8 +492,7 @@
                             </label>
 
                             <div class="relative">
-                                <i
-                                    class="fa-solid fa-credit-card absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                <i class="fa-solid fa-credit-card absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                                 <select id="pilih-metode-pembayaran"
                                     class="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm font-semibold text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
                                     @foreach ($dataMetodePembayaran as $metodePembayaran)

@@ -1,6 +1,6 @@
 import axios from "axios";
 import { Modal } from "flowbite";
-import $ from "jquery";
+import $, { ajax } from "jquery";
 
 const rupiah = (angka = 0) =>
     Number(angka || 0).toLocaleString("id-ID", {
@@ -160,8 +160,6 @@ $(function () {
                         day: "2-digit",
                         month: "long",
                         year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
                     });
                 },
             },
@@ -684,6 +682,261 @@ $(function () {
                     "Terjadi kesalahan saat menyimpan data",
                 "error",
             );
+        }
+    });
+});
+
+$(function () {
+    const SELECTOR = {
+        modal: "#modal-detail-order-obat",
+        closeBtn:
+            "#btn-close-modal-detail-order-obat, #btn-tutup-modal-detail-order-obat",
+        triggerBtn: ".btn-detail-order-obat",
+        tbody: "#detail-order-obat-tbody",
+
+        kodeTransaksi: "#detail-kode-transaksi-order-obat",
+        tanggalTransaksi: "#detail-tanggal-transaksi-order-obat",
+        jumlahItem: "#detail-jumlah-item-order-obat",
+        totalTagihan: "#detail-total-tagihan-order-obat",
+        namaPasien: "#detail-nama-pasien-order-obat",
+        noRm: "#detail-no-rm-order-obat",
+        metodePembayaran: "#detail-metode-pembayaran-order-obat",
+
+        summaryTotalItem: "#summary-total-item-detail-order-obat",
+        summarySubtotal: "#summary-subtotal-detail-order-obat",
+        summaryDiskon: "#summary-diskon-detail-order-obat",
+        summaryBiayaLain: "#summary-biaya-lain-detail-order-obat",
+        summaryGrandTotal: "#summary-grand-total-detail-order-obat",
+
+        statusBadge: "#detail-status-badge",
+        statusText: "#detail-status-text",
+        createdAt: "#detail-created-at",
+        updatedAt: "#detail-updated-at",
+    };
+
+    function lockPageScroll() {
+        $("html, body").addClass("overflow-hidden");
+    }
+
+    function unlockPageScroll() {
+        $("html, body").removeClass("overflow-hidden");
+    }
+
+    function openDetailModal() {
+        $(SELECTOR.modal).removeClass("hidden").addClass("flex");
+        lockPageScroll();
+    }
+
+    function closeDetailModal() {
+        $(SELECTOR.modal).addClass("hidden").removeClass("flex");
+        unlockPageScroll();
+    }
+
+    function formatTanggal(value) {
+        if (!value) return "-";
+
+        const date = new Date(value);
+        if (isNaN(date.getTime())) return value;
+
+        return date.toLocaleString("id-ID", {
+            timeZone: "Asia/Jakarta",
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+        });
+    }
+
+    function setText(selector, value) {
+        $(selector).text(value ?? "-");
+    }
+
+    function setCurrency(selector, value) {
+        $(selector).text(rupiah(value ?? 0));
+    }
+
+    function setDetailStatusBadge(status) {
+        const badgeClasses = [
+            "bg-slate-100",
+            "text-slate-700",
+            "bg-emerald-100",
+            "text-emerald-700",
+            "bg-amber-100",
+            "text-amber-700",
+            "bg-rose-100",
+            "text-rose-700",
+        ];
+
+        const $badge = $(SELECTOR.statusBadge);
+
+        $badge.text(status || "-").removeClass(badgeClasses.join(" "));
+
+        if (status === "Sudah Bayar") {
+            $badge.addClass("bg-emerald-100 text-emerald-700");
+        } else if (status === "Belum Bayar") {
+            $badge.addClass("bg-amber-100 text-amber-700");
+        } else {
+            $badge.addClass("bg-slate-100 text-slate-700");
+        }
+
+        setText(SELECTOR.statusText, status || "-");
+    }
+
+    function renderLoadingState() {
+        const loadingText = "Loading...";
+
+        [
+            SELECTOR.kodeTransaksi,
+            SELECTOR.tanggalTransaksi,
+            SELECTOR.jumlahItem,
+            SELECTOR.totalTagihan,
+            SELECTOR.namaPasien,
+            SELECTOR.noRm,
+            SELECTOR.metodePembayaran,
+            SELECTOR.summaryTotalItem,
+            SELECTOR.summarySubtotal,
+            SELECTOR.summaryDiskon,
+            SELECTOR.summaryBiayaLain,
+            SELECTOR.summaryGrandTotal,
+            SELECTOR.statusText,
+            SELECTOR.createdAt,
+            SELECTOR.updatedAt,
+        ].forEach((selector) => setText(selector, loadingText));
+
+        $(SELECTOR.tbody).html(`
+            <tr>
+                <td colspan="7" class="px-4 py-8 text-center text-slate-500">
+                    Memuat detail order obat...
+                </td>
+            </tr>
+        `);
+    }
+
+    function renderEmptyRows(message = "Tidak ada detail obat.") {
+        $(SELECTOR.tbody).html(`
+            <tr>
+                <td colspan="7" class="px-4 py-6 text-center text-slate-500">
+                    ${message}
+                </td>
+            </tr>
+        `);
+    }
+
+    function renderDetailRows(details = []) {
+        if (!details.length) {
+            renderEmptyRows();
+            return;
+        }
+
+        const rows = details
+            .map((item, index) => {
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-4 py-3 text-slate-700">${index + 1}</td>
+                        <td class="px-4 py-3">
+                            <div class="font-medium text-slate-800">
+                                ${item.nama_obat ?? "-"}
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 text-slate-700">
+                            ${item.batch ?? "-"}
+                        </td>
+                        <td class="px-4 py-3 text-slate-700">
+                            ${item.expired_at ?? "-"}
+                        </td>
+                        <td class="px-4 py-3 text-center text-slate-700">
+                            ${item.jumlah ?? 0}
+                        </td>
+                        <td class="px-4 py-3 text-right text-slate-700">
+                            ${rupiah(item.harga_satuan ?? 0)}
+                        </td>
+                        <td class="px-4 py-3 text-right font-semibold text-slate-800">
+                            ${rupiah(item.total_setelah_diskon ?? item.sub_total ?? 0)}
+                        </td>
+                    </tr>
+                `;
+            })
+            .join("");
+
+        $(SELECTOR.tbody).html(rows);
+    }
+
+    function renderOrderData(order = {}) {
+        const totalFinal =
+            order.total_setelah_diskon ?? order.total_tagihan ?? 0;
+
+        setText(SELECTOR.kodeTransaksi, order.kode_transaksi ?? "-");
+        setText(
+            SELECTOR.tanggalTransaksi,
+            order.tanggal_transaksi_format ??
+                formatTanggal(order.tanggal_transaksi),
+        );
+        setText(SELECTOR.jumlahItem, `${order.jumlah_item ?? 0} Item`);
+        setCurrency(SELECTOR.totalTagihan, totalFinal);
+
+        setText(SELECTOR.namaPasien, order.nama_pasien ?? "-");
+        setText(SELECTOR.noRm, order.no_emr ?? "-");
+        setText(SELECTOR.metodePembayaran, order.metode_pembayaran ?? "-");
+
+        setText(SELECTOR.summaryTotalItem, `${order.jumlah_item ?? 0} Item`);
+        setCurrency(SELECTOR.summarySubtotal, order.subtotal ?? 0);
+        setCurrency(SELECTOR.summaryDiskon, order.diskon_nilai ?? 0);
+        setCurrency(SELECTOR.summaryBiayaLain, order.biaya_lain ?? 0);
+        setCurrency(SELECTOR.summaryGrandTotal, totalFinal);
+
+        setText(SELECTOR.createdAt, order.created_at ?? "-");
+        setText(SELECTOR.updatedAt, order.updated_at ?? "-");
+
+        setDetailStatusBadge(order.status ?? "-");
+    }
+
+    function fetchDetailOrder(url) {
+        $.ajax({
+            url,
+            type: "GET",
+            beforeSend: function () {
+                renderLoadingState();
+                openDetailModal();
+            },
+            success: function (response) {
+                const order = response?.dataOrderObat ?? {};
+                const details = response?.dataDetailOrderObat ?? [];
+
+                renderOrderData(order);
+                renderDetailRows(details);
+            },
+            error: function (xhr) {
+                console.error(xhr.responseText);
+                closeDetailModal();
+
+                Swal.fire(
+                    "Gagal",
+                    "Terjadi kesalahan saat mengambil detail order obat",
+                    "error",
+                );
+            },
+        });
+    }
+
+    $(document).on("click", SELECTOR.triggerBtn, function () {
+        const url = $(this).data("urlDetailOrderObat");
+        if (!url) return;
+
+        fetchDetailOrder(url);
+    });
+
+    $(SELECTOR.closeBtn).on("click", function () {
+        closeDetailModal();
+    });
+
+    $(SELECTOR.modal).on("click", function (e) {
+        if (e.target === this) {
+            closeDetailModal();
+        }
+    });
+
+    $(document).on("keydown", function (e) {
+        if (e.key === "Escape" && !$(SELECTOR.modal).hasClass("hidden")) {
+            closeDetailModal();
         }
     });
 });

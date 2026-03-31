@@ -221,38 +221,54 @@ $(function () {
                     {
                         label: "Kunjungan Aktif",
                         data: payload.kunjungan_aktif,
-                        backgroundColor: "#f59e0b",
+                        backgroundColor: "rgba(245, 158, 11, 0.85)",
                         borderColor: "#f59e0b",
                         borderWidth: 1,
                         borderRadius: 8,
                         borderSkipped: false,
-                        stack: "kunjungan",
-                        categoryPercentage: 0.72,
-                        barPercentage: 0.9,
+                        categoryPercentage: 0.68,
+                        barPercentage: 0.78,
+                        order: 2,
                     },
                     {
                         label: "Kunjungan Selesai",
                         data: payload.kunjungan_selesai,
-                        backgroundColor: "#10b981",
+                        backgroundColor: "rgba(16, 185, 129, 0.85)",
                         borderColor: "#10b981",
                         borderWidth: 1,
                         borderRadius: 8,
                         borderSkipped: false,
-                        stack: "kunjungan",
-                        categoryPercentage: 0.72,
-                        barPercentage: 0.9,
+                        categoryPercentage: 0.68,
+                        barPercentage: 0.78,
+                        order: 2,
                     },
                     {
                         label: "Kunjungan Dibatalkan",
                         data: payload.kunjungan_dibatalkan,
-                        backgroundColor: "#f43f5e",
+                        backgroundColor: "rgba(244, 63, 94, 0.85)",
                         borderColor: "#f43f5e",
                         borderWidth: 1,
                         borderRadius: 8,
                         borderSkipped: false,
-                        stack: "kunjungan",
-                        categoryPercentage: 0.72,
-                        barPercentage: 0.9,
+                        categoryPercentage: 0.68,
+                        barPercentage: 0.78,
+                        order: 2,
+                    },
+                    {
+                        type: "line",
+                        label: "Total Kunjungan",
+                        data: payload.total_kunjungan,
+                        borderColor: "#0f172a",
+                        backgroundColor: "#0f172a",
+                        borderWidth: 2,
+                        tension: 0.32,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        pointBorderWidth: 2,
+                        pointBackgroundColor: "#ffffff",
+                        pointBorderColor: "#0f172a",
+                        fill: false,
+                        order: 1,
                     },
                 ],
             },
@@ -293,18 +309,18 @@ $(function () {
                         padding: 12,
                         displayColors: true,
                         callbacks: {
-                            footer: function (tooltipItems) {
-                                const dataIndex = tooltipItems[0].dataIndex;
-                                const total =
-                                    payload.total_kunjungan[dataIndex] || 0;
-                                return "Total: " + formatNumber(total);
+                            label: function (context) {
+                                return (
+                                    context.dataset.label +
+                                    ": " +
+                                    formatNumber(context.parsed.y || 0)
+                                );
                             },
                         },
                     },
                 },
                 scales: {
                     x: {
-                        stacked: true,
                         grid: {
                             display: false,
                             drawBorder: false,
@@ -321,9 +337,8 @@ $(function () {
                         },
                     },
                     y: {
-                        stacked: true,
                         beginAtZero: true,
-                        grace: "10%",
+                        grace: "12%",
                         ticks: {
                             precision: 0,
                             color: "#64748b",
@@ -470,4 +485,3 @@ $(function () {
         }
     });
 });
-    

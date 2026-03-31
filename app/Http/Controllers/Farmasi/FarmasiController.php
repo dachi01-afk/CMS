@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Farmasi;
 use App\Http\Controllers\Controller;
 use App\Models\Farmasi;
 use App\Models\Obat;
+use App\Models\PenjualanObat;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -144,8 +145,12 @@ class FarmasiController extends Controller
         $transaksiHariIni = $this->penjualanObatJoinDetail()
             ->whereDate('po.tanggal_transaksi', $today)
             ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as total_transaksi')
-            ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.total_setelah_diskon ELSE 0 END), 0) as total_pemasukan")
+            ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN po.total_setelah_diskon ELSE 0 END), 0) as total_pemasukan")
             ->first();
+
+        $transaksiToday = PenjualanObat::whereDate('tanggal_transaksi', $today)->firstOrFail();
+
+        $totalPemasukanToday = $transaksiToday->total_setelah_diskon_rupiah;
 
         $totalKeseluruhanTransaksi = DB::table('penjualan_obat')
             ->distinct('kode_transaksi')
@@ -158,7 +163,7 @@ class FarmasiController extends Controller
                 'stok_menipis'                => (int) Obat::whereBetween('jumlah', [1, $this->batasStokMenipis])->count(),
                 'stok_habis'                  => (int) Obat::where('jumlah', '<=', 0)->count(),
                 'transaksi_hari_ini'          => (int) ($transaksiHariIni->total_transaksi ?? 0),
-                'pemasukan_hari_ini'          => (float) ($transaksiHariIni->total_pemasukan ?? 0),
+                'pemasukan_hari_ini'          => $totalPemasukanToday,
                 'total_keseluruhan_transaksi' => (int) $totalKeseluruhanTransaksi,
             ],
             'meta' => [
@@ -197,24 +202,29 @@ class FarmasiController extends Controller
 
     public function dashboardTransaksiTerbaru()
     {
-        $data = DB::table('penjualan_obat as po')
-            ->leftJoin('pasien as p', 'p.id', '=', 'po.pasien_id')
-            ->leftJoin('penjualan_obat_detail as pod', 'pod.penjualan_obat_id', '=', 'po.id')
-            ->select(
-                'po.id',
-                'po.kode_transaksi',
-                'po.tanggal_transaksi',
-                'po.status',
-                DB::raw('COALESCE(p.nama_pasien, "-") as nama_pasien'),
-                DB::raw('COALESCE(SUM(pod.total_setelah_diskon), 0) as total')
-            )
-            ->groupBy('po.id', 'po.kode_transaksi', 'po.tanggal_transaksi', 'po.status', 'p.nama_pasien')
-            ->orderByDesc('po.tanggal_transaksi')
-            ->limit(8)
-            ->get();
+        $dataTransaksiTerbaru = PenjualanObat::with([
+            'pasien',
+            'penjualanObatDetail'
+        ])->limit(8)->get();
+
+        // $data = DB::table('penjualan_obat as po')
+        //     ->leftJoin('pasien as p', 'p.id', '=', 'po.pasien_id')
+        //     ->leftJoin('penjualan_obat_detail as pod', 'pod.penjualan_obat_id', '=', 'po.id')
+        //     ->select(
+        //         'po.id',
+        //         'po.kode_transaksi',
+        //         'po.tanggal_transaksi',
+        //         'po.status',
+        //         DB::raw('COALESCE(p.nama_pasien, "-") as nama_pasien'),
+        //         DB::raw('COALESCE(SUM(po.total_setelah_diskon), 0) as total')
+        //     )
+        //     ->groupBy('po.id', 'po.kode_transaksi', 'po.tanggal_transaksi', 'po.status', 'p.nama_pasien')
+        //     ->orderByDesc('po.tanggal_transaksi')
+        //     ->limit(8)
+        //     ->get();
 
         return response()->json([
-            'data' => $data,
+            'data' => $dataTransaksiTerbaru,
         ]);
     }
 

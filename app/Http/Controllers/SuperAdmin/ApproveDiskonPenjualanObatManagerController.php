@@ -696,21 +696,20 @@ class ApproveDiskonPenjualanObatManagerController extends Controller
 
     private function resetDiskonpenjualanObat(int $penjualanObatId): void
     {
-        $details = DB::table('penjualanObat_detail')
-            ->where('penjualanObat_id', $penjualanObatId)
-            ->select('id', 'subtotal')
+        $details = DB::table('penjualan_obat_detail')
+            ->where('penjualan_obat_id', $penjualanObatId)
+            ->select('id', 'sub_total')
             ->get();
 
         $totalAwal = 0.0;
 
         foreach ($details as $detail) {
-            $subtotal = (float) ($detail->subtotal ?? 0);
+            $subtotal = (float) ($detail->sub_total ?? 0);
             $totalAwal += $subtotal;
 
-            DB::table('penjualanObat_detail')
+            DB::table('penjualan_obat_detail')
                 ->where('id', $detail->id)
                 ->update([
-                    'total_tagihan'        => $subtotal,
                     'diskon_tipe'          => null,
                     'diskon_nilai'         => 0,
                     'total_setelah_diskon' => $subtotal,
@@ -718,7 +717,7 @@ class ApproveDiskonPenjualanObatManagerController extends Controller
                 ]);
         }
 
-        DB::table('penjualanObat')
+        DB::table('penjualan_obat')
             ->where('id', $penjualanObatId)
             ->update([
                 'total_tagihan'        => $totalAwal,
@@ -729,102 +728,74 @@ class ApproveDiskonPenjualanObatManagerController extends Controller
             ]);
     }
 
+    protected function requestName($data)
+    {
+        return $data->request?->nama_role ?? '-';
+    }
+
+    protected function approveName($data)
+    {
+        return $data->approve?->nama_role ?? '-';
+    }
+
     public function getDataSudahApprove()
     {
         $this->ensureManager();
 
-        $query = ApproveDiskonPenjualanObat::query()
-            ->with([
-                'penjualanObat.pasien',
-                'penjualanObat.penjualanObatDetail',
-                'request.kasir',
-                'approve',
-            ])
-            ->where('status', 'approved')
-            ->latest('approved_at')
-            ->latest('id');
+        $dataSudahApprove = ApproveDiskonPenjualanObat::with([
+            'penjualanObat',
+            'penjualanObat.pasien',
+            'request.kasir',
+            'approve',
+        ])->whereIn('status', ['approved', 'rejected'])->get();
 
-        return DataTables::eloquent($query)
+        return DataTables::of($dataSudahApprove)
             ->addIndexColumn()
-
-            ->filter(function ($query) {
-                $this->applySearch($query);
+            ->editColumn('nama_pasien', function ($data) {
+                return $data->penjualanObat->pasien->nama_pasien ?? '-';
             })
-
-            ->addColumn('nama_pasien', function ($row) {
-                return data_get($row, 'penjualanObat.nama_pasien', '-');
+            ->editColumn('kode_transaksi', function ($data) {
+                return $data->penjualanObat->kode_transaksi ?? '-';
             })
-
-            ->addColumn('kode_transaksi', function ($row) {
-                return data_get($row, 'penjualanObat.kode_transaksi', '-');
+            ->editColumn('request', function ($data) {
+                return e($this->requestName($data));
             })
-
-            ->addColumn('requested_by', function ($row) {
-                return e($this->requesterName($row));
+            ->editColumn('approve', function ($data) {
+                return e($this->approveName($data));
             })
+            ->editColumn('status', function ($data) {
+                $badge = match ($data->status) {
+                    'pending' => 'bg-yellow-100 text-yellow-800',
+                    'approved' => 'bg-green-100 text-green-800',
+                    'rejected' => 'bg-red-100 text-red-800',
+                    default => 'bg-gray-100 text-gray-800',
+                };
 
-            ->addColumn('approved_by', function ($row) {
-                if (!$row->approved_by) {
-                    return '-';
-                }
-
-                return e($this->approverName($row));
+                return '<span class="px-2 py-1 rounded ' . $badge . '">' . ucfirst($data->status) . '</span>';
             })
-
-            ->addColumn('status_badge', function ($row) {
-                return $this->statusBadgeHtml($row->status);
+            ->editColumn('approved_at', function ($data) {
+                return $data->getFormatTanggalApprove();
             })
-
-            ->addColumn('reason', function ($row) {
-                return $row->reason ? e($row->reason) : '-';
-            })
-
-            ->addColumn('approved_at', function ($row) {
-                return $row->approved_at ? $row->approved_at->format('d M Y H:i') : '-';
-            })
-
-            ->addColumn('diskon_items_detail', function ($row) {
-                $built = $this->buildDiskonData($row);
-                $count = data_get($built, 'summary.count', 0);
-                $totalDiskon = data_get($built, 'summary.potongan', 0);
-
-                $detailUrl = route('super.admin.diskon.penjualan.obatdetail_items', $row->id);
+            ->addColumn('action', function ($data) {
+                $detailUrl = route(
+                    'super.admin.diskon.penjualan.obat.detail_items.sudah.approve',
+                    ['approval' => $data->id]
+                );
 
                 return '
-                    <div class="flex min-w-[220px] flex-col gap-2">
-                        <div class="flex flex-wrap items-center gap-2">
-                            <span class="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-700 ring-1 ring-slate-200 dark:bg-slate-700 dark:text-slate-100 dark:ring-slate-600">
-                                ' . $count . ' item
-                            </span>
-                            <span class="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:ring-emerald-800">
-                                Potongan: ' . $this->rupiah($totalDiskon) . '
-                            </span>
-                        </div>
-
+                    <div class="flex min-w-[190px] flex-col gap-2">
                         <button
-                            type="button"
-                            class="btn-lihat-detail-item inline-flex w-full items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-xs font-semibold text-white hover:bg-sky-700"
-                            data-approval-id="' . (int) $row->id . '"
-                            data-detail-url="' . e($detailUrl) . '">
-                            <i class="fa-solid fa-eye"></i>
-                            Lihat Detail Item
-                        </button>
+                                type="button"
+                                class="btn-lihat-detail-order-obat-sudah-approve inline-flex w-full items-center justify-center gap-2 rounded-xl bg-sky-600 px-4 py-2 text-xs font-semibold text-white hover:bg-sky-700"
+                                data-approval-id="' . (int) $data->id . '"
+                                data-detail-url="' . e($detailUrl) . '">
+                                <i class="fa-solid fa-eye"></i>
+                                Lihat Detail Item
+                            </button>
                     </div>
                 ';
             })
-
-            ->addColumn('action', function ($row) {
-                return '
-                    <div class="flex min-w-[170px] items-center justify-center">
-                        <span class="inline-flex items-center gap-2 rounded-xl bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-200 dark:ring-emerald-800">
-                            <i class="fa-solid fa-circle-check"></i>
-                            Sudah Diapprove
-                        </span>
-                    </div>
-                ';
-            })
-
-            ->rawColumns(['status_badge', 'diskon_items_detail', 'action'])
+            ->rawColumns(['status', 'action'])
             ->make(true);
     }
 
@@ -836,21 +807,31 @@ class ApproveDiskonPenjualanObatManagerController extends Controller
             'penjualanObat.pasien',
             'penjualanObat.penjualanObatDetail',
             'request.kasir',
-            'approve',
+            'request.superAdmin',
+            'approve.superAdmin',
+            'approve.kasir',
         ]);
 
         $built = $this->buildDiskonData($approval);
         $requesterName = $this->requesterName($approval);
+        $approverName = $this->approveName($approval);
 
         return response()->json([
             'success' => true,
             'data' => [
                 'approval_id' => $approval->id,
-                'nama_pasien' => data_get($approval, 'penjualanObat.pasien.nama_pasien', '-'),
-                'kode_transaksi' => data_get($approval, 'penjualanObat.kode_transaksi', '-'),
+                'approved_by_name' => $approverName,
+                'approved_by'      => $approverName,
+
                 'requester' => $requesterName,
                 'requested_by' => $requesterName,
+
                 'reason' => $approval->reason,
+                'rejection_note'   => $approval->rejection_note,
+
+                'nama_pasien' => data_get($approval, 'penjualanObat.pasien.nama_pasien', '-'),
+                'kode_transaksi' => data_get($approval, 'penjualanObat.kode_transaksi', '-'),
+                'status'           => $approval->status,
                 'summary' => $built['summary'],
                 'totals' => $built['totals'],
                 'items' => $built['items'],

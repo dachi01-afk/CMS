@@ -99,7 +99,7 @@ class PenjualanObatController extends Controller
             $uangDiterima = $first->uang_yang_diterima ?? 0;
             $kembalian    = $first->kembalian ?? 0;
             $tanggalISO   = $first->tanggal_transaksi
-                ? \Carbon\Carbon::parse($first->tanggal_transaksi)->toIso8601String()
+                ? Carbon::parse($first->tanggal_transaksi)->toIso8601String()
                 : null;
 
             // ✅ Bukti Pembayaran (foto + teks)

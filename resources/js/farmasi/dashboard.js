@@ -168,7 +168,7 @@ $(document).ready(function () {
             $("#totalStokObat").text(formatNumber(data.total_stok_obat));
             $("#stokMenipis").text(formatNumber(data.stok_menipis));
             $("#stokHabis").text(formatNumber(data.stok_habis));
-            $("#pemasukanHariIni").text(formatRupiah(data.pemasukan_hari_ini));
+            $("#pemasukanHariIni").text(data.pemasukan_hari_ini);
             $("#totalPenjualanObat").text(
                 formatNumber(data.total_keseluruhan_transaksi),
             );
@@ -318,7 +318,7 @@ $(document).ready(function () {
                             ${escapeHtml(item.kode_transaksi)}
                         </td>
                         <td class="px-5 py-4 text-slate-600">
-                            ${escapeHtml(item.nama_pasien || "-")}
+                            ${escapeHtml(item.pasien.nama_pasien || "-")}
                         </td>
                         <td class="px-5 py-4 text-slate-600">
                             ${formatTanggalJam(item.tanggal_transaksi)}
@@ -327,7 +327,7 @@ $(document).ready(function () {
                             ${buildTransactionBadge(item.status)}
                         </td>
                         <td class="px-5 py-4 text-right font-extrabold text-slate-800">
-                            ${formatRupiah(item.total)}
+                            ${formatRupiah(item.total_setelah_diskon)}
                         </td>
                     </tr>
                 `;

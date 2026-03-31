@@ -1,11 +1,11 @@
-import $, { ajax } from "jquery";
+import $ from "jquery";
 
 let table;
 
 $(function () {
     const url =
-        "/super-admin/approve-diskon-penjualan-obat/get-data-sudah-approve";
-    table = $("#tabel-sudah-approve-diskon-order-obat").DataTable({
+        "/super-admin/approve-diskon-order-layanan/get-data-sudah-approve";
+    table = $("#tabel-sudah-approve-diskon-order-layanan").DataTable({
         processing: true,
         serverSide: true,
         responsive: true,
@@ -390,107 +390,107 @@ $(function () {
     }
 
     function fillModal(payload) {
-        const totals = payload?.totals || {};
-        const items = payload?.items || [];
-        const status = (payload?.status || "").toLowerCase().trim();
-        const reason = (payload?.reason || "").trim();
-        const rejectionNote = (payload?.rejection_note || "").trim();
+    const totals = payload?.totals || {};
+    const items = payload?.items || [];
+    const status = (payload?.status || "").toLowerCase().trim();
+    const reason = (payload?.reason || "").trim();
+    const rejectionNote = (payload?.rejection_note || "").trim();
 
-        if (elNamaPasien) {
-            elNamaPasien.textContent = payload?.nama_pasien || "-";
-        }
-
-        if (elKode) {
-            elKode.textContent = payload?.kode_transaksi || "-";
-        }
-
-        if (elRequester) {
-            elRequester.textContent = payload?.requested_by || "-";
-        }
-
-        if (elApprovedBy) {
-            elApprovedBy.textContent =
-                payload?.approved_by_name || payload?.approved_by || "-";
-        }
-
-        if (elStatus) {
-            const label =
-                status === "approved"
-                    ? "Approved"
-                    : status === "rejected"
-                      ? "Rejected"
-                      : "-";
-
-            elStatus.textContent = label;
-            elStatus.className =
-                "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ring-1";
-
-            if (status === "approved") {
-                elStatus.classList.add(
-                    "bg-emerald-50",
-                    "text-emerald-700",
-                    "ring-emerald-200",
-                );
-            } else if (status === "rejected") {
-                elStatus.classList.add(
-                    "bg-rose-50",
-                    "text-rose-700",
-                    "ring-rose-200",
-                );
-            } else {
-                elStatus.classList.add(
-                    "bg-slate-100",
-                    "text-slate-700",
-                    "ring-slate-200",
-                );
-            }
-        }
-
-        if (reasonWrap && elReason) {
-            if (reason) {
-                reasonWrap.classList.remove("hidden");
-                elReason.textContent = reason;
-
-                const labelReason = reasonWrap.querySelector("div:first-child");
-                if (labelReason) {
-                    labelReason.textContent = "Alasan";
-                    labelReason.className =
-                        "mb-1 text-xs font-semibold text-slate-700 dark:text-slate-200";
-                }
-            } else {
-                reasonWrap.classList.add("hidden");
-                elReason.textContent = "";
-            }
-        }
-
-        if (rejectReasonWrap && elRejectReason) {
-            if (status === "rejected" && rejectionNote) {
-                rejectReasonWrap.classList.remove("hidden");
-                elRejectReason.textContent = rejectionNote;
-            } else {
-                rejectReasonWrap.classList.add("hidden");
-                elRejectReason.textContent = "";
-            }
-        }
-
-        if (badgeCount) {
-            badgeCount.textContent = `${totals.item_count || 0} item`;
-        }
-
-        if (badgeTotal) {
-            badgeTotal.textContent = `Total: ${totals.total_base_rp || "Rp 0"}`;
-        }
-
-        if (badgePotongan) {
-            badgePotongan.textContent = `Potongan: ${totals.total_diskon_rp || "Rp 0"}`;
-        }
-
-        if (badgeAfter) {
-            badgeAfter.textContent = `Setelah: ${totals.total_after_rp || "Rp 0"}`;
-        }
-
-        renderItems(items);
+    if (elNamaPasien) {
+        elNamaPasien.textContent = payload?.nama_pasien || "-";
     }
+
+    if (elKode) {
+        elKode.textContent = payload?.kode_transaksi || "-";
+    }
+
+    if (elRequester) {
+        elRequester.textContent = payload?.requested_by || "-";
+    }
+
+    if (elApprovedBy) {
+        elApprovedBy.textContent =
+            payload?.approved_by_name || payload?.approved_by || "-";
+    }
+
+    if (elStatus) {
+        const label =
+            status === "approved"
+                ? "Approved"
+                : status === "rejected"
+                  ? "Rejected"
+                  : "-";
+
+        elStatus.textContent = label;
+        elStatus.className =
+            "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ring-1";
+
+        if (status === "approved") {
+            elStatus.classList.add(
+                "bg-emerald-50",
+                "text-emerald-700",
+                "ring-emerald-200",
+            );
+        } else if (status === "rejected") {
+            elStatus.classList.add(
+                "bg-rose-50",
+                "text-rose-700",
+                "ring-rose-200",
+            );
+        } else {
+            elStatus.classList.add(
+                "bg-slate-100",
+                "text-slate-700",
+                "ring-slate-200",
+            );
+        }
+    }
+
+    if (reasonWrap && elReason) {
+        if (reason) {
+            reasonWrap.classList.remove("hidden");
+            elReason.textContent = reason;
+
+            const labelReason = reasonWrap.querySelector("div:first-child");
+            if (labelReason) {
+                labelReason.textContent = "Alasan";
+                labelReason.className =
+                    "mb-1 text-xs font-semibold text-slate-700 dark:text-slate-200";
+            }
+        } else {
+            reasonWrap.classList.add("hidden");
+            elReason.textContent = "";
+        }
+    }
+
+    if (rejectReasonWrap && elRejectReason) {
+        if (status === "rejected" && rejectionNote) {
+            rejectReasonWrap.classList.remove("hidden");
+            elRejectReason.textContent = rejectionNote;
+        } else {
+            rejectReasonWrap.classList.add("hidden");
+            elRejectReason.textContent = "";
+        }
+    }
+
+    if (badgeCount) {
+        badgeCount.textContent = `${totals.item_count || 0} item`;
+    }
+
+    if (badgeTotal) {
+        badgeTotal.textContent = `Total: ${totals.total_base_rp || "Rp 0"}`;
+    }
+
+    if (badgePotongan) {
+        badgePotongan.textContent = `Potongan: ${totals.total_diskon_rp || "Rp 0"}`;
+    }
+
+    if (badgeAfter) {
+        badgeAfter.textContent = `Setelah: ${totals.total_after_rp || "Rp 0"}`;
+    }
+
+    renderItems(items);
+}
 
     document
         .querySelectorAll('[data-close-modal="detail-diskon-sudah-approve"]')
@@ -511,9 +511,9 @@ $(function () {
     // =========================================================
     // ✅ CLICK LIHAT DETAIL ITEM
     // =========================================================
-    $("#tabel-sudah-approve-diskon-order-obat").on(
+    $("#tabel-sudah-approve-diskon-order-layanan").on(
         "click",
-        ".btn-lihat-detail-order-obat-sudah-approve",
+        ".btn-lihat-detail-order-layanan-sudah-approve",
         async function () {
             const detailUrl = $(this).data("detail-url");
             if (!detailUrl) return;

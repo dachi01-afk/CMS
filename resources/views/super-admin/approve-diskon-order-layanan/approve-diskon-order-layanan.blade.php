@@ -10,7 +10,7 @@
                 <div class="flex items-center space-x-3">
                     <i class="fa-solid fa-circle-check fa-2xl text-blue-600"></i>
                     <h1 class="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-extrabold text-gray-900 leading-tight">
-                        Approve Diskon Order Obat
+                        Approve Diskon Order Layanan
                     </h1>
                 </div>
             </div>
@@ -51,12 +51,12 @@
             <div id="tab-content">
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-belum-approve"
                     role="tabpanel" aria-labelledby="tab-belum-approve">
-                    @include('super-admin.approve-diskon-penjualan-obat.data-belum-approve-diskon-penjualan-obat')
+                    @include('super-admin.approve-diskon-order-layanan.data-belum-approve-diskon-order-layanan')
                 </div>
 
                 <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-sudah-approve"
                     role="tabpanel" aria-labelledby="tab-sudah-approve">
-                    @include('super-admin.approve-diskon-penjualan-obat.data-sudah-approve-diskon-penjualan-obat')
+                    @include('super-admin.approve-diskon-order-layanan.data-sudah-approve-diskon-order-layanan')
                 </div>
             </div>
         </div>

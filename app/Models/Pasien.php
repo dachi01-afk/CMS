@@ -11,7 +11,7 @@ class Pasien extends Model
     protected $guarded = [];
 
     protected $casts = [
-        'tanggal_lahir' => 'date:Y-m-d', // atau 'datetime'
+        'tanggal_lahir' => 'date', // atau 'datetime'
     ];
 
     public function user()
@@ -69,5 +69,10 @@ class Pasien extends Model
     public function orderRadiologi()
     {
         return $this->hasMany(OrderRadiologi::class);
+    }
+
+    public function getFormatTanggalLahir()
+    {
+        return $this->tanggal_lahir ? $this->tanggal_lahir->format('d M Y') : '-';
     }
 }

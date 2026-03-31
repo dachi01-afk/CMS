@@ -16,6 +16,11 @@ class ApproveDiskonPenjualanObat extends Model
         'approved_at' => 'datetime',
     ];
 
+    public function getFormatTanggalApprove()
+    {
+        return $this->approved_at ? $this->approved_at->translatedFormat('d M Y') : '-';
+    }
+
     public function penjualanObat()
     {
         return $this->belongsTo(PenjualanObat::class, 'penjualan_obat_id');

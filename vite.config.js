@@ -8,14 +8,19 @@ export default defineConfig({
                 "resources/css/app.css",
                 "resources/js/app.js",
 
+                "resources/js/super-admin/data-dashboard-super-admin.js",
+
                 // Super Admin (Manager) Approval Diskon
                 "resources/js/super-admin/data-belum-approve-diskon.js",
                 "resources/js/super-admin/data-sudah-approve-diskon.js",
-                "resources/js/super-admin/data-dashboard-super-admin.js",
 
                 // Approve Diskon Penjualan Obat
                 "resources/js/super-admin/approve-diskon-penjualan-obat/data-belum-approve-diskon-penjualan-obat.js",
                 "resources/js/super-admin/approve-diskon-penjualan-obat/data-sudah-approve-diskon-penjualan-obat.js",
+
+                // Approve Diskon Order Layanan
+                "resources/js/super-admin/approve-diskon-order-layanan/data-belum-approve-diskon-order-layanan.js",
+                "resources/js/super-admin/approve-diskon-order-layanan/data-sudah-approve-diskon-order-layanan.js",
 
                 // admin
                 "resources/js/admin/dashboard.js",

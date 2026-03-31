@@ -12,7 +12,7 @@ class OrderLayananDetail extends Model
 
     public function orderLayanan()
     {
-        return $this->belongsTo(OrderLayanan::class);
+        return $this->hasMany(OrderLayanan::class);
     }
 
     public function layanan()

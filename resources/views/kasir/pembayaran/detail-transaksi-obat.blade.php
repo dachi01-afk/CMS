@@ -82,7 +82,7 @@
                                 <p class="text-xs uppercase tracking-wide text-slate-500 dark:text-slate-400">Tanggal
                                     Transaksi</p>
                                 <p class="mt-1 text-base font-semibold text-slate-800 dark:text-white">
-                                    {{ $tanggalTransaksi ? \Carbon\Carbon::parse($tanggalTransaksi)->timezone('Asia/Jakarta')->translatedFormat('l, d F Y H:i') : '-' }}
+                                    {{ $tanggalTransaksi ?? '-' }}
                                 </p>
                             </div>
 

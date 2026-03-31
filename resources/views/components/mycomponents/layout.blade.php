@@ -323,7 +323,12 @@
 
                                     <x-mycomponents.sidebar_link href="super.admin.approve.diskon.penjualan.obat"
                                         class="fa-solid fa-circle-check" :active="Request::routeIs('super.admin.approve.diskon.penjualan.obat')">
-                                        Approve Diskon Penjualan Obat
+                                        Approve Diskon Order Obat
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="super.admin.approve.diskon.order.layanan.index"
+                                        class="fa-solid fa-circle-check" :active="Request::routeIs('super.admin.approve.diskon.order.layanan.index')">
+                                        Approve Diskon Order Layanan
                                     </x-mycomponents.sidebar_link>
 
                                     <x-mycomponents.sidebar_link href="kasir.metode.pembayaran" class="fa-solid fa-wallet"

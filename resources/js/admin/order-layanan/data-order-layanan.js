@@ -1,4 +1,4 @@
-import $ from "jquery";
+import $, { ajax } from "jquery";
 import axios from "axios";
 import { initFlowbite } from "flowbite";
 
@@ -24,12 +24,9 @@ $(function () {
             },
             { data: "kode_transaksi", name: "kode_transaksi" },
             { data: "nama_pasien", name: "nama_pasien" },
-            { data: "nama_layanan", name: "nama_layanan" },
-            { data: "kategori_layanan", name: "kategori_layanan" },
-            { data: "jumlah", name: "jumlah" },
-            { data: "total_tagihan", name: "total_tagihan" },
-            { data: "status", name: "status" },
-            { data: "tanggal_transaksi", name: "tanggal_transaksi" },
+            { data: "subtotal", name: "subtotal" },
+            { data: "status_order_layanan", name: "status_order_layanan" },
+            { data: "tanggal_order", name: "tanggal_order" },
             {
                 data: "action",
                 name: "action",
@@ -1753,7 +1750,7 @@ $(function () {
  * ============================================================ */
 $(function () {
     $("body").on("click", ".btn-delete-order-layanan", function () {
-        const kodeTransaksi = $(this).data("kode-transaksi");
+        const kodeTransaksi = $(this).data("kodeTransaksi");
 
         Swal.fire({
             title: "Apakah Anda yakin?",
@@ -1793,4 +1790,211 @@ $(function () {
             }
         });
     });
+});
+
+/* ============================================================
+ * DETAIL ORDER LAYANAN
+ * ============================================================ */
+$(function () {
+    const rupiah = new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        minimumFractionDigits: 0,
+    });
+
+    function lockPageScroll() {
+        $("html, body").addClass("overflow-hidden");
+    }
+
+    function unlockPageScroll() {
+        $("html, body").removeClass("overflow-hidden");
+    }
+
+    $(document).on("click", ".btn-detail-order-layanan", function (e) {
+        e.preventDefault();
+
+        const $btn = $(this);
+        const kodeTransaksi = $btn.data("kode-transaksi");
+        const urlDetail = $btn.data("url-detail-order-layanan");
+
+        if (!urlDetail) {
+            console.error("URL detail tidak ditemukan");
+            return;
+        }
+
+        $.ajax({
+            url: urlDetail,
+            type: "GET",
+            data: {
+                kodeTransaksi: kodeTransaksi,
+            },
+            beforeSend: () => {
+                $("#detail-kode-transaksi").text("Loading...");
+                $("#detail-tanggal-order").text("Loading...");
+                $("#detail-pasien").text("Loading...");
+                $("#detail-metode-pembayaran").text("Loading...");
+                $("#detail-tanggal-pembayaran").text("Loading...");
+                $("#detail-label-bukti-pembayaran").text("Loading...");
+                $("#detail-subtotal").text("Loading...");
+                $("#detail-diskon").text("Loading...");
+                $("#detail-potongan-pesanan").text("Loading...");
+                $("#detail-total-bayar").text("Loading...");
+                $("#detail-uang-diterima").text("Loading...");
+                $("#detail-kembalian").text("Loading...");
+                $("#detail-status-order-layanan").text("Loading...");
+
+                $("#wrapper-detail-bukti-pembayaran").addClass("hidden");
+                $("#img-detail-bukti-pembayaran").attr("src", "");
+                $("#link-detail-bukti-pembayaran").attr("href", "#");
+
+                $("#detail-order-layanan-items").html(`
+                    <tr>
+                        <td colspan="5" class="px-4 py-6 text-center text-slate-500">
+                            Sedang mengambil data detail...
+                        </td>
+                    </tr>
+                `);
+            },
+            success: (response) => {
+                const order = response.dataOrderLayanan ?? {};
+                const details = response.dataDetailOrderLayanan ?? [];
+
+                $("#detail-kode-transaksi").text(order.kode_transaksi ?? "-");
+                $("#detail-tanggal-order").text(order.tanggal_order ?? "-");
+                $("#detail-pasien").text(order.nama_pasien ?? "-");
+                $("#detail-metode-pembayaran").text(
+                    order.metode_pembayaran?.nama_metode_pembayaran ??
+                        order.nama_metode_pembayaran ??
+                        "-",
+                );
+                $("#detail-tanggal-pembayaran").text(
+                    order.tanggal_pembayaran ?? "-",
+                );
+
+                $("#detail-subtotal").text(order.subtotal ?? 0);
+                $("#detail-potongan-pesanan").text(
+                    rupiah.format(Number(order.potongan_pesanan ?? 0)),
+                );
+                $("#detail-total-bayar").text(order.total_bayar ?? 0);
+                $("#detail-uang-diterima").text(
+                    rupiah.format(Number(order.uang_yang_diterima ?? 0)),
+                );
+                $("#detail-kembalian").text(
+                    rupiah.format(Number(order.kembalian ?? 0)),
+                );
+
+                if ((order.diskon_tipe ?? "") === "persen") {
+                    $("#detail-diskon").text(
+                        `${Number(order.diskon_nilai ?? 0)}%`,
+                    );
+                } else if ((order.diskon_tipe ?? "") === "rupiah") {
+                    $("#detail-diskon").text(
+                        rupiah.format(Number(order.diskon_nilai ?? 0)),
+                    );
+                } else {
+                    $("#detail-diskon").text("-");
+                }
+
+                $("#modal-detail-order-layanan")
+                    .removeClass("hidden")
+                    .addClass("flex");
+
+                lockPageScroll();
+
+                const status = order.status_order_layanan ?? "-";
+                $("#detail-status-order-layanan")
+                    .text(status)
+                    .removeClass(
+                        "bg-slate-100 text-slate-700 bg-emerald-100 text-emerald-700 bg-rose-100 text-rose-700",
+                    );
+
+                if (status === "Sudah Bayar") {
+                    $("#detail-status-order-layanan").addClass(
+                        "bg-emerald-100 text-emerald-700",
+                    );
+                } else if (status === "Belum Bayar") {
+                    $("#detail-status-order-layanan").addClass(
+                        "bg-rose-100 text-rose-700",
+                    );
+                } else {
+                    $("#detail-status-order-layanan").addClass(
+                        "bg-slate-100 text-slate-700",
+                    );
+                }
+
+                if (order.bukti_pembayaran) {
+                    $("#detail-label-bukti-pembayaran").text("Tersedia");
+                    $("#wrapper-detail-bukti-pembayaran").removeClass("hidden");
+                    $("#img-detail-bukti-pembayaran").attr(
+                        "src",
+                        order.bukti_pembayaran_url ?? order.bukti_pembayaran,
+                    );
+                    $("#link-detail-bukti-pembayaran").attr(
+                        "href",
+                        order.bukti_pembayaran_url ?? order.bukti_pembayaran,
+                    );
+                } else {
+                    $("#detail-label-bukti-pembayaran").text("Tidak ada");
+                    $("#wrapper-detail-bukti-pembayaran").addClass("hidden");
+                    $("#img-detail-bukti-pembayaran").attr("src", "");
+                    $("#link-detail-bukti-pembayaran").attr("href", "#");
+                }
+
+                if (details.length > 0) {
+                    let rows = "";
+
+                    details.forEach((item, index) => {
+                        rows += `
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-4 py-3 text-slate-700">${index + 1}</td>
+                                <td class="px-4 py-3 text-slate-700 font-medium">
+                                    ${item.nama_layanan ?? "-"}
+                                </td>
+                                <td class="px-4 py-3 text-center text-slate-700">
+                                    ${item.qty ?? 0}
+                                </td>
+                                <td class="px-4 py-3 text-right text-slate-700">
+                                    ${rupiah.format(Number(item.harga_satuan ?? 0))}
+                                </td>
+                                <td class="px-4 py-3 text-right font-semibold text-slate-800">
+                                    ${rupiah.format(Number(item.total_harga_item ?? 0))}
+                                </td>
+                            </tr>
+                        `;
+                    });
+
+                    $("#detail-order-layanan-items").html(rows);
+                } else {
+                    $("#detail-order-layanan-items").html(`
+                        <tr>
+                            <td colspan="5" class="px-4 py-6 text-center text-slate-500">
+                                Tidak ada detail layanan.
+                            </td>
+                        </tr>
+                    `);
+                }
+            },
+            error: (xhr) => {
+                console.log(xhr.responseText);
+
+                $("#modal-detail-order-layanan")
+                    .addClass("hidden")
+                    .removeClass("flex");
+
+                alert("Terjadi kesalahan saat mengambil detail order layanan");
+            },
+        });
+    });
+
+    $(document).on(
+        "click",
+        "#buttonCloseModalDetailOrderLayanan, #buttonTutupModalDetailOrderLayanan",
+        function () {
+            $("#modal-detail-order-layanan")
+                .addClass("hidden")
+                .removeClass("flex");
+
+            unlockPageScroll();
+        },
+    );
 });

@@ -114,7 +114,7 @@ class TransaksiObatController extends Controller
                 : (float) ($detail->sub_total ?? 0);
         });
 
-        $tanggalTransaksi = $transaksi->tanggal_transaksi;
+        $tanggalTransaksi = $transaksi->getFormatTanggalTransaksi();
         $id = $transaksi->id;
 
         // default awal, nanti bisa diisi dari tabel diskon_approval kalau sudah siap
@@ -239,6 +239,135 @@ class TransaksiObatController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Transaksi dengan kode ' . $request->kode_transaksi . ' berhasil diperbarui.',
+        ]);
+    }
+
+    public function getDataRiwayatTransaksiObat()
+    {
+        $dataOrderObat = PenjualanObat::with([
+            'pasien',
+            'metodePembayaran'
+        ])->where('status', 'Sudah Bayar')->latest();
+
+        return DataTables::of($dataOrderObat)
+            ->addIndexColumn()
+            ->editColumn('nama_pasien', function ($dataOrderan) {
+                return $dataOrderan->pasien->nama_pasien ?? '-';
+            })
+            ->editColumn('metode_pembayaran', function ($dataOrderan) {
+                return $dataOrderan->metodePembayaran->nama_metode ?? '-';
+            })
+            ->editColumn('tanggal_pembayaran', function ($dataOrderan) {
+                return $dataOrderan->getFormatTanggalTransaksi() ?? '-';
+            })
+            // ->editColumn('')
+            ->editColumn('bukti_pembayaran', function ($dataOrderan) {
+                if (!$dataOrderan->bukti_pembayaran) {
+                    return '<span class="text-gray-400 italic">Tidak ada</span>';
+                }
+
+                $url = asset('storage/' . $dataOrderan->bukti_pembayaran);
+
+                return '
+                <div class="flex flex-col items-center text-center space-y-2">
+                    <img src="' . e($url) . '" alt="Bukti Pembayaran"
+                         class="w-24 h-24 object-cover rounded-lg border border-gray-300 shadow-sm hover:scale-105 transition-transform duration-200 cursor-pointer"
+                         onclick="window.open(\'' . e($url) . '\', \'_blank\')" />
+                    <a href="' . e($url) . '" target="_blank"
+                       class="text-sky-600 underline text-sm font-medium">
+                        Lihat Bukti Pembayaran
+                    </a>
+                </div>
+            ';
+            })
+            ->addColumn('action', function ($dataOrderan) {
+                $url = route('get.show.kwitansi.transaksi.obat', [
+                    'kodeTransaksi' => $dataOrderan->kode_transaksi,
+                ]);
+
+                return '
+                <button class="cetakKuitansi text-blue-600 hover:text-blue-800"
+                        data-url="' . e($url) . '"
+                        title="Cetak Kwitansi">
+                    <i class="fa-solid fa-print"></i> Cetak Kwitansi
+                </button>
+            ';
+            })
+            ->rawColumns(['bukti_pembayaran', 'action'])
+            ->make(true);
+    }
+
+    public function kwitansiTransaksiObat($kodeTransaksi)
+    {
+        $dataOrderObat = PenjualanObat::with([
+            'pasien',
+            'metodePembayaran',
+            'penjualanObatDetail.obat',
+        ])
+            ->where('kode_transaksi', $kodeTransaksi)
+            ->firstOrFail();
+
+        $details = $dataOrderObat->penjualanObatDetail ?? collect();
+
+        $subtotal = (float) $details->sum(function ($detail) {
+            return (float) ($detail->sub_total ?? 0);
+        });
+
+        $totalSesudah = $details->isNotEmpty()
+            ? (float) $details->sum(function ($detail) {
+                return $detail->total_setelah_diskon !== null
+                    ? (float) $detail->total_setelah_diskon
+                    : (float) ($detail->sub_total ?? 0);
+            })
+            : (float) (
+                $dataOrderObat->total_setelah_diskon !== null
+                ? $dataOrderObat->total_setelah_diskon
+                : ($dataOrderObat->total_tagihan ?? 0)
+            );
+
+        $diskonNominal = max($subtotal - $totalSesudah, 0);
+
+        $uangYangDiterima = $dataOrderObat->uang_yang_diterima;
+        if ($uangYangDiterima === null) {
+            $detailPembayaran = $details->firstWhere('uang_yang_diterima', '!=', null);
+            $uangYangDiterima = $detailPembayaran?->uang_yang_diterima;
+        }
+
+        $kembalian = $dataOrderObat->kembalian;
+        if ($kembalian === null) {
+            $detailPembayaran = $details->firstWhere('kembalian', '!=', null);
+            $kembalian = $detailPembayaran?->kembalian;
+        }
+
+        $tanggalOrder = $dataOrderObat->created_at
+            ? $dataOrderObat->created_at->translatedFormat('d F Y H:i')
+            : '-';
+
+        $tanggalPembayaran = $dataOrderObat->tanggal_transaksi
+            ? Carbon::parse($dataOrderObat->tanggal_transaksi)->translatedFormat('d F Y H:i')
+            : '-';
+
+        $summary = (object) [
+            'kode_transaksi'       => $dataOrderObat->kode_transaksi,
+            'pasien'               => $dataOrderObat->pasien->nama_pasien ?? '-',
+            'metode_pembayaran'    => $dataOrderObat->metodePembayaran->nama_metode ?? '-',
+            'tanggal_order'        => $tanggalOrder,
+            'tanggal_pembayaran'   => $tanggalPembayaran,
+
+            'total_sebelum_diskon' => $subtotal,
+            'diskon_nominal'       => $diskonNominal,
+            'total_setelah_diskon' => $totalSesudah,
+
+            'uang_yang_diterima'   => $uangYangDiterima !== null ? (float) $uangYangDiterima : null,
+            'kembalian'            => $kembalian !== null ? (float) $kembalian : null,
+        ];
+
+        $namaPT = 'Royal Klinik';
+
+        return view('kasir.riwayat-transaksi.kwitansi-transaksi-obat', [
+            'dataOrderObat' => $dataOrderObat,
+            'summary'       => $summary,
+            'namaPT'        => $namaPT,
         ]);
     }
 }

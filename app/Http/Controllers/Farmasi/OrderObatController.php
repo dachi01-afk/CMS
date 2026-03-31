@@ -29,20 +29,39 @@ class OrderObatController extends Controller
                 return $row->penjualanObatDetail->count();
             })
             ->addColumn('action', function ($row) {
+                $urlOrderObat = route('get.data.detail.order.obat', [
+                    'kodeTransaksi' => $row->kode_transaksi
+                ]);
+
                 return '
-                    <div class="flex items-center justify-center gap-2">
-                        <button type="button"
-                            class="btn-edit-order inline-flex items-center rounded-lg bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700 hover:bg-amber-100"
-                            data-id="' . $row->id . '">
-                            Edit
-                        </button>
-                        <button type="button"
-                            class="btn-delete-order inline-flex items-center rounded-lg bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100"
-                            data-id="' . $row->id . '">
-                            Hapus
-                        </button>
-                    </div>
-                ';
+        <div class="flex items-center justify-center gap-2">
+            <button
+                type="button"
+                class="btn-detail-order-obat inline-flex items-center justify-center w-8 h-8 rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-100 border border-sky-100"
+                data-kode-transaksi="' . $row->kode_transaksi . '"
+                data-url-detail-order-obat="' . $urlOrderObat . '">
+                <i class="fa-solid fa-eye text-xs"></i>
+            </button>
+
+            <button
+                type="button"
+                title="Edit Order"
+                class="btn-edit-order inline-flex h-9 w-9 items-center justify-center rounded-lg border border-amber-200 bg-amber-50 text-amber-600 shadow-sm transition hover:bg-amber-100 hover:text-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-300 active:scale-95"
+                data-id="' . $row->id . '">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487a2.25 2.25 0 1 1 3.182 3.182L8.25 19.463 4.5 20.25l.787-3.75L16.862 4.487z" />
+                </svg>
+            </button>
+
+            <button
+                type="button"
+                title="Hapus Order"
+                class="btn-delete-order inline-flex items-center justify-center w-8 h-8 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 border border-red-100"
+                data-id="' . $row->id . '">
+                <i class="fa-regular fa-trash-can text-xs"></i>
+            </button>
+        </div>
+    ';
             })
             ->filterColumn('nama_pasien', function ($query, $keyword) {
                 $query->whereHas('pasien', function ($q) use ($keyword) {
@@ -51,6 +70,75 @@ class OrderObatController extends Controller
             })
             ->rawColumns(['action'])
             ->toJson();
+    }
+
+    public function getDataDetailOrderObat($kodeTransaksi)
+    {
+        $dataOrderObat = PenjualanObat::with([
+            'pasien:id,nama_pasien,no_emr',
+            'metodePembayaran:id,nama_metode',
+            'penjualanObatDetail.obat:id,nama_obat'
+        ])
+            ->where('kode_transaksi', $kodeTransaksi)
+            ->firstOrFail();
+
+        $details = $dataOrderObat->penjualanObatDetail;
+
+        $totalItem = (int) $details->sum('jumlah');
+        $subtotal = (float) $details->sum('sub_total');
+        $diskon = (float) ($dataOrderObat->diskon_nilai ?? 0);
+        $grandTotal = (float) ($dataOrderObat->total_setelah_diskon ?? $dataOrderObat->total_tagihan ?? 0);
+
+        return response()->json([
+            'dataOrderObat' => [
+                'id' => $dataOrderObat->id,
+                'kode_transaksi' => $dataOrderObat->kode_transaksi,
+                'nama_pasien' => $dataOrderObat->pasien->nama_pasien ?? '-',
+                'no_emr' => $dataOrderObat->pasien->no_emr ?? '-',
+                'tanggal_transaksi' => $dataOrderObat->tanggal_transaksi,
+                'tanggal_transaksi_format' => $dataOrderObat->tanggal_transaksi
+                    ? Carbon::parse($dataOrderObat->tanggal_transaksi)->translatedFormat('d F Y H:i')
+                    : '-',
+                'total_tagihan' => (float) ($dataOrderObat->total_tagihan ?? 0),
+                'total_setelah_diskon' => $grandTotal,
+                'diskon_tipe' => $dataOrderObat->diskon_tipe,
+                'diskon_nilai' => $diskon,
+                'jumlah_item' => $totalItem,
+                'subtotal' => $subtotal,
+                'biaya_lain' => 0,
+                'metode_pembayaran' => $dataOrderObat->metodePembayaran->nama_metode ?? '-',
+                'status' => $dataOrderObat->status ?? '-',
+                'uang_yang_diterima' => (float) ($dataOrderObat->uang_yang_diterima ?? 0),
+                'kembalian' => (float) ($dataOrderObat->kembalian ?? 0),
+                'created_at' => $dataOrderObat->created_at
+                    ? $dataOrderObat->created_at->translatedFormat('d F Y H:i')
+                    : '-',
+                'updated_at' => $dataOrderObat->updated_at
+                    ? $dataOrderObat->updated_at->translatedFormat('d F Y H:i')
+                    : '-',
+                'bukti_pembayaran' => $dataOrderObat->bukti_pembayaran,
+                'bukti_pembayaran_url' => $dataOrderObat->bukti_pembayaran
+                    ? asset('storage/' . $dataOrderObat->bukti_pembayaran)
+                    : null,
+            ],
+
+            'dataDetailOrderObat' => $details->map(function ($item) {
+                return [
+                    'id' => $item->id,
+                    'nama_obat' => $item->obat->nama_obat ?? '-',
+                    'jumlah' => (int) ($item->jumlah ?? 0),
+                    'harga_satuan' => (float) ($item->harga_satuan ?? 0),
+                    'sub_total' => (float) ($item->sub_total ?? 0),
+                    'diskon_tipe' => $item->diskon_tipe,
+                    'diskon_nilai' => (float) ($item->diskon_nilai ?? 0),
+                    'total_setelah_diskon' => (float) ($item->total_setelah_diskon ?? $item->sub_total ?? 0),
+
+                    // karena di tabel detail yang kamu tunjukkan tidak ada kolom batch/exp
+                    'batch' => '-',
+                    'expired_at' => '-',
+                ];
+            })->values(),
+        ]);
     }
 
     public function show($id)

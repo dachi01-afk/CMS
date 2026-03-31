@@ -152,7 +152,7 @@ class DiskonApprovalManagerController extends Controller
             ?? 'Kasir'
         );
     }
-
+    
     private function approverName($row): string
     {
         $u = data_get($row, 'approver');
