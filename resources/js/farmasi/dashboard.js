@@ -162,45 +162,39 @@ $(document).ready(function () {
     async function loadSummary() {
         try {
             const response = await $.getJSON("/farmasi/dashboard/summary");
-            const data = response.data || {};
-            const meta = response.meta || {};
 
-            $("#totalStokObat").text(formatNumber(data.total_stok_obat));
-            $("#stokMenipis").text(formatNumber(data.stok_menipis));
-            $("#stokHabis").text(formatNumber(data.stok_habis));
-            $("#pemasukanHariIni").text(data.pemasukan_hari_ini);
-            $("#totalPenjualanObat").text(
-                formatNumber(data.total_keseluruhan_transaksi),
-            );
+            $("#totalStokObat").text(response.totalStokObat);
+            $("#stokMenipis").text(response.stokMenipis);
+            $("#stokHabis").text(response.stokHabis);
+            $("#pemasukanHariIni").text(response.totalPemasukanHariIni);
+            $("#totalPenjualanObat").text(response.totalPenjualanObat);
 
             $("#stokMenipisInfo").text(
-                `Batas stok kritis 1 - ${formatNumber(meta.batas_stok_menipis || 10)}`,
+                `Batas stok kritis 1 - ${response.batas_stok_menipis || 10}`,
             );
 
             $("#totalKeseluruhanTransaksiObat").text(
-                `Total transaksi hari ini: ${formatNumber(data.transaksi_hari_ini)}`,
+                `Total transaksi hari ini: ${response.totalPemasukanHariIni}`,
             );
 
-            $("#quickTransaksiHariIni").text(
-                formatNumber(data.transaksi_hari_ini),
-            );
-            $("#quickStokMenipis").text(formatNumber(data.stok_menipis));
-            $("#quickStokHabis").text(formatNumber(data.stok_habis));
+            $("#quickTransaksiHariIni").text(response.transaksiHariIni);
+            $("#quickStokMenipis").text(response.stokMenipis);
+            $("#quickStokHabis").text(response.stokHabis);
 
             const maxBar = Math.max(
-                Number(data.transaksi_hari_ini || 0),
-                Number(data.stok_menipis || 0),
-                Number(data.stok_habis || 0),
+                Number(response.transaksiHariIni || 0),
+                Number(response.stokMenipis || 0),
+                Number(response.stokHabis || 0),
                 1,
             );
 
             setProgressBar(
                 "#barTransaksiHariIni",
-                data.transaksi_hari_ini,
+                response.transaksiHariIni,
                 maxBar,
             );
-            setProgressBar("#barStokMenipis", data.stok_menipis, maxBar);
-            setProgressBar("#barStokHabis", data.stok_habis, maxBar);
+            setProgressBar("#barStokMenipis", response.stokMenipis, maxBar);
+            setProgressBar("#barStokHabis", response.stokHabis, maxBar);
         } catch (error) {
             console.error("Gagal memuat summary dashboard farmasi:", error);
         }
@@ -209,7 +203,7 @@ $(document).ready(function () {
     async function loadCriticalStocks() {
         try {
             const response = await $.getJSON("/farmasi/dashboard/stok-kritis");
-            const items = response.data || [];
+            const items = response.dataObat || [];
 
             if (!items.length) {
                 $("#criticalStockTableBody").html(`
@@ -238,8 +232,8 @@ $(document).ready(function () {
                             ${escapeHtml(item.nama_obat)}
                         </td>
                         <td class="px-5 py-4">
-                            <span class="font-extrabold ${Number(item.stok) <= 0 ? "text-rose-500" : "text-amber-500"}">
-                                ${formatNumber(item.stok)}
+                            <span class="font-extrabold ${Number(item.jumlah) <= 0 ? "text-rose-500" : "text-amber-500"}">
+                                ${formatNumber(item.jumlah)}
                             </span>
                         </td>
                         <td class="px-5 py-4">
@@ -260,8 +254,8 @@ $(document).ready(function () {
                                 </p>
                             </div>
                             <div class="text-right">
-                                <p class="text-lg font-extrabold ${Number(item.stok) <= 0 ? "text-rose-500" : "text-amber-500"}">
-                                    ${formatNumber(item.stok)}
+                                <p class="text-lg font-extrabold ${Number(item.jumlah) <= 0 ? "text-rose-500" : "text-amber-500"}">
+                                    ${formatNumber(item.jumlah)}
                                 </p>
                                 <p class="text-[11px] text-slate-400">stok</p>
                             </div>
@@ -296,6 +290,9 @@ $(document).ready(function () {
             const response = await $.getJSON(
                 "/farmasi/dashboard/transaksi-terbaru",
             );
+
+            console.log(response.data);
+            
             const items = response.data || [];
 
             if (!items.length) {
@@ -321,13 +318,13 @@ $(document).ready(function () {
                             ${escapeHtml(item.pasien.nama_pasien || "-")}
                         </td>
                         <td class="px-5 py-4 text-slate-600">
-                            ${formatTanggalJam(item.tanggal_transaksi)}
+                            ${item.format_tanggal_transaksi}
                         </td>
                         <td class="px-5 py-4">
                             ${buildTransactionBadge(item.status)}
                         </td>
                         <td class="px-5 py-4 text-right font-extrabold text-slate-800">
-                            ${formatRupiah(item.total_setelah_diskon)}
+                            ${item.total_setelah_diskon_rupiah}
                         </td>
                     </tr>
                 `;

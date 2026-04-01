@@ -23,6 +23,7 @@ class PenjualanObat extends Model
         'total_tagihan_rupiah',
         'uang_yang_diterima_rupiah',
         'total_setelah_diskon_rupiah',
+        'format_tanggal_transaksi',
     ];
 
     protected function totalTagihanRupiah(): Attribute
@@ -38,6 +39,11 @@ class PenjualanObat extends Model
     protected function totalSetelahDiskonRupiah(): Attribute
     {
         return Attribute::make(get: fn() => 'Rp. ' . number_format($this->total_setelah_diskon, 0, ',', '.'));
+    }
+
+    protected function formatTanggalTransaksi(): Attribute
+    {
+        return Attribute::make(get: fn() => $this->tanggal_transaksi->translatedFormat('d F Y') ?? '-');
     }
 
     public function getFormatTanggalTransaksi()

@@ -142,61 +142,37 @@ class FarmasiController extends Controller
         $tz = 'Asia/Jakarta';
         $today = Carbon::now($tz)->toDateString();
 
-        $transaksiHariIni = $this->penjualanObatJoinDetail()
-            ->whereDate('po.tanggal_transaksi', $today)
-            ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as total_transaksi')
-            ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN po.total_setelah_diskon ELSE 0 END), 0) as total_pemasukan")
-            ->first();
+        $totalStokObat = Obat::sum('jumlah');
 
-        $transaksiToday = PenjualanObat::whereDate('tanggal_transaksi', $today)->firstOrFail();
+        $stokMenipis = Obat::where('jumlah', '<', $this->batasStokMenipis)->count();
 
-        $totalPemasukanToday = $transaksiToday->total_setelah_diskon_rupiah;
+        $stokHabis = Obat::where('jumlah', '=', 0)->count();
 
-        $totalKeseluruhanTransaksi = DB::table('penjualan_obat')
-            ->distinct('kode_transaksi')
-            ->count('kode_transaksi');
+        $totalPemasukanHariIni = PenjualanObat::selectRaw('COALESCE(SUM(total_setelah_diskon), 0) as total_setelah_diskon')
+            ->whereDate('tanggal_transaksi', $today)->where('status', 'Sudah Bayar')->first();
+
+        $totalPemasukanHariIniRupiah  = $totalPemasukanHariIni->total_setelah_diskon_rupiah;
+
+        $totalPenjualanObat = PenjualanObat::count('kode_transaksi');
+
+        $transaksiHariIni = PenjualanObat::whereDate('tanggal_transaksi', $today)->where('status', 'Sudah Bayar')->count();
 
         return response()->json([
-            'data' => [
-                'total_jenis_obat'            => (int) Obat::count(),
-                'total_stok_obat'             => (int) Obat::sum('jumlah'),
-                'stok_menipis'                => (int) Obat::whereBetween('jumlah', [1, $this->batasStokMenipis])->count(),
-                'stok_habis'                  => (int) Obat::where('jumlah', '<=', 0)->count(),
-                'transaksi_hari_ini'          => (int) ($transaksiHariIni->total_transaksi ?? 0),
-                'pemasukan_hari_ini'          => $totalPemasukanToday,
-                'total_keseluruhan_transaksi' => (int) $totalKeseluruhanTransaksi,
-            ],
-            'meta' => [
-                'tanggal'            => $today,
-                'timezone'           => $tz,
-                'batas_stok_menipis' => $this->batasStokMenipis,
-            ],
+            'totalStokObat' => $totalStokObat,
+            'stokMenipis' => $stokMenipis,
+            'stokHabis' => $stokHabis,
+            'totalPemasukanHariIni' => $totalPemasukanHariIniRupiah,
+            'totalPenjualanObat' => $totalPenjualanObat,
+            'transaksiHariIni' => $transaksiHariIni,
         ]);
     }
 
     public function dashboardStokKritis()
     {
-        $data = Obat::query()
-            ->select('id', 'nama_obat', 'jumlah')
-            ->where('jumlah', '<=', $this->batasStokMenipis)
-            ->orderBy('jumlah', 'asc')
-            ->orderBy('nama_obat', 'asc')
-            ->limit(10)
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'id'          => $item->id,
-                    'nama_obat'   => $item->nama_obat,
-                    'stok'        => (int) $item->jumlah,
-                    'status_stok' => ((int) $item->jumlah <= 0) ? 'Habis' : 'Menipis',
-                ];
-            });
+        $dataObat = Obat::where('jumlah', '<=', $this->batasStokMenipis)->get();
 
         return response()->json([
-            'data' => $data,
-            'meta' => [
-                'batas_stok_menipis' => $this->batasStokMenipis,
-            ],
+            'dataObat' => $dataObat
         ]);
     }
 
@@ -206,22 +182,6 @@ class FarmasiController extends Controller
             'pasien',
             'penjualanObatDetail'
         ])->limit(8)->get();
-
-        // $data = DB::table('penjualan_obat as po')
-        //     ->leftJoin('pasien as p', 'p.id', '=', 'po.pasien_id')
-        //     ->leftJoin('penjualan_obat_detail as pod', 'pod.penjualan_obat_id', '=', 'po.id')
-        //     ->select(
-        //         'po.id',
-        //         'po.kode_transaksi',
-        //         'po.tanggal_transaksi',
-        //         'po.status',
-        //         DB::raw('COALESCE(p.nama_pasien, "-") as nama_pasien'),
-        //         DB::raw('COALESCE(SUM(po.total_setelah_diskon), 0) as total')
-        //     )
-        //     ->groupBy('po.id', 'po.kode_transaksi', 'po.tanggal_transaksi', 'po.status', 'p.nama_pasien')
-        //     ->orderByDesc('po.tanggal_transaksi')
-        //     ->limit(8)
-        //     ->get();
 
         return response()->json([
             'data' => $dataTransaksiTerbaru,
