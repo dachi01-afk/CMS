@@ -164,11 +164,6 @@ $(function () {
     window.tableStokMasukBahanHabisPakai.on("draw", updatePagination);
     updatePagination();
 
-    $(document).on("click", ".btn-detail-stok-masuk", function () {
-        const id = $(this).data("id");
-        console.log("Detail stok masuk ID:", id);
-    });
-
     $(document).on("click", ".btn-konfirmasi-stok-masuk", function () {
         const id = $(this).data("id");
         console.log("Konfirmasi stok masuk ID:", id);
@@ -242,6 +237,8 @@ $(function () {
             success: function (response) {
                 const data = response.data;
 
+                console.log(data);
+                
                 $("#detail-nama-supplier").text(data.nama_supplier ?? "-");
                 $("#detail-nama-depot").text(data.nama_depot ?? "-");
                 $("#detail-no-faktur").text(data.no_faktur ?? "-");
@@ -256,6 +253,9 @@ $(function () {
                     formatRupiah(data.total_tagihan),
                 );
                 $("#detail-status-restock").text(data.status_restock ?? "-");
+
+                $("#detail-dibuat-oleh").text(data.dibuatOleh ?? "-");
+                $("#detail-dikonfirmasi-oleh").text(data.dikonfirmasiOleh ?? "-");
 
                 let html = "";
 

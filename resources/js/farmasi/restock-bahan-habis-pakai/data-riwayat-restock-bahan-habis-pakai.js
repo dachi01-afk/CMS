@@ -293,23 +293,39 @@ $(function () {
         `);
     }
 
-    function fillModalDetailRestockBahanHabisPakai(data) {
+    function fillModalDetailRestockBahanHabisPakai(
+        data,
+        dibuatOleh,
+        dikonfirmasiOleh,
+    ) {
         $("#riwayat-restock-bhp-detail_supplier").text(
             data.supplier?.nama_supplier || "-",
         );
+
+        $("#riwayat-restock-bhp-detail_dibuat_oleh").text(dibuatOleh || "-");
+
+        $("#riwayat-restock-bhp-detail_dikonfirmasi_oleh").text(
+            dikonfirmasiOleh || "-",
+        );
+
         $("#riwayat-restock-bhp-detail_depot").text(
             data.depot?.nama_depot || "-",
         );
+
         $("#riwayat-restock-bhp-detail_no_faktur").text(data.no_faktur || "-");
+
         $("#riwayat-restock-bhp-detail_tanggal_terima").text(
             formatDateIndonesia(data.tanggal_terima),
         );
+
         $("#riwayat-restock-bhp-detail_tanggal_jatuh_tempo").text(
             formatDateIndonesia(data.tanggal_jatuh_tempo),
         );
+
         $("#riwayat-restock-bhp-detail_status_transaksi").text(
             data.status_restock || "-",
         );
+
         $("#riwayat-restock-bhp-detail_total_tagihan").text(
             formatRupiah(data.total_tagihan),
         );
@@ -337,7 +353,7 @@ $(function () {
                     <td class="px-4 py-3">${index + 1}</td>
                     <td class="px-4 py-3">${detail.bahan_habis_pakai?.nama_barang || "-"}</td>
                     <td class="px-4 py-3">${detail.batch_bahan_habis_pakai?.nama_batch || "-"}</td>
-                    <td class="px-4 py-3">${detail.batch_bahan_habis_pakai?.tanggal_kadaluarsa_bahan_habis_pakai || "-"}</td>
+                    <td class="px-4 py-3">${detail.batch_bahan_habis_pakai.format_tanggal_kadaluarsa_bahan_habis_pakai || "-"}</td>
                     <td class="px-4 py-3">${detail.qty || 0}</td>
                     <td class="px-4 py-3">${formatRupiah(detail.harga_beli)}</td>
                     <td class="px-4 py-3">${formatRupiah(detail.subtotal)}</td>
@@ -381,7 +397,11 @@ $(function () {
                 `);
                 },
                 success: function (response) {
-                    fillModalDetailRestockBahanHabisPakai(response.data);
+                    fillModalDetailRestockBahanHabisPakai(
+                        response.data,
+                        response.dibuatOleh,
+                        response.dikonfirmasiOleh,
+                    );
                 },
                 error: function (xhr) {
                     closeModalDetailRestockBahanHabisPakai();

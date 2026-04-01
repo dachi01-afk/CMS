@@ -518,6 +518,7 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('/get-data-batch-by-obat-id/{obatId}', [ReturnObatController::class, 'getDataBatchByObatId'])->name('farmasi.get.data.batch.by.obat.id');
             Route::get('/get-stok-batch-obat-depot/{batchObatId}/{depotId}', [ReturnObatController::class, 'getStokBatchObatDepot'])->name('farmasi.get.stok.batch.obat.depot');
             Route::post('/create-data-return-obat', [ReturnObatController::class, 'createDataReturnObat'])->name('farmasi.create.data.return.obat');
+            Route::post('/konfirmasi-return-obat/{kodeReturn}', [ReturnObatController::class, 'konfirmasiReturnObat'])->name('farmasi.konfirmasi.return.obat');
 
             Route::get('/get-data-supplier', [ReturnObatController::class, 'getDataSupplier'])->name('farmasi.get.data.supplier');
             Route::get('/get-depot-by-supplier', [ReturnObatController::class, 'getDepotBySupplier'])->name('farmasi.get.depot.by.supplier');

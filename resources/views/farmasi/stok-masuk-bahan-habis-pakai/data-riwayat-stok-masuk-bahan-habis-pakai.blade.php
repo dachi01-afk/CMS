@@ -169,7 +169,7 @@
                     </h4>
                 </div>
 
-                <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3 text-sm">
+                <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4 text-sm">
                     <div>
                         <p class="text-slate-500">Supplier</p>
                         <p id="riwayat-stok-masuk-bhp-detail_supplier" class="font-semibold text-slate-800">-</p>
@@ -183,6 +183,10 @@
                         <p id="riwayat-stok-masuk-bhp-detail_no_faktur" class="font-semibold text-slate-800">-</p>
                     </div>
                     <div>
+                        <p class="text-slate-500">Dibuat Oleh</p>
+                        <p id="riwayat-stok-masuk-bhp-detail_dibuat_oleh" class="font-semibold text-slate-800">-</p>
+                    </div>
+                    <div>
                         <p class="text-slate-500">Tanggal Diterima</p>
                         <p id="riwayat-stok-masuk-bhp-detail_tanggal_terima" class="font-semibold text-slate-800">-</p>
                     </div>
@@ -194,6 +198,11 @@
                     <div>
                         <p class="text-slate-500">Status Stok Masuk</p>
                         <p id="riwayat-stok-masuk-bhp-detail_status_transaksi" class="font-semibold text-slate-800">-
+                        </p>
+                    </div>
+                    <div>
+                        <p class="text-slate-500">Dikonfirmasi Oleh</p>
+                        <p id="riwayat-stok-masuk-bhp-detail_dikonfirmasi_oleh" class="font-semibold text-slate-800">-
                         </p>
                     </div>
                     <div class="md:col-span-2 xl:col-span-3">

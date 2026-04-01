@@ -2,6 +2,9 @@
 
 namespace App\Models;
 
+use App\Models\BahanHabisPakai;
+use App\Models\BatchBahanHabisPakaiDepot;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 
 class BatchBahanHabisPakai extends Model
@@ -9,6 +12,19 @@ class BatchBahanHabisPakai extends Model
     protected $table = 'batch_bahan_habis_pakai';
 
     protected $guarded = [];
+
+    protected $casts = [
+        'tanggal_kadaluarsa_bahan_habis_pakai' => 'datetime',
+    ];
+
+    protected $appends = [
+        'format_tanggal_kadaluarsa_bahan_habis_pakai'
+    ];
+
+    protected function formatTanggalKadaluarsaBahanHabisPakai(): Attribute
+    {
+        return Attribute::make(get: fn() => $this->tanggal_kadaluarsa_bahan_habis_pakai->translatedFormat('d F Y') ?? '-');
+    }
 
     public function batchBahanHabisPakaiDepot()
     {

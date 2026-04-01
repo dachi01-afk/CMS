@@ -297,25 +297,39 @@ $(function () {
         `);
     }
 
-    function fillModalDetailStokMasukBahanHabisPakai(data) {
+    function fillModalDetailStokMasukBahanHabisPakai(data, dibuatOleh, dikonfirmasiOleh) {
         $("#riwayat-stok-masuk-bhp-detail_supplier").text(
             data.supplier?.nama_supplier || "-",
         );
+
+        $("#riwayat-stok-masuk-bhp-detail_dibuat_oleh").text(
+            dibuatOleh || "-",
+        );
+
+        $("#riwayat-stok-masuk-bhp-detail_dikonfirmasi_oleh").text(
+            dikonfirmasiOleh || "-",
+        );
+
         $("#riwayat-stok-masuk-bhp-detail_depot").text(
             data.depot?.nama_depot || "-",
         );
+
         $("#riwayat-stok-masuk-bhp-detail_no_faktur").text(
             data.no_faktur || "-",
         );
+
         $("#riwayat-stok-masuk-bhp-detail_tanggal_terima").text(
             formatDateIndonesia(data.tanggal_terima),
         );
+
         $("#riwayat-stok-masuk-bhp-detail_tanggal_jatuh_tempo").text(
             formatDateIndonesia(data.tanggal_jatuh_tempo),
         );
+
         $("#riwayat-stok-masuk-bhp-detail_status_transaksi").text(
             data.status_restock || "-",
         );
+
         $("#riwayat-stok-masuk-bhp-detail_total_tagihan").text(
             formatRupiah(data.total_tagihan),
         );
@@ -384,7 +398,11 @@ $(function () {
                 `);
             },
             success: function (response) {
-                fillModalDetailStokMasukBahanHabisPakai(response.data);
+                fillModalDetailStokMasukBahanHabisPakai(
+                    response.data,
+                    response.dibuatOleh,
+                    response.dikonfirmasiOleh,
+                );
             },
             error: function (xhr) {
                 closeModalDetailStokMasukBahanHabisPakai();

@@ -218,6 +218,18 @@
                         <p id="detail-status-restock"
                             class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">-</p>
                     </div>
+
+                    <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Dibuat Oleh</p>
+                        <p id="detail-dibuat-oleh"
+                            class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">-</p>
+                    </div>
+
+                    <div class="rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Dikonfirmasi Oleh</p>
+                        <p id="detail-dikonfirmasi-oleh"
+                            class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">-</p>
+                    </div>
                 </div>
 
                 {{-- Tabel Detail Item --}}

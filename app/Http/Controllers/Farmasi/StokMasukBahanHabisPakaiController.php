@@ -70,6 +70,16 @@ class StokMasukBahanHabisPakaiController extends Controller
             ->make(true);
     }
 
+    protected function dibuatOleh($data)
+    {
+        return $data->dibuatOleh?->nama_role ?? '-';
+    }
+
+    protected function dikonfirmasiOleh($data)
+    {
+        return $data->dikonfirmasiOleh?->nama_role ?? '-';
+    }
+
     public function getDataDetailStokMasukBahanHabisPakai($noFaktur)
     {
         $dataStokMasuk = RestockBahanHabisPakai::with([
@@ -78,7 +88,15 @@ class StokMasukBahanHabisPakaiController extends Controller
             'hutang',
             'restockBahanHabisPakaiDetail.bahanHabisPakai',
             'restockBahanHabisPakaiDetail.batchbahanHabisPakai',
+            'dibuatOleh.kasir',
+            'dibuatOleh.superAdmin',
+            'dikonfirmasiOleh.kasir',
+            'dikonfirmasiOleh.superAdmin',
         ])->where('no_faktur', $noFaktur)->firstOrFail();
+
+        $dibuatOleh = $this->dibuatOleh($dataStokMasuk);
+
+        $dikonfirmasiOleh = $this->dikonfirmasiOleh($dataStokMasuk);
 
         $detailItems = $dataStokMasuk->restockBahanHabisPakaiDetail->map(function ($item) {
             return [
@@ -109,26 +127,32 @@ class StokMasukBahanHabisPakaiController extends Controller
                 'status_restock' => $dataStokMasuk->status_restock ?? '-',
                 'status_hutang' => $dataStokMasuk->hutang?->status_hutang ?? '-',
                 'items' => $detailItems,
+                'dibuatOleh' => $dibuatOleh,
+                'dikonfirmasiOleh' => $dikonfirmasiOleh,
             ]
         ]);
     }
 
     public function konfirmasiStokMasukBahanHabisPakai($id)
     {
-        $dataStokMasuk = RestockBahanHabisPakai::with([
-            'restockBahanHabisPakaiDetail',
-        ])->findOrFail($id);
-
-        if ($dataStokMasuk->status_restock !== 'Pending') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data restock ini sudah dikonfirmasi atau tidak valid.',
-            ], 422);
-        }
-
         DB::beginTransaction();
 
         try {
+            $dataStokMasuk = RestockBahanHabisPakai::with([
+                'restockBahanHabisPakaiDetail',
+            ])
+                ->lockForUpdate()
+                ->findOrFail($id);
+
+            if ($dataStokMasuk->status_restock !== 'Pending') {
+                DB::rollBack();
+
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data restock ini sudah dikonfirmasi atau tidak valid.',
+                ], 422);
+            }
+
             foreach ($dataStokMasuk->restockBahanHabisPakaiDetail as $detail) {
                 $qty = (int) $detail->qty;
 
@@ -136,46 +160,54 @@ class StokMasukBahanHabisPakaiController extends Controller
                     continue;
                 }
 
-                // 1. Update stok global di tabel obat
-                $bhp = BahanHabisPakai::find($detail->bahan_habis_pakai_id);
-                if ($bhp) {
-                    $bhp->increment('stok_barang', $qty);
+                // 1. Update stok global BHP
+                $bhp = BahanHabisPakai::lockForUpdate()->find($detail->bahan_habis_pakai_id);
+
+                if (!$bhp) {
+                    throw new \Exception('Data bahan habis pakai tidak ditemukan.');
                 }
 
-                // 2. Update stok per depot di tabel depot_obat
-                $depotBhp = DepotBHP::firstOrNew([
-                    'depot_id' => $dataStokMasuk->depot_id,
-                    'bahan_habis_pakai_id' => $detail->bahan_habis_pakai_id,
-                ]);
+                $bhp->stok_barang += $qty;
+                $bhp->save();
 
-                if (!$depotBhp->exists) {
+                // 2. Update stok per depot
+                $depotBhp = DepotBHP::where('depot_id', $dataStokMasuk->depot_id)
+                    ->where('bahan_habis_pakai_id', $detail->bahan_habis_pakai_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$depotBhp) {
+                    $depotBhp = new DepotBHP();
+                    $depotBhp->depot_id = $dataStokMasuk->depot_id;
+                    $depotBhp->bahan_habis_pakai_id = $detail->bahan_habis_pakai_id;
                     $depotBhp->stok_barang = 0;
                 }
 
                 $depotBhp->stok_barang += $qty;
                 $depotBhp->save();
 
-                // 3. Update stok batch per depot di tabel batch_obat_depot
-                $batchBahanHabisPakaiDepot = BatchBahanHabisPakaiDepot::firstOrNew([
-                    'batch_bahan_habis_pakai_id' => $detail->batch_bahan_habis_pakai_id,
-                    'depot_id' => $dataStokMasuk->depot_id,
-                ]);
+                // 3. Update stok batch per depot
+                $batchDepot = BatchBahanHabisPakaiDepot::where('batch_bahan_habis_pakai_id', $detail->batch_bahan_habis_pakai_id)
+                    ->where('depot_id', $dataStokMasuk->depot_id)
+                    ->lockForUpdate()
+                    ->first();
 
-                if (!$batchBahanHabisPakaiDepot->exists) {
-                    $batchBahanHabisPakaiDepot->stok_bahan_habis_pakai = 0;
+                if (!$batchDepot) {
+                    $batchDepot = new BatchBahanHabisPakaiDepot();
+                    $batchDepot->batch_bahan_habis_pakai_id = $detail->batch_bahan_habis_pakai_id;
+                    $batchDepot->depot_id = $dataStokMasuk->depot_id;
+                    $batchDepot->stok_bahan_habis_pakai = 0;
                 }
 
-                $batchBahanHabisPakaiDepot->stok_bahan_habis_pakai += $qty;
-                $batchBahanHabisPakaiDepot->save();
+                $batchDepot->stok_bahan_habis_pakai += $qty;
+                $batchDepot->save();
             }
 
-            // 4. Update status restock
-            $dataStokMasuk->update([
-                'status_restock' => 'Succeed',
-                'dikonfirmasi_oleh' => Auth::id(),
-                'dikonfirmasi_jam' => now(),
-                'tanggal_terima' => $dataStokMasuk->tanggal_terima ?? now(),
-            ]);
+            $dataStokMasuk->status_restock = 'Succeed';
+            $dataStokMasuk->dikonfirmasi_oleh = Auth::id();
+            $dataStokMasuk->dikonfirmasi_jam = now();
+            $dataStokMasuk->tanggal_terima = $dataStokMasuk->tanggal_terima ?? now();
+            $dataStokMasuk->save();
 
             DB::commit();
 

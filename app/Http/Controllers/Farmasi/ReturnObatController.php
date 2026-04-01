@@ -8,7 +8,6 @@ use App\Models\BatchObatDepot;
 use App\Models\Depot;
 use App\Models\DepotObat;
 use App\Models\Obat;
-use App\Models\piutang;
 use App\Models\PiutangObat;
 use App\Models\RestockObatDetail;
 use App\Models\ReturnObat;
@@ -334,7 +333,6 @@ class ReturnObatController extends Controller
     public function createDataReturnObat(Request $request)
     {
         $validated = $request->validate([
-            'kode_return' => ['nullable', 'string', 'max:255'],
             'tanggal_return' => ['required', 'date'],
             'supplier_id' => ['required', 'exists:supplier,id'],
             'depot_id' => ['required', 'exists:depot,id'],
@@ -350,13 +348,7 @@ class ReturnObatController extends Controller
         DB::beginTransaction();
 
         try {
-            $kodeReturn = !empty($validated['kode_return'])
-                ? $validated['kode_return']
-                : $this->generateKodeReturnObat();
-
-            if (ReturnObat::where('kode_return', $kodeReturn)->exists()) {
-                $kodeReturn = $this->generateKodeReturnObat();
-            }
+            $kodeReturn = $this->generateKodeReturnObat();
 
             $details = collect($validated['details'])->map(function ($item) {
                 return [
@@ -367,43 +359,22 @@ class ReturnObatController extends Controller
                 ];
             })->values();
 
-            $totalTagihan = $details->sum(function ($item) {
-                return $item['qty'] * $item['harga_beli'];
-            });
+            // Cegah batch yang sama dobel di request
+            $duplicates = $details
+                ->groupBy(fn($item) => $item['obat_id'] . '-' . $item['batch_obat_id'])
+                ->filter(fn($rows) => $rows->count() > 1);
 
-            $groupedQty = $details->groupBy(function ($item) {
-                return $item['obat_id'] . '-' . $item['batch_obat_id'];
-            })->map(function ($rows) {
-                return $rows->sum('qty');
-            });
+            if ($duplicates->isNotEmpty()) {
+                throw ValidationException::withMessages([
+                    'details' => ['Batch obat yang sama tidak boleh diinput lebih dari 1 kali.'],
+                ]);
+            }
 
-            $returnObat = ReturnObat::create([
-                'supplier_id'    => $validated['supplier_id'],
-                'depot_id'       => $validated['depot_id'],
-                'dibuat_oleh'    => Auth::id(),
-                'diupdate_oleh'  => null,
-                'kode_return'    => $kodeReturn,
-                'tanggal_return' => $validated['tanggal_return'],
-                'keterangan'     => $validated['keterangan'] ?? null,
-                'total_tagihan'  => $totalTagihan,
-                'status_return'  => 'Succeed',
-            ]);
-
-            $totalPiutang = 0;
-
+            // Validasi batch memang berasal dari restock supplier + depot terpilih
             foreach ($details as $index => $item) {
-                $obatId = $item['obat_id'];
-                $batchObatId = $item['batch_obat_id'];
-                $qty = $item['qty'];
-                $hargaBeli = $item['harga_beli'];
-                $subtotal = $qty * $hargaBeli;
-
-                $groupKey = $obatId . '-' . $batchObatId;
-                $totalQtyRequestForSameBatch = (int) $groupedQty[$groupKey];
-
                 $batchObat = BatchObat::query()
-                    ->where('id', $batchObatId)
-                    ->where('obat_id', $obatId)
+                    ->where('id', $item['batch_obat_id'])
+                    ->where('obat_id', $item['obat_id'])
                     ->first();
 
                 if (!$batchObat) {
@@ -413,8 +384,8 @@ class ReturnObatController extends Controller
                 }
 
                 $batchSupplierExists = RestockObatDetail::query()
-                    ->where('batch_obat_id', $batchObatId)
-                    ->where('obat_id', $obatId)
+                    ->where('batch_obat_id', $item['batch_obat_id'])
+                    ->where('obat_id', $item['obat_id'])
                     ->whereHas('restockObat', function ($query) use ($validated) {
                         $query->where('supplier_id', $validated['supplier_id'])
                             ->where('depot_id', $validated['depot_id'])
@@ -427,28 +398,134 @@ class ReturnObatController extends Controller
                         "details.$index.batch_obat_id" => ['Batch obat tidak berasal dari supplier dan depot yang dipilih.'],
                     ]);
                 }
+            }
+
+            $totalTagihan = $details->sum(fn($item) => $item['qty'] * $item['harga_beli']);
+
+            $returnObat = ReturnObat::create([
+                'supplier_id'    => $validated['supplier_id'],
+                'depot_id'       => $validated['depot_id'],
+                'dibuat_oleh'    => Auth::id(),
+                'diupdate_oleh'  => null,
+                'kode_return'    => $kodeReturn,
+                'tanggal_return' => $validated['tanggal_return'],
+                'keterangan'     => $validated['keterangan'] ?? null,
+                'total_tagihan'  => $totalTagihan,
+                'status_return'  => 'Pending',
+            ]);
+
+            foreach ($details as $item) {
+                ReturnObatDetail::create([
+                    'return_obat_id' => $returnObat->id,
+                    'obat_id'        => $item['obat_id'],
+                    'batch_obat_id'  => $item['batch_obat_id'],
+                    'qty'            => $item['qty'],
+                    'harga_beli'     => $item['harga_beli'],
+                    'subtotal'       => $item['qty'] * $item['harga_beli'],
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Draft return obat berhasil disimpan.',
+                'data' => [
+                    'id' => $returnObat->id,
+                    'kode_return' => $returnObat->kode_return,
+                    'status_return' => $returnObat->status_return,
+                ],
+            ], 201);
+        } catch (ValidationException $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Validasi gagal.',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'message' => 'Gagal menyimpan draft return obat.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function konfirmasiReturnObat($kodeReturn)
+    {
+        DB::beginTransaction();
+
+        try {
+            $returnObat = ReturnObat::with('returnObatDetail')
+                ->where('kode_return', $kodeReturn)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($returnObat->status_return !== 'Pending') {
+                throw ValidationException::withMessages([
+                    'return_obat' => ['Hanya return dengan status Pending yang bisa dikonfirmasi.'],
+                ]);
+            }
+
+            $details = $returnObat->returnObatDetail->map(function ($item) {
+                return [
+                    'obat_id'       => (int) $item->obat_id,
+                    'batch_obat_id' => (int) $item->batch_obat_id,
+                    'qty'           => (int) $item->qty,
+                    'harga_beli'    => (float) $item->harga_beli,
+                    'subtotal'      => (float) $item->subtotal,
+                ];
+            });
+
+            $groupedBatchQty = $details
+                ->groupBy(fn($item) => $item['obat_id'] . '-' . $item['batch_obat_id'])
+                ->map(fn($rows) => $rows->sum('qty'));
+
+            $groupedObatQty = $details
+                ->groupBy('obat_id')
+                ->map(fn($rows) => $rows->sum('qty'));
+
+            // VALIDASI STOK BATCH
+            foreach ($groupedBatchQty as $key => $totalQtyBatch) {
+                [$obatId, $batchObatId] = explode('-', $key);
 
                 $batchObatDepot = BatchObatDepot::query()
                     ->where('batch_obat_id', $batchObatId)
-                    ->where('depot_id', $validated['depot_id'])
+                    ->where('depot_id', $returnObat->depot_id)
                     ->lockForUpdate()
                     ->first();
 
                 if (!$batchObatDepot) {
                     throw ValidationException::withMessages([
-                        "details.$index.batch_obat_id" => ['Data batch obat pada depot tidak ditemukan.'],
+                        'batch_obat' => ["Stok batch ID {$batchObatId} pada depot tidak ditemukan."],
                     ]);
                 }
 
+                if ((int) $batchObatDepot->stok_obat < (int) $totalQtyBatch) {
+                    throw ValidationException::withMessages([
+                        'batch_obat' => ["Qty return batch ID {$batchObatId} melebihi stok batch."],
+                    ]);
+                }
+            }
+
+            // VALIDASI STOK DEPOT + GLOBAL PER OBAT
+            foreach ($groupedObatQty as $obatId => $totalQtyObat) {
                 $depotObat = DepotObat::query()
                     ->where('obat_id', $obatId)
-                    ->where('depot_id', $validated['depot_id'])
+                    ->where('depot_id', $returnObat->depot_id)
                     ->lockForUpdate()
                     ->first();
 
                 if (!$depotObat) {
                     throw ValidationException::withMessages([
-                        "details.$index.obat_id" => ['Data stok obat pada depot tidak ditemukan.'],
+                        'depot_obat' => ["Stok depot untuk obat ID {$obatId} tidak ditemukan."],
+                    ]);
+                }
+
+                if ((int) $depotObat->stok_obat < (int) $totalQtyObat) {
+                    throw ValidationException::withMessages([
+                        'depot_obat' => ["Qty return obat ID {$obatId} melebihi stok depot."],
                     ]);
                 }
 
@@ -459,101 +536,92 @@ class ReturnObatController extends Controller
 
                 if (!$obat) {
                     throw ValidationException::withMessages([
-                        "details.$index.obat_id" => ['Data obat tidak ditemukan.'],
+                        'obat' => ["Data obat ID {$obatId} tidak ditemukan."],
                     ]);
                 }
 
-                $stokBatchDepot = (int) $batchObatDepot->stok_obat;
-                $stokDepotObat  = (int) $depotObat->stok_obat;
-                $stokGlobalObat = (int) $obat->jumlah;
-
-                if ($stokBatchDepot < $totalQtyRequestForSameBatch) {
+                if ((int) $obat->jumlah < (int) $totalQtyObat) {
                     throw ValidationException::withMessages([
-                        "details.$index.qty" => [
-                            "Qty total untuk batch ini = {$totalQtyRequestForSameBatch}, sedangkan stok batch di depot = {$stokBatchDepot}."
-                        ],
+                        'obat' => ["Qty return obat ID {$obatId} melebihi stok global."],
                     ]);
                 }
+            }
 
-                if ($stokDepotObat < $qty) {
-                    throw ValidationException::withMessages([
-                        "details.$index.qty" => [
-                            "Qty return = {$qty}, sedangkan stok obat pada depot = {$stokDepotObat}."
-                        ],
-                    ]);
-                }
+            // KURANGI STOK BATCH
+            foreach ($groupedBatchQty as $key => $totalQtyBatch) {
+                [$obatId, $batchObatId] = explode('-', $key);
 
-                if ($stokGlobalObat < $qty) {
-                    throw ValidationException::withMessages([
-                        "details.$index.qty" => [
-                            "Qty return = {$qty}, sedangkan stok global obat = {$stokGlobalObat}."
-                        ],
-                    ]);
-                }
-
-                ReturnObatDetail::create([
-                    'return_obat_id' => $returnObat->id,
-                    'obat_id'        => $obatId,
-                    'batch_obat_id'  => $batchObatId,
-                    'qty'            => $qty,
-                    'harga_beli'     => $hargaBeli,
-                    'subtotal'       => $subtotal,
-                ]);
+                $batchObatDepot = BatchObatDepot::query()
+                    ->where('batch_obat_id', $batchObatId)
+                    ->where('depot_id', $returnObat->depot_id)
+                    ->lockForUpdate()
+                    ->first();
 
                 $batchObatDepot->update([
-                    'stok_obat' => $stokBatchDepot - $qty,
+                    'stok_obat' => ((int) $batchObatDepot->stok_obat) - (int) $totalQtyBatch,
                 ]);
+            }
+
+            // KURANGI STOK DEPOT + GLOBAL
+            foreach ($groupedObatQty as $obatId => $totalQtyObat) {
+                $depotObat = DepotObat::query()
+                    ->where('obat_id', $obatId)
+                    ->where('depot_id', $returnObat->depot_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                $obat = Obat::query()
+                    ->where('id', $obatId)
+                    ->lockForUpdate()
+                    ->first();
 
                 $depotObat->update([
-                    'stok_obat' => $stokDepotObat - $qty,
+                    'stok_obat' => ((int) $depotObat->stok_obat) - (int) $totalQtyObat,
                 ]);
 
                 $obat->update([
-                    'jumlah' => $stokGlobalObat - $qty,
+                    'jumlah' => ((int) $obat->jumlah) - (int) $totalQtyObat,
                 ]);
-
-                $totalPiutang += $subtotal;
             }
 
+            // BUAT PIUTANG
             PiutangObat::create([
                 'return_obat_id'       => $returnObat->id,
-                'supplier_id'          => $validated['supplier_id'],
+                'supplier_id'          => $returnObat->supplier_id,
                 'dibuat_oleh'          => Auth::id(),
                 'diupdate_oleh'        => null,
                 'metode_pembayaran_id' => null,
-                'tanggal_piutang'      => $validated['tanggal_return'],
+                'tanggal_piutang'      => $returnObat->tanggal_return,
                 'tanggal_jatuh_tempo'  => null,
-                'total_piutang'        => $totalPiutang,
+                'total_piutang'        => $returnObat->total_tagihan,
                 'tanggal_pelunasan'    => null,
-                'no_referensi'         => $kodeReturn,
+                'no_referensi'         => $returnObat->kode_return,
                 'bukti_penerimaan'     => null,
                 'status_piutang'       => 'Belum Lunas',
+            ]);
+
+            $returnObat->update([
+                'status_return' => 'Succeed',
+                'diupdate_oleh' => Auth::id(),
             ]);
 
             DB::commit();
 
             return response()->json([
-                'message' => 'Data return obat berhasil disimpan.',
-                'data' => [
-                    'id' => $returnObat->id,
-                    'kode_return' => $returnObat->kode_return,
-                    'total_tagihan' => $totalTagihan,
-                    'total_piutang' => $totalPiutang,
-                ],
-            ], 201);
+                'message' => 'Return obat berhasil dikonfirmasi.',
+            ]);
         } catch (ValidationException $e) {
             DB::rollBack();
 
             return response()->json([
                 'message' => 'Validasi gagal.',
                 'errors' => $e->errors(),
-                'request_details' => $validated['details'] ?? [],
             ], 422);
         } catch (\Throwable $e) {
             DB::rollBack();
 
             return response()->json([
-                'message' => 'Gagal menyimpan data return obat.',
+                'message' => 'Gagal mengonfirmasi return obat.',
                 'error' => $e->getMessage(),
             ], 500);
         }

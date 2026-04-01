@@ -729,6 +729,10 @@
                         <p id="detail_no_faktur" class="font-semibold text-slate-800">-</p>
                     </div>
                     <div>
+                        <p class="text-slate-500">Dibuat Oleh</p>
+                        <p id="detail_dibuat_oleh" class="font-semibold text-slate-800">-</p>
+                    </div>
+                    <div>
                         <p class="text-slate-500">Tanggal Jatuh Tempo</p>
                         <p id="detail_tanggal_jatuh_tempo" class="font-semibold text-slate-800">-</p>
                     </div>

@@ -967,7 +967,7 @@ $(function () {
         `);
     }
 
-    function fillModalDetailRestockBhp(data) {
+    function fillModalDetailRestockBhp(data, dibuatOleh) {
         $("#detail_supplier").text(data.supplier?.nama_supplier || "-");
         $("#detail_depot").text(data.depot?.nama_depot || "-");
         $("#detail_no_faktur").text(data.no_faktur || "-");
@@ -975,6 +975,7 @@ $(function () {
             formatDateIndonesia(data.tanggal_jatuh_tempo),
         );
         $("#detail_status_transaksi").text(data.status_restock || "-");
+        $("#detail_dibuat_oleh").text(dibuatOleh || "-");
         $("#detail_total_tagihan").text(formatRupiah(data.total_tagihan));
 
         const details = Array.isArray(data.restock_bahan_habis_pakai_detail)
@@ -1039,7 +1040,7 @@ $(function () {
                 `);
             },
             success: function (response) {
-                fillModalDetailRestockBhp(response.data);
+                fillModalDetailRestockBhp(response.data, response.dibuatOleh);
             },
             error: function (xhr) {
                 closeModalDetailRestockBhp();

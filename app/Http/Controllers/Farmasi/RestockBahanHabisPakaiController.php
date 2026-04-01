@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Farmasi;
 use App\Http\Controllers\Controller;
 use App\Models\BahanHabisPakai;
 use App\Models\BatchBahanHabisPakai;
-use App\Models\BatchBahanHabisPakaiDepot;
 use App\Models\Depot;
 use App\Models\HutangBahanHabisPakai;
 use App\Models\RestockBahanHabisPakai;
@@ -89,12 +88,16 @@ class RestockBahanHabisPakaiController extends Controller
             ->orderBy('tanggal_kadaluarsa_bahan_habis_pakai', 'asc')
             ->get()
             ->map(function ($batch) {
+                $expDate = $batch->tanggal_kadaluarsa_bahan_habis_pakai
+                    ? \Carbon\Carbon::parse($batch->tanggal_kadaluarsa_bahan_habis_pakai)->format('Y-m-d')
+                    : null;
+
                 return [
                     'id' => (string) $batch->id,
                     'value' => (string) $batch->id,
                     'nama_batch' => $batch->nama_batch,
-                    'tanggal_kadaluarsa_bahan_habis_pakai' => $batch->tanggal_kadaluarsa_bahan_habis_pakai,
-                    'text' => $batch->nama_batch . ' - EXP ' . $batch->tanggal_kadaluarsa_bahan_habis_pakai,
+                    'tanggal_kadaluarsa_bahan_habis_pakai' => $expDate,
+                    'text' => $batch->nama_batch . ' - EXP ' . $expDate,
                 ];
             })
             ->values();
@@ -110,7 +113,7 @@ class RestockBahanHabisPakaiController extends Controller
             'supplier_id' => ['required', 'exists:supplier,id'],
             'depot_id' => ['required', 'exists:depot,id'],
             'no_faktur' => ['required', 'string', 'max:255', 'unique:restock_bahan_habis_pakai,no_faktur'],
-            'tanggal_jatuh_tempo' => ['required', 'date', 'after_or_equal:tanggal_terima'],
+            'tanggal_jatuh_tempo' => ['required', 'date'],
             'total_tagihan' => ['required', 'numeric', 'min:0'],
 
             'details' => ['required', 'array', 'min:1'],
@@ -127,13 +130,14 @@ class RestockBahanHabisPakaiController extends Controller
             'details.*.total_setelah_diskon' => ['required', 'numeric', 'min:0'],
         ], [
             'supplier_id.required' => 'Supplier wajib dipilih.',
+            'supplier_id.exists' => 'Supplier tidak ditemukan.',
             'depot_id.required' => 'Depot wajib dipilih.',
+            'depot_id.exists' => 'Depot tidak ditemukan.',
             'no_faktur.required' => 'No faktur wajib diisi.',
             'no_faktur.unique' => 'No faktur sudah digunakan.',
             'tanggal_jatuh_tempo.required' => 'Tanggal jatuh tempo wajib diisi.',
-            'tanggal_jatuh_tempo.after_or_equal' => 'Tanggal jatuh tempo harus sama atau setelah tanggal terima.',
-            'details.required' => 'Minimal harus ada 1 detail obat.',
-            'details.min' => 'Minimal harus ada 1 detail obat.',
+            'details.required' => 'Minimal harus ada 1 detail bahan habis pakai.',
+            'details.min' => 'Minimal harus ada 1 detail bahan habis pakai.',
             'details.*.bhp_id.required' => 'Bahan Habis Pakai wajib dipilih.',
             'details.*.tanggal_kadaluarsa_bahan_habis_pakai.required' => 'Tanggal kadaluarsa wajib diisi.',
             'details.*.qty.required' => 'Qty wajib diisi.',
@@ -147,16 +151,16 @@ class RestockBahanHabisPakaiController extends Controller
                 $bhpId = $detail['bhp_id'] ?? null;
 
                 if (empty($batchBhpId) && empty($batchNama)) {
-                    $validator->errors()->add("details.$index.batch_nama", 'Batch bhp wajib dipilih atau diketik.');
+                    $validator->errors()->add("details.$index.batch_nama", 'Batch BHP wajib dipilih atau diketik.');
                 }
 
                 if (!empty($batchBhpId) && !empty($bhpId)) {
-                    $batch = BatchBahanHabisPakai::where('bahan_habis_pakai_id', $batchBhpId)
+                    $batch = BatchBahanHabisPakai::where('id', $batchBhpId)
                         ->where('bahan_habis_pakai_id', $bhpId)
                         ->first();
 
                     if (!$batch) {
-                        $validator->errors()->add("details.$index.batch_bhp_id", 'Batch tidak sesuai dengan obat yang dipilih.');
+                        $validator->errors()->add("details.$index.batch_bhp_id", 'Batch tidak sesuai dengan bahan habis pakai yang dipilih.');
                     }
                 }
             }
@@ -214,7 +218,7 @@ class RestockBahanHabisPakaiController extends Controller
                     'restock_bahan_habis_pakai_id' => $restockBahanHabisPakai->id,
                     'bahan_habis_pakai_id' => $detail['bhp_id'],
                     'batch_bahan_habis_pakai_id' => $batchBhp->id,
-                    'qty' => $detail['qty'],
+                    'qty' => (int) $detail['qty'],
                     'harga_beli' => $detail['harga_beli'],
                     'subtotal' => $detail['subtotal'],
                     'diskon_type' => $detail['diskon_type'] ?? null,
@@ -223,13 +227,9 @@ class RestockBahanHabisPakaiController extends Controller
                     'total_setelah_diskon' => $detail['total_setelah_diskon'],
                 ]);
 
-                $batchDepot = BatchBahanHabisPakaiDepot::firstOrNew([
-                    'batch_bahan_habis_pakai_id' => $batchBhp->id,
-                    'depot_id' => $request->depot_id,
-                ]);
-
-                $batchDepot->stok_bahan_habis_pakai = ($batchDepot->stok_obat ?? 0) + (int) $detail['qty'];
-                $batchDepot->save();
+                // PENTING:
+                // JANGAN update stok ke batch_bahan_habis_pakai_depot di sini.
+                // Stok baru boleh masuk saat konfirmasi.
             }
 
             HutangBahanHabisPakai::create([
@@ -263,6 +263,16 @@ class RestockBahanHabisPakaiController extends Controller
         }
     }
 
+    protected function dibuatOleh($data)
+    {
+        return $data->dibuatOleh?->nama_role ?? '-';
+    }
+
+    protected function dikonfirmasiOleh($data)
+    {
+        return $data->dikonfirmasiOleh?->nama_role ?? '-';
+    }
+
     public function getDetailRestockBahanHabisPakai($id)
     {
         $restockBhp = RestockBahanHabisPakai::with([
@@ -270,7 +280,15 @@ class RestockBahanHabisPakaiController extends Controller
             'depot',
             'restockBahanHabisPakaiDetail.bahanHabisPakai',
             'restockBahanHabisPakaiDetail.batchBahanHabisPakai',
+            'dibuatOleh.kasir',
+            'dibuatOleh.superAdmin',
+            'dikonfirmasiOleh.kasir',
+            'dikonfirmasiOleh.superAdmin',
         ])->find($id);
+
+        $dibuatOleh = $this->dibuatOleh($restockBhp);
+
+        $dikonfirmasiOleh = $this->dikonfirmasiOleh($restockBhp);
 
         if (!$restockBhp) {
             return response()->json([
@@ -281,6 +299,8 @@ class RestockBahanHabisPakaiController extends Controller
         return response()->json([
             'message' => 'Detail data restock bahan habis pakai berhasil diambil.',
             'data' => $restockBhp,
+            'dibuatOleh' => $dibuatOleh,
+            'dikonfirmasiOleh' => $dikonfirmasiOleh,
         ], 200);
     }
 
@@ -336,12 +356,6 @@ class RestockBahanHabisPakaiController extends Controller
         if ($restockBahanHabisPakai->status_restock !== 'Pending') {
             return response()->json([
                 'message' => 'Hanya data dengan status Pending yang bisa dibatalkan.'
-            ], 422);
-        }
-
-        if ($restockBahanHabisPakai->hutang && $restockBahanHabisPakai->hutang->status_hutang === 'Sudah Lunas') {
-            return response()->json([
-                'message' => 'Data restock Bahan Habis Pakai tidak bisa dibatalkan karena hutang sudah lunas.'
             ], 422);
         }
 
