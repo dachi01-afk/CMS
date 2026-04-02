@@ -1221,3 +1221,107 @@ $(function () {
         closeModalDetailReturn();
     });
 });
+
+$(function () {
+    const pageEl = document.getElementById("return-obat-page");
+    const confirmReturnUrlTemplate = pageEl
+        ? pageEl.dataset.confirmReturnUrl || ""
+        : "";
+
+    $(document).on("click", ".btn-konfirmasi-return-obat", function () {
+        const $button = $(this);
+        const kodeReturn = $button.data("kode-return");
+        const defaultHtml = $button.html();
+
+        if (!kodeReturn) {
+            showWarningMessage("Kode return tidak ditemukan.");
+            return;
+        }
+
+        if (!confirmReturnUrlTemplate) {
+            showErrorMessage("URL konfirmasi return obat belum tersedia.");
+            return;
+        }
+
+        Swal.fire({
+            icon: "warning",
+            title: "Konfirmasi Return Obat",
+            html: `
+                <div style="text-align:left;">
+                    <p style="margin-bottom:8px;">Yakin ingin mengonfirmasi return obat ini?</p>
+                    <ul style="margin:0; padding-left:18px;">
+                        <li>Stok obat akan langsung berkurang.</li>
+                        <li>Piutang obat akan langsung dibuat.</li>
+                        <li>Data yang sudah dikonfirmasi tidak boleh sembarang diubah.</li>
+                    </ul>
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: "Ya, Konfirmasi",
+            cancelButtonText: "Batal",
+            confirmButtonColor: "#059669",
+            cancelButtonColor: "#dc2626",
+            reverseButtons: true,
+        }).then(function (result) {
+            if (!result.isConfirmed) {
+                return;
+            }
+
+            $.ajax({
+                url: confirmReturnUrlTemplate.replace(
+                    ":kodeReturn",
+                    encodeURIComponent(kodeReturn),
+                ),
+                type: "POST",
+                dataType: "json",
+                headers: {
+                    "X-CSRF-TOKEN": $('meta[name="csrf-token"]').attr(
+                        "content",
+                    ),
+                    Accept: "application/json",
+                },
+                beforeSend: function () {
+                    $button.prop("disabled", true).html(`
+                        <i class="fa-solid fa-spinner fa-spin text-[11px]"></i>
+                        Memproses...
+                    `);
+                },
+                success: function (response) {
+                    if (window.tableReturnObat) {
+                        window.tableReturnObat.ajax.reload(null, false);
+                    }
+
+                    showSuccessMessage(
+                        response.message ||
+                            "Return obat berhasil dikonfirmasi.",
+                    );
+                },
+                error: function (xhr) {
+                    if (xhr.status === 422 && xhr.responseJSON?.errors) {
+                        const errors = xhr.responseJSON.errors;
+                        const errorMessages = [];
+
+                        Object.keys(errors).forEach(function (key) {
+                            if (Array.isArray(errors[key])) {
+                                errors[key].forEach(function (message) {
+                                    errorMessages.push(message);
+                                });
+                            }
+                        });
+
+                        showValidationMessage(errorMessages);
+                        return;
+                    }
+
+                    showErrorMessage(
+                        xhr.responseJSON?.message ||
+                            "Terjadi kesalahan saat mengonfirmasi return obat.",
+                    );
+                },
+                complete: function () {
+                    $button.prop("disabled", false).html(defaultHtml);
+                },
+            });
+        });
+    });
+});

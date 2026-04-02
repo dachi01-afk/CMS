@@ -99,7 +99,8 @@
     data-get-depot-by-supplier-url="{{ route('farmasi.get.depot.by.supplier') }}"
     data-get-obat-by-supplier-depot-url="{{ route('farmasi.get.obat.by.supplier.depot') }}"
     data-create-return-obat-url="{{ route('farmasi.create.data.return.obat') }}"
-    data-detail-return-url="{{ route('farmasi.get.data.return.obat.by.no.return', ':kodeReturn') }}">
+    data-detail-return-url="{{ route('farmasi.get.data.return.obat.by.no.return', ':kodeReturn') }}"
+    data-confirm-return-url="{{ route('farmasi.konfirmasi.return.obat', ':kodeReturn') }}">
 
     <div id="modal-create-return-obat"
         class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
@@ -273,7 +274,7 @@
                                             </span>
                                             <input type="text"
                                                 class="detail-harga-beli-display w-full rounded-xl border border-slate-300 bg-white pl-10 pr-4 py-2.5 text-sm focus:border-sky-500 focus:outline-none focus:ring-4 focus:ring-sky-100"
-                                                value="0" placeholder="0">
+                                                value="0" placeholder="0" readonly>
                                             <input type="hidden" name="details[0][harga_beli]"
                                                 class="detail-harga-beli" value="0">
                                         </div>

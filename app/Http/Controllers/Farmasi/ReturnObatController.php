@@ -28,7 +28,7 @@ class ReturnObatController extends Controller
 
     public function getDataReturnObat()
     {
-        $dataReturn = ReturnObat::with(['supplier', 'depot'])->latest('id');
+        $dataReturn = ReturnObat::with(['supplier', 'depot'])->where('status_return', 'Pending')->latest('id');
 
         return DataTables::of($dataReturn)
             ->addIndexColumn()
@@ -56,15 +56,21 @@ class ReturnObatController extends Controller
             })
             ->addColumn('action', function ($row) {
                 return '
-        <div class="flex items-center justify-center gap-2">
-            <button type="button"
-                class="button-open-modal-detail-return-obat inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-md hover:from-blue-700 hover:to-indigo-700"
-                data-kode-return="' . e($row->kode_return) . '">
-                <i class="fa-solid fa-eye text-xs"></i>
-                Detail
-            </button>
-        </div>
-    ';
+                        <div class="flex items-center justify-center gap-2">
+                            <button type="button"
+                                class="button-open-modal-detail-return-obat inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-md hover:from-blue-700 hover:to-indigo-700"
+                                data-kode-return="' . e($row->kode_return) . '">
+                                <i class="fa-solid fa-eye text-xs"></i>
+                                Detail
+                            </button>
+                            
+                            <button type="button" class="btn-konfirmasi-return-obat inline-flex items-center gap-1 px-3 py-2 text-xs font-medium rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white"
+                                data-kode-return="' . $row->kode_return . '">
+                                    <i class="fa-solid fa-check text-[11px]"></i>
+                                Konfirmasi
+                            </button>
+                        </div>
+                        ';
             })
             ->rawColumns(['action'])
             ->make(true);
@@ -753,5 +759,82 @@ class ReturnObatController extends Controller
             ->latest('id')
             ->value('harga_beli') ?? 0
         );
+    }
+
+    protected function dibuatOleh($data)
+    {
+        return $data->dibuatOleh?->nama_role ?? '-';
+    }
+
+    protected function diupdateOleh($data)
+    {
+        return $data->diupdateOleh?->nama_role ?? '-';
+    }
+
+    public function getDataRiwayatReturnObat()
+    {
+        $dataRiwayatReturnObat = ReturnObat::with([
+            'supplier',
+            'depot',
+        ])->whereIn('status_return', ['Succeed', 'Canceled'])->latest();
+
+        return DataTables::of($dataRiwayatReturnObat)
+            ->addIndexColumn()
+            ->editColumn('nama_supplier', function ($dataRiwayat) {
+                return $dataRiwayat->supplier->nama_supplier ?? '-';
+            })
+            ->editColumn('nama_depot', function ($dataRiwayat) {
+                return $dataRiwayat->depot->nama_depot ?? '-';
+            })
+            ->editColumn('status', function ($dataRiwayat) {
+                $badge = match ($dataRiwayat->status_return) {
+                    'Pending' => 'bg-yellow-100 text-yellow-800',
+                    'Succeed' => 'bg-green-100 text-green-800',
+                    'Canceled' => 'bg-red-100 text-red-800',
+                    default => 'bg-gray-100 text-gray-800',
+                };
+
+                return '<span class="px-2 py-1 rounded ' . $badge . '">' . ucfirst($dataRiwayat->status_return) . '</span>';
+            })
+            ->addColumn('action', function ($dataRiwayat) {
+                $urlDataDetailRiwayatReturnObat = route('get.data.detail.riwayat.return.obat', ['kodeReturn' => $dataRiwayat->kode_return]);
+                return '
+                        <button type="button" 
+                        id="button-open-modal-detail-riwayat-return-obat"
+                            class="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-md hover:from-blue-700 hover:to-indigo-700"
+                            data-url="' . e($urlDataDetailRiwayatReturnObat) . '">
+                                <i class="fa-solid fa-eye text-xs"></i>
+                            Detail
+                        </button>';
+            })
+            ->rawColumns(['status', 'action'])
+            ->make(true);
+    }
+
+    public function getDataDetailRiwayatReturnObat($kodeReturn)
+    {
+        $dataRiwayatReturnObat = ReturnObat::with([
+            'supplier',
+            'depot',
+            'piutang',
+            'returnObatDetail',
+            'returnObatDetail.obat',
+            'returnObatDetail.batchObat',
+            'dibuatOleh.superAdmin',
+            'dibuatOleh.kasir',
+            'diupdateOleh.superAdmin',
+            'diupdateOleh.kasir',
+        ])->where('kode_return', $kodeReturn)->firstOrFail();
+
+        $dataRiwayatReturnObat->append('format_tanggal_return');
+
+        $dibuatOleh = $this->dibuatOleh($dataRiwayatReturnObat);
+        $diupdateOleh = $this->diupdateOleh($dataRiwayatReturnObat);
+
+        return response()->json([
+            'data' => $dataRiwayatReturnObat,
+            'dibuatOleh' => $dibuatOleh,
+            'diupdateOleh' => $diupdateOleh,
+        ]);
     }
 }

@@ -171,6 +171,9 @@ export default defineConfig({
                 // Return Obat
                 "resources/js/farmasi/return-obat/data-return-obat.js",
 
+                // Riwayat Return Obat
+                "resources/js/farmasi/return-obat/data-riwayat-return-obat.js",
+
                 // Return Bahan Habis Pakai
                 "resources/js/farmasi/return-bahan-habis-pakai/data-return-bahan-habis-pakai.js",
 

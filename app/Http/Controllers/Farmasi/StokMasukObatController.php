@@ -3,10 +3,9 @@
 namespace App\Http\Controllers\Farmasi;
 
 use App\Http\Controllers\Controller;
-use App\Models\BahanHabisPakai;
-use App\Models\BatchBahanHabisPakaiDepot;
-use App\Models\DepotBHP;
-use App\Models\RestockBahanHabisPakai;
+use App\Models\BatchObatDepot;
+use App\Models\DepotObat;
+use App\Models\Obat;
 use App\Models\RestockObat;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -114,87 +113,75 @@ class StokMasukObatController extends Controller
         ]);
     }
 
-    public function konfirmasiStokMasukBahanHabisPakai($id)
+    public function konfirmasiStokMasukObat($id)
     {
+        $dataStokMasuk = RestockObat::with([
+            'restockObatDetail',
+        ])->findOrFail($id);
+
+        if ($dataStokMasuk->status_restock !== 'Pending') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data restock ini sudah dikonfirmasi atau tidak valid.',
+            ], 422);
+        }
+
         DB::beginTransaction();
 
         try {
-            $dataStokMasuk = RestockBahanHabisPakai::with([
-                'restockBahanHabisPakaiDetail',
-            ])
-                ->lockForUpdate()
-                ->findOrFail($id);
-
-            if ($dataStokMasuk->status_restock !== 'Pending') {
-                DB::rollBack();
-
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data restock ini sudah dikonfirmasi atau tidak valid.',
-                ], 422);
-            }
-
-            foreach ($dataStokMasuk->restockBahanHabisPakaiDetail as $detail) {
+            foreach ($dataStokMasuk->restockObatDetail as $detail) {
                 $qty = (int) $detail->qty;
 
                 if ($qty <= 0) {
                     continue;
                 }
 
-                // 1. Update stok global BHP
-                $bhp = BahanHabisPakai::lockForUpdate()->find($detail->bahan_habis_pakai_id);
-
-                if (!$bhp) {
-                    throw new \Exception('Data bahan habis pakai tidak ditemukan.');
+                // 1. Update stok global di tabel obat
+                $obat = Obat::find($detail->obat_id);
+                if ($obat) {
+                    $obat->increment('jumlah', $qty);
                 }
 
-                $bhp->stok_barang += $qty;
-                $bhp->save();
+                // 2. Update stok per depot di tabel depot_obat
+                $depotObat = DepotObat::firstOrNew([
+                    'depot_id' => $dataStokMasuk->depot_id,
+                    'obat_id' => $detail->obat_id,
+                ]);
 
-                // 2. Update stok per depot
-                $depotBhp = DepotBHP::where('depot_id', $dataStokMasuk->depot_id)
-                    ->where('bahan_habis_pakai_id', $detail->bahan_habis_pakai_id)
-                    ->lockForUpdate()
-                    ->first();
-
-                if (!$depotBhp) {
-                    $depotBhp = new DepotBHP();
-                    $depotBhp->depot_id = $dataStokMasuk->depot_id;
-                    $depotBhp->bahan_habis_pakai_id = $detail->bahan_habis_pakai_id;
-                    $depotBhp->stok_barang = 0;
+                if (!$depotObat->exists) {
+                    $depotObat->stok_obat = 0;
                 }
 
-                $depotBhp->stok_barang += $qty;
-                $depotBhp->save();
+                $depotObat->stok_obat += $qty;
+                $depotObat->save();
 
-                // 3. Update stok batch per depot
-                $batchDepot = BatchBahanHabisPakaiDepot::where('batch_bahan_habis_pakai_id', $detail->batch_bahan_habis_pakai_id)
-                    ->where('depot_id', $dataStokMasuk->depot_id)
-                    ->lockForUpdate()
-                    ->first();
+                // 3. Update stok batch per depot di tabel batch_obat_depot
+                $batchObatDepot = BatchObatDepot::firstOrNew([
+                    'batch_obat_id' => $detail->batch_obat_id,
+                    'depot_id' => $dataStokMasuk->depot_id,
+                ]);
 
-                if (!$batchDepot) {
-                    $batchDepot = new BatchBahanHabisPakaiDepot();
-                    $batchDepot->batch_bahan_habis_pakai_id = $detail->batch_bahan_habis_pakai_id;
-                    $batchDepot->depot_id = $dataStokMasuk->depot_id;
-                    $batchDepot->stok_bahan_habis_pakai = 0;
+                if (!$batchObatDepot->exists) {
+                    $batchObatDepot->stok_obat = 0;
                 }
 
-                $batchDepot->stok_bahan_habis_pakai += $qty;
-                $batchDepot->save();
+                $batchObatDepot->stok_obat += $qty;
+                $batchObatDepot->save();
             }
 
-            $dataStokMasuk->status_restock = 'Succeed';
-            $dataStokMasuk->dikonfirmasi_oleh = Auth::id();
-            $dataStokMasuk->dikonfirmasi_jam = now();
-            $dataStokMasuk->tanggal_terima = $dataStokMasuk->tanggal_terima ?? now();
-            $dataStokMasuk->save();
+            // 4. Update status restock
+            $dataStokMasuk->update([
+                'status_restock' => 'Succeed',
+                'dikonfirmasi_oleh' => Auth::id(),
+                'dikonfirmasi_jam' => now(),
+                'tanggal_terima' => $dataStokMasuk->tanggal_terima ?? now(),
+            ]);
 
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Stok masuk bahan habis pakai berhasil dikonfirmasi.',
+                'message' => 'Stok masuk obat berhasil dikonfirmasi.',
             ]);
         } catch (\Throwable $th) {
             DB::rollBack();

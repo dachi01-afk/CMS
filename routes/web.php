@@ -525,6 +525,12 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('/get-obat-by-supplier-depot', [ReturnObatController::class, 'getObatBySupplierDepot'])->name('farmasi.get.obat.by.supplier.depot');
         });
 
+        Route::prefix('/riwayat-return-obat')->group(function () {
+            Route::get('/get-data', [ReturnObatController::class, 'getDataRiwayatReturnObat'])->name('get.data.riwayat.return.obat');
+            Route::get('/get-data-summary', [ReturnObatController::class, 'getSummaryRiwayatReturnObat'])->name('get.data.summary.riwayat.return.obat');
+            Route::get('/get-data-detail-riwayat-return-obat/{kodeReturn}', [ReturnObatController::class, 'getDataDetailRiwayatReturnObat'])->name('get.data.detail.riwayat.return.obat');
+        });
+
         // Return Bahan Habis Pakai
         Route::prefix('return-bahan-habis-pakai')->group(function () {
             Route::get('/', [ReturnBahanHabisPakaiController::class, 'index'])->name('farmasi.return.bahan.habis.pakai');
