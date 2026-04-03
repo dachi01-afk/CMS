@@ -451,17 +451,9 @@ class FarmasiController extends Controller
 
             $request->validate([
                 'edit_username_apoteker' => [
-                    'required',
-                    'string',
-                    'max:255',
-                    Rule::unique('user', 'username')->ignore($user->id),
-                ],
+'required','string','max:255',],
                 'edit_nama_apoteker'     => 'required|string|max:255',
-                'edit_email_apoteker'    => [
-                    'required',
-                    'email',
-                    Rule::unique('user', 'email')->ignore($user->id),
-                ],
+                'edit_email_apoteker'    => ['required','email',],
                 'edit_foto_apoteker'     => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
                 'edit_no_hp_apoteker'    => 'nullable|string|max:20',
                 'edit_password_apoteker' => 'nullable|string|min:8|confirmed',
