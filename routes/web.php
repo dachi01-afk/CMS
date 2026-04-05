@@ -794,6 +794,7 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
 
         Route::prefix('order-radiologi')->group(function () {
             Route::get('/get-data-order-radiologi',  [OrderRadiologiController::class, 'getDataOrderRadiologi'])->name('get.data.order.radiologi');
+            Route::get('/get-data-detail-order-radiologi/{id}',  [OrderRadiologiController::class, 'detailOrderRadiologi'])->name('get.data.detail.order.radiologi');
             Route::get('/input-hasil/{id}', [OrderRadiologiController::class, 'inputHasil'])->name('input.hasil.order.radiologi');
             Route::post('/simpan-hasil', [OrderRadiologiController::class, 'simpanHasil'])->name('simpan-hasil');
         });
