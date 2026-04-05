@@ -19,25 +19,33 @@ class OrderLabController extends Controller
 {
     public function getDataHasilLab(Request $request)
     {
-        // 1. Ambil ID Perawat yang sedang login
         $user = Auth::user();
-        $userId = $user->id;
 
-        $perawatId = Perawat::where('user_id', $userId)->first();
+        // Base query: semua data order lab hari ini
+        $data = OrderLab::getData()->today();
 
-        // Cek validasi perawat
-        if (!$perawatId) {
-            return response()->json(['error' => 'User bukan perawat'], 403);
+        // Filter perawat hanya berlaku jika yang login adalah Perawat
+        if ($user->role === 'Perawat') {
+            $perawat = Perawat::where('user_id', $user->id)->first();
+
+            if (!$perawat) {
+                return response()->json([
+                    'error' => 'Data perawat tidak ditemukan'
+                ], 403);
+            }
+
+            $data->filterByPerawat($perawat->id);
         }
 
-        // 2. Panggil Query menggunakan Scope yang kita buat tadi
-        $data = OrderLab::getData() // Load relasi & select
-            ->filterByPerawat($perawatId->id) // Filter Logic Dokter-Perawat
-            ->today();
+        // Hanya Perawat dan Super Admin yang boleh akses data ini
+        if (!in_array($user->role, ['Perawat', 'Super Admin'])) {
+            return response()->json([
+                'error' => 'User tidak memiliki akses'
+            ], 403);
+        }
 
-        // 3. Return ke DataTables
         return DataTables::of($data)
-            ->addIndexColumn() // Tambah nomor urut (DT_RowIndex)
+            ->addIndexColumn()
             ->addColumn('nama_pasien', function ($row) {
                 return $row->pasien->nama_pasien ?? '-';
             })
@@ -62,40 +70,59 @@ class OrderLabController extends Controller
                     </span>';
             })
             ->addColumn('item_pemeriksaan', function ($row) {
-                // Cek jika order_lab_detail null atau kosong
                 if (!$row->orderLabDetail || $row->orderLabDetail->isEmpty()) {
                     return '-';
                 }
 
                 return $row->orderLabDetail->map(function ($detail) {
-                    // Gunakan optional untuk menghindari error jika jenis_pemeriksaan_lab null
                     return optional($detail->jenisPemeriksaanLab)->nama_pemeriksaan ?? '-';
                 })->implode(', ');
             })
-            ->addColumn('action', function ($row) {
-                $url = route('input.hasil.order.lab', $row->id);
+            ->addColumn('action', function ($row) use ($user) {
+                $detailUrl = route('detail.order.lab', $row->id);
+                $inputUrl = route('input.hasil.order.lab', $row->id);
 
-                // Jika status sudah selesai, kita bisa ganti tombol jadi 'Lihat' atau disable 'Input'
-                if ($row->status === 'Selesai') {
-                    return '<button class="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-500 rounded-lg text-xs font-medium cursor-not-allowed">
-                        <i class="fas fa-check-circle mr-1"></i> Terinput
-                    </button>';
+                // Jika login Super Admin => hanya bisa lihat detail
+                if ($user->role === 'Super Admin') {
+                    return '
+                        <a href="'.$detailUrl.'" class="inline-flex items-center px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H15.01M12 12H12.01M9 12H9.01M21 12C21 16.4183 16.9706 20 12 20C10.243 20 8.60221 19.5551 7.21885 18.7812L3 20L4.21885 16.7812C3.44489 15.3978 3 13.757 3 12C3 7.58172 7.02944 4 12 4C16.9706 4 21 7.58172 21 12Z"></path>
+                            </svg>
+                            Lihat Detail
+                        </a>';
                 }
 
+                // Jika status sudah selesai, Perawat juga hanya lihat detail
+                if ($row->status === 'Selesai') {
+                    return '
+                        <a href="'.$detailUrl.'" class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H15.01M12 12H12.01M9 12H9.01M21 12C21 16.4183 16.9706 20 12 20C10.243 20 8.60221 19.5551 7.21885 18.7812L3 20L4.21885 16.7812C3.44489 15.3978 3 13.757 3 12C3 7.58172 7.02944 4 12 4C16.9706 4 21 7.58172 21 12Z"></path>
+                            </svg>
+                            Lihat Detail
+                        </a>';
+                }
+
+                // Selain itu, hanya Perawat yang bisa input hasil
                 return '
-                    <a href="'.$url.'" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                    <a href="'.$inputUrl.'" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
                         <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
                         </svg>
                         Input Hasil
                     </a>';
             })
-            ->rawColumns(['status_badge', 'action']) // Izinkan render HTML
+            ->rawColumns(['status_badge', 'action'])
             ->make(true);
     }
 
     public function inputHasil($id)
     {
+        if (Auth::user()->role !== 'Perawat') {
+            abort(403, 'Hanya perawat yang dapat menginput hasil lab.');
+        }
+
         $order = OrderLab::getDataById($id);
 
         return view('perawat.kunjungan.data-input-hasil-lab', compact('order'));
@@ -103,6 +130,13 @@ class OrderLabController extends Controller
 
     public function simpanHasil(Request $request)
     {
+        if (Auth::user()->role !== 'Perawat') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya perawat yang dapat menginput hasil lab.'
+            ], 403);
+        }
+
         $request->validate([
             'hasil.*' => 'required|numeric',
             'keterangan.*' => 'nullable|string',
@@ -133,11 +167,9 @@ class OrderLabController extends Controller
                     'total_detail' => count($request->hasil),
                 ]);
 
-                // Loop semua hasil lab
                 foreach ($request->hasil as $detailId => $nilaiHasil) {
                     $detail = OrderLabDetail::with('jenisPemeriksaanLab')->findOrFail($detailId);
 
-                    // Simpan hasil lab
                     $hasilLabTerakhir = HasilLab::create([
                         'order_lab_detail_id' => $detailId,
                         'perawat_id' => $perawat->id,
@@ -156,19 +188,16 @@ class OrderLabController extends Controller
                     ]);
                 }
 
-                // Update status order lab detail
                 $order->orderLabDetail()->update([
                     'status_pemeriksaan' => 'Selesai',
                 ]);
 
-                // Update status order lab
                 $order->update(['status' => 'Selesai']);
 
                 Log::info('Order lab status updated to Selesai', [
                     'order_id' => $orderId,
                 ]);
 
-                // Update/insert EMR
                 EMR::updateOrCreate(
                     ['kunjungan_id' => $order->kunjungan_id],
                     [
@@ -184,7 +213,6 @@ class OrderLabController extends Controller
                     'order_lab_id' => $orderId,
                 ]);
 
-                // ✅✅✅ KIRIM NOTIF SETELAH COMMIT (PALING AMAN) ✅✅✅
                 DB::afterCommit(function () use ($orderId, $hasilLabTerakhir) {
                     try {
                         Log::info('🔔 Preparing to send notification for hasil lab', [
@@ -193,7 +221,7 @@ class OrderLabController extends Controller
                         ]);
 
                         $orderFresh = OrderLab::with(['pasien.user'])->find($orderId);
-                        
+
                         if ($orderFresh) {
                             Log::info('Order lab loaded for notification', [
                                 'order_id' => $orderFresh->id,
@@ -202,7 +230,7 @@ class OrderLabController extends Controller
                             ]);
 
                             NotificationHelper::kirimNotifikasiHasilLab($orderFresh, $hasilLabTerakhir);
-                            
+
                             Log::info('✅ Notification helper called successfully');
                         } else {
                             Log::warning('⚠️ Order lab not found for notification', [
@@ -227,7 +255,6 @@ class OrderLabController extends Controller
                 'success' => true,
                 'message' => 'Data berhasil disimpan dan diteruskan ke EMR + notifikasi terkirim!',
             ]);
-
         } catch (\Exception $e) {
             Log::error('=== SIMPAN HASIL LAB ERROR ===', [
                 'error' => $e->getMessage(),
@@ -236,8 +263,8 @@ class OrderLabController extends Controller
             ]);
 
             return response()->json([
-                'success' => false, 
-                'message' => 'Gagal: '.$e->getMessage()
+                'success' => false,
+                'message' => 'Gagal: ' . $e->getMessage()
             ], 500);
         }
     }

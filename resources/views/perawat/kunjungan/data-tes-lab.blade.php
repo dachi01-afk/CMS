@@ -102,14 +102,51 @@
             class="flex flex-col md:flex-row md:items-center md:justify-between gap-3
                    px-4 md:px-6 py-3 border-t border-slate-100 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-900/40">
             <div id="triage_customInfo" class="text-xs md:text-sm text-slate-600 dark:text-slate-300">
-                {{-- Diisi via JS --}}
             </div>
 
             <ul id="triage_customPagination" class="inline-flex items-center gap-1 text-xs md:text-sm">
-                {{-- Diisi via JS --}}
             </ul>
         </div>
     </div>
 </section>
+
+{{-- ================= MODAL DETAIL ORDER LAB ================= --}}
+<div id="detailOrderLabModal" class="hidden fixed inset-0 z-[9999]">
+    <div id="detailOrderLabBackdrop" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
+
+    <div class="relative flex items-center justify-center min-h-screen p-4">
+        <div
+            class="w-full max-w-7xl bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div
+                class="flex items-center justify-between px-5 md:px-6 py-4 border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40">
+                <div>
+                    <h3 class="text-lg md:text-xl font-bold text-slate-800 dark:text-slate-50">
+                        Detail Order Laboratorium
+                    </h3>
+                    <p class="text-xs md:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                        Informasi lengkap data order lab pasien
+                    </p>
+                </div>
+
+                <button type="button" id="btnCloseDetailOrderLab"
+                    class="inline-flex items-center justify-center w-10 h-10 rounded-xl border border-slate-300 dark:border-slate-600 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div id="detailOrderLabContent" class="max-h-[75vh] overflow-y-auto px-5 md:px-6 py-5">
+                {{-- diisi via JS --}}
+            </div>
+
+            <div
+                class="px-5 md:px-6 py-4 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/40 flex justify-end">
+                <button type="button" id="btnCloseDetailOrderLabFooter"
+                    class="inline-flex items-center px-4 py-2 rounded-xl bg-slate-600 hover:bg-slate-700 text-white text-sm font-semibold transition">
+                    Tutup
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @vite(['resources/js/perawat/kunjungan/data-tes-laboratorium.js'])
