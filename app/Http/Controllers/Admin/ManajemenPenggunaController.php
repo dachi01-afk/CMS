@@ -15,6 +15,7 @@ use App\Models\Poli;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Yajra\DataTables\Facades\DataTables;
 
 class ManajemenPenggunaController extends Controller
@@ -506,5 +507,20 @@ class ManajemenPenggunaController extends Controller
             })
             ->rawColumns(['foto', 'action'])
             ->make(true);
+    }
+
+    public function getDataPoli()
+    {
+        $dataPoli = Poli::get()->map(function ($data) {
+            return [
+                'id' => $data->id,
+                'nama_poli' => $data->nama_poli,
+                'slug' => Str::slug($data->nama_poli),
+            ];
+        });
+
+        return response()->json([
+            'dataPoli' => $dataPoli
+        ]);
     }
 }

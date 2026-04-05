@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\JadwalKunjunganController;
 use App\Http\Controllers\Admin\KategoriLayananController;
 use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\Admin\LayananController;
+use App\Http\Controllers\Admin\ManagementPerawatController;
 use App\Http\Controllers\Admin\ManajemenPenggunaController;
 use App\Http\Controllers\Admin\OrderLayananController;
 use App\Http\Controllers\Admin\PasienHariIniController as AdminPasienHariIniController;
@@ -254,14 +255,6 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::get('/get_farmasi_by_id/{id}', [FarmasiController::class, 'getFarmasiById'])->name('get_farmasi_by_id');
         Route::put('/update_farmasi/{id}', [FarmasiController::class, 'updateFarmasi'])->name('update_farmasi');
 
-        // crud perawat
-        Route::get('/data_perawat', [ManajemenPenggunaController::class, 'dataPerawat'])->name('data_perawat');
-        Route::post('/add_perawat', [PerawatController::class, 'createPerawat'])->name('add_perawat');
-        Route::get('/get_perawat_by_id/{id}', [PerawatController::class, 'getPerawatById'])->name('get_perawat_by_id');
-        Route::get('/list_poli', [PerawatController::class, 'listPoli']);
-        Route::get('/poli/{poliId}/dokter', [PerawatController::class, 'listDokterByPoli']);
-        Route::put('/update_perawat/{id}', [PerawatController::class, 'updatePerawat'])->name('update_perawat');
-
         // crud kasir
         Route::get('/data_kasir', [ManajemenPenggunaController::class, 'dataKasir'])->name('data_kasir');
         Route::post('/add_kasir', [KasirController::class, 'createKasir'])->name('add_kasir');
@@ -276,6 +269,21 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::delete('/search', [PasienController::class, 'search'])->name('pasien');
         Route::get('/cetak-stiker-pasien/{noEMR}', [PasienController::class, 'cetakStiker'])->name('cetak.stiker.pasien');
         Route::get('/show-detail-data-pasien/{noEMR}', [PasienController::class, 'showPasien'])->name('show.detail.pasien');
+    });
+
+    Route::prefix('management-pengguna')->group(function () {
+        Route::get('/', [ManajemenPenggunaController::class, 'index'])->name('management.pengguna.index');
+        Route::get('/get-data-poli', [ManajemenPenggunaController::class, 'getDataPoli'])->name('get.data.poli');
+
+        // Perawat
+        Route::prefix('perawat')->group(function () {
+            Route::get('/', [ManagementPerawatController::class, 'index'])->name('perawat');
+            Route::get('/get-data', [ManagementPerawatController::class, 'getDataPerawat'])->name('get.data.perawat');
+            Route::get('/get-data-detail/{slug}', [ManagementPerawatController::class, 'getDataDetailPerawat'])->name('get.data.detail.perawat');
+            Route::get('/get-data-dokter-poli/{slug}', [ManagementPerawatController::class, 'getDataDokterPoli'])->name('get.data.dokter.poli');
+
+            Route::post('/update-data-perawat/{slug}', [ManagementPerawatController::class, 'updateDataPerawat'])->name('update.data.perawat');
+        });
     });
 
     Route::prefix('pengaturan_klinik')->name('pengaturan_klinik.')->group(function () {
@@ -817,7 +825,7 @@ Route::middleware(['auth', 'superAdmin'])->prefix('super-admin')->group(function
     Route::delete('/delete_farmasi/{id}', [FarmasiController::class, 'deleteFarmasi'])->name('delete_farmasi');
 
     // delete data perawat
-    Route::delete('/delete_perawat/{id}', [PerawatController::class, 'deletePerawat'])->name('delete_perawat');
+    Route::post('/delete_perawat/{slug}', [ManagementPerawatController::class, 'deleteDataPerawat'])->name('delete.data.perawat');
 
     // delete data kasir
     Route::delete('/delete_kasir/{id}', [KasirController::class, 'deleteKasir'])->name('delete_kasir');

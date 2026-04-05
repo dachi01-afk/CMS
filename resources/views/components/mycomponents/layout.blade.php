@@ -280,9 +280,9 @@
                                         Layanan
                                     </x-mycomponents.sidebar_link>
 
-                                    <x-mycomponents.sidebar_link href="manajemen_pengguna.index" class="fa-solid fa-users"
-                                        :active="Request::routeIs('manajemen_pengguna.index')">
-                                        Manajemen Pengguna
+                                    <x-mycomponents.sidebar_link href="management.pengguna.index" class="fa-solid fa-users"
+                                        :active="Request::routeIs('management.pengguna.index')">
+                                        Management Pengguna
                                     </x-mycomponents.sidebar_link>
 
                                     <x-mycomponents.sidebar_link href="pengaturan_klinik.index"
@@ -581,9 +581,9 @@
                                                 class="fa-solid fa-clipboard-list">
                                                 Layanan
                                             </x-mycomponents.sidebar_link>
-                                            <x-mycomponents.sidebar_link href="manajemen_pengguna.index"
+                                            <x-mycomponents.sidebar_link href="management.pengguna.index"
                                                 class="fa-solid fa-users">
-                                                Manajemen Pengguna
+                                                Management Pengguna
                                             </x-mycomponents.sidebar_link>
                                             <x-mycomponents.sidebar_link href="pengaturan_klinik.index"
                                                 class="fa-solid fa-hospital-user">
