@@ -15,11 +15,6 @@ class PerawatController extends Controller
     private const STATUS_ANTRIAN = ['Pending'];
     private const STATUS_DALAM_KONSULTASI = 'Engaged';
 
-    private function getPerawatLogin(): ?Perawat
-    {
-        return Perawat::where('user_id', Auth::id())->first();
-    }
-
     private function normalizeChartFilter(?string $filter): string
     {
         $allowed = ['harian', 'mingguan', 'bulanan', 'tahunan'];
@@ -55,19 +50,30 @@ class PerawatController extends Controller
 
         $today = now()->toDateString();
         $chartFilter = $this->normalizeChartFilter($request->get('filter'));
+        $isSuperAdmin = Auth::user()?->role === 'Super Admin';
 
-        $perawat = Perawat::with(['dokterPoli.dokter', 'dokterPoli.poli'])
-            ->where('user_id', Auth::id())
-            ->firstOrFail();
+        $perawat = null;
+
+        if (! $isSuperAdmin) {
+            $perawat = Perawat::with(['dokterPoli.dokter', 'dokterPoli.poli'])
+                ->where('user_id', Auth::id())
+                ->firstOrFail();
+        }
+
+        $namaPerawatById = Perawat::pluck('nama_perawat', 'id')->toArray();
 
         // =========================================================
         // QUERY DASAR 1:
-        // Semua kunjungan yang MUNCUL ke halaman perawat
-        // berdasarkan penugasan dokter + poli
+        // Semua kunjungan yang muncul di dashboard
+        // - Super Admin => semua kunjungan
+        // - Perawat biasa => sesuai area tugas
         // =========================================================
         $kunjunganAreaTugas = Kunjungan::query()
             ->with(['pasien', 'dokter', 'poli', 'emr'])
-            ->untukPerawat($perawat);
+            ->when(
+                ! $isSuperAdmin,
+                fn($query) => $query->untukPerawat($perawat)
+            );
 
         // =========================================================
         // QUERY DASAR 2:
@@ -78,23 +84,31 @@ class PerawatController extends Controller
 
         // =========================================================
         // QUERY DASAR 3:
-        // Semua EMR yang benar-benar ditangani perawat ini
+        // Semua EMR yang benar-benar ditangani
+        // - Super Admin => semua EMR
+        // - Perawat biasa => EMR milik perawat ini
         // =========================================================
         $emrSaya = EMR::query()
             ->with(['pasien', 'dokter', 'poli', 'kunjungan'])
-            ->filterByPerawat($perawat->id);
+            ->when(
+                ! $isSuperAdmin,
+                fn($query) => $query->filterByPerawat($perawat->id)
+            );
 
         // =========================================================
-        // QUERY DASAR 4:
-        // Detail Kunjungan 
+        // DETAIL RINGKASAN ANTRIAN
+        // Nama perawat diambil dari EMR
+        // Kalau belum ada => Belum Dilayani
         // =========================================================
         $detailRingkasanAntrian = (clone $kunjunganAreaTugas)
             ->whereIn('status', self::STATUS_ANTRIAN)
             ->orderByDesc('tanggal_kunjungan')
             ->orderBy('no_antrian')
             ->get()
-            ->map(function ($item) {
+            ->map(function ($item) use ($namaPerawatById) {
                 $jadwal = '-';
+                $tanggalKunjunganText = '-';
+                $namaPerawat = 'Belum Dilayani';
 
                 if ($item->jadwalDokter) {
                     $bagian = array_filter([
@@ -105,20 +119,27 @@ class PerawatController extends Controller
                             : null,
                     ]);
 
-                    if (!empty($bagian)) {
+                    if (! empty($bagian)) {
                         $jadwal = implode(' ', $bagian);
                     }
                 }
 
-                if ($jadwal === '-' && $item->tanggal_kunjungan) {
-                    $jadwal = \Carbon\Carbon::parse($item->tanggal_kunjungan)->format('d/m/Y H:i');
+                if ($item->tanggal_kunjungan) {
+                    $tanggalKunjunganText = \Carbon\Carbon::parse($item->tanggal_kunjungan)
+                        ->translatedFormat('l, d M Y');
+                }
+
+                if (! empty(optional($item->emr)->perawat_id)) {
+                    $namaPerawat = $namaPerawatById[$item->emr->perawat_id] ?? 'Belum Dilayani';
                 }
 
                 return (object) [
+                    'tanggal_kunjungan_text' => $tanggalKunjunganText,
                     'no_antrian' => $item->no_antrian ?? '-',
                     'nama_pasien' => $item->pasien->nama_pasien ?? '-',
                     'nama_poli' => $item->poli->nama_poli ?? '-',
                     'nama_dokter' => $item->dokter->nama_dokter ?? '-',
+                    'nama_perawat' => $namaPerawat,
                     'jadwal' => $jadwal,
                     'status' => $item->status ?? '-',
                     'keluhan' => $item->keluhan_awal ?? '-',
@@ -128,69 +149,98 @@ class PerawatController extends Controller
         // =========================================================
         // KPI DASHBOARD
         // =========================================================
-
-        // 1. Ringkasan Antrian -> semua data, bukan hari ini
         $statMenungguTindakan = (clone $kunjunganAreaTugas)
             ->whereIn('status', self::STATUS_ANTRIAN)
             ->count();
 
-        // 2. Pasien Dalam Konsultasi -> semua data, bukan hari ini
         $statSedangKonsultasi = (clone $kunjunganAreaTugas)
             ->where('status', self::STATUS_DALAM_KONSULTASI)
             ->count();
 
-        // 3. Pasien Selesai Dilayani -> semua data EMR milik perawat ini
         $statSudahDitangani = (clone $emrSaya)
             ->whereNotNull('pasien_id')
             ->distinct('pasien_id')
             ->count('pasien_id');
 
-        // 4. Pasien Hari Ini -> baru ini pakai filter hari ini
         $statPasienHariIni = (clone $kunjunganHariIni)
             ->whereNotNull('pasien_id')
             ->distinct('pasien_id')
             ->count('pasien_id');
 
         // =========================================================
-        // LIST UNTUK TABEL
+        // LIST UNTUK TABEL: RINGKASAN ANTRIAN
         // =========================================================
-
-        // List antrian yang tampil ke perawat
-        // tidak tergantung emr.perawat_id
         $listSiapTriage = (clone $kunjunganAreaTugas)
             ->whereIn('status', self::STATUS_ANTRIAN)
             ->orderByDesc('tanggal_kunjungan')
             ->orderBy('no_antrian')
             ->limit(5)
             ->get()
-            ->map(function ($item) {
+            ->map(function ($item) use ($namaPerawatById) {
+                $tanggalKunjunganText = '-';
+                $namaPerawat = 'Belum Dilayani';
+
+                if ($item->tanggal_kunjungan) {
+                    $tanggalKunjunganText = \Carbon\Carbon::parse($item->tanggal_kunjungan)
+                        ->translatedFormat('l, d M Y');
+                }
+
+                if (! empty(optional($item->emr)->perawat_id)) {
+                    $namaPerawat = $namaPerawatById[$item->emr->perawat_id] ?? 'Belum Dilayani';
+                }
+
                 return (object) [
+                    'tanggal_kunjungan_text' => $tanggalKunjunganText,
                     'no_antrian' => $item->no_antrian ?? '-',
                     'nama_pasien' => $item->pasien->nama_pasien ?? '-',
                     'nama_poli' => $item->poli->nama_poli ?? '-',
                     'nama_dokter' => $item->dokter->nama_dokter ?? '-',
+                    'nama_perawat' => $namaPerawat,
                 ];
             });
 
-        // List pasien terbaru yang benar-benar ditangani perawat
+        // =========================================================
+        // LIST UNTUK TABEL: PASIEN SELESAI DILAYANI
+        // Nama perawat HARUS dari EMR
+        // Tanggal ambil dari tanggal kunjungan, fallback ke created_at EMR
+        // =========================================================
         $listPasienTerbaruDitangani = (clone $emrSaya)
             ->latest()
             ->limit(5)
             ->get()
-            ->map(function ($item) {
+            ->map(function ($item) use ($namaPerawatById) {
+                $namaPerawat = 'Belum Dilayani';
+                $tanggalKunjunganText = '-';
+
+                if (! empty($item->perawat_id)) {
+                    $namaPerawat = $namaPerawatById[$item->perawat_id] ?? 'Belum Dilayani';
+                }
+
+                if (! empty(optional($item->kunjungan)->tanggal_kunjungan)) {
+                    $tanggalKunjunganText = \Carbon\Carbon::parse($item->kunjungan->tanggal_kunjungan)
+                        ->translatedFormat('l, d M Y');
+                } elseif (! empty($item->created_at)) {
+                    $tanggalKunjunganText = \Carbon\Carbon::parse($item->created_at)
+                        ->translatedFormat('l, d M Y');
+                }
+
                 return (object) [
-                    'created_at' => $item->created_at,
+                    'tanggal_kunjungan_text' => $tanggalKunjunganText,
                     'nama_pasien' => $item->pasien->nama_pasien ?? '-',
                     'nama_poli' => $item->poli->nama_poli ?? '-',
                     'nama_dokter' => $item->dokter->nama_dokter ?? '-',
+                    'nama_perawat' => $namaPerawat,
                 ];
             });
 
-        $chartData = $this->buildHandledPerawatChart($perawat, $chartFilter);
+        $chartData = $this->buildHandledPerawatChart($perawat, $chartFilter, $isSuperAdmin);
 
         return view('perawat.dashboard', [
-            'namaPerawat' => $perawat->nama_perawat ?? 'Perawat',
+            'namaPerawat' => $isSuperAdmin
+                ? (Auth::user()->username ?? 'Super Admin')
+                : ($perawat->nama_perawat ?? 'Perawat'),
             'serverStatus' => 'Aktif',
+            'isSuperAdmin' => $isSuperAdmin,
 
             'statMenungguTindakan' => $statMenungguTindakan,
             'statSedangKonsultasi' => $statSedangKonsultasi,
@@ -209,20 +259,25 @@ class PerawatController extends Controller
 
     public function chartDashboard(Request $request)
     {
-        $perawat = $this->getPerawatLogin();
+        $isSuperAdmin = Auth::user()?->role === 'Super Admin';
+        $perawat = null;
 
-        if (!$perawat) {
-            return response()->json($this->emptyChartPayload());
+        if (! $isSuperAdmin) {
+            $perawat = Perawat::where('user_id', Auth::id())->first();
+
+            if (! $perawat) {
+                return response()->json($this->emptyChartPayload());
+            }
         }
 
         $filter = $this->normalizeChartFilter($request->get('filter'));
 
         return response()->json(
-            $this->buildHandledPerawatChart($perawat, $filter)
+            $this->buildHandledPerawatChart($perawat, $filter, $isSuperAdmin)
         );
     }
 
-    private function buildHandledPerawatChart(Perawat $perawat, string $filter): array
+    private function buildHandledPerawatChart(?Perawat $perawat, string $filter, bool $isSuperAdmin = false): array
     {
         Carbon::setLocale('id');
         $now = now();
@@ -290,7 +345,10 @@ class PerawatController extends Controller
         $handledMap = array_fill_keys($keys, []);
 
         $emrRows = EMR::query()
-            ->filterByPerawat($perawat->id)
+            ->when(
+                ! $isSuperAdmin,
+                fn($query) => $query->filterByPerawat($perawat->id)
+            )
             ->whereDate('created_at', '>=', $start->toDateString())
             ->whereDate('created_at', '<=', $end->toDateString())
             ->select('pasien_id', 'created_at')
@@ -309,11 +367,11 @@ class PerawatController extends Controller
                 $key = $tanggal->format('Y');
             }
 
-            if (!array_key_exists($key, $handledMap)) {
+            if (! array_key_exists($key, $handledMap)) {
                 continue;
             }
 
-            if (!empty($row->pasien_id)) {
+            if (! empty($row->pasien_id)) {
                 $handledMap[$key][$row->pasien_id] = true;
             }
         }

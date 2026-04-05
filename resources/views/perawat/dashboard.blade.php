@@ -264,23 +264,35 @@
                     <table class="min-w-full text-sm">
                         <thead class="bg-slate-50 text-slate-500">
                             <tr>
+                                <th class="px-4 py-3 text-left">Tanggal Kunjungan</th>
                                 <th class="px-4 py-3 text-left">No Antrian</th>
                                 <th class="px-4 py-3 text-left">Pasien</th>
                                 <th class="px-4 py-3 text-left">Poli</th>
                                 <th class="px-4 py-3 text-left">Dokter</th>
+                                @if ($isSuperAdmin)
+                                    <th class="px-4 py-3 text-left">Perawat</th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody>
                             @forelse ($listSiapTriage as $item)
                                 <tr class="border-b border-slate-100">
+                                    <td class="px-4 py-3 text-slate-600 whitespace-nowrap">
+                                        {{ $item->tanggal_kunjungan_text ?? '-' }}
+                                    </td>
                                     <td class="px-4 py-3 font-medium text-slate-800">{{ $item->no_antrian }}</td>
                                     <td class="px-4 py-3 text-slate-700">{{ $item->nama_pasien }}</td>
                                     <td class="px-4 py-3 text-slate-600">{{ $item->nama_poli }}</td>
                                     <td class="px-4 py-3 text-slate-600">{{ $item->nama_dokter }}</td>
+                                    @if ($isSuperAdmin)
+                                        <td class="px-4 py-3 text-slate-600">
+                                            {{ $item->nama_perawat ?? 'Belum Dilayani' }}</td>
+                                    @endif
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="px-4 py-4 text-center text-sm text-slate-500">
+                                    <td colspan="{{ $isSuperAdmin ? 6 : 5 }}"
+                                        class="px-4 py-4 text-center text-sm text-slate-500">
                                         Tidak ada pasien dalam antrian saat ini.
                                     </td>
                                 </tr>
@@ -308,17 +320,20 @@
                     <table class="min-w-full text-sm">
                         <thead class="bg-slate-50 text-slate-500">
                             <tr>
-                                <th class="px-4 py-3 text-left">Tanggal</th>
+                                <th class="px-4 py-3 text-left">Tanggal Kunjungan</th>
                                 <th class="px-4 py-3 text-left">Pasien</th>
                                 <th class="px-4 py-3 text-left">Poli</th>
                                 <th class="px-4 py-3 text-left">Dokter</th>
+                                @if ($isSuperAdmin)
+                                    <th class="px-4 py-3 text-left">Perawat</th>
+                                @endif
                             </tr>
                         </thead>
                         <tbody>
                             @forelse ($listPasienTerbaruDitangani as $item)
                                 <tr class="border-b border-slate-100">
-                                    <td class="px-4 py-3 text-slate-600">
-                                        {{ \Carbon\Carbon::parse($item->created_at)->format('d/m/Y H:i') }}
+                                    <td class="px-4 py-3 text-slate-600 whitespace-nowrap">
+                                        {{ $item->tanggal_kunjungan_text ?? '-' }}
                                     </td>
                                     <td class="px-4 py-3 font-medium text-slate-800">
                                         {{ $item->nama_pasien ?? '-' }}
@@ -329,10 +344,16 @@
                                     <td class="px-4 py-3 text-slate-600">
                                         {{ $item->nama_dokter ?? '-' }}
                                     </td>
+                                    @if ($isSuperAdmin)
+                                        <td class="px-4 py-3 text-slate-600">
+                                            {{ $item->nama_perawat ?? 'Belum Dilayani' }}
+                                        </td>
+                                    @endif
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="4" class="px-4 py-4 text-center text-sm text-slate-500">
+                                    <td colspan="{{ $isSuperAdmin ? 5 : 4 }}"
+                                        class="px-4 py-4 text-center text-sm text-slate-500">
                                         Belum ada pasien yang selesai dilayani.
                                     </td>
                                 </tr>
@@ -368,10 +389,14 @@
                 <table class="min-w-full text-sm">
                     <thead class="bg-slate-50 text-slate-500">
                         <tr>
+                            <th class="px-4 py-3 text-left">Tanggal Kunjungan</th>
                             <th class="px-4 py-3 text-left">No Antrian</th>
                             <th class="px-4 py-3 text-left">Pasien</th>
                             <th class="px-4 py-3 text-left">Poli</th>
                             <th class="px-4 py-3 text-left">Dokter</th>
+                            @if ($isSuperAdmin)
+                                <th class="px-4 py-3 text-left">Perawat</th>
+                            @endif
                             <th class="px-4 py-3 text-left">Jadwal</th>
                             <th class="px-4 py-3 text-left">Keluhan</th>
                             <th class="px-4 py-3 text-left">Status</th>
@@ -380,6 +405,9 @@
                     <tbody>
                         @forelse ($detailRingkasanAntrian as $item)
                             <tr class="border-b border-slate-100">
+                                <td class="px-4 py-3 text-slate-600 whitespace-nowrap">
+                                    {{ $item->tanggal_kunjungan_text ?? '-' }}
+                                </td>
                                 <td class="px-4 py-3 font-medium text-slate-800">
                                     {{ $item->no_antrian }}
                                 </td>
@@ -392,6 +420,11 @@
                                 <td class="px-4 py-3 text-slate-600">
                                     {{ $item->nama_dokter }}
                                 </td>
+                                @if ($isSuperAdmin)
+                                    <td class="px-4 py-3 text-slate-600">
+                                        {{ $item->nama_perawat ?? 'Belum Dilayani' }}
+                                    </td>
+                                @endif
                                 <td class="px-4 py-3 text-slate-600">
                                     {{ $item->jadwal }}
                                 </td>
@@ -406,7 +439,8 @@
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="6" class="px-4 py-5 text-center text-sm text-slate-500">
+                                <td colspan="{{ $isSuperAdmin ? 9 : 8 }}"
+                                    class="px-4 py-5 text-center text-sm text-slate-500">
                                     Tidak ada data antrian.
                                 </td>
                             </tr>
