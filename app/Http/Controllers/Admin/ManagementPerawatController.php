@@ -182,32 +182,46 @@ class ManagementPerawatController extends Controller
             return Str::slug($data->nama_perawat) === $slug;
         });
 
+        if (!$dataPerawat) {
+            return response()->json([
+                'pesan' => 'Data perawat tidak ditemukan'
+            ], 404);
+        }
+
         $dataAkunPerawat = $dataPerawat->user;
 
-        $dataAkunPerawat->update([
+        $updateUser = [
             'username' => $request->edit_username_perawat,
             'email' => $request->edit_email_perawat,
-            'password' => Hash::make($request->edit_password_perawat),
-        ]);
+        ];
+
+        if ($request->filled('edit_password_perawat')) {
+            $updateUser['password'] = Hash::make($request->edit_password_perawat);
+        }
+
+        $dataAkunPerawat->update($updateUser);
+
+        $updatePerawat = [
+            'nama_perawat' => $request->edit_nama_perawat,
+            'no_hp_perawat' => $request->edit_no_hp_perawat,
+        ];
 
         if ($request->hasFile('edit_foto_perawat')) {
             if ($dataPerawat->foto_perawat && Storage::disk('public')->exists($dataPerawat->foto_perawat)) {
                 Storage::disk('public')->delete($dataPerawat->foto_perawat);
             }
-        }
-        $pathFoto = $request->file('edit_foto_perawat')->store('perawat', 'public');
 
-        $dataPerawat->update([
-            'nama_perawat' => $request->edit_nama_perawat,
-            'no_hp_perawat' => $request->edit_no_hp_perawat,
-            'foto_perawat' => $pathFoto,
-        ]);
+            $pathFoto = $request->file('edit_foto_perawat')->store('perawat', 'public');
+            $updatePerawat['foto_perawat'] = $pathFoto;
+        }
+
+        $dataPerawat->update($updatePerawat);
 
         $dataPerawat->dokterPoli()->sync($request->dokter_poli_id);
 
         return response()->json([
-            'pesan' => "Data Perawat Berhasil Diupdate",
-            'dataPerawat' => $dataPerawat,
+            'pesan' => 'Data Perawat Berhasil Diupdate',
+            'dataPerawat' => $dataPerawat->load(['user', 'dokterPoli']),
         ]);
     }
 
