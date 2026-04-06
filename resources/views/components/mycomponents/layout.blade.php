@@ -967,10 +967,13 @@
     <!-- FOOTER -->
     <footer class="app-footer sm:ml-64 bg-white border-t border-gray-200 mt-8 transition-all duration-300">
         <div class="w-full mx-auto p-4 md:flex md:items-center md:justify-between">
-            <p class="text-center text-sm text-gray-500">&copy; 2024 Royal Klinik.id. Hak Cipta Dilindungi.</p>
+            <p class="text-center text-sm text-gray-500">
+                &copy; {{ date('Y') }} Royal Klinik.id. Hak Cipta Dilindungi.
+            </p>
             <nav class="flex flex-wrap justify-center mt-3 text-sm font-medium text-gray-500 sm:mt-0">
-                <a href="#" class="hover:underline me-4 md:me-6">Kebijakan Privasi</a>
-                <a href="#" class="hover:underline">Syarat dan Ketentuan</a>
+                <a href="https://royal-klinik.cloud/privacy-id.html" class="hover:underline me-4 md:me-6">Kebijakan
+                    Privasi</a>
+                <a href="https://royal-klinik.cloud/privacy-id.html" class="hover:underline">Syarat dan Ketentuan</a>
             </nav>
         </div>
     </footer>
