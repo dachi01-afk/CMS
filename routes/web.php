@@ -81,18 +81,17 @@ use App\Http\Controllers\Testing\TestingController;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use Yajra\DataTables\Facades\DataTables;
 
 // Rest of your web routes remain the same...
 Route::get('/')->middleware('checkAuth');
 
 Route::middleware('auth')->post('/heartbeat', function () {
     User::where('id', Auth::id())->update([
-        'terakhir_login' => now()
+        'terakhir_login' => now(),
     ]);
 
     return response()->json([
-        'success' => true
+        'success' => true,
     ]);
 });
 
@@ -269,6 +268,11 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::delete('/search', [PasienController::class, 'search'])->name('pasien');
         Route::get('/cetak-stiker-pasien/{noEMR}', [PasienController::class, 'cetakStiker'])->name('cetak.stiker.pasien');
         Route::get('/show-detail-data-pasien/{noEMR}', [PasienController::class, 'showPasien'])->name('show.detail.pasien');
+
+        // export excel
+        Route::get('/pasien/export/excel', [PasienController::class, 'exportExcel'])
+            ->name('export_pasien_excel');
+
     });
 
     Route::prefix('management-pengguna')->group(function () {
@@ -426,7 +430,7 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('/get-data-kadaluarsa-obat', [KadaluarsaObatController::class, 'getDataKadaluarsaObat'])->name('get.data.kadaluarsa.obat');
         });
 
-        // Route Bahan Habis Pakai 
+        // Route Bahan Habis Pakai
         Route::prefix('bahan-habis-pakai')->group(function () {
             Route::get('/', [BahanHabisPakaiController::class, 'index'])->name('bahan.habis.pakai');
             Route::get('/get-data-bhp', [BahanHabisPakaiController::class, 'getDataBahanHabisPakai'])->name('get.data.bahan.habis.pakai');
@@ -445,7 +449,7 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('get-data-depot', [PemakaianBahanHabisPakaiController::class, 'getDataDepot'])->name('get.data.depot.pemakaian.bhp');
         });
 
-        // Route Penggunaan BHP 
+        // Route Penggunaan BHP
         Route::prefix('penggunaan-bhp')->group(function () {
             Route::get('/', [PenggunaanBHPController::class, 'index'])->name('penggunaan.bhp');
             Route::get('/get-data-penggunaan-bhp', [PenggunaanBHPController::class, 'getDataPenggunaanBHP'])->name('get.data.penggunaan.bhp');
@@ -453,7 +457,7 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('/print-pdf-data-penggunaan-bhp', [PenggunaanBHPController::class, 'printPdf'])->name('print.pdf.data.penggunaan.bhp');
         });
 
-        // Route Kadaluarsa BHP 
+        // Route Kadaluarsa BHP
         Route::prefix('kadaluarsa-bhp')->group(function () {
             Route::get('/', [KadaluarsaBHPController::class, 'index'])->name('kadaluarsa.bhp');
             Route::get('/get-data-warning-kadaluarsa-bhp', [KadaluarsaBHPController::class, 'getWarningKadaluarsa'])->name('get.data.warning.kadaluarsa.bhp');
@@ -517,7 +521,7 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('/get-data-riwayat-stok-masuk-bahan-habis-pakai', [StokMasukBahanHabisPakaiController::class, 'getDataRiwayatStokMasukBahanHabisPakai'])->name('farmasi.get.data.riwayat.stok.masuk.bahan.habis.pakai');
         });
 
-        // Return Obat 
+        // Return Obat
         Route::prefix('/return-obat')->group(function () {
             Route::get('/', [ReturnObatController::class, 'index'])->name('farmasi.return.obat');
             Route::get('/get-data-return-obat', [ReturnObatController::class, 'getDataReturnObat'])->name('farmasi.get.data.return.obat');
@@ -554,8 +558,8 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
         Route::prefix('depot')->group(function () {
             Route::get('/', [DepotController::class, 'index'])->name('depot.index');
             Route::get('/get-data-depot', [DepotController::class, 'dataTables'])->name('get.data.depot.dataTables');
-            Route::get("/get-data-obat-by-depot/{id}", [DepotController::class, 'getDataObatByDepotId'])->name('get.data.obat.by.depot.id');
-            Route::get("/get-data-repair-obat-by-depot/{id}", [DepotController::class, 'getDataRepairStokObatByDepotId'])->name('get.data.repair.obat.by.depot.id');
+            Route::get('/get-data-obat-by-depot/{id}', [DepotController::class, 'getDataObatByDepotId'])->name('get.data.obat.by.depot.id');
+            Route::get('/get-data-repair-obat-by-depot/{id}', [DepotController::class, 'getDataRepairStokObatByDepotId'])->name('get.data.repair.obat.by.depot.id');
             Route::post('/repair-stok-obat', [DepotController::class, 'repairStokObat'])->name('repair.stok.obat');
             Route::get('/get-data-repair-bhp-by-depot/{id}', [DepotController::class, 'getDataRepairStokBHPByDepotId'])->name('get.data.repair.bhp.by.depot.id');
             Route::post('/repair-stok-bhp', [DepotController::class, 'repairStokBHP'])->name('repair.stok.bhp');
@@ -565,7 +569,6 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('/', [PesananDanStokMasuk::class, 'index'])->name('pesanan.dan.stok.masuk.index');
             Route::get('/get-data-pesanan-dan-stok-masuk', [PesananDanStokMasuk::class, 'getData'])->name('pesanan.dan.stok.masuk.get.data');
         });
-
 
         // Route Brand Farmasi
         Route::get('/get-data-brand-farmasi', [BrandFarmasiController::class, 'getDataBrandFarmasi'])->name('get.data.brand.farmasi');
@@ -582,23 +585,22 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
         Route::post('/create-data-satuan-obat', [SatuanObatController::class, 'createDataSatuanObat'])->name('create.data.satuan.obat');
         Route::post('/delete-data-satuan-obat', [SatuanObatController::class, 'deleteDataSatuanObat'])->name('delete.data.satuan.obat');
 
-        // Route Tipe Depot 
+        // Route Tipe Depot
         Route::get('/get-data-tipe-depot', [TipeDepotController::class, 'getDataTipeDepot'])->name('get.data.tipe.depot');
         Route::post('/create-data-tipe-depot', [TipeDepotController::class, 'createDataTipeDepot'])->name('create.data.tipe.depot');
         Route::post('/delete-data-tipe-depot', [TipeDepotController::class, 'deleteDataTipeDepot'])->name('delete.data.tipe.depot');
 
-        // Route Depot 
+        // Route Depot
         Route::get('/get-data-depot', [DepotController::class, 'getDataDepot'])->name('get.data.depot');
         Route::post('/create-data-depot', [DepotController::class, 'createDataDepot'])->name('create.data.depot');
         Route::post('/delete-data-depot', [DepotController::class, 'deleteDataDepot'])->name('delete.data.depot');
 
-        // Route Supplier 
+        // Route Supplier
         Route::get('/get-data-supplier', [SupplierController::class, 'getDataSupplier'])->name('get.data.supplier');
         Route::get('/get-data-supplier-by-id/{id}', [SupplierController::class, 'showDataSupplier'])->name('get.data.supplier.by.id');
         Route::post('/create-data-supplier', [SupplierController::class, 'createDataSupplier'])->name('create.data.supplier');
         Route::post('/delete-data-supplier', [SupplierController::class, 'deleteDataSupplier'])->name('delete.data.supplier');
         Route::post('/update-data-supplier', [SupplierController::class, 'updateDataSupplier'])->name('update.data.supplier');
-
 
         Route::prefix('pengambilan-obat')->group(function () {
             Route::get('/', [FarmasiPengambilanObatController::class, 'index'])->name('pengambilan.obat');
@@ -615,7 +617,7 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
 
             Route::get('get-data-resep-obat-detail/{id}', [FarmasiPengambilanObatController::class, 'getDataResepObatDetail'])->name('pengambilan.obat.get.data.resep.obat.detail');
 
-            // Route Antrian Hari Ini Yang Sudah Selesai 
+            // Route Antrian Hari Ini Yang Sudah Selesai
             Route::get('/get-data-resep-obat-selesai', [FarmasiPengambilanObatController::class, 'getDataResepObatYangSudahSelesai'])->name('pengambilan.obat.get.data.resep.obat.selesai');
         });
     });
@@ -704,15 +706,12 @@ Route::middleware(['auth', 'role:Kasir'])->group(function () {
 
         Route::get('/transaksi-layanan/{kodeTransaksi}/proses', [TransaksiLayananController::class, 'prosesPembayaranLayanan'])->name('kasir.proses.pembayaran.layanan');
 
-
         Route::prefix('riwayat-transaksi-layanan')->group(function () {
             Route::get('/get-data', [TransaksiLayananController::class, 'getDataRiwayatTransaksiLayanan'])->name('kasir.get.data.riwaya.transaksi.layanan');
             Route::get('/kwitansi-transaksi-layanan/{kodeTransaksi}', [TransaksiLayananController::class, 'kwitansiTransaksiLayanan'])->name('kasir.show.kwitansi.transaksi.layanan');
         });
 
         // Route::get('/riwayat-transaksi-layanan', [TransaksiLayananController::class, 'getDataRiwayatTransaksiLayanan'])->name('kasir.get.data.riwayat.transaksi.layanan');
-
-
 
         // Route::get('/show-detail-transaksi-layanan/{kodeTransaksi}', [TransaksiLayananCofntroller::class, 'showDetailTransaksiLayanan'])->name('kasir.show.detail.transaksi.layanan');
 
@@ -756,7 +755,7 @@ Route::middleware(['auth', 'role:Kasir'])->group(function () {
             Route::get('/get-data-detail-riwayat-hutang-bahan-habis-pakai/{noFaktur}', [HutangBahanHabisPakaiController::class, 'getDataDetailRiwayatHutangBahanHabisPakai'])->name('kasir.get.data.detail.riwayat.hutang.bahan.habis.pakai');
         });
 
-        // Piutang Obat 
+        // Piutang Obat
         Route::prefix('/piutang-obat')->group(function () {
             Route::get('/', [PiutangObatController::class, 'index'])->name('kasir.piutang.obat');
             Route::get('/get-data-piutang-obat', [PiutangObatController::class, 'getDataPiutangObat'])->name('kasir.get.data.piutang.obat');
@@ -777,7 +776,6 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
         Route::get('/', [PerawatController::class, 'index'])->name('perawat.dashboard');
         Route::get('/chart', [PerawatController::class, 'chartDashboard'])->name('perawat.chart');
 
-
         Route::get('/kunjungan', [KunjunganController::class, 'index'])->name('perawat.kunjungan');
         Route::get('/getDataKunjunganHariIni', [KunjunganController::class, 'getDataKunjunganHariIni'])->name('perawat.get.data.kunjungan.hari.ini');
         Route::post('/updateStatusKunjunganKeEngaged/{id}', [KunjunganController::class, 'updateStatusKunjunganKeEngaged'])->name('perawat.update.status.kunjungan.ke.engaged');
@@ -793,7 +791,7 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
         });
 
         Route::prefix('order-radiologi')->group(function () {
-            Route::get('/get-data-order-radiologi',  [OrderRadiologiController::class, 'getDataOrderRadiologi'])->name('get.data.order.radiologi');
+            Route::get('/get-data-order-radiologi', [OrderRadiologiController::class, 'getDataOrderRadiologi'])->name('get.data.order.radiologi');
             Route::get('/input-hasil/{id}', [OrderRadiologiController::class, 'inputHasil'])->name('input.hasil.order.radiologi');
             Route::post('/simpan-hasil', [OrderRadiologiController::class, 'simpanHasil'])->name('simpan-hasil');
         });
@@ -816,13 +814,13 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
 
 Route::middleware(['auth', 'superAdmin'])->prefix('super-admin')->group(function () {
 
-    // delete data dokter 
+    // delete data dokter
     Route::delete('/delete_dokter/{id}', [DokterController::class, 'deleteDokter'])->name('delete_dokter');
 
-    // delete data pasien 
+    // delete data pasien
     Route::delete('/delete_pasien/{id}', [PasienController::class, 'deletePasien'])->name('delete_pasien');
 
-    // delete data farmasi 
+    // delete data farmasi
     Route::delete('/delete_farmasi/{id}', [FarmasiController::class, 'deleteFarmasi'])->name('delete_farmasi');
 
     // delete data perawat
@@ -841,7 +839,7 @@ Route::middleware(['auth', 'superAdmin'])->prefix('super-admin')->group(function
     Route::post('/diskon-approval/{approval}/approve', [DiskonApprovalManagerController::class, 'approve'])->name('super.admin.diskon.approve');
     Route::post('/diskon-approval/{approval}/reject', [DiskonApprovalManagerController::class, 'reject'])->name('super.admin.diskon.reject');
 
-    // Approve Diskon Penjualan Obat 
+    // Approve Diskon Penjualan Obat
     Route::get('/approve-diskon-penjualan-obat', [ApproveDiskonPenjualanObatManagerController::class, 'index'])->name('super.admin.approve.diskon.penjualan.obat');
     Route::get('/approve-diskon-penjualan-obat/get-data-belum-approve', [ApproveDiskonPenjualanObatManagerController::class, 'getDataBelumApprove']);
     Route::get('/approve-diskon-penjualan-obat/get-data-sudah-approve', [ApproveDiskonPenjualanObatManagerController::class, 'getDataSudahApprove'])->name('super.admin.data.approve-diskon-penjualan-obat');
@@ -881,4 +879,4 @@ Route::post('/proses-login-dokter', [AuthController::class, 'prosesLogin'])->nam
 
 Route::get('/is-global', [LayananController::class, 'isGlobal'])->name('layanan.is.global');
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';
