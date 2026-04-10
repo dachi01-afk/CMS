@@ -9,6 +9,7 @@ use App\Models\Obat;
 use App\Models\RestockObat;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 use Yajra\DataTables\Facades\DataTables;
 
 class StokMasukObatController extends Controller
@@ -115,81 +116,57 @@ class StokMasukObatController extends Controller
 
     public function konfirmasiStokMasukObat($id)
     {
-        $dataStokMasuk = RestockObat::with([
-            'restockObatDetail',
-        ])->findOrFail($id);
-
-        if ($dataStokMasuk->status_restock !== 'Pending') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Data restock ini sudah dikonfirmasi atau tidak valid.',
-            ], 422);
-        }
-
-        DB::beginTransaction();
-
         try {
-            foreach ($dataStokMasuk->restockObatDetail as $detail) {
-                $qty = (int) $detail->qty;
+            DB::transaction(
+                function () use ($id) {
+                    $dataStokMasuk = RestockObat::with('restockObatDetail')->findOrFail($id);
 
-                if ($qty <= 0) {
-                    continue;
+                    if ($dataStokMasuk->status_restock !== 'Pending') {
+                        throw new \RuntimeException('Data restock ini sudah dikonfirmasi sebelumnya.');
+                    }
+
+                    foreach ($dataStokMasuk->restockObatDetail as $dataDetail) {
+                        $jumlahStokMasuk = (int) $dataDetail->qty;
+
+                        $dataObat = Obat::find($dataDetail->obat_id);
+
+                        if (! $dataObat) {
+                            throw new \RuntimeException('Data obat tidak ditemukan di database.');
+                        }
+
+                        $dataObat->increment('jumlah', $jumlahStokMasuk);
+
+                        $dataDepotObat = DepotObat::firstOrNew([
+                            'depot_id' => $dataStokMasuk->depot_id,
+                            'obat_id'  => $dataDetail->obat_id,
+                        ]);
+
+                        $dataDepotObat->stok_obat = ($dataDepotObat->stok_obat ?? 0) + $jumlahStokMasuk;
+
+                        if (! $dataDepotObat->save()) {
+                            throw new \RuntimeException('Gagal menyimpan data depot obat.');
+                        }
+                    }
+
+                    $dataStokMasuk->status_restock = 'Succeed';
+                    $dataStokMasuk->dikonfirmasi_oleh = Auth::id();
+                    $dataStokMasuk->dikonfirmasi_jam = now();
+                    $dataStokMasuk->tanggal_terima = now();
+
+                    if (! $dataStokMasuk->save()) {
+                        throw new \RuntimeException('Gagal update status restock.');
+                    }
                 }
-
-                // 1. Update stok global di tabel obat
-                $obat = Obat::find($detail->obat_id);
-                if ($obat) {
-                    $obat->increment('jumlah', $qty);
-                }
-
-                // 2. Update stok per depot di tabel depot_obat
-                $depotObat = DepotObat::firstOrNew([
-                    'depot_id' => $dataStokMasuk->depot_id,
-                    'obat_id' => $detail->obat_id,
-                ]);
-
-                if (!$depotObat->exists) {
-                    $depotObat->stok_obat = 0;
-                }
-
-                $depotObat->stok_obat += $qty;
-                $depotObat->save();
-
-                // 3. Update stok batch per depot di tabel batch_obat_depot
-                $batchObatDepot = BatchObatDepot::firstOrNew([
-                    'batch_obat_id' => $detail->batch_obat_id,
-                    'depot_id' => $dataStokMasuk->depot_id,
-                ]);
-
-                if (!$batchObatDepot->exists) {
-                    $batchObatDepot->stok_obat = 0;
-                }
-
-                $batchObatDepot->stok_obat += $qty;
-                $batchObatDepot->save();
-            }
-
-            // 4. Update status restock
-            $dataStokMasuk->update([
-                'status_restock' => 'Succeed',
-                'dikonfirmasi_oleh' => Auth::id(),
-                'dikonfirmasi_jam' => now(),
-                'tanggal_terima' => $dataStokMasuk->tanggal_terima ?? now(),
-            ]);
-
-            DB::commit();
+            );
 
             return response()->json([
                 'success' => true,
-                'message' => 'Stok masuk obat berhasil dikonfirmasi.',
+                'message' => 'Stok masuk berhasil dikonfirmasi.',
             ]);
-        } catch (\Throwable $th) {
-            DB::rollBack();
-
+        } catch (Throwable $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Terjadi kesalahan saat konfirmasi stok masuk.',
-                'error' => $th->getMessage(),
+                'message' => $e->getMessage(),
             ], 500);
         }
     }

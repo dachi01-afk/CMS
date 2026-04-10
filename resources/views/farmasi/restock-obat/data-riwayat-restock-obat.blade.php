@@ -193,11 +193,14 @@
                     </div>
                     <div>
                         <p class="text-slate-500">Status Restock</p>
-                        <p id="riwayat-restock-obat-detail_status_transaksi" class="font-semibold text-slate-800">-</p>
+                        <span id="riwayat-restock-obat-detail_status_transaksi"
+                            class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-700">
+                            -
+                        </span>
                     </div>
                     <div class="md:col-span-2 xl:col-span-3">
                         <p class="text-slate-500">Total Tagihan</p>
-                        <p id="riwayat-restock-obat-detail_total_tagihan" class="font-bold text-emerald-600 text-base">
+                        <p id="riwayat-restock-obat-detail_total_tagihan" class="font-bold text-base">
                             Rp 0</p>
                     </div>
                 </div>

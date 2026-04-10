@@ -293,6 +293,50 @@ $(function () {
         `);
     }
 
+    function classBadgeStatus(status) {
+        status = (status || "").toLowerCase().trim();
+
+        switch (status) {
+            case "succeed":
+                return "bg-emerald-100 text-emerald-700";
+            case "canceled":
+                return "bg-red-100 text-red-700";
+        }
+    }
+
+    function renderBadgeStatus(status) {
+        const $badge = $("#riwayat-restock-obat-detail_status_transaksi");
+        const label = status || "-";
+
+        $badge
+            .removeClass(
+                "bg-green-100 text-green-700 bg-yellow-100 text-yellow-700 bg-red-100 text-red-700 bg-gray-100 text-gray-700",
+            )
+            .addClass(classBadgeStatus(label))
+            .text(label);
+    }
+
+    function classFormatTotalTagihan(status) {
+        status = (status || "").toLowerCase().trim();
+
+        switch (status) {
+            case "succeed":
+                return "text-emerald-600";
+            case "canceled":
+                return "text-red-600";
+        }
+    }
+
+    function renderClassFormatTotalTagihan(status, totalTagihan) {
+        const $class = $("#riwayat-restock-obat-detail_total_tagihan");
+        const label = status || "-";
+        const formatTotalTagihan = totalTagihan || "-";
+
+        $class
+            .addClass(classFormatTotalTagihan(label))
+            .text(formatTotalTagihan);
+    }
+
     function fillModalDetailRestockObat(data) {
         $("#riwayat-restock-obat-detail_supplier").text(
             data.supplier?.nama_supplier || "-",
@@ -307,11 +351,12 @@ $(function () {
         $("#riwayat-restock-obat-detail_tanggal_jatuh_tempo").text(
             formatDateIndonesia(data.tanggal_jatuh_tempo),
         );
-        $("#riwayat-restock-obat-detail_status_transaksi").text(
-            data.status_restock || "-",
-        );
-        $("#riwayat-restock-obat-detail_total_tagihan").text(
-            formatRupiah(data.total_tagihan),
+
+        renderBadgeStatus(data.status_restock);
+
+        renderClassFormatTotalTagihan(
+            data.status_restock,
+            data.format_total_tagihan,
         );
 
         const details = Array.isArray(data.restock_obat_detail)
@@ -337,13 +382,13 @@ $(function () {
                     <td class="px-4 py-3">${index + 1}</td>
                     <td class="px-4 py-3">${detail.obat?.nama_obat || "-"}</td>
                     <td class="px-4 py-3">${detail.batch_obat?.nama_batch || "-"}</td>
-                    <td class="px-4 py-3">${detail.batch_obat?.tanggal_kadaluarsa_obat || "-"}</td>
+                    <td class="px-4 py-3">${detail.batch_obat?.format_tanggal_kadaluarsa_obat || "-"}</td>
                     <td class="px-4 py-3">${detail.qty || 0}</td>
-                    <td class="px-4 py-3">${formatRupiah(detail.harga_beli)}</td>
-                    <td class="px-4 py-3">${formatRupiah(detail.subtotal)}</td>
+                    <td class="px-4 py-3">${detail.format_harga_beli}</td>
+                    <td class="px-4 py-3">${detail.format_subtotal}</td>
                     <td class="px-4 py-3">${renderDiskon(detail)}</td>
-                    <td class="px-4 py-3">${formatRupiah(detail.diskon_amount)}</td>
-                    <td class="px-4 py-3 font-semibold text-emerald-600">${formatRupiah(detail.total_setelah_diskon)}</td>
+                    <td class="px-4 py-3">${detail.format_diskon_amount}</td>
+                    <td class="px-4 py-3 font-semibold ${classFormatTotalTagihan(data.status_restock)}">${detail.format_total_setelah_diskon}</td>
                 </tr>
             `;
         });
