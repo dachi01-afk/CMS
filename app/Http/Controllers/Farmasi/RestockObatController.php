@@ -93,8 +93,9 @@ class RestockObatController extends Controller
                     'id' => (string) $batch->id,
                     'value' => (string) $batch->id,
                     'nama_batch' => $batch->nama_batch,
-                    'tanggal_kadaluarsa_obat' => $batch->tanggal_kadaluarsa_obat,
-                    'text' => $batch->nama_batch . ' - EXP ' . $batch->tanggal_kadaluarsa_obat,
+                    'format_tanggal_kadaluarsa_obat' => $batch->format_tanggal_kadaluarsa_obat,
+                    'tanggal_kadaluarsa_obat' => \Carbon\Carbon::parse($batch->tanggal_kadaluarsa_obat)->format('Y-m-d'),
+                    'text' => $batch->nama_batch . ' - EXP ' . $batch->format_tanggal_kadaluarsa_obat,
                 ];
             })
             ->values();

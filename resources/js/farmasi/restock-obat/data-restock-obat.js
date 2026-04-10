@@ -241,7 +241,93 @@ $(function () {
         $("#modal-create-restock-obat").removeClass("hidden").addClass("flex");
     }
 
+    function resetSingleDetailRow($row) {
+        const rowEl = $row[0];
+        if (!rowEl) return;
+
+        const obatTom = rowEl.querySelector(".obat-select")?.tomselect;
+        const batchTom = rowEl.querySelector(".batch-obat-select")?.tomselect;
+
+        if (obatTom) {
+            obatTom.clear(true);
+        } else {
+            $row.find(".obat-select").val("");
+        }
+
+        if (batchTom) {
+            batchTom.clear(true);
+            batchTom.clearOptions();
+            batchTom.addOption({
+                value: "",
+                text: "Pilih / ketik batch baru",
+                nama_batch: "",
+                tanggal_kadaluarsa_obat: "",
+            });
+            batchTom.refreshOptions(false);
+            batchTom.disable();
+        } else {
+            $row.find(".batch-obat-select").val("");
+        }
+
+        resetBatchFields($row);
+
+        $row.find(".detail-qty").val("");
+        $row.find(".detail-harga-beli").val("");
+        $row.find(".detail-harga-beli-display").val("");
+        $row.find(".detail-diskon-value").val("");
+        $row.find(".detail-diskon-value-display").val("");
+
+        const defaultDiskonType =
+            $row.find(".detail-diskon-type option:first").val() || "";
+        $row.find(".detail-diskon-type").val(defaultDiskonType);
+
+        $row.find(".detail-subtotal-display").val("0");
+        $row.find(".detail-subtotal-input").val("0");
+        $row.find(".detail-diskon-amount-display").val("0");
+        $row.find(".detail-diskon-amount-input").val("0");
+        $row.find(".detail-total-display").val("0");
+        $row.find(".detail-total-input").val("0");
+
+        updateDiskonPrefix($row);
+    }
+
+    function resetModalRestock() {
+        const form = $("#form-create-restock-obat")[0];
+        if (form) {
+            form.reset();
+        }
+
+        if (supplierTom) {
+            supplierTom.clear(true);
+        } else {
+            $("#supplier_id").val("");
+        }
+
+        if (depotTom) {
+            depotTom.clear(true);
+        } else {
+            $("#depot_id").val("");
+        }
+
+        const $rows = $("#restock-detail-container .detail-row");
+
+        if ($rows.length > 1) {
+            $rows.slice(1).remove();
+        }
+
+        const $firstRow = $("#restock-detail-container .detail-row").first();
+        if ($firstRow.length) {
+            resetSingleDetailRow($firstRow);
+        }
+
+        $("#grand-total-display").val("0");
+        $("#grand-total-input").val("0");
+
+        calculateAllRows();
+    }
+
     function closeModalRestock() {
+        resetModalRestock();
         unlockBodyScroll();
         $("#modal-create-restock-obat").removeClass("flex").addClass("hidden");
     }
@@ -431,23 +517,46 @@ $(function () {
         calculateGrandTotal();
     }
 
+    function setTanggalKadaluarsaState($row, value = "", isLocked = false) {
+        const $input = $row.find(".tanggal-kadaluarsa-input");
+
+        $input.val(value || "");
+        $input.prop("readonly", isLocked);
+
+        if (isLocked) {
+            $input.addClass(
+                "bg-slate-100 cursor-not-allowed pointer-events-none",
+            );
+            $input.removeClass("bg-white");
+        } else {
+            $input.removeClass(
+                "bg-slate-100 cursor-not-allowed pointer-events-none",
+            );
+            $input.addClass("bg-white");
+        }
+    }
+
     function resetBatchFields($row) {
         $row.find(".batch-obat-id-input").val("");
         $row.find(".batch-obat-nama-input").val("");
-        $row.find(".tanggal-kadaluarsa-input").val("");
+        setTanggalKadaluarsaState($row, "", false);
     }
 
     function setExistingBatchToRow($row, data) {
+
         $row.find(".batch-obat-id-input").val(data.id || "");
         $row.find(".batch-obat-nama-input").val(data.nama_batch || "");
-        $row.find(".tanggal-kadaluarsa-input").val(
+        setTanggalKadaluarsaState(
+            $row,
             data.tanggal_kadaluarsa_obat || "",
+            true,
         );
     }
 
     function setNewBatchToRow($row, batchName) {
         $row.find(".batch-obat-id-input").val("");
         $row.find(".batch-obat-nama-input").val(batchName || "");
+        setTanggalKadaluarsaState($row, "", false);
     }
 
     function initDetailRow(row) {
@@ -486,8 +595,8 @@ $(function () {
                             ? `<span class="ml-2 inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">Baru</span>`
                             : "";
 
-                        const exp = data.tanggal_kadaluarsa_obat
-                            ? `<div class="text-xs text-slate-500">EXP: ${escape(data.tanggal_kadaluarsa_obat)}</div>`
+                        const exp = data.format_tanggal_kadaluarsa_obat
+                            ? `<div class="text-xs text-slate-500">EXP: ${escape(data.format_tanggal_kadaluarsa_obat)}</div>`
                             : "";
 
                         return `
@@ -580,6 +689,8 @@ $(function () {
                         tanggal_kadaluarsa_obat: "",
                     });
 
+
+
                     if (Array.isArray(response) && response.length > 0) {
                         response.forEach((item) => {
                             batchTom.addOption({
@@ -587,8 +698,8 @@ $(function () {
                                 text: item.text,
                                 id: String(item.id),
                                 nama_batch: item.nama_batch,
-                                tanggal_kadaluarsa_obat:
-                                    item.tanggal_kadaluarsa_obat,
+                                tanggal_kadaluarsa_obat: item.tanggal_kadaluarsa_obat,
+                                format_tanggal_kadaluarsa_obat:item.format_tanggal_kadaluarsa_obat,
                                 is_new: false,
                             });
                         });
@@ -849,11 +960,6 @@ $(function () {
             },
             success: async function (response) {
                 closeModalRestock();
-
-                const form = $("#form-create-restock-obat")[0];
-                if (form) {
-                    form.reset();
-                }
 
                 if (window.tableRestockObat) {
                     window.tableRestockObat.ajax.reload(null, false);
