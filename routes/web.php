@@ -786,6 +786,7 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
 
         Route::prefix('order-lab')->group(function () {
             Route::get('/get-data-order-lab', [OrderLabController::class, 'getDataHasilLab'])->name('get.data.order.lab');
+            Route::get('/get-data-detail-order-lab/{noOrderLab}', [OrderLabController::class, 'getDataDetailOrderLab'])->name('get.data.detail.order.lab');
             Route::get('/input-hasil/{id}', [OrderLabController::class, 'inputHasil'])->name('input.hasil.order.lab');
             Route::post('/simpan-hasil-lab', [OrderLabController::class, 'simpanHasil'])->name('simpan.hasil.order.lab');
         });

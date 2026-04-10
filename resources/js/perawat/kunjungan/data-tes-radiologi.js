@@ -353,7 +353,7 @@ $(function () {
     `);
 
         $.ajax({
-            url: `/perawat/get-data-detail-order-radiologi/${id}`,
+            url: `/perawat/order-radiologi/get-data-detail-order-radiologi/${id}`,
             type: "GET",
             success: function (response) {
                 if (!response.success) {

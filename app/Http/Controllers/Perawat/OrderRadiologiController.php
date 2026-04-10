@@ -24,7 +24,7 @@ class OrderRadiologiController extends Controller
         $status = $request->get('status');
         $status = $status ? ucfirst(strtolower($status)) : null;
 
-        $data = OrderRadiologi::getData()->today();
+        $query = OrderRadiologi::getData();
 
         if ($role === 'Perawat') {
             $perawat = Perawat::where('user_id', $user->id)->first();
@@ -33,22 +33,75 @@ class OrderRadiologiController extends Controller
                 return response()->json(['error' => 'Data perawat tidak ditemukan'], 403);
             }
 
-            $data = $data->filterByPerawat($perawat->id);
-        } elseif ($role !== 'Super Admin') {
+            $query = $query->filterByPerawat($perawat->id);
+        } elseif ($role === 'Super Admin') {
+            // Super Admin boleh melihat semua data
+        } else {
             return response()->json(['error' => 'Role tidak diizinkan'], 403);
         }
 
-        $data = $data->when($status, function ($q) use ($status) {
+        $query = $query->when($status, function ($q) use ($status) {
             $q->where('status', $status);
         });
 
-        return DataTables::of($data)
+        $orders = $query->get();
+
+        $orders->loadMissing([
+            'pasien',
+            'dokter',
+            'orderRadiologiDetail.jenisPemeriksaanRadiologi',
+        ]);
+
+        $detailIds = $orders->pluck('orderRadiologiDetail')
+            ->flatten()
+            ->pluck('id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $hasilRadiologi = $detailIds->isNotEmpty()
+            ? HasilRadiologi::whereIn('order_radiologi_detail_id', $detailIds)
+            ->get(['order_radiologi_detail_id', 'perawat_id'])
+            ->keyBy('order_radiologi_detail_id')
+            : collect();
+
+        $perawatMap = $hasilRadiologi->pluck('perawat_id')
+            ->filter()
+            ->unique()
+            ->pipe(function ($ids) {
+                return $ids->isNotEmpty()
+                    ? Perawat::whereIn('id', $ids)->pluck('nama_perawat', 'id')
+                    : collect();
+            });
+
+        return DataTables::of($orders)
             ->addIndexColumn()
             ->addColumn('nama_pasien', function ($row) {
                 return $row->pasien->nama_pasien ?? '-';
             })
             ->addColumn('nama_dokter', function ($row) {
                 return $row->dokter->nama_dokter ?? '-';
+            })
+            ->addColumn('nama_perawat', function ($row) use ($role, $hasilRadiologi, $perawatMap) {
+                if ($role !== 'Super Admin') {
+                    return '-';
+                }
+
+                if (!$row->orderRadiologiDetail || $row->orderRadiologiDetail->isEmpty()) {
+                    return '-';
+                }
+
+                $namaPerawat = $row->orderRadiologiDetail->map(function ($detail) use ($hasilRadiologi, $perawatMap) {
+                    $hasil = $hasilRadiologi->get($detail->id);
+
+                    if (!$hasil || !$hasil->perawat_id) {
+                        return null;
+                    }
+
+                    return $perawatMap[$hasil->perawat_id] ?? ('Perawat ID: ' . $hasil->perawat_id);
+                })->filter()->unique()->values();
+
+                return $namaPerawat->isNotEmpty() ? $namaPerawat->implode(', ') : '-';
             })
             ->addColumn('status_badge', function ($row) {
                 $config = match ($row->status) {
@@ -60,13 +113,13 @@ class OrderRadiologiController extends Controller
                 };
 
                 return '
-                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ' . $config['bg'] . ' ' . $config['text'] . '">
-                    <svg class="-ml-0.5 mr-1.5 h-2 w-2 ' . $config['dot'] . ' rounded-full" fill="currentColor" viewBox="0 0 8 8">
-                        <circle cx="4" cy="4" r="3" />
-                    </svg>
-                    ' . $row->status . '
-                </span>
-            ';
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ' . $config['bg'] . ' ' . $config['text'] . '">
+                <svg class="-ml-0.5 mr-1.5 h-2 w-2 ' . $config['dot'] . ' rounded-full" fill="currentColor" viewBox="0 0 8 8">
+                    <circle cx="4" cy="4" r="3" />
+                </svg>
+                ' . $row->status . '
+            </span>
+        ';
             })
             ->addColumn('item_pemeriksaan', function ($row) {
                 if (!$row->orderRadiologiDetail || $row->orderRadiologiDetail->isEmpty()) {
@@ -80,38 +133,38 @@ class OrderRadiologiController extends Controller
             ->addColumn('action', function ($row) use ($role) {
                 if ($role === 'Super Admin') {
                     return '
-                    <button
-                        type="button"
-                        class="btn-detail-order-radiologi inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
-                        data-id="' . $row->id . '"
-                    >
-                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-                        </svg>
-                        Detail
-                    </button>
-                ';
+                <button
+                    type="button"
+                    class="btn-detail-order-radiologi inline-flex items-center px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                    data-id="' . $row->id . '"
+                >
+                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    </svg>
+                    Detail
+                </button>
+            ';
                 }
 
                 $url = route('input.hasil.order.radiologi', $row->id);
 
                 if ($row->status === 'Selesai') {
                     return '
-                    <button class="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-500 rounded-lg text-xs font-medium cursor-not-allowed">
-                        <i class="fas fa-check-circle mr-1"></i> Terinput
-                    </button>
-                ';
+                <button class="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-500 rounded-lg text-xs font-medium cursor-not-allowed">
+                    <i class="fas fa-check-circle mr-1"></i> Terinput
+                </button>
+            ';
                 }
 
                 return '
-                <a href="' . $url . '" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                    </svg>
-                    Input Hasil
-                </a>
-            ';
+            <a href="' . $url . '" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                </svg>
+                Input Hasil
+            </a>
+        ';
             })
             ->rawColumns(['status_badge', 'action'])
             ->make(true);
@@ -139,7 +192,9 @@ class OrderRadiologiController extends Controller
             }
 
             $query->filterByPerawat($perawat->id);
-        } elseif ($role !== 'Super Admin') {
+        } elseif ($role === 'Super Admin') {
+            // Super Admin boleh akses semua detail
+        } else {
             return response()->json([
                 'success' => false,
                 'message' => 'Role tidak diizinkan'
@@ -148,13 +203,32 @@ class OrderRadiologiController extends Controller
 
         $order = $query->firstOrFail();
 
-        $detailPemeriksaan = $order->orderRadiologiDetail->map(function ($detail) {
-            $hasil = HasilRadiologi::where('order_radiologi_detail_id', $detail->id)->first();
+        $detailIds = $order->orderRadiologiDetail->pluck('id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $hasilRadiologi = $detailIds->isNotEmpty()
+            ? HasilRadiologi::whereIn('order_radiologi_detail_id', $detailIds)
+            ->get()
+            ->keyBy('order_radiologi_detail_id')
+            : collect();
+
+        $perawatMap = $hasilRadiologi->pluck('perawat_id')
+            ->filter()
+            ->unique()
+            ->pipe(function ($ids) {
+                return $ids->isNotEmpty()
+                    ? Perawat::whereIn('id', $ids)->pluck('nama_perawat', 'id')
+                    : collect();
+            });
+
+        $detailPemeriksaan = $order->orderRadiologiDetail->map(function ($detail) use ($hasilRadiologi, $perawatMap) {
+            $hasil = $hasilRadiologi->get($detail->id);
 
             $namaPerawatInput = '-';
             if ($hasil && $hasil->perawat_id) {
-                $perawat = Perawat::find($hasil->perawat_id);
-                $namaPerawatInput = $perawat->nama_perawat ?? ('Perawat ID: ' . $hasil->perawat_id);
+                $namaPerawatInput = $perawatMap[$hasil->perawat_id] ?? ('Perawat ID: ' . $hasil->perawat_id);
             }
 
             return [
@@ -175,6 +249,11 @@ class OrderRadiologiController extends Controller
                 'updated_at' => optional($detail->updated_at)->format('d-m-Y H:i:s'),
             ];
         });
+
+        $listPerawat = $detailPemeriksaan->pluck('perawat_input')
+            ->filter(fn($item) => $item && $item !== '-')
+            ->unique()
+            ->values();
 
         return response()->json([
             'success' => true,
@@ -201,6 +280,7 @@ class OrderRadiologiController extends Controller
                     'no_hp' => $order->dokter->no_hp ?? '-',
                 ],
 
+                'perawat' => $role === 'Super Admin' ? $listPerawat : [],
                 'detail_pemeriksaan' => $detailPemeriksaan->values(),
             ]
         ]);

@@ -2,13 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\JenisPemeriksaanRadiologi;
 use App\Models\Kunjungan;
 use App\Models\OrderRadiologi;
-use App\Models\OrderRadiologiDetail;
-use Database\Factories\OrderRadiologiFactory;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Carbon;
 
 class OrderRadiologiSeeder extends Seeder
 {
@@ -17,37 +14,39 @@ class OrderRadiologiSeeder extends Seeder
      */
     public function run(): void
     {
-        // 1. Validasi Master Data Lab
-        $countJenisLab = JenisPemeriksaanRadiologi::count();
-        if ($countJenisLab == 0) {
-            $this->command->error('Tabel jenis_pemeriksaan_lab masih kosong!');
+        $kunjunganList = Kunjungan::whereNotNull('pasien_id')
+            ->whereNotNull('dokter_id')
+            ->get();
+
+        if ($kunjunganList->isEmpty()) {
+            $this->command->error('Tabel kunjungan valid masih kosong! Pastikan ada kunjungan dengan pasien_id dan dokter_id.');
             return;
         }
 
-        // 2. Validasi Master Data Kunjungan
-        if (Kunjungan::count() == 0) {
-            $this->command->error('Tabel kunjungan masih kosong! Jalankan KunjunganSeeder dulu.');
-            return;
+        $statuses = ['Pending', 'Diproses', 'Selesai', 'Dibatalkan'];
+
+        for ($i = 1; $i <= 50; $i++) {
+            $kunjungan = $kunjunganList->random();
+
+            $tanggalOrder = Carbon::instance(fake()->dateTimeBetween('-30 days', 'now'));
+            $tanggalPemeriksaan = (clone $tanggalOrder)->addDays(rand(0, 3));
+            $status = fake()->randomElement($statuses);
+
+            OrderRadiologi::factory()->create([
+                'kunjungan_id' => $kunjungan->id,
+                'pasien_id' => $kunjungan->pasien_id,
+                'dokter_id' => $kunjungan->dokter_id,
+                'tanggal_order' => $tanggalOrder->toDateString(),
+                'tanggal_pemeriksaan' => $tanggalPemeriksaan->toDateString(),
+                'jam_pemeriksaan' => fake()->randomElement(['08:00:00', '09:00:00', '10:00:00', '13:00:00', '15:00:00']),
+                'status' => $status,
+                'created_at' => $tanggalOrder,
+                'updated_at' => $status === 'Selesai'
+                    ? (clone $tanggalOrder)->addHours(rand(1, 6))
+                    : $tanggalOrder,
+            ]);
         }
 
-        // 3. Buat 50 Data Order Lab menggunakan Factory
-        OrderRadiologi::factory()->count(50)->create()->each(function ($order) {
-
-            // Setiap 1 Order, ambil random 1 sampai 4 jenis pemeriksaan
-            $jenisPemeriksaan = JenisPemeriksaanRadiologi::inRandomOrder()
-                ->limit(rand(1, 4))
-                ->get();
-
-            foreach ($jenisPemeriksaan as $jenis) {
-                OrderRadiologiDetail::create([
-                    'order_radiologi_id' => $order->id,
-                    'jenis_pemeriksaan_radiologi_id' => $jenis->id,
-                    // Logika status detail mengikuti status header
-                    'status_pemeriksaan' => ($order->status == 'Selesai') ? 'Selesai' : 'Pending',
-                ]);
-            }
-        });
-
-        $this->command->info('50 Data Order Lab berhasil digenerate dengan relasi kunjungan acak.');
+        $this->command->info('50 data Order Radiologi berhasil dibuat.');
     }
 }

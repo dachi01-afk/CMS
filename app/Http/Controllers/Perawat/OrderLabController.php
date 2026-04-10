@@ -22,7 +22,7 @@ class OrderLabController extends Controller
         $user = Auth::user();
 
         // Base query: semua data order lab hari ini
-        $data = OrderLab::getData()->today();
+        $data = OrderLab::getData();
 
         // Filter perawat hanya berlaku jika yang login adalah Perawat
         if ($user->role === 'Perawat') {
@@ -62,11 +62,11 @@ class OrderLabController extends Controller
                 };
 
                 return '
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium '.$config['bg'].' '.$config['text'].'">
-                        <svg class="-ml-0.5 mr-1.5 h-2 w-2 '.$config['dot'].' rounded-full" fill="currentColor" viewBox="0 0 8 8">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ' . $config['bg'] . ' ' . $config['text'] . '">
+                        <svg class="-ml-0.5 mr-1.5 h-2 w-2 ' . $config['dot'] . ' rounded-full" fill="currentColor" viewBox="0 0 8 8">
                             <circle cx="4" cy="4" r="3" />
                         </svg>
-                        '.$row->status.'
+                        ' . $row->status . '
                     </span>';
             })
             ->addColumn('item_pemeriksaan', function ($row) {
@@ -79,44 +79,167 @@ class OrderLabController extends Controller
                 })->implode(', ');
             })
             ->addColumn('action', function ($row) use ($user) {
-                $detailUrl = route('detail.order.lab', $row->id);
+                $detailUrl = route('get.data.detail.order.lab', $row->no_order_lab);
                 $inputUrl = route('input.hasil.order.lab', $row->id);
 
-                // Jika login Super Admin => hanya bisa lihat detail
                 if ($user->role === 'Super Admin') {
                     return '
-                        <a href="'.$detailUrl.'" class="inline-flex items-center px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2">
-                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H15.01M12 12H12.01M9 12H9.01M21 12C21 16.4183 16.9706 20 12 20C10.243 20 8.60221 19.5551 7.21885 18.7812L3 20L4.21885 16.7812C3.44489 15.3978 3 13.757 3 12C3 7.58172 7.02944 4 12 4C16.9706 4 21 7.58172 21 12Z"></path>
-                            </svg>
-                            Lihat Detail
-                        </a>';
+            <button
+                type="button"
+                class="btn-detail-order-lab inline-flex items-center px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2"
+                data-detail-url="' . $detailUrl . '">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H15.01M12 12H12.01M9 12H9.01M21 12C21 16.4183 16.9706 20 12 20C10.243 20 8.60221 19.5551 7.21885 18.7812L3 20L4.21885 16.7812C3.44489 15.3978 3 13.757 3 12C3 7.58172 7.02944 4 12 4C16.9706 4 21 7.58172 21 12Z"></path>
+                </svg>
+                Lihat Detail
+            </button>';
                 }
 
-                // Jika status sudah selesai, Perawat juga hanya lihat detail
                 if ($row->status === 'Selesai') {
                     return '
-                        <a href="'.$detailUrl.'" class="inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2">
-                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H15.01M12 12H12.01M9 12H9.01M21 12C21 16.4183 16.9706 20 12 20C10.243 20 8.60221 19.5551 7.21885 18.7812L3 20L4.21885 16.7812C3.44489 15.3978 3 13.757 3 12C3 7.58172 7.02944 4 12 4C16.9706 4 21 7.58172 21 12Z"></path>
-                            </svg>
-                            Lihat Detail
-                        </a>';
+            <button
+                type="button"
+                class="btn-detail-order-lab inline-flex items-center px-4 py-2 bg-green-600 hover:bg-green-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
+                data-detail-url="' . $detailUrl . '">
+                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12H15.01M12 12H12.01M9 12H9.01M21 12C21 16.4183 16.9706 20 12 20C10.243 20 8.60221 19.5551 7.21885 18.7812L3 20L4.21885 16.7812C3.44489 15.3978 3 13.757 3 12C3 7.58172 7.02944 4 12 4C16.9706 4 21 7.58172 21 12Z"></path>
+                </svg>
+                Lihat Detail
+            </button>';
                 }
 
-                // Selain itu, hanya Perawat yang bisa input hasil
                 return '
-                    <a href="'.$inputUrl.'" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
-                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                        </svg>
-                        Input Hasil
-                    </a>';
+        <a href="' . $inputUrl . '" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm transition-all duration-200 ease-in-out transform hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2">
+            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+            </svg>
+            Input Hasil
+        </a>';
             })
             ->rawColumns(['status_badge', 'action'])
             ->make(true);
     }
 
+    public function getDataDetailOrderLab($noOrderLab)
+    {
+        $user = Auth::user();
+
+        if (!in_array($user->role, ['Perawat', 'Super Admin'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User tidak memiliki akses'
+            ], 403);
+        }
+
+        $query = OrderLab::with([
+            'pasien',
+            'dokter',
+            'kunjungan.poli',
+            'orderLabDetail.jenisPemeriksaanLab.satuanLab',
+        ])->where('no_order_lab', $noOrderLab);
+
+        if ($user->role === 'Perawat') {
+            $perawat = Perawat::where('user_id', $user->id)->first();
+
+            if (!$perawat) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Data perawat tidak ditemukan'
+                ], 403);
+            }
+
+            $query->filterByPerawat($perawat->id);
+        }
+
+        $order = $query->first();
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data order lab tidak ditemukan'
+            ], 404);
+        }
+
+        $detailIds = $order->orderLabDetail->pluck('id')->filter()->values();
+
+        $hasilLabs = $detailIds->isNotEmpty()
+            ? HasilLab::whereIn('order_lab_detail_id', $detailIds)
+            ->get()
+            ->keyBy('order_lab_detail_id')
+            : collect();
+
+        $perawatIds = $hasilLabs->pluck('perawat_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $perawatMap = $perawatIds->isNotEmpty()
+            ? Perawat::whereIn('id', $perawatIds)->pluck('nama_perawat', 'id')
+            : collect();
+
+        $items = $order->orderLabDetail->map(function ($detail) use ($hasilLabs, $perawatMap) {
+            $hasil = $hasilLabs->get($detail->id);
+            $jenis = $detail->jenisPemeriksaanLab;
+
+            $namaSatuan = optional($jenis->satuanLab)->nama_satuan
+                ?? optional($jenis->satuanLab)->nama
+                ?? '-';
+
+            $namaPerawatPemeriksa = '-';
+            if ($hasil && $hasil->perawat_id) {
+                $namaPerawatPemeriksa = $perawatMap[$hasil->perawat_id] ?? ('Perawat ID: ' . $hasil->perawat_id);
+            }
+
+            return [
+                'detail_id' => $detail->id,
+                'nama_pemeriksaan' => $jenis->nama_pemeriksaan ?? '-',
+                'kode_pemeriksaan' => $jenis->kode_pemeriksaan ?? '-',
+                'status_pemeriksaan' => $detail->status_pemeriksaan ?? '-',
+                'nama_satuan' => $namaSatuan,
+                'nilai_normal' => $jenis->nilai_normal ?? null,
+                'nilai_hasil' => $hasil->nilai_hasil ?? null,
+                'nilai_rujukan' => $hasil->nilai_rujukan ?? null,
+                'keterangan' => $hasil->keterangan ?? '-',
+                'perawat_pemeriksa' => $namaPerawatPemeriksa,
+                'hasil_tanggal_pemeriksaan' => $hasil && $hasil->tanggal_pemeriksaan
+                    ? \Carbon\Carbon::parse($hasil->tanggal_pemeriksaan)->format('d-m-Y')
+                    : '-',
+                'hasil_jam_pemeriksaan' => $hasil->jam_pemeriksaan ?? '-',
+                'harga_pemeriksaan_lab' => $jenis->harga_pemeriksaan_lab ?? 0,
+            ];
+        })->values();
+
+        $perawatTerkait = $items->pluck('perawat_pemeriksa')
+            ->filter(fn($item) => $item && $item !== '-')
+            ->unique()
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id' => $order->id,
+                'no_order_lab' => $order->no_order_lab ?? '-',
+                'status' => $order->status ?? '-',
+                'nama_pasien' => $order->pasien->nama_pasien ?? '-',
+                'nama_dokter' => $order->dokter->nama_dokter ?? '-',
+                'nama_poli' => optional(optional($order->kunjungan)->poli)->nama_poli ?? '-',
+                'no_antrian' => $order->kunjungan->no_antrian ?? '-',
+                'keluhan_awal' => $order->kunjungan->keluhan_awal ?? '-',
+                'tanggal_order' => $order->tanggal_order
+                    ? \Carbon\Carbon::parse($order->tanggal_order)->format('d-m-Y')
+                    : '-',
+                'tanggal_pemeriksaan' => $order->tanggal_pemeriksaan
+                    ? \Carbon\Carbon::parse($order->tanggal_pemeriksaan)->format('d-m-Y')
+                    : '-',
+                'jam_pemeriksaan' => $order->jam_pemeriksaan ?? '-',
+                'perawat_penginput' => $perawatTerkait->isNotEmpty()
+                    ? $perawatTerkait->implode(', ')
+                    : '-',
+                'perawat_terkait' => $perawatTerkait,
+                'items' => $items,
+            ]
+        ]);
+    }
     public function inputHasil($id)
     {
         if (Auth::user()->role !== 'Perawat') {

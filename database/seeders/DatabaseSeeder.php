@@ -20,6 +20,8 @@ use Database\Seeders\KategoriObatSeeder;
 use Database\Seeders\LayananSeeder;
 use Database\Seeders\MetodePembayaranSeeder;
 use Database\Seeders\ObatSeeder;
+use Database\Seeders\OrderRadiologiDetailSeeder;
+use Database\Seeders\OrderRadiologiSeeder;
 use Database\Seeders\PasienSeeder;
 use Database\Seeders\PerawatDokterPoliSeeder;
 use Database\Seeders\PerawatSeeder;
@@ -37,44 +39,46 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([
-            UserSeeder::class,
-            SuperAdminSeeder::class,
-            AdminSeeder::class,
-            JenisSpesialisSeeder::class,
-            DokterSeeder::class,
-            PerawatSeeder::class,
-            FarmasiSeeder::class,
-            KasirSeeder::class,
-            PasienSeeder::class,
-            PoliSeeder::class,
-            KategoriLayananSeeder::class,
-            KategoriObatSeeder::class,
-            LayananSeeder::class,
-            DokterPoliSeeder::class,
-            BrandFarmasiSeeder::class,
-            TipeDepotSeeder::class,
-            DepotSeeder::class,
-            JenisObatSeeder::class,
-            SatuanObatSeeder::class,
-            ObatSeeder::class,
-            BatchObatSeeder::class,
-            BatchObatDepotSeeder::class,
-            DepotObatSeeder::class,
-            JadwalDokterSeeder::class,
-            KunjunganSeeder::class,
-            KunjunganLayananSeeder::class,
-            ResepSeeder::class,
-            ResepObatSeeder::class,
-            EMRSeeder::class,
-            MetodePembayaranSeeder::class,
-            PerawatDokterPoliSeeder::class,
-            SatuanLabSeeder::class,
-            JenisPemeriksaanLabSeeder::class,
-            JenisPemeriksaanRadiologiSeeder::class,
-            OrderLabSeeder::class,
-            OrderRadiologiSeeder::class,
-            PembayaranSeeder::class,
-        ]);
+        // $this->call([
+        //     UserSeeder::class,
+        //     SuperAdminSeeder::class,
+        //     AdminSeeder::class,
+        //     JenisSpesialisSeeder::class,
+        //     DokterSeeder::class,
+        //     PerawatSeeder::class,
+        //     FarmasiSeeder::class,
+        //     KasirSeeder::class,
+        //     PasienSeeder::class,
+        //     PoliSeeder::class,
+        //     KategoriLayananSeeder::class,
+        //     KategoriObatSeeder::class,
+        //     LayananSeeder::class,
+        //     DokterPoliSeeder::class,
+        //     BrandFarmasiSeeder::class,
+        //     TipeDepotSeeder::class,
+        //     DepotSeeder::class,
+        //     JenisObatSeeder::class,
+        //     SatuanObatSeeder::class,
+        //     ObatSeeder::class,
+        //     BatchObatSeeder::class,
+        //     BatchObatDepotSeeder::class,
+        //     DepotObatSeeder::class,
+        //     JadwalDokterSeeder::class,
+        //     KunjunganSeeder::class,
+        //     KunjunganLayananSeeder::class,
+        //     ResepSeeder::class,
+        //     ResepObatSeeder::class,
+        //     EMRSeeder::class,
+        //     MetodePembayaranSeeder::class,
+        //     PerawatDokterPoliSeeder::class,
+        //     SatuanLabSeeder::class,
+        //     JenisPemeriksaanLabSeeder::class,
+        //     JenisPemeriksaanRadiologiSeeder::class,
+        //     OrderLabSeeder::class,
+        //     OrderRadiologiSeeder::class,
+        //     PembayaranSeeder::class,
+        // ]);
+
+        $this->call([OrderRadiologiSeeder::class, OrderRadiologiDetailSeeder::class]);
     }
 }
