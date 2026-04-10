@@ -9,7 +9,7 @@
 </head>
 
 <body>
-    <div>{{$nama}}</div>
+    <x-testing-component/>
 </body>
 
 </html>
