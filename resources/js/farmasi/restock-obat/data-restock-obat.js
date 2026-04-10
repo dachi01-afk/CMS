@@ -543,7 +543,6 @@ $(function () {
     }
 
     function setExistingBatchToRow($row, data) {
-
         $row.find(".batch-obat-id-input").val(data.id || "");
         $row.find(".batch-obat-nama-input").val(data.nama_batch || "");
         setTanggalKadaluarsaState(
@@ -689,8 +688,6 @@ $(function () {
                         tanggal_kadaluarsa_obat: "",
                     });
 
-
-
                     if (Array.isArray(response) && response.length > 0) {
                         response.forEach((item) => {
                             batchTom.addOption({
@@ -698,8 +695,10 @@ $(function () {
                                 text: item.text,
                                 id: String(item.id),
                                 nama_batch: item.nama_batch,
-                                tanggal_kadaluarsa_obat: item.tanggal_kadaluarsa_obat,
-                                format_tanggal_kadaluarsa_obat:item.format_tanggal_kadaluarsa_obat,
+                                tanggal_kadaluarsa_obat:
+                                    item.tanggal_kadaluarsa_obat,
+                                format_tanggal_kadaluarsa_obat:
+                                    item.format_tanggal_kadaluarsa_obat,
                                 is_new: false,
                             });
                         });
@@ -1106,7 +1105,7 @@ $(function () {
                     <td class="px-4 py-3">${index + 1}</td>
                     <td class="px-4 py-3">${detail.obat?.nama_obat || "-"}</td>
                     <td class="px-4 py-3">${detail.batch_obat?.nama_batch || "-"}</td>
-                    <td class="px-4 py-3">${detail.batch_obat?.tanggal_kadaluarsa_obat || "-"}</td>
+                    <td class="px-4 py-3">${detail.batch_obat?.format_tanggal_kadaluarsa_obat || "-"}</td>
                     <td class="px-4 py-3">${detail.qty || 0}</td>
                     <td class="px-4 py-3">${formatRupiah(detail.harga_beli)}</td>
                     <td class="px-4 py-3">${formatRupiah(detail.subtotal)}</td>

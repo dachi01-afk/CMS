@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Farmasi;
 
 use App\Http\Controllers\Controller;
 use App\Models\BatchObat;
-use App\Models\BatchObatDepot;
 use App\Models\Depot;
 use App\Models\HutangObat;
 use App\Models\Obat;
@@ -190,6 +189,7 @@ class RestockObatController extends Controller
                 $batchObatId = $detail['batch_obat_id'] ?? null;
                 $batchNama = trim($detail['batch_nama'] ?? '');
                 $tanggalKadaluarsa = $detail['tanggal_kadaluarsa_obat'];
+                $isBatchBaru = false;
 
                 if ($batchObatId) {
                     $batchObat = BatchObat::where('id', $batchObatId)
@@ -208,6 +208,8 @@ class RestockObatController extends Controller
                             'nama_batch' => $batchNama,
                             'tanggal_kadaluarsa_obat' => $tanggalKadaluarsa,
                         ]);
+
+                        $isBatchBaru = true;
                     }
                 }
 
@@ -222,15 +224,8 @@ class RestockObatController extends Controller
                     'diskon_value' => $detail['diskon_value'] ?? 0,
                     'diskon_amount' => $detail['diskon_amount'] ?? 0,
                     'total_setelah_diskon' => $detail['total_setelah_diskon'],
+                    'is_batch_baru' => $isBatchBaru,
                 ]);
-
-                $batchDepot = BatchObatDepot::firstOrNew([
-                    'batch_obat_id' => $batchObat->id,
-                    'depot_id' => $request->depot_id,
-                ]);
-
-                $batchDepot->stok_obat = ($batchDepot->stok_obat ?? 0) + (int) $detail['qty'];
-                $batchDepot->save();
             }
 
             HutangObat::create([
@@ -330,7 +325,7 @@ class RestockObatController extends Controller
 
     public function cancelRestockObat($noFaktur)
     {
-        $restockObat = RestockObat::with('hutang')
+        $restockObat = RestockObat::with('hutang', 'restockObatDetail.batchObat')
             ->where('no_faktur', $noFaktur)
             ->firstOrFail();
 
@@ -344,6 +339,12 @@ class RestockObatController extends Controller
             return response()->json([
                 'message' => 'Data restock obat tidak bisa dibatalkan karena hutang sudah lunas.'
             ], 422);
+        }
+
+        foreach ($restockObat->restockObatDetail as $dataDetail) {
+            if ($dataDetail->is_batch_baru == true) {
+                $dataDetail->batchObat->delete();
+            }
         }
 
         $restockObat->update([
