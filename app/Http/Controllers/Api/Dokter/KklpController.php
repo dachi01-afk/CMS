@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Api\Dokter;
 
 use App\Http\Controllers\Controller;
 use App\Models\Dokter;
-use App\Models\Emr;
+use App\Models\EMR;
 use App\Models\EmrKklp;
 use App\Models\Kunjungan;
 use Illuminate\Http\Request;
