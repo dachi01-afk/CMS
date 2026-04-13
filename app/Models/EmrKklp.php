@@ -15,7 +15,7 @@ class EmrKklp extends Model
 
     public function emr()
     {
-        return $this->belongsTo(Emr::class, 'emr_id');
+        return $this->belongsTo(EMR::class, 'emr_id');
     }
 
     public function kunjungan()

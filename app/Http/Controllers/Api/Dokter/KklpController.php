@@ -349,6 +349,7 @@ class KklpController extends Controller
                 if ($this->isMeaningfulRow($value)) {
                     return true;
                 }
+
                 continue;
             }
 
@@ -365,6 +366,7 @@ class KklpController extends Controller
         return collect($rows)
             ->map(function ($row) {
                 $row['tanggal_lahir'] = $this->normalizeDate($row['tanggal_lahir'] ?? null);
+
                 return $row;
             })
             ->filter(fn ($row) => is_array($row) && $this->isMeaningfulRow($row))
@@ -388,6 +390,7 @@ class KklpController extends Controller
         return collect($rows)
             ->map(function ($row) {
                 $row['tanggal_lahir'] = $this->normalizeDate($row['tanggal_lahir'] ?? null);
+
                 return $row;
             })
             ->filter(fn ($row) => is_array($row) && $this->isMeaningfulRow($row))
@@ -400,6 +403,7 @@ class KklpController extends Controller
         return collect($rows)
             ->map(function ($row) {
                 $row['tanggal'] = $this->normalizeDate($row['tanggal'] ?? null);
+
                 return $row;
             })
             ->filter(fn ($row) => is_array($row) && $this->isMeaningfulRow($row))
@@ -425,6 +429,7 @@ class KklpController extends Controller
 
         if (empty($payload)) {
             $rel->delete();
+
             return;
         }
 
@@ -622,8 +627,7 @@ class KklpController extends Controller
             $dokter = Dokter::where('user_id', $userId)->firstOrFail();
 
             $kunjungan = Kunjungan::with('emr')->findOrFail($request->kunjungan_id);
-            $emr = Emr::findOrFail($request->emr_id);
-
+            $emr = EMR::findOrFail($request->emr_id);
             if ((int) $emr->kunjungan_id !== (int) $kunjungan->id) {
                 return response()->json([
                     'success' => false,
