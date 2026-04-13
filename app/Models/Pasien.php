@@ -70,4 +70,8 @@ class Pasien extends Model
     {
         return $this->hasMany(OrderRadiologi::class);
     }
+    public function emrKklp()
+{
+    return $this->hasMany(EmrKklp::class, 'pasien_id');
+}
 }

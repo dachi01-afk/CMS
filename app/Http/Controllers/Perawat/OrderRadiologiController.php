@@ -348,4 +348,95 @@ class OrderRadiologiController extends Controller
             ], 500);
         }
     }
+    /**
+ * 🧪 TEST ENDPOINT - Kirim notifikasi hasil radiologi via Postman
+ * Route: POST /api/test/notif-hasil-radiologi
+ */
+public function testNotifikasiHasilRadiologi(Request $request)
+{
+    try {
+        $request->validate([
+            'order_radiologi_id' => 'required|exists:order_radiologi,id',
+        ]);
+
+        $orderId = $request->order_radiologi_id;
+
+        Log::info('🧪 TEST NOTIFIKASI HASIL RADIOLOGI START', [
+            'order_radiologi_id' => $orderId,
+            'timestamp' => now()->toDateTimeString(),
+        ]);
+
+        // Load order radiologi dengan relasi
+        $order = OrderRadiologi::with([
+            'pasien.user',
+            'orderRadiologiDetail.jenisPemeriksaanRadiologi',
+            'orderRadiologiDetail.hasilRadiologi'
+        ])->findOrFail($orderId);
+
+        // Cek FCM token
+        if (!$order->pasien || !$order->pasien->user || !$order->pasien->user->fcm_token) {
+            Log::warning('⚠️ FCM Token tidak ditemukan', [
+                'pasien_id' => $order->pasien_id,
+                'user_id' => $order->pasien->user_id ?? null,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => '⚠️ FCM Token tidak ditemukan untuk pasien ini',
+                'data' => [
+                    'pasien_nama' => $order->pasien->nama_pasien ?? '-',
+                    'pasien_user_id' => $order->pasien->user_id ?? null,
+                    'fcm_token' => null,
+                ],
+            ], 400);
+        }
+
+        // Ambil hasil radiologi terakhir
+        $hasilTerakhir = $order->orderRadiologiDetail()
+            ->with('hasilRadiologi')
+            ->get()
+            ->flatMap(fn($detail) => $detail->hasilRadiologi)
+            ->sortByDesc('created_at')
+            ->first();
+
+        Log::info('📊 Data loaded for test notification', [
+            'order_id' => $order->id,
+            'pasien_id' => $order->pasien_id,
+            'pasien_nama' => $order->pasien->nama_pasien,
+            'pasien_user_id' => $order->pasien->user_id,
+            'fcm_token' => substr($order->pasien->user->fcm_token, 0, 20) . '...',
+            'hasil_radiologi_id' => $hasilTerakhir ? $hasilTerakhir->id : null,
+        ]);
+
+        // 🔥 KIRIM NOTIFIKASI
+        NotificationHelper::kirimNotifikasiHasilRadiologi($order, $hasilTerakhir);
+
+        Log::info('✅ Test notification sent successfully');
+
+        return response()->json([
+            'success' => true,
+            'message' => '✅ Notifikasi berhasil dikirim ke HP pasien!',
+            'data' => [
+                'order_radiologi_id' => $order->id,
+                'pasien_nama' => $order->pasien->nama_pasien,
+                'pasien_user_id' => $order->pasien->user_id,
+                'fcm_token_preview' => substr($order->pasien->user->fcm_token, 0, 30) . '...',
+                'hasil_radiologi_count' => $order->orderRadiologiDetail->count(),
+                'status' => $order->status,
+            ],
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('❌ TEST NOTIFIKASI RADIOLOGI ERROR', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'order_radiologi_id' => $request->order_radiologi_id ?? null,
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => '❌ Error: ' . $e->getMessage(),
+        ], 500);
+    }
+}
 }

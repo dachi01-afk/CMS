@@ -38,4 +38,10 @@ class OrderLayanan extends Model
     {
         return $this->hasMany(OrderLayananDetail::class, 'order_layanan_id');
     }
+
+    // FIX: relasi balik ke kunjungan
+    public function kunjungan()
+    {
+        return $this->belongsTo(Kunjungan::class, 'kunjungan_id');
+    }
 }

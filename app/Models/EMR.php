@@ -10,7 +10,6 @@ class EMR extends Model
 
     protected $guarded = [];
 
-
     public function kunjungan()
     {
         return $this->belongsTo(Kunjungan::class);
@@ -40,14 +39,17 @@ class EMR extends Model
     {
         return $this->belongsTo(Pasien::class);
     }
+
     public function pembayaran()
     {
         return $this->hasOne(Pembayaran::class, 'emr_id');
     }
+
     public function resumeDokter()
     {
         return $this->hasOne(\App\Models\ResumeDokter::class, 'emr_id');
     }
+
     public function scopeGetData($query)
     {
         return $query->with(['pasien', 'dokter', 'poli'])
@@ -57,5 +59,15 @@ class EMR extends Model
     public function scopeFilterByPerawat($query, $perawatId)
     {
         return $query->where('perawat_id', $perawatId);
+    }
+
+    public function emrKklp()
+    {
+        return $this->hasOne(EmrKklp::class, 'emr_id');
+    }
+
+    public function pengkajianAwalPenyakitDalam()
+    {
+        return $this->hasOne(\App\Models\EmrPengkajianAwalPenyakitDalam::class, 'emr_id');
     }
 }

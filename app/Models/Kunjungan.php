@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Kunjungan extends Model
 {
@@ -11,7 +11,6 @@ class Kunjungan extends Model
 
     protected $table = 'kunjungan';
 
-    // Ubah dari guarded ke fillable untuk security yang lebih baik katanya pid
     protected $fillable = [
         'jadwal_dokter_id',
         'dokter_id',
@@ -23,18 +22,10 @@ class Kunjungan extends Model
         'status',
     ];
 
-    // Cast untuk tipe data yang sesuai
     protected $casts = [
         'tanggal_kunjungan' => 'datetime',
     ];
 
-    // Relasi yang sudah ada - tetap sama
-    // public function resep()
-    // {
-    //     return $this->hasMany(Resep::class);
-    // }
-
-    // Dokter langsung belongsTo lewat poli_id
     public function dokter()
     {
         return $this->belongsTo(Dokter::class);
@@ -55,7 +46,6 @@ class Kunjungan extends Model
         return $this->belongsTo(JadwalDokter::class);
     }
 
-    // Tambahkan relasi untuk EMR
     public function emr()
     {
         return $this->hasOne(EMR::class);
@@ -63,32 +53,30 @@ class Kunjungan extends Model
 
     public function kunjunganLayanan()
     {
-        return $this->belongsToMany(Layanan::class, 'kunjungan_layanan', 'kunjungan_id', 'layanan_id')->withPivot(['jumlah']);
+        return $this->belongsToMany(Layanan::class, 'kunjungan_layanan', 'kunjungan_id', 'layanan_id')
+            ->withPivot(['jumlah']);
     }
 
-    // Scope untuk filter berdasarkan status
     public function scopeByStatus($query, $status)
     {
         return $query->where('status', $status);
     }
 
-    // Scope untuk kunjungan hari ini
     public function scopeToday($query)
     {
         return $query->whereDate('tanggal_kunjungan', today());
     }
 
-    // Scope untuk kunjungan pasien tertentu
     public function scopeByPasien($query, $pasienId)
     {
         return $query->where('pasien_id', $pasienId);
     }
 
-    // Accessor untuk format tanggal yang mudah dibaca
     public function getFormattedDateAttribute()
     {
         return $this->tanggal_kunjungan->format('d M Y H:i');
     }
+
     public function layanan()
     {
         return $this->belongsToMany(Layanan::class, 'kunjungan_layanan', 'kunjungan_id', 'layanan_id')
@@ -110,4 +98,11 @@ class Kunjungan extends Model
     {
         return $this->hasMany(OrderRadiologi::class);
     }
+
+    public function emrKklp()
+    {
+        return $this->hasOne(EmrKklp::class, 'kunjungan_id');
+    }
+
+    
 }

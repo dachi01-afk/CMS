@@ -241,4 +241,95 @@ class OrderLabController extends Controller
             ], 500);
         }
     }
+    /**
+ * 🧪 TEST ENDPOINT - Kirim notifikasi hasil lab via Postman
+ * Route: POST /api/test/notif-hasil-lab
+ */
+public function testNotifikasiHasilLab(Request $request)
+{
+    try {
+        $request->validate([
+            'order_lab_id' => 'required|exists:order_lab,id',
+        ]);
+
+        $orderId = $request->order_lab_id;
+
+        Log::info('🧪 TEST NOTIFIKASI HASIL LAB START', [
+            'order_lab_id' => $orderId,
+            'timestamp' => now()->toDateTimeString(),
+        ]);
+
+        // Load order lab dengan relasi
+        $order = OrderLab::with([
+            'pasien.user', 
+            'orderLabDetail.jenisPemeriksaanLab', 
+            'orderLabDetail.hasilLab'
+        ])->findOrFail($orderId);
+
+        // Cek FCM token
+        if (!$order->pasien || !$order->pasien->user || !$order->pasien->user->fcm_token) {
+            Log::warning('⚠️ FCM Token tidak ditemukan', [
+                'pasien_id' => $order->pasien_id,
+                'user_id' => $order->pasien->user_id ?? null,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => '⚠️ FCM Token tidak ditemukan untuk pasien ini',
+                'data' => [
+                    'pasien_nama' => $order->pasien->nama_pasien ?? '-',
+                    'pasien_user_id' => $order->pasien->user_id ?? null,
+                    'fcm_token' => null,
+                ],
+            ], 400);
+        }
+
+        // Ambil hasil lab terakhir
+        $hasilLabTerakhir = $order->orderLabDetail()
+            ->with('hasilLab')
+            ->get()
+            ->flatMap(fn($detail) => $detail->hasilLab)
+            ->sortByDesc('created_at')
+            ->first();
+
+        Log::info('📊 Data loaded for test notification', [
+            'order_id' => $order->id,
+            'pasien_id' => $order->pasien_id,
+            'pasien_nama' => $order->pasien->nama_pasien,
+            'pasien_user_id' => $order->pasien->user_id,
+            'fcm_token' => substr($order->pasien->user->fcm_token, 0, 20) . '...',
+            'hasil_lab_id' => $hasilLabTerakhir ? $hasilLabTerakhir->id : null,
+        ]);
+
+        // 🔥 KIRIM NOTIFIKASI
+        NotificationHelper::kirimNotifikasiHasilLab($order, $hasilLabTerakhir);
+
+        Log::info('✅ Test notification sent successfully');
+
+        return response()->json([
+            'success' => true,
+            'message' => '✅ Notifikasi berhasil dikirim ke HP pasien!',
+            'data' => [
+                'order_lab_id' => $order->id,
+                'pasien_nama' => $order->pasien->nama_pasien,
+                'pasien_user_id' => $order->pasien->user_id,
+                'fcm_token_preview' => substr($order->pasien->user->fcm_token, 0, 30) . '...',
+                'hasil_lab_count' => $order->orderLabDetail->count(),
+                'status' => $order->status,
+            ],
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('❌ TEST NOTIFIKASI ERROR', [
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'order_lab_id' => $request->order_lab_id ?? null,
+        ]);
+
+        return response()->json([
+            'success' => false,
+            'message' => '❌ Error: ' . $e->getMessage(),
+        ], 500);
+    }
+}
 }
