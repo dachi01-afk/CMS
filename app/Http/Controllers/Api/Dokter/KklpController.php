@@ -365,11 +365,17 @@ class KklpController extends Controller
     {
         return collect($rows)
             ->map(function ($row) {
+                if (! is_array($row)) {
+                    return null;
+                }
+
                 $row['tanggal_lahir'] = $this->normalizeDate($row['tanggal_lahir'] ?? null);
 
                 return $row;
             })
-            ->filter(fn ($row) => is_array($row) && $this->isMeaningfulRow($row))
+            ->filter(function ($row) {
+                return is_array($row) && $this->isMeaningfulRowExcept($row, ['hubungan']);
+            })
             ->values()
             ->toArray();
     }
@@ -389,11 +395,17 @@ class KklpController extends Controller
     {
         return collect($rows)
             ->map(function ($row) {
+                if (! is_array($row)) {
+                    return null;
+                }
+
                 $row['tanggal_lahir'] = $this->normalizeDate($row['tanggal_lahir'] ?? null);
 
                 return $row;
             })
-            ->filter(fn ($row) => is_array($row) && $this->isMeaningfulRow($row))
+            ->filter(function ($row) {
+                return is_array($row) && $this->isMeaningfulRowExcept($row, ['kategori']);
+            })
             ->values()
             ->toArray();
     }
@@ -402,6 +414,10 @@ class KklpController extends Controller
     {
         return collect($rows)
             ->map(function ($row) {
+                if (! is_array($row)) {
+                    return null;
+                }
+
                 $row['tanggal'] = $this->normalizeDate($row['tanggal'] ?? null);
 
                 return $row;
@@ -411,10 +427,22 @@ class KklpController extends Controller
             ->toArray();
     }
 
-    private function normalizeGenericRows(array $rows): array
+    private function normalizeGenericRows(array $rows, array $ignoredKeys = []): array
     {
         return collect($rows)
-            ->filter(fn ($row) => is_array($row) && $this->isMeaningfulRow($row))
+            ->filter(function ($row) use ($ignoredKeys) {
+                return is_array($row) && $this->isMeaningfulRowExcept($row, $ignoredKeys);
+            })
+            ->values()
+            ->toArray();
+    }
+
+    private function normalizeEkstremitas(array $rows): array
+    {
+        return collect($rows)
+            ->filter(function ($row) {
+                return is_array($row) && $this->isMeaningfulRowExcept($row, ['anggota']);
+            })
             ->values()
             ->toArray();
     }
@@ -464,17 +492,52 @@ class KklpController extends Controller
         $homevisit = $this->normalizeHomevisit($request->input('homevisit', []));
         $familyPlan = $this->normalizeGenericRows($request->input('family_plan', []));
         $copcPlan = $this->normalizeGenericRows($request->input('copc_plan', []));
-        $ekstremitas = $this->normalizeGenericRows($request->input('ekstremitas', []));
+        $ekstremitas = $this->normalizeEkstremitas($request->input('ekstremitas', []));
 
         $this->syncHasMany($kklp, 'orangtua', $orangtua);
-        $this->syncHasOne($kklp, 'heteroanamnesis', $heteroanamnesis);
-        $this->syncHasOne($kklp, 'familyApgar', is_array($familyApgar) && $this->isMeaningfulRow($familyApgar) ? $familyApgar : null);
-        $this->syncHasOne($kklp, 'familyScreem', is_array($familyScreem) && $this->isMeaningfulRow($familyScreem) ? $familyScreem : null);
+        $this->syncHasOne(
+            $kklp,
+            'heteroanamnesis',
+            is_array($heteroanamnesis) && $this->isMeaningfulRow($heteroanamnesis)
+                ? $heteroanamnesis
+                : null
+        );
+        $this->syncHasOne(
+            $kklp,
+            'familyApgar',
+            is_array($familyApgar) && $this->isMeaningfulRow($familyApgar)
+                ? $familyApgar
+                : null
+        );
+        $this->syncHasOne(
+            $kklp,
+            'familyScreem',
+            is_array($familyScreem) && $this->isMeaningfulRow($familyScreem)
+                ? $familyScreem
+                : null
+        );
         $this->syncHasMany($kklp, 'anggotaKeluarga', $anggotaKeluarga);
         $this->syncHasMany($kklp, 'homevisit', $homevisit);
         $this->syncHasMany($kklp, 'familyPlan', $familyPlan);
         $this->syncHasMany($kklp, 'copcPlan', $copcPlan);
         $this->syncHasMany($kklp, 'ekstremitas', $ekstremitas);
+    }
+
+    private function sanitizeNulls($value)
+    {
+        if (is_array($value)) {
+            return collect($value)->map(fn ($item) => $this->sanitizeNulls($item))->toArray();
+        }
+
+        if ($value instanceof \Illuminate\Support\Collection) {
+            return $value->map(fn ($item) => $this->sanitizeNulls($item))->toArray();
+        }
+
+        if ($value instanceof \Illuminate\Database\Eloquent\Model) {
+            return $this->sanitizeNulls($value->toArray());
+        }
+
+        return $value === null ? '' : $value;
     }
 
     private function loadFullKklpByEmr(int $emrId): ?EmrKklp
@@ -621,13 +684,16 @@ class KklpController extends Controller
     public function save(Request $request)
     {
         try {
-            $request->validate($this->validationRules());
+            $kklpData = $this->extractKklpData($request);
+
+            validator($kklpData, $this->validationRules())->validate();
 
             $userId = Auth::id();
             $dokter = Dokter::where('user_id', $userId)->firstOrFail();
 
-            $kunjungan = Kunjungan::with('emr')->findOrFail($request->kunjungan_id);
-            $emr = EMR::findOrFail($request->emr_id);
+            $kunjungan = Kunjungan::with('emr')->findOrFail($kklpData['kunjungan_id']);
+            $emr = EMR::findOrFail($kklpData['emr_id']);
+
             if ((int) $emr->kunjungan_id !== (int) $kunjungan->id) {
                 return response()->json([
                     'success' => false,
@@ -642,12 +708,14 @@ class KklpController extends Controller
                 ], 403);
             }
 
-            $result = DB::transaction(function () use ($request, $kunjungan, $emr, $dokter) {
-                $payload = $request->only($this->mainPayloadFields());
+            $result = DB::transaction(function () use ($kklpData, $kunjungan, $emr, $dokter) {
+                $payload = collect($this->mainPayloadFields())
+                    ->mapWithKeys(fn ($field) => [$field => $kklpData[$field] ?? null])
+                    ->toArray();
 
-                $payload['tanggal_kasus'] = $this->normalizeDate($request->tanggal_kasus);
-                $payload['tanggal_pemeriksaan'] = $this->normalizeDate($request->tanggal_pemeriksaan);
-                $payload['tanggal_homevisit'] = $this->normalizeDate($request->tanggal_homevisit);
+                $payload['tanggal_kasus'] = $this->normalizeDate($kklpData['tanggal_kasus'] ?? null);
+                $payload['tanggal_pemeriksaan'] = $this->normalizeDate($kklpData['tanggal_pemeriksaan'] ?? null);
+                $payload['tanggal_homevisit'] = $this->normalizeDate($kklpData['tanggal_homevisit'] ?? null);
 
                 $payload['emr_id'] = $emr->id;
                 $payload['kunjungan_id'] = $kunjungan->id;
@@ -656,14 +724,17 @@ class KklpController extends Controller
                 $payload['poli_id'] = $kunjungan->poli_id;
 
                 $existing = EmrKklp::where('emr_id', $emr->id)->first();
-                $payload['no_kasus'] = $request->no_kasus ?: ($existing?->no_kasus ?: $this->generateNoKasus());
+
+                $payload['no_kasus'] = ! empty($kklpData['no_kasus'])
+                    ? $kklpData['no_kasus']
+                    : ($existing?->no_kasus ?: $this->generateNoKasus());
 
                 $kklp = EmrKklp::updateOrCreate(
                     ['emr_id' => $emr->id],
                     $payload
                 );
 
-                $this->persistNestedRelations($request, $kklp);
+                $this->persistNestedRelations(new Request($kklpData), $kklp);
 
                 return $this->loadFullKklpByEmr($emr->id);
             });
@@ -689,6 +760,17 @@ class KklpController extends Controller
                 'message' => 'Gagal menyimpan form KKLP: '.$e->getMessage(),
             ], 500);
         }
+    }
+
+    private function extractKklpData(Request $request): array
+    {
+        $nested = $request->input('kklp_data');
+
+        if (! is_array($nested)) {
+            return $request->all();
+        }
+
+        return array_replace_recursive($request->all(), $nested);
     }
 
     public function riwayatPasienKklp(Request $request)
@@ -851,18 +933,26 @@ class KklpController extends Controller
                 ], 403);
             }
 
-            $request->validate($this->validationRules(true));
+            $kklpData = $this->extractKklpData($request);
 
-            $result = DB::transaction(function () use ($request, $kklp) {
-                $payload = $request->only($this->mainPayloadFields());
+            validator($kklpData, $this->validationRules(true))->validate();
 
-                $payload['tanggal_kasus'] = $this->normalizeDate($request->tanggal_kasus);
-                $payload['tanggal_pemeriksaan'] = $this->normalizeDate($request->tanggal_pemeriksaan);
-                $payload['tanggal_homevisit'] = $this->normalizeDate($request->tanggal_homevisit);
+            $result = DB::transaction(function () use ($kklpData, $kklp) {
+                $payload = collect($this->mainPayloadFields())
+                    ->mapWithKeys(fn ($field) => [$field => $kklpData[$field] ?? null])
+                    ->toArray();
+
+                $payload['tanggal_kasus'] = $this->normalizeDate($kklpData['tanggal_kasus'] ?? null);
+                $payload['tanggal_pemeriksaan'] = $this->normalizeDate($kklpData['tanggal_pemeriksaan'] ?? null);
+                $payload['tanggal_homevisit'] = $this->normalizeDate($kklpData['tanggal_homevisit'] ?? null);
+
+                if (empty($payload['no_kasus'])) {
+                    $payload['no_kasus'] = $kklp->no_kasus ?: $this->generateNoKasus();
+                }
 
                 $kklp->update($payload);
 
-                $this->persistNestedRelations($request, $kklp);
+                $this->persistNestedRelations(new Request($kklpData), $kklp);
 
                 return $this->loadFullKklpByEmr($kklp->emr_id);
             });
@@ -890,6 +980,29 @@ class KklpController extends Controller
         }
     }
 
+    private function isMeaningfulRowExcept(array $row, array $ignoredKeys = []): bool
+    {
+        foreach ($row as $key => $value) {
+            if (in_array($key, $ignoredKeys, true)) {
+                continue;
+            }
+
+            if (is_array($value)) {
+                if ($this->isMeaningfulRowExcept($value)) {
+                    return true;
+                }
+
+                continue;
+            }
+
+            if ($value !== null && trim((string) $value) !== '') {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function detailByEmr($emrId)
     {
         try {
@@ -897,7 +1010,7 @@ class KklpController extends Controller
 
             if (! $kklp) {
                 return response()->json([
-                    'success' => false,
+                    'succeFss' => false,
                     'message' => 'Data KKLP tidak ditemukan untuk EMR ini',
                     'data' => null,
                 ], 404);
@@ -906,7 +1019,7 @@ class KklpController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Detail KKLP berhasil diambil',
-                'data' => [
+                'data' => $this->sanitizeNulls([
                     'form' => $kklp,
                     'pasien' => $kklp->pasien ? [
                         'id' => $kklp->pasien->id,
@@ -924,22 +1037,9 @@ class KklpController extends Controller
                         'suku_bangsa' => $kklp->pasien->suku_bangsa ?? null,
                         'foto_pasien' => $kklp->pasien->foto_pasien ?? null,
                     ] : null,
-                    'kunjungan' => $kklp->kunjungan ? [
-                        'id' => $kklp->kunjungan->id,
-                        'tanggal_kunjungan' => $kklp->kunjungan->tanggal_kunjungan,
-                        'no_antrian' => $kklp->kunjungan->no_antrian,
-                        'status' => $kklp->kunjungan->status,
-                        'keluhan_awal' => $kklp->kunjungan->keluhan_awal,
-                    ] : null,
-                    'poli' => $kklp->poli ? [
-                        'id' => $kklp->poli->id,
-                        'nama_poli' => $kklp->poli->nama_poli,
-                    ] : null,
-                    'dokter' => $kklp->dokter ? [
-                        'id' => $kklp->dokter->id,
-                        'nama_dokter' => $kklp->dokter->nama_dokter,
-                        'foto_dokter' => $kklp->dokter->foto_dokter ?? null,
-                    ] : null,
+                    'kunjungan' => $kklp->kunjungan,
+                    'poli' => $kklp->poli,
+                    'dokter' => $kklp->dokter,
                     'emr' => $kklp->emr,
                     'orangtua' => $kklp->orangtua,
                     'heteroanamnesis' => $kklp->heteroanamnesis,
@@ -950,7 +1050,7 @@ class KklpController extends Controller
                     'family_plans' => $kklp->familyPlan,
                     'copc_plans' => $kklp->copcPlan,
                     'ekstremitas' => $kklp->ekstremitas,
-                ],
+                ]),
             ]);
         } catch (\Throwable $e) {
             Log::error('KklpController@detailByEmr error: '.$e->getMessage(), [

@@ -2038,7 +2038,26 @@ class APIMobileController extends Controller
             return [];
         }
 
-        // support format array of rows
+        $hasMeaningfulEkstremitasValue = function (array $row): bool {
+            foreach ([
+                'akral',
+                'gerakan',
+                'tonus',
+                'trofi',
+                'refleks_fisiologis',
+                'refleks_patologis',
+                'sensibilitas',
+                'meningeal_signs',
+            ] as $key) {
+                $value = $row[$key] ?? null;
+                if ($value !== null && trim((string) $value) !== '') {
+                    return true;
+                }
+            }
+
+            return false;
+        };
+
         $isList = array_keys($ekstremitas) === range(0, count($ekstremitas) - 1);
 
         if ($isList) {
@@ -2056,12 +2075,11 @@ class APIMobileController extends Controller
                         'meningeal_signs' => $row['meningeal_signs'] ?? null,
                     ];
                 })
-                ->filter(fn ($row) => $this->hasMeaningfulValue($row))
+                ->filter(fn ($row) => $hasMeaningfulEkstremitasValue($row))
                 ->values()
                 ->toArray();
         }
 
-        // support format map tunggal dari flutter lama
         $rows = [
             [
                 'anggota' => 'kanan_atas',
@@ -2110,7 +2128,7 @@ class APIMobileController extends Controller
         ];
 
         return collect($rows)
-            ->filter(fn ($row) => $this->hasMeaningfulValue($row))
+            ->filter(fn ($row) => $hasMeaningfulEkstremitasValue($row))
             ->values()
             ->toArray();
     }
@@ -2157,21 +2175,28 @@ class APIMobileController extends Controller
         }
 
         $familyScreem = $kklpData['family_screem'] ?? null;
+
         if (is_array($familyScreem) && $this->hasMeaningfulValue($familyScreem)) {
             EmrKklpFamilyScreem::create([
                 'emr_kklp_id' => $kklp->id,
-                'social_sumber_daya' => $familyScreem['social_sumber_daya'] ?? null,
-                'social_patologis' => $familyScreem['social_patologis'] ?? null,
-                'cultural_sumber_daya' => $familyScreem['cultural_sumber_daya'] ?? null,
-                'cultural_patologis' => $familyScreem['cultural_patologis'] ?? null,
-                'religious_sumber_daya' => $familyScreem['religious_sumber_daya'] ?? null,
-                'religious_patologis' => $familyScreem['religious_patologis'] ?? null,
-                'educational_sumber_daya' => $familyScreem['educational_sumber_daya'] ?? null,
-                'educational_patologis' => $familyScreem['educational_patologis'] ?? null,
-                'economic_sumber_daya' => $familyScreem['economic_sumber_daya'] ?? null,
-                'economic_patologis' => $familyScreem['economic_patologis'] ?? null,
-                'medical_sumber_daya' => $familyScreem['medical_sumber_daya'] ?? null,
-                'medical_patologis' => $familyScreem['medical_patologis'] ?? null,
+
+                'social_sumber_daya' => $familyScreem['social']['sumber_daya'] ?? null,
+                'social_patologis' => $familyScreem['social']['patologis'] ?? null,
+
+                'cultural_sumber_daya' => $familyScreem['cultural']['sumber_daya'] ?? null,
+                'cultural_patologis' => $familyScreem['cultural']['patologis'] ?? null,
+
+                'religious_sumber_daya' => $familyScreem['religious']['sumber_daya'] ?? null,
+                'religious_patologis' => $familyScreem['religious']['patologis'] ?? null,
+
+                'educational_sumber_daya' => $familyScreem['educational']['sumber_daya'] ?? null,
+                'educational_patologis' => $familyScreem['educational']['patologis'] ?? null,
+
+                'economic_sumber_daya' => $familyScreem['economic']['sumber_daya'] ?? null,
+                'economic_patologis' => $familyScreem['economic']['patologis'] ?? null,
+
+                'medical_sumber_daya' => $familyScreem['medical']['sumber_daya'] ?? null,
+                'medical_patologis' => $familyScreem['medical']['patologis'] ?? null,
             ]);
         }
 
@@ -2204,11 +2229,22 @@ class APIMobileController extends Controller
         }
 
         $ekstremitasRows = $this->normalizeEkstremitasRows($kklpData['ekstremitas'] ?? []);
+
+        Log::info('SAVE-EMR EXTREMITAS NORMALIZED', [
+            'emr_kklp_id' => $kklp->id,
+            'rows' => $ekstremitasRows,
+            'count' => count($ekstremitasRows),
+        ]);
+
         foreach ($ekstremitasRows as $row) {
             EmrKklpEkstremitas::create(array_merge($row, [
                 'emr_kklp_id' => $kklp->id,
             ]));
         }
+        Log::info('SAVE-EMR EXTREMITAS DB CHECK', [
+            'emr_kklp_id' => $kklp->id,
+            'saved_rows' => EmrKklpEkstremitas::where('emr_kklp_id', $kklp->id)->get()->toArray(),
+        ]);
     }
 
     public function saveEMR(Request $request)
@@ -2672,8 +2708,15 @@ class APIMobileController extends Controller
                  */
                 $kklp = null;
 
-                if ((bool) $request->input('is_kklp') === true && is_array($request->kklp_data)) {
-                    $kklpData = $request->kklp_data;
+                if ($request->boolean('is_kklp') && is_array($request->input('kklp_data'))) {
+                    $kklpData = $request->input('kklp_data', []);
+
+                    Log::info('SAVE-EMR KKLP RAW', [
+                        'emr_id' => $emr->id,
+                        'kunjungan_id' => $kunjungan->id,
+                        'status_form' => $kklpData['status_form'] ?? null,
+                        'ekstremitas' => $kklpData['ekstremitas'] ?? [],
+                    ]);
 
                     $existingKklp = EmrKklp::where('emr_id', $emr->id)->first();
 
@@ -2688,7 +2731,10 @@ class APIMobileController extends Controller
                         'nim_dokter' => $kklpData['nim_dokter'] ?? null,
                         'kasus_ke' => $kklpData['kasus_ke'] ?? null,
                         'tanggal_kasus' => $this->normalizeKklpDate($kklpData['tanggal_kasus'] ?? null),
-                        'no_kasus' => $kklpData['no_kasus'] ?? ($existingKklp->no_kasus ?? ('KKLP-'.now()->format('Ymd').'-'.strtoupper(substr(md5(uniqid('', true)), 0, 6)))),
+                        'no_kasus' => ! empty($kklpData['no_kasus'])
+                            ? $kklpData['no_kasus']
+                            : ($existingKklp?->no_kasus ?? ('KKLP-'.now()->format('Ymd').'-'.strtoupper(substr(md5(uniqid('', true)), 0, 6)))),
+
                         'telepon_pasien' => $kklpData['telepon_pasien'] ?? null,
                         'agama_pasien' => $kklpData['agama_pasien'] ?? null,
                         'pendidikan_terakhir_pasien' => $kklpData['pendidikan_terakhir_pasien'] ?? null,
@@ -2725,6 +2771,7 @@ class APIMobileController extends Controller
                         'tinggi_badan' => $kklpData['tinggi_badan'] ?? $request->tinggi_badan ?? null,
                         'berat_badan' => $kklpData['berat_badan'] ?? $request->berat_badan ?? null,
                         'imt' => $kklpData['imt'] ?? $request->imt ?? null,
+                        'saturasi_oksigen' => $kklpData['saturasi_oksigen'] ?? null,
 
                         'lingkar_pinggang' => $kklpData['lingkar_pinggang'] ?? null,
                         'lingkar_panggul' => $kklpData['lingkar_panggul'] ?? null,
@@ -2792,7 +2839,7 @@ class APIMobileController extends Controller
                         'skor_akhir' => $kklpData['skor_akhir'] ?? null,
                         'komentar_pembimbing' => $kklpData['komentar_pembimbing'] ?? null,
                         'komentar_dokter_residen' => $kklpData['komentar_dokter_residen'] ?? null,
-                        'status_form' => $kklpData['status_form'] ?? 'draft',
+                        'status_form' => $kklpData['status_form'] ?? 'final',
                     ];
 
                     $kklp = EmrKklp::updateOrCreate(
