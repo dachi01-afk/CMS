@@ -2,8 +2,6 @@
 
 namespace App\Models;
 
-<<<<<<< HEAD
-=======
 use App\Models\Dokter;
 use App\Models\EMR;
 use App\Models\JadwalDokter;
@@ -14,7 +12,6 @@ use App\Models\Pasien;
 use App\Models\PenjualanLayanan;
 use App\Models\Poli;
 use Illuminate\Database\Eloquent\Builder;
->>>>>>> 966f6271fa8f074b540856c2d3d753633f8a11b1
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -70,12 +67,8 @@ class Kunjungan extends Model
             ->withPivot(['jumlah']);
     }
 
-<<<<<<< HEAD
-    public function scopeByStatus($query, $status)
-=======
     // Scope untuk filter berdasarkan status
     public function scopeByStatus(Builder $query, string|array $status)
->>>>>>> 966f6271fa8f074b540856c2d3d753633f8a11b1
     {
         if (is_array($status)) {
             return $query->whereIn('status', $status);
@@ -84,11 +77,7 @@ class Kunjungan extends Model
         return $query->where('status', $status);
     }
 
-<<<<<<< HEAD
-    public function scopeToday($query)
-=======
     public function scopeUntukPerawat(Builder $query, Perawat $perawat)
->>>>>>> 966f6271fa8f074b540856c2d3d753633f8a11b1
     {
         $penugasan = $perawat->dokterPoli()
             ->get(['dokter_poli.dokter_id', 'dokter_poli.poli_id']);
@@ -115,7 +104,7 @@ class Kunjungan extends Model
         return $query->whereDate('tanggal_kunjungan', $tanggal);
     }
 
-    public function scopeByPasien($query, $pasienId)
+    public function scopeByPasien(Builder $query, $pasienId)
     {
         return $query->where('pasien_id', $pasienId);
     }
@@ -151,6 +140,4 @@ class Kunjungan extends Model
     {
         return $this->hasOne(EmrKklp::class, 'kunjungan_id');
     }
-
-    
 }
