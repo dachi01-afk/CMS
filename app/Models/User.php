@@ -58,18 +58,16 @@ class User extends Authenticatable
     {
         return $this->hasOne(Kasir::class);
     }
-<<<<<<< HEAD
-    public function pengkajianAwalPenyakitDalamCreated()
-{
-    return $this->hasMany(\App\Models\EmrPengkajianAwalPenyakitDalam::class, 'created_by');
-}
 
-public function pengkajianAwalPenyakitDalamUpdated()
-{
-    return $this->hasMany(\App\Models\EmrPengkajianAwalPenyakitDalam::class, 'updated_by');
-}
-}
-=======
+    public function pengkajianAwalPenyakitDalamCreated()
+    {
+        return $this->hasMany(\App\Models\EmrPengkajianAwalPenyakitDalam::class, 'created_by');
+    }
+
+    public function pengkajianAwalPenyakitDalamUpdated()
+    {
+        return $this->hasMany(\App\Models\EmrPengkajianAwalPenyakitDalam::class, 'updated_by');
+    }
 
     public function perawat()
     {
@@ -90,4 +88,3 @@ public function pengkajianAwalPenyakitDalamUpdated()
         };
     }
 }
->>>>>>> 966f6271fa8f074b540856c2d3d753633f8a11b1
