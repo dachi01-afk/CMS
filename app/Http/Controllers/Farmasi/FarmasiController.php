@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Farmasi;
 use App\Http\Controllers\Controller;
 use App\Models\Farmasi;
 use App\Models\Obat;
+use App\Models\PenjualanObat;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -18,7 +19,7 @@ use Intervention\Image\Laravel\Facades\Image;
 class FarmasiController extends Controller
 {
     protected $batasStokMenipis = 10;
-    
+
     public function index()
     {
         $userId = Auth::id();
@@ -141,80 +142,49 @@ class FarmasiController extends Controller
         $tz = 'Asia/Jakarta';
         $today = Carbon::now($tz)->toDateString();
 
-        $transaksiHariIni = $this->penjualanObatJoinDetail()
-            ->whereDate('po.tanggal_transaksi', $today)
-            ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as total_transaksi')
-            ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
-            ->first();
+        $totalStokObat = Obat::sum('jumlah');
 
-        $totalKeseluruhanTransaksi = DB::table('penjualan_obat')
-            ->distinct('kode_transaksi')
-            ->count('kode_transaksi');
+        $stokMenipis = Obat::where('jumlah', '<', $this->batasStokMenipis)->count();
+
+        $stokHabis = Obat::where('jumlah', '=', 0)->count();
+
+        $totalPemasukanHariIni = PenjualanObat::selectRaw('COALESCE(SUM(total_setelah_diskon), 0) as total_setelah_diskon')
+            ->whereDate('tanggal_transaksi', $today)->where('status', 'Sudah Bayar')->first();
+
+        $totalPemasukanHariIniRupiah  = $totalPemasukanHariIni->total_setelah_diskon_rupiah;
+
+        $totalPenjualanObat = PenjualanObat::count('kode_transaksi');
+
+        $transaksiHariIni = PenjualanObat::whereDate('tanggal_transaksi', $today)->where('status', 'Sudah Bayar')->count();
 
         return response()->json([
-            'data' => [
-                'total_jenis_obat'            => (int) Obat::count(),
-                'total_stok_obat'             => (int) Obat::sum('jumlah'),
-                'stok_menipis'                => (int) Obat::whereBetween('jumlah', [1, $this->batasStokMenipis])->count(),
-                'stok_habis'                  => (int) Obat::where('jumlah', '<=', 0)->count(),
-                'transaksi_hari_ini'          => (int) ($transaksiHariIni->total_transaksi ?? 0),
-                'pemasukan_hari_ini'          => (float) ($transaksiHariIni->total_pemasukan ?? 0),
-                'total_keseluruhan_transaksi' => (int) $totalKeseluruhanTransaksi,
-            ],
-            'meta' => [
-                'tanggal'            => $today,
-                'timezone'           => $tz,
-                'batas_stok_menipis' => $this->batasStokMenipis,
-            ],
+            'totalStokObat' => $totalStokObat,
+            'stokMenipis' => $stokMenipis,
+            'stokHabis' => $stokHabis,
+            'totalPemasukanHariIni' => $totalPemasukanHariIniRupiah,
+            'totalPenjualanObat' => $totalPenjualanObat,
+            'transaksiHariIni' => $transaksiHariIni,
         ]);
     }
 
     public function dashboardStokKritis()
     {
-        $data = Obat::query()
-            ->select('id', 'nama_obat', 'jumlah')
-            ->where('jumlah', '<=', $this->batasStokMenipis)
-            ->orderBy('jumlah', 'asc')
-            ->orderBy('nama_obat', 'asc')
-            ->limit(10)
-            ->get()
-            ->map(function ($item) {
-                return [
-                    'id'          => $item->id,
-                    'nama_obat'   => $item->nama_obat,
-                    'stok'        => (int) $item->jumlah,
-                    'status_stok' => ((int) $item->jumlah <= 0) ? 'Habis' : 'Menipis',
-                ];
-            });
+        $dataObat = Obat::where('jumlah', '<=', $this->batasStokMenipis)->get();
 
         return response()->json([
-            'data' => $data,
-            'meta' => [
-                'batas_stok_menipis' => $this->batasStokMenipis,
-            ],
+            'dataObat' => $dataObat
         ]);
     }
 
     public function dashboardTransaksiTerbaru()
     {
-        $data = DB::table('penjualan_obat as po')
-            ->leftJoin('pasien as p', 'p.id', '=', 'po.pasien_id')
-            ->leftJoin('penjualan_obat_detail as pod', 'pod.penjualan_obat_id', '=', 'po.id')
-            ->select(
-                'po.id',
-                'po.kode_transaksi',
-                'po.tanggal_transaksi',
-                'po.status',
-                DB::raw('COALESCE(p.nama_pasien, "-") as nama_pasien'),
-                DB::raw('COALESCE(SUM(pod.sub_total), 0) as total')
-            )
-            ->groupBy('po.id', 'po.kode_transaksi', 'po.tanggal_transaksi', 'po.status', 'p.nama_pasien')
-            ->orderByDesc('po.tanggal_transaksi')
-            ->limit(8)
-            ->get();
+        $dataTransaksiTerbaru = PenjualanObat::with([
+            'pasien',
+            'penjualanObatDetail'
+        ])->limit(8)->get();
 
         return response()->json([
-            'data' => $data,
+            'data' => $dataTransaksiTerbaru,
         ]);
     }
 
@@ -243,7 +213,7 @@ class FarmasiController extends Controller
             $rows = $this->penjualanObatJoinDetail()
                 ->selectRaw('HOUR(po.tanggal_transaksi) as idx')
                 ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as jumlah_transaksi')
-                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
+                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.total_setelah_diskon ELSE 0 END), 0) as total_pemasukan")
                 ->whereDate('po.tanggal_transaksi', $hari)
                 ->groupBy('idx')
                 ->orderBy('idx')
@@ -270,7 +240,7 @@ class FarmasiController extends Controller
             $rows = $this->penjualanObatJoinDetail()
                 ->selectRaw('WEEKDAY(po.tanggal_transaksi) as idx')
                 ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as jumlah_transaksi')
-                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
+                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.total_setelah_diskon ELSE 0 END), 0) as total_pemasukan")
                 ->whereBetween(DB::raw('DATE(po.tanggal_transaksi)'), [$start->toDateString(), $end->toDateString()])
                 ->groupBy('idx')
                 ->orderBy('idx')
@@ -300,7 +270,7 @@ class FarmasiController extends Controller
             $rows = $this->penjualanObatJoinDetail()
                 ->selectRaw('DAY(po.tanggal_transaksi) as idx')
                 ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as jumlah_transaksi')
-                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
+                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.total_setelah_diskon ELSE 0 END), 0) as total_pemasukan")
                 ->whereBetween(DB::raw('DATE(po.tanggal_transaksi)'), [$start->toDateString(), $end->toDateString()])
                 ->groupBy('idx')
                 ->orderBy('idx')
@@ -327,7 +297,7 @@ class FarmasiController extends Controller
             $rows = $this->penjualanObatJoinDetail()
                 ->selectRaw('MONTH(po.tanggal_transaksi) as idx')
                 ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as jumlah_transaksi')
-                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
+                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.total_setelah_diskon ELSE 0 END), 0) as total_pemasukan")
                 ->whereBetween(DB::raw('DATE(po.tanggal_transaksi)'), [$start->toDateString(), $end->toDateString()])
                 ->groupBy('idx')
                 ->orderBy('idx')
@@ -484,14 +454,9 @@ class FarmasiController extends Controller
                     'required',
                     'string',
                     'max:255',
-                    Rule::unique('user', 'username')->ignore($user->id),
                 ],
                 'edit_nama_apoteker'     => 'required|string|max:255',
-                'edit_email_apoteker'    => [
-                    'required',
-                    'email',
-                    Rule::unique('user', 'email')->ignore($user->id),
-                ],
+                'edit_email_apoteker'    => ['required', 'email',],
                 'edit_foto_apoteker'     => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
                 'edit_no_hp_apoteker'    => 'nullable|string|max:20',
                 'edit_password_apoteker' => 'nullable|string|min:8|confirmed',
@@ -674,7 +639,7 @@ class FarmasiController extends Controller
                 'po.tanggal_transaksi',
                 'po.status',
                 DB::raw('COALESCE(p.nama_pasien, "-") as nama_pasien'),
-                DB::raw('COALESCE(SUM(pod.sub_total), 0) as total')
+                DB::raw('COALESCE(SUM(pod.total_setelah_diskon), 0) as total')
             )
             ->whereBetween('po.tanggal_transaksi', [
                 $start->copy()->toDateTimeString(),
@@ -690,7 +655,7 @@ class FarmasiController extends Controller
                 $end->copy()->toDateTimeString()
             ])
             ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as total_transaksi')
-            ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
+            ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.total_setelah_diskon ELSE 0 END), 0) as total_pemasukan")
             ->first();
 
         return response()->json([

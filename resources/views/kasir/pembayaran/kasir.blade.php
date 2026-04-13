@@ -63,8 +63,8 @@
                     role="tabpanel" aria-labelledby="transaksi-obat-tab">
                     @include('kasir.pembayaran.transaksi-obat')
                 </div>
-                <div class="hidden p-4 rounded-lg bg-gray-50 dark:bg-gray-800 mt-2" id="data-transaksi-layanan"
-                    role="tabpanel" aria-labelledby="transaksi-layanan-tab">
+                <div class="hidden mt-2" id="data-transaksi-layanan" role="tabpanel"
+                    aria-labelledby="transaksi-layanan-tab">
                     @include('kasir.pembayaran.data-transaksi-layanan')
                 </div>
             </div>

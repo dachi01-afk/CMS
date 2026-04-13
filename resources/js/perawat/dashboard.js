@@ -5,8 +5,6 @@ $(function () {
     const $canvas = $("#perawatDashboardChart");
     const $filter = $("#filterPerawatChart");
     const $range = $("#perawatChartRange");
-
-    const $summaryAssigned = $("#summaryAssignedTotal");
     const $summaryHandled = $("#summaryHandledTotal");
 
     const initialDataEl = document.getElementById("perawatChartInitialData");
@@ -35,8 +33,9 @@ $(function () {
     }
 
     function updateSummaryCards(payload) {
-        $summaryAssigned.text(formatNumber(payload.summary_assigned_total));
-        $summaryHandled.text(formatNumber(payload.summary_handled_total));
+        if ($summaryHandled.length) {
+            $summaryHandled.text(formatNumber(payload.summary_handled_total));
+        }
     }
 
     function getMaxTicksLimit(filter) {
@@ -48,31 +47,19 @@ $(function () {
 
     function chartConfig(payload) {
         return {
-            type: "bar",
+            type: "line",
             data: {
                 labels: payload.labels,
                 datasets: [
                     {
-                        type: "bar",
-                        label: "Area Tugas",
-                        data: payload.assigned_total,
-                        backgroundColor: "#0ea5e9",
-                        borderColor: "#0ea5e9",
-                        borderWidth: 1,
-                        borderRadius: 8,
-                        borderSkipped: false,
-                        categoryPercentage: 0.68,
-                        barPercentage: 0.85,
-                    },
-                    {
                         type: "line",
-                        label: "Sudah Ditangani",
+                        label: "Pasien Selesai Dilayani",
                         data: payload.handled_total,
                         borderColor: "#10b981",
                         backgroundColor: "rgba(16,185,129,0.15)",
                         borderWidth: 3,
                         tension: 0.35,
-                        fill: false,
+                        fill: true,
                         pointRadius: 4,
                         pointHoverRadius: 5,
                         pointBackgroundColor: "#10b981",
@@ -198,3 +185,45 @@ $(function () {
         }
     });
 });
+
+// Modal Detail Kunjungan 
+$(function() {
+        const $modalRingkasanAntrian = $("#modalRingkasanAntrian");
+    const $btnOpenModalRingkasanAntrian = $("#btnOpenModalRingkasanAntrian");
+    const $btnCloseModalRingkasanAntrian = $("#btnCloseModalRingkasanAntrian");
+    const $btnCloseModalRingkasanAntrianFooter = $("#btnCloseModalRingkasanAntrianFooter");
+
+    function openModalRingkasanAntrian() {
+        $modalRingkasanAntrian.removeClass("hidden").addClass("flex");
+        $("body").addClass("overflow-hidden");
+    }
+
+    function closeModalRingkasanAntrian() {
+        $modalRingkasanAntrian.addClass("hidden").removeClass("flex");
+        $("body").removeClass("overflow-hidden");
+    }
+
+    $btnOpenModalRingkasanAntrian.on("click", function () {
+        openModalRingkasanAntrian();
+    });
+
+    $btnCloseModalRingkasanAntrian.on("click", function () {
+        closeModalRingkasanAntrian();
+    });
+
+    $btnCloseModalRingkasanAntrianFooter.on("click", function () {
+        closeModalRingkasanAntrian();
+    });
+
+    $modalRingkasanAntrian.on("click", function (e) {
+        if (e.target === this) {
+            closeModalRingkasanAntrian();
+        }
+    });
+
+    $(document).on("keydown", function (e) {
+        if (e.key === "Escape" && $modalRingkasanAntrian.hasClass("flex")) {
+            closeModalRingkasanAntrian();
+        }
+    });
+})

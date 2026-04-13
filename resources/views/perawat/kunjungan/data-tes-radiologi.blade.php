@@ -112,4 +112,33 @@
     </div>
 </section>
 
+<div id="modalDetailOrderRadiologi" class="fixed inset-0 z-50 hidden">
+    <div id="modalDetailOrderRadiologiOverlay" class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"></div>
+
+    <div class="relative flex min-h-full items-center justify-center p-4">
+        <div
+            class="relative w-full max-w-6xl bg-white dark:bg-slate-800 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-700">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-800 dark:text-slate-100">
+                        Detail Order Radiologi
+                    </h3>
+                    <p class="text-sm text-slate-500 dark:text-slate-400">
+                        Informasi lengkap order radiologi pasien
+                    </p>
+                </div>
+
+                <button type="button" id="btnCloseModalDetailOrderRadiologi"
+                    class="inline-flex items-center justify-center w-10 h-10 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-300">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div id="contentDetailOrderRadiologi" class="p-6 max-h-[85vh] overflow-y-auto">
+                {{-- Diisi via JS --}}
+            </div>
+        </div>
+    </div>
+</div>
+
 @vite(['resources/js/perawat/kunjungan/data-tes-radiologi.js'])

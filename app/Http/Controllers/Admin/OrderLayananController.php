@@ -2,21 +2,22 @@
 
 namespace App\Http\Controllers\Admin;
 
-use App\Models\Poli;
-use App\Models\Pasien;
-use App\Models\Layanan;
-use App\Models\Kunjungan;
-use App\Models\JadwalDokter;
-use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
-use App\Models\KategoriLayanan;
-use App\Models\PenjualanLayanan;
-use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
+use App\Models\JadwalDokter;
+use App\Models\KategoriLayanan;
+use App\Models\Kunjungan;
+use App\Models\Layanan;
 use App\Models\OrderLayanan;
 use App\Models\OrderLayananDetail;
-use Yajra\DataTables\Facades\DataTables;
+use App\Models\Pasien;
+use App\Models\PenjualanLayanan;
+use App\Models\Poli;
+use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
+use Yajra\DataTables\Facades\DataTables;
 
 class OrderLayananController extends Controller
 {
@@ -30,115 +31,116 @@ class OrderLayananController extends Controller
 
     public function getDataOrderLayanan()
     {
-        // Sekarang kita query langsung ke tabel Header (order_layanan)
-        // Jauh lebih ringan karena 1 baris = 1 transaksi
-        $query = OrderLayanan::query()
-            ->join('pasien', 'order_layanan.pasien_id', '=', 'pasien.id')
-            ->select([
-                'order_layanan.id',
-                'order_layanan.kode_transaksi',
-                'order_layanan.pasien_id',
-                'order_layanan.tanggal_order', // Gunakan tanggal_order dari tabel baru
-                'order_layanan.status_order_layanan', // Gunakan kolom status yang baru
-                'order_layanan.total_bayar',
-                'pasien.nama_pasien',
-            ])
-            ->orderByDesc('order_layanan.tanggal_order');
+        $dataOrderLayanan = OrderLayanan::with([
+            'pasien'
+        ])->latest();
 
-        return DataTables::of($query)
+        return DataTables::of($dataOrderLayanan)
             ->addIndexColumn()
-
-            ->addColumn('kode_transaksi', function ($order) {
-                return $order->kode_transaksi ?? '-';
+            ->editColumn('nama_pasien', function ($dataOrderan) {
+                return $dataOrderan->pasien->nama_pasien ?? '-';
             })
-
-            // 1. Nama Pasien
-            ->addColumn('nama_pasien', function ($order) {
-                return $order->nama_pasien ?? '-';
+            ->editColumn('tanggal_order', function ($dataOrderan) {
+                return $dataOrderan->getformatTanggalOrder();
             })
+            ->editColumn('subtotal', function ($dataOrderan) {
+                return $dataOrderan->total_bayar_rupiah;
+            })
+            ->addColumn('action', function ($dataOrderan) {
+                $urlOrderLayananDetail = route('get.data.detail.order.layanan', [
+                    'kodeTransaksi' => $dataOrderan->kode_transaksi
+                ]);
 
-            // 2. Nama Layanan (Ambil dari Relasi Detail) dalam bentuk List
-            ->addColumn('nama_layanan', function ($order) {
-                // Ambil semua nama layanan unik
-                $layananArray = $order->details->map(function ($detail) {
-                    return $detail->layanan->nama_layanan ?? '-';
-                })->unique();
+                $html = '
+        <div class="flex items-center gap-2">
+            <button
+                type="button"
+                class="btn-detail-order-layanan inline-flex items-center gap-2 rounded-xl bg-sky-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition duration-200 hover:bg-sky-600 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-sky-300 active:scale-95"
+                data-kode-transaksi="' . $dataOrderan->kode_transaksi . '"
+                data-url-detail-order-layanan="' . $urlOrderLayananDetail . '"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12s3.75-7.5 9.75-7.5 9.75 7.5 9.75 7.5-3.75 7.5-9.75 7.5S2.25 12 2.25 12z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 15.75A3.75 3.75 0 1 0 12 8.25a3.75 3.75 0 0 0 0 7.5z" />
+                </svg>
+                Detail
+            </button>
 
-                if ($layananArray->isEmpty()) {
-                    return '-';
+            <button
+                type="button"
+                class="btn-update-order-layanan inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition duration-200 hover:scale-105 hover:from-amber-500 hover:to-orange-600 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-orange-300 active:scale-95"
+                data-kode-transaksi="' . $dataOrderan->kode_transaksi . '"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487a2.25 2.25 0 1 1 3.182 3.182L8.25 19.463 4.5 20.25l.787-3.75L16.862 4.487z" />
+                </svg>
+                Edit
+            </button>
+    ';
+
+                if (Auth::check() && Auth::user()->role === 'Super Admin') {
+                    $html .= '
+            <button
+                type="button"
+                class="btn-delete-order-layanan inline-flex items-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition duration-200 hover:scale-105 hover:from-rose-600 hover:to-red-700 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-red-300 active:scale-95"
+                data-kode-transaksi="' . $dataOrderan->kode_transaksi . '"
+            >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 7.5h12m-1.5 0-.422 10.133A2.25 2.25 0 0 1 13.83 19.5h-3.66a2.25 2.25 0 0 1-2.248-1.867L7.5 7.5m3-3h3a1.5 1.5 0 0 1 1.5 1.5V7.5h-6V6a1.5 1.5 0 0 1 1.5-1.5Z" />
+                </svg>
+                Hapus
+            </button>
+        ';
                 }
 
-                // Susun menjadi HTML List
-                $html = '<ul class="list-disc list-inside text-[11px] space-y-0.5">';
-                foreach ($layananArray as $nama) {
-                    $html .= '<li>' . $nama . '</li>';
-                }
-                $html .= '</ul>';
+                $html .= '</div>';
 
                 return $html;
             })
-
-            // 3. Kategori (Ambil dari Relasi Detail -> Layanan -> Kategori)
-            ->addColumn('kategori_layanan', function ($order) {
-                $kategoriNames = $order->details->map(function ($detail) {
-                    return $detail->layanan->kategori->nama_kategori ?? '-';
-                })->unique()->implode(', ');
-
-                return $kategoriNames ?: '-';
-            })
-
-            // 4. Jumlah (Total Qty dalam satu order)
-            ->addColumn('jumlah', function ($order) {
-                return $order->details->sum('qty') . ' Item';
-            })
-
-            // 5. Total Tagihan
-            ->addColumn('total_tagihan', function ($order) {
-                return 'Rp ' . number_format($order->total_bayar, 0, ',', '.');
-            })
-
-            // 6. Status (Warna Label)
-            ->addColumn('status', function ($order) {
-                $status = $order->status_order_layanan ?? 'Belum Bayar';
-
-                $color = ($status === 'Sudah Bayar')
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-yellow-100 text-yellow-700';
-
-                return '<span class="px-2 py-1 rounded-lg text-xs font-semibold ' . $color . '">' . $status . '</span>';
-            })
-
-            // 7. Tanggal Transaksi
-            ->addColumn('tanggal_transaksi', function ($order) {
-                if (!$order->tanggal_order) {
-                    return '-';
-                }
-
-                // Menggunakan translatedFormat agar bulan menjadi Bahasa Indonesia (Januari, dsb)
-                // 'd F Y' -> d (tgl), F (Bulan Panjang), Y (Tahun 4 digit)
-                return Carbon::parse($order->tanggal_order)->translatedFormat('d F Y');
-            })
-
-            // 8. Action
-            ->addColumn('action', function ($order) {
-                return '
-                <div class="flex items-center justify-center gap-1">
-                    <button type="button" 
-                data-id="' . $order->id . '" 
-                data-kode-transaksi="' . $order->kode_transaksi . '" 
-                class="btn-update-order-layanan px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 transition-colors">
-                <i class="fa-solid fa-pen-to-square"></i> Edit
-            </button>
-                    <button type="button" data-id="' . $order->id . '" data-kode="' . $order->kode_transaksi . '"
-                        class="btn-delete-order-layanan px-3 py-1.5 rounded-lg text-[11px] font-semibold bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 transition-colors">
-                        <i class="fa-solid fa-trash-can"></i> Hapus
-                    </button>
-                </div>';
-            })
-            ->rawColumns(['status', 'action', 'nama_layanan'])
+            ->rawColumns(['action'])
+            ->rawColumns(['action'])
             ->make(true);
     }
 
+    public function getDetailOrderLayanan($kodeTransaksi)
+    {
+        $dataOrderLayanan = OrderLayanan::with([
+            'pasien',
+            'orderLayananDetail',
+            'orderLayananDetail.layanan',
+            'orderLayananDetail.layanan.kategoriLayanan'
+        ])->where('kode_transaksi', $kodeTransaksi)->firstOrFail();
+
+        return response()->json([
+            'dataOrderLayanan' => [
+                'id' => $dataOrderLayanan->id,
+                'kode_transaksi' => $dataOrderLayanan->kode_transaksi,
+                'tanggal_order' => $dataOrderLayanan->getFormatTanggalOrder(),
+                'tanggal_pembayaran' => $dataOrderLayanan->tanggal_pembayaran,
+                'nama_pasien' => $dataOrderLayanan->pasien->nama_pasien ?? '-',
+                'nama_metode_pembayaran' => $dataOrderLayanan->metodePembayaran->nama_metode_pembayaran ?? '-',
+                'subtotal' => $dataOrderLayanan->subtotal_rupiah,
+                'diskon_tipe' => $dataOrderLayanan->diskon_tipe,
+                'diskon_nilai' => $dataOrderLayanan->diskon_nilai,
+                'potongan_pesanan' => $dataOrderLayanan->potongan_pesanan,
+                'total_bayar' => $dataOrderLayanan->total_bayar_rupiah,
+                'uang_yang_diterima' => $dataOrderLayanan->uang_yang_diterima,
+                'kembalian' => $dataOrderLayanan->kembalian,
+                'status_order_layanan' => $dataOrderLayanan->status_order_layanan,
+                'bukti_pembayaran' => $dataOrderLayanan->bukti_pembayaran,
+                'bukti_pembayaran_url' => $dataOrderLayanan->bukti_pembayaran
+                    ? asset('storage/' . $dataOrderLayanan->bukti_pembayaran)
+                    : null,
+            ],
+            'dataDetailOrderLayanan' => $dataOrderLayanan->orderLayananDetail->map(fn($item) => [
+                'id' => $item->id,
+                'nama_layanan' => $item->layanan->nama_layanan ?? '-',
+                'qty' => $item->qty,
+                'harga_satuan' => $item->harga_satuan,
+                'total_harga_item' => $item->total_harga_item,
+            ]),
+        ]);
+    }
 
     /* =========================================================
      *  AJAX: JADWAL DOKTER HARI INI BERDASAR POLI
@@ -253,7 +255,7 @@ class OrderLayananController extends Controller
                     ->first();
 
                 if (!$jadwal) {
-                    throw \Illuminate\Validation\ValidationException::withMessages([
+                    throw ValidationException::withMessages([
                         'jadwal_dokter_id' => ['Jadwal dokter tidak ditemukan atau tidak aktif hari ini.'],
                     ]);
                 }
@@ -289,12 +291,13 @@ class OrderLayananController extends Controller
                 $kodeTransaksi = 'TRX-' . strtoupper(uniqid());
 
                 $order = OrderLayanan::create([
-                    'kode_transaksi' => $kodeTransaksi,
-                    'pasien_id'      => $validated['pasien_id'],
-                    'total_bayar'    => $validated['total_tagihan'],
-                    'potongan_pesanan'         => $request->diskon ?? 0, // Ambil dari input diskon global
-                    'tanggal_order'  => now(),
-                    'status_order_layanan'         => 'Belum Bayar',
+                    'kode_transaksi'            => $kodeTransaksi,
+                    'pasien_id'                 => $validated['pasien_id'],
+                    'total_bayar'               => $validated['total_tagihan'],
+                    'subtotal'                  => $validated['total_tagihan'],
+                    'potongan_pesanan'          => $request->diskon ?? 0, // Ambil dari input diskon global
+                    'tanggal_order'             => now(),
+                    'status_order_layanan'      => 'Belum Bayar',
                 ]);
 
                 foreach ($validated['items'] as $item) {
@@ -471,7 +474,6 @@ class OrderLayananController extends Controller
      */
     public function updateDataOrderLayanan(Request $request)
     {
-        // 1. VALIDASI DASAR
         $validated = $request->validate([
             'order_layanan_id'            => 'required|exists:order_layanan,id',
             'pasien_id'                   => 'required|exists:pasien,id',
@@ -481,31 +483,36 @@ class OrderLayananController extends Controller
             'items.*.jumlah'              => 'required|integer|min:1',
             'items.*.total_tagihan'       => 'required|numeric|min:0',
             'total_tagihan'               => 'required|numeric|min:0',
+            'poli_id'                     => 'nullable|exists:poli,id',
+            'jadwal_dokter_id'            => 'nullable|exists:jadwal_dokter,id',
         ]);
-
-        // dd($validated);
 
         $itemsInput = collect($validated['items']);
 
-        // 2. CEK KATEGORI PEMERIKSAAN
-        $kategoriIds = $itemsInput->pluck('kategori_layanan_id')->unique()->all();
+        $kategoriIds = $itemsInput->pluck('kategori_layanan_id')->unique()->values()->all();
+
         $kategoriList = KategoriLayanan::whereIn('id', $kategoriIds)->get()->keyBy('id');
 
-        $hasPemeriksaan = $kategoriList->contains(function ($kat) {
-            return strtolower($kat->nama_kategori) === 'pemeriksaan';
+        $containsPemeriksaan = $kategoriList->contains(function ($kat) {
+            return strtolower(trim($kat->nama_kategori)) === 'pemeriksaan';
         });
 
-        DB::beginTransaction();
+        $allPemeriksaan = $kategoriList->every(function ($kat) {
+            return strtolower(trim($kat->nama_kategori)) === 'pemeriksaan';
+        });
+
+        if ($containsPemeriksaan && !$allPemeriksaan) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Item pemeriksaan tidak boleh digabung dengan item non-pemeriksaan dalam satu transaksi.',
+            ], 422);
+        }
+
         try {
-            // Ambil data order lama
-            $oldOrder = OrderLayanan::lockForUpdate()->findOrFail($validated['order_layanan_id']);
+            $oldOrder = OrderLayanan::findOrFail($validated['order_layanan_id']);
             $kodeTransaksi = $oldOrder->kode_transaksi;
 
-            if ($hasPemeriksaan) {
-                /**
-                 * SKENARIO A: BERUBAH MENJADI PEMERIKSAAN
-                 * (Hapus data di order_layanan, pindah ke kunjungan)
-                 */
+            if ($containsPemeriksaan) {
                 $request->validate([
                     'poli_id'          => 'required|exists:poli,id',
                     'jadwal_dokter_id' => 'required|exists:jadwal_dokter,id',
@@ -513,63 +520,79 @@ class OrderLayananController extends Controller
 
                 $jadwal = JadwalDokter::findOrFail($request->jadwal_dokter_id);
 
-                // 1. Buat Kunjungan (Alur Medis)
-                $tanggal = today();
+                $existingKunjungan = Kunjungan::where('kode_transaksi', $kodeTransaksi)->first();
+                if ($existingKunjungan) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Kunjungan untuk transaksi ini sudah ada.',
+                    ], 422);
+                }
+
+                $tanggalKunjungan = now()->toDateString();
+
                 $lastRow = Kunjungan::where('poli_id', $request->poli_id)
-                    ->whereDate('tanggal_kunjungan', $tanggal)
+                    ->whereDate('tanggal_kunjungan', $tanggalKunjungan)
                     ->orderByRaw('CAST(no_antrian AS UNSIGNED) DESC')
-                    ->lockForUpdate()->first();
+                    ->first();
 
-                $noAntrian = str_pad(($lastRow ? (int)$lastRow->no_antrian : 0) + 1, 3, '0', STR_PAD_LEFT);
+                $noAntrian = str_pad(
+                    ($lastRow ? ((int) $lastRow->no_antrian + 1) : 1),
+                    3,
+                    '0',
+                    STR_PAD_LEFT
+                );
 
-                $kunjungan = Kunjungan::create([
+                Kunjungan::create([
                     'jadwal_dokter_id'  => $jadwal->id,
                     'dokter_id'         => $jadwal->dokter_id,
                     'poli_id'           => $request->poli_id,
                     'pasien_id'         => $validated['pasien_id'],
-                    'tanggal_kunjungan' => $tanggal,
+                    'tanggal_kunjungan' => $tanggalKunjungan,
                     'no_antrian'        => $noAntrian,
                     'status'            => 'Pending',
-                    'kode_transaksi'    => $kodeTransaksi, // Keep track kodenya
+                    'kode_transaksi'    => $kodeTransaksi,
                 ]);
 
-                // 2. HAPUS data lama di order_layanan karena sudah pindah jalur ke Medis
                 $oldOrder->details()->delete();
                 $oldOrder->delete();
 
-                $msg = "Order diubah menjadi Kunjungan Pemeriksaan.";
-            } else {
-                /**
-                 * SKENARIO B: TETAP / BERUBAH MENJADI NON-PEMERIKSAAN
-                 * (Update table order_layanan & order_layanan_detail)
-                 */
-                $oldOrder->update([
-                    'pasien_id'     => $validated['pasien_id'],
-                    'total_tagihan' => $validated['total_tagihan'],
-                    'tanggal_order' => now(),
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Order berhasil diubah menjadi kunjungan pemeriksaan.',
                 ]);
-
-                // Sync Detail: Hapus yang lama, insert yang baru
-                $oldOrder->details()->delete();
-
-                foreach ($itemsInput as $item) {
-                    OrderLayananDetail::create([
-                        'order_layanan_id'    => $oldOrder->id,
-                        'layanan_id'          => $item['layanan_id'],
-                        'kategori_layanan_id' => $item['kategori_layanan_id'],
-                        'jumlah'              => $item['jumlah'],
-                        'harga_satuan'        => (float)$item['total_tagihan'] / $item['jumlah'],
-                        'subtotal'            => $item['total_tagihan'],
-                    ]);
-                }
-                $msg = "Order Layanan berhasil diperbarui.";
             }
 
-            DB::commit();
-            return response()->json(['success' => true, 'message' => $msg]);
+            $oldOrder->update([
+                'pasien_id'   => $validated['pasien_id'],
+                'subtotal'    => (float) $validated['total_tagihan'],
+                'total_bayar' => (float) $validated['total_tagihan'],
+            ]);
+
+            $oldOrder->details()->delete();
+
+            foreach ($itemsInput as $item) {
+                $jumlah = (int) $item['jumlah'];
+                $totalTagihanItem = (float) $item['total_tagihan'];
+                $hargaSatuan = $jumlah > 0 ? $totalTagihanItem / $jumlah : 0;
+
+                OrderLayananDetail::create([
+                    'order_layanan_id' => $oldOrder->id,
+                    'layanan_id'       => $item['layanan_id'],
+                    'qty'              => $jumlah,
+                    'harga_satuan'     => $hargaSatuan,
+                    'total_harga_item' => $totalTagihanItem,
+                ]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order layanan berhasil diperbarui.',
+            ]);
         } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
         }
     }
 
@@ -587,63 +610,29 @@ class OrderLayananController extends Controller
     public function deleteDataOrderLayanan($kodeTransaksi)
     {
         try {
-            DB::beginTransaction();
-
-            // Ambil semua order untuk kode_transaksi ini (lock for update supaya aman secara konkurensi)
-            $orders = PenjualanLayanan::lockForUpdate()
-                ->where('kode_transaksi', $kodeTransaksi)
-                ->get();
+            $orders = OrderLayanan::where('kode_transaksi', $kodeTransaksi)->get();
 
             if ($orders->isEmpty()) {
-                DB::rollBack();
-
                 return response()->json([
                     'success' => false,
                     'message' => 'Data order tidak ditemukan.',
                 ], 404);
             }
 
-            // Ambil semua kunjungan_id unik yang tidak null dari kumpulan order ini
-            $kunjunganIds = $orders->pluck('kunjungan_id')
-                ->filter()      // buang null
-                ->unique()
-                ->values();
+            $orderIds = $orders->pluck('id');
 
-            foreach ($kunjunganIds as $kunjunganId) {
-                // Total semua order (semua kode_transaksi) yang memakai kunjungan ini
-                $totalOrderKunjungan = PenjualanLayanan::where('kunjungan_id', $kunjunganId)->count();
-
-                // Berapa banyak baris pada kode_transaksi ini yang pakai kunjungan tsb
-                $totalOrderKunjunganDiTransaksiIni = $orders
-                    ->where('kunjungan_id', $kunjunganId)
-                    ->count();
-
-                // Jika kunjungan hanya dipakai oleh baris-baris di transaksi ini
-                if ($totalOrderKunjungan === $totalOrderKunjunganDiTransaksiIni) {
-                    // Hapus kunjungan
-                    // Dengan FK cascadeOnDelete dari penjualan_layanan.kunjungan_id → kunjungan.id,
-                    // semua PenjualanLayanan yang terkait kunjungan ini ikut terhapus otomatis.
-                    Kunjungan::where('id', $kunjunganId)->delete();
-                }
-            }
-
-            // Setelah penghapusan kunjungan (yang bisa menghapus beberapa PenjualanLayanan via cascade),
-            // pastikan TIDAK ada lagi baris dengan kode_transaksi ini yang tersisa.
-            PenjualanLayanan::where('kode_transaksi', $kodeTransaksi)->delete();
-
-            DB::commit();
+            OrderLayananDetail::whereIn('order_layanan_id', $orderIds)->delete();
+            OrderLayanan::whereIn('id', $orderIds)->delete();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Order layanan berhasil dihapus.',
             ]);
         } catch (\Throwable $e) {
-            DB::rollBack();
-
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan saat menghapus data.',
-                // 'error'   => $e->getMessage(), // boleh di-uncomment untuk debugging
+                // 'error' => $e->getMessage(),
             ], 500);
         }
     }

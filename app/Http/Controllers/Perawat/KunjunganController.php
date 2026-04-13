@@ -146,36 +146,50 @@ class KunjunganController extends Controller
     // Sumber data untuk DataTables (AJAX, client-side)
     public function getDataKunjunganDenganStatusEngaged()
     {
-        $userId = Auth::id();
-
-        $perawat = Perawat::where('user_id', $userId)->first();
-
-        if (!$perawat) {
-            return DataTables::of(collect())->make(true);
-        }
-
-        $perawatId = $perawat->id;
-
-        // Ambil semua pasangan dokter-poli yang dimiliki perawat ini
-        $dokterPoliPairs = DB::table('perawat_dokter_poli as pdp')
-            ->join('dokter_poli as dp', 'dp.id', '=', 'pdp.dokter_poli_id')
-            ->where('pdp.perawat_id', $perawatId)
-            ->select('dp.dokter_id', 'dp.poli_id')
-            ->get();
+        $user = Auth::user();
+        $isSuperAdmin = $user && $user->role === 'Super Admin';
 
         $query = EMR::with(['pasien', 'dokter', 'poli', 'perawat', 'kunjungan'])
             ->whereHas('kunjungan', function ($q) {
                 $q->where('status', 'Engaged');
-            })
-            ->where(function ($q) use ($perawatId, $dokterPoliPairs) {
+            });
 
-                // CASE B:
+        // KHUSUS PERAWAT:
+        // hanya tampilkan data yang BELUM diisi form vital sign
+        if (!$isSuperAdmin) {
+            $query->where(function ($q) {
+                $q->whereNull('tekanan_darah')
+                    ->orWhereNull('suhu_tubuh')
+                    ->orWhereNull('nadi')
+                    ->orWhereNull('pernapasan')
+                    ->orWhereNull('saturasi_oksigen')
+                    ->orWhereNull('tinggi_badan')
+                    ->orWhereNull('berat_badan')
+                    ->orWhereNull('imt');
+            });
+        }
+
+        // Kalau bukan Super Admin, filter berdasarkan perawat
+        if (!$isSuperAdmin) {
+            $perawat = Perawat::where('user_id', $user->id)->first();
+
+            if (!$perawat) {
+                return DataTables::of(collect())->make(true);
+            }
+
+            $perawatId = $perawat->id;
+
+            $dokterPoliPairs = DB::table('perawat_dokter_poli as pdp')
+                ->join('dokter_poli as dp', 'dp.id', '=', 'pdp.dokter_poli_id')
+                ->where('pdp.perawat_id', $perawatId)
+                ->select('dp.dokter_id', 'dp.poli_id')
+                ->get();
+
+            $query->where(function ($q) use ($perawatId, $dokterPoliPairs) {
                 // kalau EMR sudah dipegang perawat ini, tetap tampil
                 $q->where('perawat_id', $perawatId);
 
-                // CASE A:
-                // kalau EMR masih NULL, tampilkan ke semua perawat
-                // yang punya pasangan dokter + poli yang sama
+                // kalau EMR masih NULL, tampilkan kalau mapping dokter+poli cocok
                 if ($dokterPoliPairs->isNotEmpty()) {
                     $q->orWhere(function ($sub) use ($dokterPoliPairs) {
                         $sub->whereNull('perawat_id')
@@ -189,41 +203,102 @@ class KunjunganController extends Controller
                             });
                     });
                 }
-            })
+            });
+        }
+
+        $data = $query
             ->orderByDesc('id')
             ->get();
 
-        return DataTables::of($query)
+        return DataTables::of($data)
             ->addIndexColumn()
             ->addColumn('no_antrian', fn($emr) => optional($emr->kunjungan)->no_antrian ?? '-')
             ->addColumn('nama_pasien', fn($emr) => optional($emr->pasien)->nama_pasien ?? '-')
             ->addColumn('nama_dokter', fn($emr) => optional($emr->dokter)->nama_dokter ?? '-')
             ->addColumn('nama_poli', fn($emr) => optional($emr->poli)->nama_poli ?? '-')
+            ->addColumn('nama_perawat', fn($emr) => optional($emr->perawat)->nama_perawat ?? '-')
             ->addColumn('keluhan_utama', fn($emr) => $emr->keluhan_utama ?? '-')
-            ->addColumn('action', function ($row) {
-                if (!empty($row->id)) {
-                    $url = route('perawat.form.pengisian.vital.sign', $row->id);
-
+            ->addColumn('action', function ($row) use ($isSuperAdmin) {
+                if (empty($row->id)) {
                     return '
-                    <a href="' . $url . '"
-                       class="inline-flex items-center px-3 py-1 rounded-lg
-                              bg-indigo-600 text-white text-xs font-medium
-                              hover:bg-indigo-700 transition">
-                       Proses
-                    </a>
+                    <span class="inline-flex items-center px-3 py-1 rounded-lg
+                                 bg-gray-300 text-gray-600 text-xs cursor-not-allowed"
+                          title="EMR belum dibuat">
+                          EMR belum ada
+                    </span>
                 ';
                 }
 
+                if ($isSuperAdmin) {
+                    return '
+                    <button type="button"
+                            class="btn-detail-kunjungan inline-flex items-center px-3 py-1 rounded-lg
+                                   bg-sky-600 text-white text-xs font-medium
+                                   hover:bg-sky-700 transition"
+                            data-id="' . $row->id . '">
+                        Detail
+                    </button>
+                ';
+                }
+
+                $url = route('perawat.form.pengisian.vital.sign', $row->id);
+
                 return '
-                <span class="inline-flex items-center px-3 py-1 rounded-lg
-                             bg-gray-300 text-gray-600 text-xs cursor-not-allowed"
-                      title="EMR belum dibuat">
-                      EMR belum ada
-                </span>
+                <a href="' . $url . '"
+                   class="inline-flex items-center px-3 py-1 rounded-lg
+                          bg-indigo-600 text-white text-xs font-medium
+                          hover:bg-indigo-700 transition">
+                   Proses
+                </a>
             ';
             })
             ->rawColumns(['action'])
             ->make(true);
+    }
+
+    public function detailKunjunganEngaged($id)
+    {
+        $user = Auth::user();
+
+        if (!$user || $user->role !== 'Super Admin') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Anda tidak berwenang melihat detail kunjungan ini.',
+            ], 403);
+        }
+
+        $emr = EMR::with(['pasien', 'dokter', 'poli', 'perawat', 'kunjungan'])->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'id_emr'                    => $emr->id,
+                'no_antrian'                => optional($emr->kunjungan)->no_antrian ?? '-',
+                'tanggal_kunjungan'         => optional($emr->kunjungan)->tanggal_kunjungan ?? '-',
+                'status_kunjungan'          => optional($emr->kunjungan)->status ?? '-',
+
+                'nama_pasien'               => optional($emr->pasien)->nama_pasien ?? '-',
+                'nama_dokter'               => optional($emr->dokter)->nama_dokter ?? '-',
+                'nama_poli'                 => optional($emr->poli)->nama_poli ?? '-',
+                'nama_perawat'              => optional($emr->perawat)->nama_perawat ?? '-',
+
+                'keluhan_awal'              => optional($emr->kunjungan)->keluhan_awal ?? '-',
+                'keluhan_utama'             => $emr->keluhan_utama ?? '-',
+
+                'tekanan_darah'             => $emr->tekanan_darah ?? '-',
+                'suhu_tubuh'                => $emr->suhu_tubuh ?? '-',
+                'tinggi_badan'              => $emr->tinggi_badan ?? '-',
+                'berat_badan'               => $emr->berat_badan ?? '-',
+                'imt'                       => $emr->imt ?? '-',
+                'nadi'                      => $emr->nadi ?? '-',
+                'pernapasan'                => $emr->pernapasan ?? '-',
+                'saturasi_oksigen'          => $emr->saturasi_oksigen ?? '-',
+
+                'riwayat_penyakit_dahulu'   => $emr->riwayat_penyakit_dahulu ?? '-',
+                'riwayat_penyakit_keluarga' => $emr->riwayat_penyakit_keluarga ?? '-',
+                'diagnosis'                 => $emr->diagnosis ?? '-',
+            ]
+        ]);
     }
 
     // Stub: halaman khusus vital sign (nanti kamu isi)

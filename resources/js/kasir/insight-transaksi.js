@@ -200,3 +200,152 @@ $(document).ready(function () {
         }
     });
 });
+
+$(function () {
+    function renderDetailItems(items) {
+        if (!items || !items.length) {
+            $detailItems.html(`
+                    <tr>
+                        <td colspan="7" class="px-4 py-6 text-center text-sm text-slate-500">
+                            Tidak ada detail transaksi.
+                        </td>
+                    </tr>
+                `);
+            return;
+        }
+
+        const rows = items
+            .map(
+                (item, index) => `
+                <tr class="border-b border-slate-100">
+                    <td class="px-4 py-3">${index + 1}</td>
+                    <td class="px-4 py-3 font-semibold text-slate-800">${escapeHtml(item.nama_obat || "-")}</td>
+                    <td class="px-4 py-3 text-center">${formatNumber(item.jumlah)}</td>
+                    <td class="px-4 py-3 text-right">${formatRupiah(item.harga_satuan)}</td>
+                    <td class="px-4 py-3 text-right">${formatRupiah(item.sub_total)}</td>
+                    <td class="px-4 py-3 text-center">${escapeHtml(formatDiskonLabel(item))}</td>
+                    <td class="px-4 py-3 text-right font-extrabold text-emerald-600">${formatRupiah(item.total_setelah_diskon)}</td>
+                </tr>
+            `,
+            )
+            .join("");
+
+        $detailItems.html(rows);
+    }
+
+    function formatTanggalJam(value) {
+        if (!value) return "-";
+
+        const date = new Date(value);
+        if (Number.isNaN(date.getTime())) return value;
+
+        return date.toLocaleString("id-ID", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+        });
+    }
+
+    const formatter = new Intl.NumberFormat("id-ID");
+
+    const $detailItems = $("#detailPenjualanItems");
+
+    function formatRupiah(value) {
+        return "Rp " + formatter.format(Number(value || 0));
+    }
+
+    function formatNumber(value) {
+        return formatter.format(Number(value || 0));
+    }
+
+    $(document).on("click", ".btn-detail-penjualan", function () {
+        const url = $(this).data("url");
+
+        function openDetailModal() {
+            $("#modalDetailPenjualan").removeClass("hidden").addClass("flex");
+            $("body").addClass("overflow-hidden");
+        }
+
+        function resetDetailModal() {
+            $("#detailKodeTransaksi").text("-");
+            $("#detailNamaPasien").text("-");
+            $("#detailTanggalTransaksi").text("-");
+            $("#detailStatusTransaksi").text("-");
+            $("#detailMetodePembayaran").text("-");
+            $("#detailGrandTotal").text("Rp 0");
+
+            $detailItems.html(`
+                <tr>
+                    <td colspan="7" class="px-4 py-6 text-center text-sm text-slate-500">
+                        Memuat detail transaksi...
+                    </td>
+                </tr>
+            `);
+        }
+
+        resetDetailModal();
+        openDetailModal();
+
+        $.ajax({
+            url: url,
+            method: "GET",
+            success: function (response) {
+                const data = response.data || {};
+
+                $("#detailKodeTransaksi").text(data.kode_transaksi || "-");
+                $("#detailNamaPasien").text(data.nama_pasien || "-");
+                $("#detailTanggalTransaksi").text(
+                    formatTanggalJam(data.tanggal_transaksi),
+                );
+                $("#detailStatusTransaksi").text(data.status || "-");
+                $("#detailMetodePembayaran").text(
+                    data.metode_pembayaran || "-",
+                );
+                $("#detailGrandTotal").text(
+                    formatRupiah(data.total_setelah_diskon || 0),
+                );
+
+                renderDetailItems(data.details || []);
+            },
+            error: function () {
+                $detailItems.html(`
+                        <tr>
+                            <td colspan="7" class="px-4 py-6 text-center text-sm text-rose-500">
+                                Gagal memuat detail transaksi obat.
+                            </td>
+                        </tr>
+                    `);
+            },
+        });
+    });
+
+    $("#btnCloseModalDetailPenjualan").on("click", function () {
+        function closeDetailModal() {
+            $("#modalDetailPenjualan").removeClass("flex").addClass("hidden");
+            $("body").removeClass("overflow-hidden");
+        }
+
+        closeDetailModal();
+    });
+
+    function escapeHtml(text) {
+        return String(text ?? "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function formatDiskonLabel(item) {
+        if (!item.diskon_tipe || Number(item.diskon_nilai || 0) <= 0) {
+            return "-";
+        }
+
+        if (item.diskon_tipe === "persen") {
+            return `${item.diskon_nilai}%`;
+        }
+
+        return formatRupiah(item.diskon_nilai);
+    }
+});

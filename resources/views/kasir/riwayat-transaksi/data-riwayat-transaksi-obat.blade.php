@@ -72,7 +72,7 @@
         {{-- Tabel --}}
         <div class="overflow-x-auto">
             <table id="riwayatTransaksiObatTable"
-                class="w-full min-w-[1100px] text-sm text-left text-slate-700 dark:text-slate-100
+                class="w-full min-w-[1200px] text-sm text-left text-slate-700 dark:text-slate-100
                        border-t border-slate-100 dark:border-slate-700">
                 <thead
                     class="text-[11px] md:text-xs font-semibold uppercase
@@ -80,17 +80,16 @@
                            text-white tracking-wide">
                     <tr>
                         <th class="px-4 md:px-6 py-3">No</th>
-                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Nama Pasien</th>
-                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Nama Obat</th>
-                        <th class="px-4 md:px-6 py-3">Dosis</th>
-                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Jumlah Obat</th>
-                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Sub Total</th>
-                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Metode Pembayaran</th>
-                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Kode Transaksi</th>
-                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Tanggal Transaksi</th>
+                        <th class="px-4 md:px-6 py-3">Kode Transaksi</th>
+                        <th class="px-4 md:px-6 py-3">Nama Pasien</th>
+                        <th class="px-4 md:px-6 py-3">Tanggal Pembayaran</th>
+                        <th class="px-4 md:px-6 py-3">Subtotal</th>
+                        <th class="px-4 md:px-6 py-3">Diskon</th>
+                        <th class="px-4 md:px-6 py-3">Total</th>
+                        <th class="px-4 md:px-6 py-3">Metode Pembayaran</th>
                         <th class="px-4 md:px-6 py-3">Status</th>
-                        <th class="px-4 md:px-6 py-3 whitespace-nowrap">Bukti Pembayaran</th>
-                        <th class="px-4 md:px-6 py-3 text-center whitespace-nowrap">Aksi</th>
+                        <th class="px-4 md:px-6 py-3">Bukti Transaksi</th>
+                        <th class="px-4 md:px-6 py-3">Action</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700">

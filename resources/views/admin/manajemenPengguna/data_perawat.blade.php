@@ -19,12 +19,6 @@
         </div>
 
         <div class="flex items-center gap-2 md:gap-3">
-            <button type="button"
-                class="hidden md:inline-flex items-center gap-2 px-3 py-2 text-xs md:text-sm rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-600">
-                <i class="fa-regular fa-circle-question text-sm"></i>
-                <span>Panduan Manajemen Perawat</span>
-            </button>
-
             <button id="btnAddPerawat" type="button"
                 class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl shadow-md
                        bg-gradient-to-r from-sky-500 to-teal-600 hover:from-sky-600 hover:to-teal-700
@@ -63,7 +57,7 @@
                         <i class="fa-solid fa-magnifying-glass text-slate-400 text-xs"></i>
                     </span>
                     <input type="text" id="perawat_searchInput"
-                        class="block w-full md:w-80 pl-9 pr-3 py-2 text-sm text-slate-800 dark:text-slate-100
+                        class="placeholder:text-slate-400 block w-full md:w-80 pl-9 pr-3 py-2 text-sm text-slate-800 dark:text-slate-100
                                border border-slate-300 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700
                                focus:ring-sky-500 focus:border-sky-500"
                         placeholder="Cari nama perawat, dokter, poli, atau email...">
@@ -76,15 +70,13 @@
 
         {{-- Tabel --}}
         <div class="overflow-x-auto">
-            <table id="userPerawat"
+            <table id="table-perawat"
                 class="w-full text-sm text-left text-slate-700 dark:text-slate-100 border-t border-slate-100 dark:border-slate-700">
                 <thead
                     class="text-xs font-semibold uppercase bg-gradient-to-r from-sky-500 via-teal-500 to-teal-600 text-white tracking-wide">
                     <tr>
                         <th class="px-6 py-3">No</th>
                         <th class="px-6 py-3">Profil</th>
-                        <th class="px-6 py-3">Poli</th>
-                        <th class="px-6 py-3">Nama Dokter</th>
                         <th class="px-6 py-3">Nama Perawat</th>
                         <th class="px-6 py-3">Username</th>
                         <th class="px-6 py-3">Email Akun</th>
@@ -141,7 +133,7 @@
 
             {{-- Form --}}
             <form id="formAddPerawat" class="px-6 pb-5 pt-4 flex flex-col gap-4 bg-slate-50/60 dark:bg-slate-800"
-                data-url="{{ route('manajemen_pengguna.add_perawat') }}" method="POST" enctype="multipart/form-data">
+                {{-- data-url="{{ route('manajemen_pengguna.add_perawat') }}"  --}} method="POST" enctype="multipart/form-data">
                 @csrf
 
                 {{-- Info strip --}}
@@ -374,8 +366,197 @@
     </div>
 </div>
 
+{{-- Modal Detail Perawat --}}
+<div id="modal-detail-perawat"
+    class="hidden fixed inset-0 z-50 flex items-start md:items-center justify-center w-full h-full p-4 md:p-6 bg-slate-900/60 backdrop-blur-sm">
+    <div class="relative w-full max-w-5xl">
+        <div
+            class="relative bg-white rounded-2xl shadow-2xl dark:bg-slate-800 border border-slate-100 dark:border-slate-700 flex flex-col max-h-[90vh] overflow-y-auto">
+
+            {{-- Header --}}
+            <div
+                class="flex items-start justify-between gap-3 px-6 pt-5 pb-4 border-b border-slate-100 dark:border-slate-700 bg-gradient-to-r from-sky-500 to-teal-500 rounded-t-2xl">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="h-10 w-10 rounded-xl bg-white/15 flex items-center justify-center shadow-md text-white">
+                        <i class="fa-solid fa-user-doctor text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base md:text-lg font-semibold text-slate-50">
+                            Detail Data Perawat
+                        </h3>
+                        <p class="text-xs text-sky-50/90 mt-0.5">
+                            Informasi profil, akun, dan penugasan perawat.
+                        </p>
+                    </div>
+                </div>
+
+                <button type="button" id="btn-close-header-modal-detail-perawat"
+                    class="inline-flex items-center justify-center h-8 w-8 rounded-full text-slate-100 hover:text-white hover:bg-white/10 transition">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-6">
+                {{-- Info strip --}}
+                <div
+                    class="flex items-center gap-2 text-xs rounded-xl px-3 py-2
+                           bg-sky-50 text-sky-700 border border-sky-100
+                           dark:bg-sky-900/30 dark:text-sky-100 dark:border-sky-800">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>Data di bawah ini bersifat informasi dan tidak dapat diubah dari modal detail.</span>
+                </div>
+
+                {{-- BLOK ATAS: FOTO + AKUN --}}
+                <div class="grid grid-cols-1 md:grid-cols-[auto,1fr] gap-6 items-start">
+
+                    {{-- Foto --}}
+                    <div class="flex justify-center md:justify-start">
+                        <div
+                            class="relative w-32 md:w-36 aspect-[3/4] rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden bg-slate-50 dark:bg-slate-700 shadow-sm">
+                            <img id="detail-preview-foto-perawat" src="" alt="Foto Perawat"
+                                class="hidden relative z-10 w-full h-full object-cover">
+                            <div id="detail-placeholder-foto-perawat"
+                                class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 text-[11px] px-2 text-center">
+                                <i class="fa-solid fa-user-circle text-2xl mb-2"></i>
+                                <span>Foto perawat belum tersedia</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Informasi akun & profil --}}
+                    <div class="space-y-4">
+                        <h4 class="text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400 uppercase">
+                            Akun & Profil Perawat
+                        </h4>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {{-- Username --}}
+                            <div class="space-y-1">
+                                <label class="block text-sm font-medium text-slate-800 dark:text-slate-100">
+                                    Username
+                                </label>
+                                <div id="detail-username-perawat"
+                                    class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2.5
+                                           dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 min-h-[44px] flex items-center">
+                                    -
+                                </div>
+                            </div>
+
+                            {{-- Nama Perawat --}}
+                            <div class="space-y-1">
+                                <label class="block text-sm font-medium text-slate-800 dark:text-slate-100">
+                                    Nama Perawat
+                                </label>
+                                <div id="detail-nama-perawat"
+                                    class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2.5
+                                           dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 min-h-[44px] flex items-center">
+                                    -
+                                </div>
+                            </div>
+
+                            {{-- Email --}}
+                            <div class="space-y-1">
+                                <label class="block text-sm font-medium text-slate-800 dark:text-slate-100">
+                                    Email
+                                </label>
+                                <div id="detail-email-perawat"
+                                    class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2.5
+                                           dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 min-h-[44px] flex items-center break-all">
+                                    -
+                                </div>
+                            </div>
+
+                            {{-- No HP --}}
+                            <div class="space-y-1">
+                                <label class="block text-sm font-medium text-slate-800 dark:text-slate-100">
+                                    No HP
+                                </label>
+                                <div id="detail-no-hp-perawat"
+                                    class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2.5
+                                           dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 min-h-[44px] flex items-center">
+                                    -
+                                </div>
+                            </div>
+
+                            {{-- Role --}}
+                            <div class="space-y-1 md:col-span-2">
+                                <label class="block text-sm font-medium text-slate-800 dark:text-slate-100">
+                                    Role
+                                </label>
+                                <div id="detail-role-perawat"
+                                    class="w-full bg-slate-50 border border-slate-200 text-slate-700 text-sm rounded-xl px-3 py-2.5
+                                           dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 min-h-[44px] flex items-center">
+                                    -
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Penugasan --}}
+                <div class="space-y-3">
+                    <h4 class="text-xs font-semibold tracking-wide text-slate-500 dark:text-slate-400 uppercase">
+                        Penugasan Perawat
+                    </h4>
+
+                    <div
+                        class="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900/60 overflow-hidden">
+                        <div
+                            class="px-3 py-2 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                            <span class="text-xs font-semibold text-slate-600 dark:text-slate-200 uppercase">
+                                Daftar Poli & Dokter
+                            </span>
+                            <span class="text-[11px] text-slate-400">
+                                Informasi penempatan aktif perawat.
+                            </span>
+                        </div>
+
+                        <div class="max-h-56 overflow-y-auto">
+                            <table class="min-w-full text-xs">
+                                <thead class="bg-slate-50 dark:bg-slate-800/80">
+                                    <tr>
+                                        <th
+                                            class="px-3 py-2 text-left font-semibold text-slate-500 dark:text-slate-300">
+                                            No
+                                        </th>
+                                        <th
+                                            class="px-3 py-2 text-left font-semibold text-slate-500 dark:text-slate-300">
+                                            Poli
+                                        </th>
+                                        <th
+                                            class="px-3 py-2 text-left font-semibold text-slate-500 dark:text-slate-300">
+                                            Dokter
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detail-list-penugasan">
+                                    <tr id="detail-penugasan-empty">
+                                        <td colspan="3" class="px-3 py-4 text-center text-slate-400 italic">
+                                            Belum ada data penugasan
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Footer buttons --}}
+                <div class="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <button type="button" id="btn-close-footer-modal-detail-perawat"
+                        class="px-5 py-2.5 text-sm font-medium text-slate-700 bg-slate-200 rounded-xl 
+                               hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">
+                        Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {{-- Modal Edit Perawat --}}
-<div id="editPerawatModal" aria-hidden="true"
+<div id="modal-edit-perawat"
     class="hidden fixed inset-0 z-50 flex items-start md:items-center justify-center w-full h-full p-4 md:p-6 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
     <div class="relative w-full max-w-5xl">
         <div
@@ -399,19 +580,16 @@
                     </div>
                 </div>
 
-                <button type="button" id="closeEditPerawatModal_header"
+                <button type="button" id="btn-close-header-modal-edit-perawat"
                     class="inline-flex items-center justify-center h-8 w-8 rounded-full text-slate-100 hover:text-white hover:bg-white/10 transition">
                     <i class="fa-solid fa-xmark text-sm"></i>
                 </button>
             </div>
 
             {{-- Form --}}
-            <form id="formEditPerawat" class="px-6 pb-5 pt-4 flex flex-col gap-4 bg-slate-50/60 dark:bg-slate-800"
-                data-url="{{ route('manajemen_pengguna.update_perawat', ['id' => 0]) }}" method="POST"
-                enctype="multipart/form-data">
+            <form id="formEditPerawat"  
+                class="px-6 pb-5 pt-4 flex flex-col gap-4 bg-slate-50/60 dark:bg-slate-800" method="POST" enctype="multipart/form-data">
                 @csrf
-                @method('PUT')
-                <input type="hidden" name="perawat_id" id="edit_perawat_id">
 
                 {{-- Info strip --}}
                 <div
@@ -430,9 +608,9 @@
                         <div id="edit_foto_drop_area_perawat"
                             class="relative w-32 md:w-36 aspect-[3/4] rounded-xl border-2 border-dashed border-sky-300/80 
                                    flex items-center justify-center cursor-pointer overflow-hidden bg-slate-50 dark:bg-slate-700 transition">
-                            <img id="edit_preview_foto_perawat" src="" alt="Preview Foto"
+                            <img id="edit-preview-foto-perawat" src="" alt="Preview Foto"
                                 class="hidden w-full h-full object-cover">
-                            <div id="edit_placeholder_foto_perawat"
+                            <div id="edit-placeholder-foto-perawat"
                                 class="absolute inset-0 flex flex-col items-center justify-center text-slate-400 text-[11px] px-2 text-center">
                                 <i class="fa-solid fa-user-circle text-xl mb-1"></i>
                                 <span>Upload foto baru (opsional)</span>
@@ -449,51 +627,51 @@
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {{-- Username --}}
                             <div class="space-y-1">
-                                <label for="edit_username_perawat"
+                                <label 
                                     class="block text-sm font-medium text-slate-800 dark:text-slate-100">Username</label>
-                                <input type="text" name="edit_username_perawat" id="edit_username_perawat"
+                                <input type="text" name="edit_username_perawat" id="edit-username-perawat"
                                     class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-xl
                                            focus:ring-sky-500 focus:border-sky-500 px-3 py-2.5
                                            dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
                                     placeholder="Username" required>
-                                <div id="edit_username_perawat-error" class="text-red-600 text-xs mt-1"></div>
+                                <div id="edit-username-perawat-error" class="text-red-600 text-xs mt-1"></div>
                             </div>
 
                             {{-- Nama Perawat --}}
                             <div class="space-y-1">
-                                <label for="edit_nama_perawat"
+                                <label
                                     class="block text-sm font-medium text-slate-800 dark:text-slate-100">Nama
                                     Perawat</label>
-                                <input type="text" name="edit_nama_perawat" id="edit_nama_perawat"
+                                <input type="text" name="edit_nama_perawat" id="edit-nama-perawat"
                                     class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-xl
                                            focus:ring-sky-500 focus:border-sky-500 px-3 py-2.5
                                            dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
                                     placeholder="Nama Perawat" required>
-                                <div id="edit_nama_perawat-error" class="text-red-600 text-xs mt-1"></div>
+                                <div id="edit-nama-perawat-error" class="text-red-600 text-xs mt-1"></div>
                             </div>
 
                             {{-- Email --}}
                             <div class="space-y-1">
-                                <label for="edit_email_perawat"
+                                <label
                                     class="block text-sm font-medium text-slate-800 dark:text-slate-100">Email</label>
-                                <input type="email" name="edit_email_perawat" id="edit_email_perawat"
+                                <input type="email" name="edit_email_perawat" id="edit-email-perawat"
                                     class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-xl
                                            focus:ring-sky-500 focus:border-sky-500 px-3 py-2.5
                                            dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
                                     placeholder="perawat@example.com" required>
-                                <div id="edit_email_perawat-error" class="text-red-600 text-xs mt-1"></div>
+                                <div id="edit-email-perawat-error" class="text-red-600 text-xs mt-1"></div>
                             </div>
 
                             {{-- No HP --}}
                             <div class="space-y-1">
-                                <label for="edit_no_hp_perawat"
+                                <label
                                     class="block text-sm font-medium text-slate-800 dark:text-slate-100">No HP</label>
-                                <input type="text" name="edit_no_hp_perawat" id="edit_no_hp_perawat"
+                                <input type="text" name="edit_no_hp_perawat" id="edit-no-hp-perawat"
                                     class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-xl
                                            focus:ring-sky-500 focus:border-sky-500 px-3 py-2.5
                                            dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
                                     placeholder="0812xxxxxxxx" required>
-                                <div id="edit_no_hp_perawat-error" class="text-red-600 text-xs mt-1"></div>
+                                <div id="edit-no-hp-perawat-error" class="text-red-600 text-xs mt-1"></div>
                             </div>
                         </div>
                     </div>
@@ -510,34 +688,34 @@
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         {{-- Poli --}}
                         <div class="space-y-1">
-                            <label for="edit_poli_select"
+                            <label
                                 class="block text-sm font-medium text-slate-800 dark:text-slate-100">
                                 Poli
                             </label>
-                            <select id="edit_poli_select"
+                            <select id="edit-poli-select"
                                 class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-xl
                        focus:ring-sky-500 focus:border-sky-500 px-3 py-2.5
                        dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
                                 placeholder="Cari & pilih poli…">
                                 {{-- TomSelect inject --}}
                             </select>
-                            <div id="edit_poli_select-error" class="text-red-600 text-xs mt-1"></div>
+                            <div id="edit-poli-select-error" class="text-red-600 text-xs mt-1"></div>
                         </div>
 
                         {{-- Dokter (depend on poli, value = dokter_poli_id) --}}
                         <div id="group_dokter_edit" class="space-y-1 hidden">
-                            <label for="edit_dokter_select"
+                            <label
                                 class="block text-sm font-medium text-slate-800 dark:text-slate-100">
                                 Dokter
                             </label>
-                            <select id="edit_dokter_select"
+                            <select id="edit-dokter-select"
                                 class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-xl
                        focus:ring-sky-500 focus:border-sky-500 px-3 py-2.5
                        dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50"
                                 placeholder="Cari & pilih dokter…">
                                 {{-- TomSelect inject --}}
                             </select>
-                            <div id="edit_dokter_select-error" class="text-red-600 text-xs mt-1"></div>
+                            <div id="edit-dokter-select-error" class="text-red-600 text-xs mt-1"></div>
                         </div>
                     </div>
 
@@ -668,12 +846,12 @@
 
                 {{-- Buttons --}}
                 <div class="flex justify-end gap-3 mt-6 border-t border-slate-200 pt-4 dark:border-slate-700">
-                    <button type="button" id="closeEditPerawatModal"
+                    <button type="button" id="btn-close-footer-modal-edit-perawat"
                         class="px-5 py-2.5 text-sm font-medium text-slate-700 bg-slate-200 rounded-xl 
                                hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">
                         Batal
                     </button>
-                    <button type="submit"
+                    <button type="submit" 
                         class="px-5 py-2.5 text-sm font-semibold text-white rounded-xl 
                                bg-gradient-to-r from-teal-500 to-sky-600 hover:from-teal-600 hover:to-sky-700
                                focus:ring-2 focus:ring-teal-400">

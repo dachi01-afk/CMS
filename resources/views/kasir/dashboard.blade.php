@@ -375,5 +375,5 @@
 
     </div>
 
-    @vite(['resources/js/kasir/dashboard.js'])
 </x-mycomponents.layout>
+@vite(['resources/js/kasir/dashboard.js'])

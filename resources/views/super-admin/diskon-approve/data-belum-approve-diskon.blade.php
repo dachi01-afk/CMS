@@ -247,6 +247,4 @@
     </div>
 </div>
 
-
-
 @vite(['resources/js/super-admin/data-belum-approve-diskon.js'])

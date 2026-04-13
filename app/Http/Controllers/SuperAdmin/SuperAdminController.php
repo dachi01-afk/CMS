@@ -80,7 +80,9 @@ class SuperAdminController extends Controller
         $pendapatanRupiah = 'Rp ' . number_format($pendapatan, 0, ',', '.');
 
         $chartFilter = 'bulanan';
-        $chartData = $this->buildKunjunganChart($chartFilter);
+        $chartData = $this->buildKunjunganChart($chartFilter, [
+            'bulan' => now()->format('Y-m'),
+        ]);
 
         return view('super-admin.dashboard-super-admin', compact(
             'namaSuperAdmin',
@@ -102,8 +104,9 @@ class SuperAdminController extends Controller
         $this->ensureManager();
 
         $filter = $this->normalizeChartFilter($request->get('filter'));
+        $selected = $this->getChartSelectionsFromRequest($request);
 
-        return response()->json($this->buildKunjunganChart($filter));
+        return response()->json($this->buildKunjunganChart($filter, $selected));
     }
 
     public function reportKunjunganPdf(Request $request)
@@ -113,7 +116,8 @@ class SuperAdminController extends Controller
         Carbon::setLocale('id');
 
         $filter = $this->normalizeChartFilter($request->get('filter'));
-        $chartData = $this->buildKunjunganChart($filter);
+        $selected = $this->getChartSelectionsFromRequest($request);
+        $chartData = $this->buildKunjunganChart($filter, $selected);
         $namaSuperAdmin = $this->getNamaSuperAdmin();
         $generatedAt = now();
 
@@ -135,31 +139,12 @@ class SuperAdminController extends Controller
         Carbon::setLocale('id');
 
         $filter = $this->normalizeChartFilter($request->get('filter'));
+        $selected = $this->getChartSelectionsFromRequest($request);
         $generatedAt = now();
-        $now = now();
 
-        switch ($filter) {
-            case 'harian':
-                $start = $now->copy()->startOfMonth();
-                $end = $now->copy()->endOfMonth();
-                break;
-
-            case 'mingguan':
-                $start = $now->copy()->subWeeks(11)->startOfWeek(Carbon::MONDAY);
-                $end = $now->copy()->endOfWeek(Carbon::SUNDAY);
-                break;
-
-            case 'tahunan':
-                $start = $now->copy()->subYears(4)->startOfYear();
-                $end = $now->copy()->endOfYear();
-                break;
-
-            case 'bulanan':
-            default:
-                $start = $now->copy()->startOfYear();
-                $end = $now->copy()->endOfYear();
-                break;
-        }
+        $period = $this->resolveKunjunganPeriod($filter, $selected);
+        $start = $period['start'];
+        $end = $period['end'];
 
         $rows = Kunjungan::query()
             ->leftJoin('dokter', 'kunjungan.dokter_id', '=', 'dokter.id')
@@ -192,6 +177,16 @@ class SuperAdminController extends Controller
         return in_array($filter, $allowed, true) ? $filter : 'bulanan';
     }
 
+    private function getChartSelectionsFromRequest(Request $request): array
+    {
+        return [
+            'tanggal' => $request->get('tanggal'),
+            'minggu' => $request->get('minggu'),
+            'bulan' => $request->get('bulan'),
+            'tahun' => $request->get('tahun'),
+        ];
+    }
+
     private function getChartFilterLabel(string $filter): string
     {
         return match ($filter) {
@@ -202,69 +197,147 @@ class SuperAdminController extends Controller
         };
     }
 
-    private function buildKunjunganChart(string $filter): array
+    private function resolveKunjunganPeriod(string $filter, array $selected = []): array
     {
         Carbon::setLocale('id');
+
         $now = now();
+
+        $normalized = [
+            'tanggal' => $now->format('Y-m-d'),
+            'minggu' => sprintf('%s-W%s', $now->format('o'), $now->format('W')),
+            'bulan' => $now->format('Y-m'),
+            'tahun' => (int) $now->format('Y'),
+        ];
+
+        if (!empty($selected['tanggal'])) {
+            $normalized['tanggal'] = (string) $selected['tanggal'];
+        }
+
+        if (!empty($selected['minggu'])) {
+            $normalized['minggu'] = (string) $selected['minggu'];
+        }
+
+        if (!empty($selected['bulan'])) {
+            $normalized['bulan'] = (string) $selected['bulan'];
+        }
+
+        if (!empty($selected['tahun'])) {
+            $normalized['tahun'] = (int) $selected['tahun'];
+        }
 
         switch ($filter) {
             case 'harian':
-                $start = $now->copy()->startOfMonth();
-                $end = $now->copy()->endOfMonth();
+                try {
+                    $selectedDate = Carbon::createFromFormat('Y-m-d', $normalized['tanggal']);
+                } catch (\Throwable $th) {
+                    $selectedDate = $now->copy();
+                }
+
+                $start = $selectedDate->copy()->startOfDay();
+                $end = $selectedDate->copy()->endOfDay();
                 $bucketType = 'day';
+
+                $normalized['tanggal'] = $selectedDate->format('Y-m-d');
                 break;
 
             case 'mingguan':
-                $start = $now->copy()->subWeeks(11)->startOfWeek(Carbon::MONDAY);
-                $end = $now->copy()->endOfWeek(Carbon::SUNDAY);
-                $bucketType = 'week';
+                if (preg_match('/^(\d{4})-W(\d{2})$/', $normalized['minggu'], $matches)) {
+                    $isoYear = (int) $matches[1];
+                    $isoWeek = (int) $matches[2];
+                } else {
+                    $isoYear = (int) $now->format('o');
+                    $isoWeek = (int) $now->format('W');
+                }
+
+                $start = $now->copy()->setISODate($isoYear, $isoWeek)->startOfWeek(Carbon::MONDAY);
+                $end = $start->copy()->endOfWeek(Carbon::SUNDAY);
+                $bucketType = 'day';
+
+                $normalized['minggu'] = sprintf('%04d-W%02d', $isoYear, $isoWeek);
                 break;
 
             case 'tahunan':
-                $start = $now->copy()->subYears(4)->startOfYear();
-                $end = $now->copy()->endOfYear();
-                $bucketType = 'year';
+                $year = (int) $normalized['tahun'];
+
+                if ($year < 2000 || $year > 3000) {
+                    $year = (int) $now->format('Y');
+                }
+
+                $start = Carbon::create($year, 1, 1)->startOfYear();
+                $end = $start->copy()->endOfYear();
+                $bucketType = 'month';
+
+                $normalized['tahun'] = $year;
                 break;
 
             case 'bulanan':
             default:
-                $start = $now->copy()->startOfYear();
-                $end = $now->copy()->endOfYear();
-                $bucketType = 'month';
+                if (preg_match('/^(\d{4})-(\d{2})$/', $normalized['bulan'], $matches)) {
+                    $year = (int) $matches[1];
+                    $month = (int) $matches[2];
+                } else {
+                    $year = (int) $now->format('Y');
+                    $month = (int) $now->format('m');
+                }
+
+                if ($month < 1 || $month > 12) {
+                    $month = (int) $now->format('m');
+                }
+
+                $start = Carbon::create($year, $month, 1)->startOfMonth();
+                $end = $start->copy()->endOfMonth();
+                $bucketType = 'day';
+
+                $normalized['bulan'] = sprintf('%04d-%02d', $year, $month);
                 break;
         }
 
+        $rangeText = $start->isSameDay($end)
+            ? $start->translatedFormat('d M Y')
+            : $start->translatedFormat('d M Y') . ' - ' . $end->translatedFormat('d M Y');
+
+        return [
+            'start' => $start,
+            'end' => $end,
+            'bucket_type' => $bucketType,
+            'selected' => $normalized,
+            'range_text' => $rangeText,
+        ];
+    }
+
+    private function buildKunjunganChart(string $filter, array $selected = []): array
+    {
+        Carbon::setLocale('id');
+
+        $period = $this->resolveKunjunganPeriod($filter, $selected);
+
+        $start = $period['start'];
+        $end = $period['end'];
+        $bucketType = $period['bucket_type'];
+        $selected = $period['selected'];
+        $rangeText = $period['range_text'];
+
         $labels = [];
         $keys = [];
-        $cursor = $start->copy();
 
         if ($bucketType === 'day') {
-            while ($cursor->lte($end)) {
+            $cursor = $start->copy()->startOfDay();
+            $last = $end->copy()->startOfDay();
+
+            while ($cursor->lte($last)) {
                 $keys[] = $cursor->format('Y-m-d');
                 $labels[] = $cursor->translatedFormat('d M');
                 $cursor->addDay();
             }
-        } elseif ($bucketType === 'week') {
-            while ($cursor->lte($end)) {
-                $weekStart = $cursor->copy()->startOfWeek(Carbon::MONDAY);
-                $weekEnd = $cursor->copy()->endOfWeek(Carbon::SUNDAY);
+        } else {
+            $cursor = $start->copy()->startOfMonth();
+            $last = $end->copy()->startOfMonth();
 
-                $keys[] = $weekStart->format('Y-m-d');
-                $labels[] = $weekStart->translatedFormat('d M') . ' - ' . $weekEnd->translatedFormat('d M');
-
-                $cursor->addWeek();
-            }
-        } elseif ($bucketType === 'month') {
-            while ($cursor->lte($end)) {
+            while ($cursor->lte($last)) {
                 $keys[] = $cursor->format('Y-m');
                 $labels[] = $cursor->translatedFormat('M Y');
                 $cursor->addMonth();
-            }
-        } else {
-            while ($cursor->lte($end)) {
-                $keys[] = $cursor->format('Y');
-                $labels[] = $cursor->format('Y');
-                $cursor->addYear();
             }
         }
 
@@ -282,15 +355,9 @@ class SuperAdminController extends Controller
         foreach ($kunjungans as $kunjungan) {
             $tanggal = Carbon::parse($kunjungan->tanggal_kunjungan);
 
-            if ($bucketType === 'day') {
-                $key = $tanggal->format('Y-m-d');
-            } elseif ($bucketType === 'week') {
-                $key = $tanggal->copy()->startOfWeek(Carbon::MONDAY)->format('Y-m-d');
-            } elseif ($bucketType === 'month') {
-                $key = $tanggal->format('Y-m');
-            } else {
-                $key = $tanggal->format('Y');
-            }
+            $key = $bucketType === 'day'
+                ? $tanggal->format('Y-m-d')
+                : $tanggal->format('Y-m');
 
             if (!array_key_exists($key, $totalMap)) {
                 continue;
@@ -322,7 +389,8 @@ class SuperAdminController extends Controller
             'filter' => $filter,
             'filter_label' => $this->getChartFilterLabel($filter),
             'labels' => $labels,
-            'range_text' => $start->translatedFormat('d M Y') . ' - ' . $end->translatedFormat('d M Y'),
+            'range_text' => $rangeText,
+            'selected' => $selected,
 
             'total_kunjungan' => array_values($totalMap),
             'kunjungan_aktif' => array_values($activeMap),

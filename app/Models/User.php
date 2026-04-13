@@ -27,7 +27,7 @@ class User extends Authenticatable
         ];
     }
 
-    protected $guarded = []; 
+    protected $guarded = [];
 
     public function dokter()
     {
@@ -58,6 +58,7 @@ class User extends Authenticatable
     {
         return $this->hasOne(Kasir::class);
     }
+<<<<<<< HEAD
     public function pengkajianAwalPenyakitDalamCreated()
 {
     return $this->hasMany(\App\Models\EmrPengkajianAwalPenyakitDalam::class, 'created_by');
@@ -68,3 +69,25 @@ public function pengkajianAwalPenyakitDalamUpdated()
     return $this->hasMany(\App\Models\EmrPengkajianAwalPenyakitDalam::class, 'updated_by');
 }
 }
+=======
+
+    public function perawat()
+    {
+        return $this->hasOne(Perawat::class);
+    }
+
+    public function getNamaRoleAttribute()
+    {
+        return match ($this->role) {
+            'Super Admin' => $this->superAdmin?->nama_super_admin ?? '-',
+            'Admin' => $this->admin?->nama_admin ?? '-',
+            'Dokter' => $this->dokter?->nama_dokter ?? '-',
+            'Pasien' => $this->pasien?->nama_pasien ?? '-',
+            'Farmasi' => $this->farmasi?->nama_farmasi ?? '-',
+            'Perawat' => $this->perawat?->nama_perawat ?? '-',
+            'Kasir' => $this->kasir?->nama_kasir ?? '-',
+            default => $this->name ?? '-',
+        };
+    }
+}
+>>>>>>> 966f6271fa8f074b540856c2d3d753633f8a11b1

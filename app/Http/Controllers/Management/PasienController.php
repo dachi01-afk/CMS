@@ -2,56 +2,51 @@
 
 namespace App\Http\Controllers\Management;
 
-use App\Models\User;
+use App\Exports\PasienExport;
+use App\Http\Controllers\Controller;
 use App\Models\Pasien;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
-use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
-use Intervention\Image\ImageManager;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Validator;
-use Intervention\Image\Drivers\Gd\Driver;
-use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Intervention\Image\Laravel\Facades\Image;
+use Maatwebsite\Excel\Facades\Excel;
 
 class PasienController extends Controller
 {
-
     public function createPasien(Request $request)
     {
         $request->validate([
             // Foto
-            'foto_pasien'               => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
+            'foto_pasien' => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
 
             // Data akun
-            'username_pasien'           => 'required|string|max:255',
-            'email_pasien'              => 'required|email',
-            'password_pasien'           => 'required|string|min:8|confirmed',
+            'username_pasien' => 'required|string|max:255',
+            'email_pasien' => 'required|email',
+            'password_pasien' => 'required|string|min:8|confirmed',
 
             // Identitas dasar
-            'nama_pasien'               => 'required|string|max:255',
-            'alamat_pasien'             => 'nullable|string|max:255',
-            'no_hp_pasien'              => 'nullable|string|max:20',
-            'tanggal_lahir_pasien'      => 'nullable|date',
-            'jenis_kelamin_pasien'      => 'nullable|in:Laki-laki,Perempuan',
+            'nama_pasien' => 'required|string|max:255',
+            'alamat_pasien' => 'nullable|string|max:255',
+            'no_hp_pasien' => 'nullable|string|max:20',
+            'tanggal_lahir_pasien' => 'nullable|date',
+            'jenis_kelamin_pasien' => 'nullable|in:Laki-laki,Perempuan',
 
             // Identitas tambahan
-            'nik'                       => 'nullable|string|max:20',
-            'no_bpjs'                   => 'nullable|string|max:50',
-            'golongan_darah'            => 'nullable|string|max:3',
-            'status_perkawinan'         => 'nullable|string|max:50',
-            'pekerjaan'                 => 'nullable|string|max:100',
+            'nik' => 'nullable|string|max:20',
+            'no_bpjs' => 'nullable|string|max:50',
+            'golongan_darah' => 'nullable|string|max:3',
+            'status_perkawinan' => 'nullable|string|max:50',
+            'pekerjaan' => 'nullable|string|max:100',
 
             // Penanggung jawab
-            'nama_penanggung_jawab'     => 'nullable|string|max:255',
-            'no_hp_penanggung_jawab'    => 'nullable|string|max:20',
+            'nama_penanggung_jawab' => 'nullable|string|max:255',
+            'no_hp_penanggung_jawab' => 'nullable|string|max:20',
 
             // Medis
-            'alergi'                    => 'nullable|string',
+            'alergi' => 'nullable|string',
         ]);
 
         // ==== Generate Nomor EMR (RM-00000001) ====
@@ -63,14 +58,14 @@ class PasienController extends Controller
         }
 
         $nextNumber = $lastNumber + 1;
-        $no_emr = 'RM-' . str_pad($nextNumber, 8, '0', STR_PAD_LEFT);
+        $no_emr = 'RM-'.str_pad($nextNumber, 8, '0', STR_PAD_LEFT);
 
         // ==== Buat User ====
         $user = User::create([
             'username' => $request->username_pasien,
-            'email'    => $request->email_pasien,
+            'email' => $request->email_pasien,
             'password' => Hash::make($request->password_pasien),
-            'role'     => 'Pasien',
+            'role' => 'Pasien',
         ]);
 
         // ==== Upload Foto ====
@@ -82,8 +77,8 @@ class PasienController extends Controller
                 $extension = 'jpg';
             }
 
-            $fileName = 'pasien_' . time() . '.' . $extension;
-            $path = 'pasien/' . $fileName;
+            $fileName = 'pasien_'.time().'.'.$extension;
+            $path = 'pasien/'.$fileName;
 
             if ($extension === 'svg') {
                 Storage::disk('public')->put($path, file_get_contents($file));
@@ -102,78 +97,78 @@ class PasienController extends Controller
 
         // ==== Simpan Pasien (no_emr == barcode_pasien) ====
         Pasien::create([
-            'user_id'                => $user->id,
-            'no_emr'                 => $no_emr,
-            'barcode_pasien'         => $no_emr,                   // ⬅️ SAMA dengan no_emr
-            'foto_pasien'            => $fotoPath,
+            'user_id' => $user->id,
+            'no_emr' => $no_emr,
+            'barcode_pasien' => $no_emr,                   // ⬅️ SAMA dengan no_emr
+            'foto_pasien' => $fotoPath,
 
-            'nama_pasien'            => $request->nama_pasien,
-            'alamat'                 => $request->alamat_pasien,
-            'tanggal_lahir'          => $request->tanggal_lahir_pasien,
-            'jenis_kelamin'          => $request->jenis_kelamin_pasien,
-            'no_hp_pasien'           => $request->no_hp_pasien,
+            'nama_pasien' => $request->nama_pasien,
+            'alamat' => $request->alamat_pasien,
+            'tanggal_lahir' => $request->tanggal_lahir_pasien,
+            'jenis_kelamin' => $request->jenis_kelamin_pasien,
+            'no_hp_pasien' => $request->no_hp_pasien,
 
-            'nik'                    => $request->nik,
-            'no_bpjs'                => $request->no_bpjs,
-            'golongan_darah'         => $request->golongan_darah,
-            'status_perkawinan'      => $request->status_perkawinan,
-            'pekerjaan'              => $request->pekerjaan,
+            'nik' => $request->nik,
+            'no_bpjs' => $request->no_bpjs,
+            'golongan_darah' => $request->golongan_darah,
+            'status_perkawinan' => $request->status_perkawinan,
+            'pekerjaan' => $request->pekerjaan,
 
-            'nama_penanggung_jawab'  => $request->nama_penanggung_jawab,
+            'nama_penanggung_jawab' => $request->nama_penanggung_jawab,
             'no_hp_penanggung_jawab' => $request->no_hp_penanggung_jawab,
 
-            'alergi'                 => $request->alergi,
+            'alergi' => $request->alergi,
         ]);
 
         return response()->json([
             'message' => 'Data pasien berhasil ditambahkan.',
-            'no_emr'  => $no_emr,
+            'no_emr' => $no_emr,
         ]);
     }
-
 
     public function getPasienById($id)
     {
         // dd($id);
         $data = Pasien::with('user')->findOrFail($id);
+
         return response()->json(['data' => $data]);
     }
 
     public function updatePasien(Request $request, $id)
     {
         $pasien = Pasien::with('user')->findOrFail($id);
-        $user   = $pasien->user;
+        $user = $pasien->user;
 
         $request->validate([
-            'foto_pasien'               => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
+            'foto_pasien' => 'nullable|file|mimes:jpeg,jpg,png,gif,webp,svg,jfif|max:5120',
 
-            'username_pasien'           => 'required|string|max:255',
-            'email_pasien'              => 'required|email',
-            'password_pasien'           => 'nullable|string|min:8|confirmed',
+            'username_pasien' => 'required|string|max:255',
+            'email_pasien' => 'required|email',
+            'password_pasien' => 'nullable|string|min:8|confirmed',
 
-            'nama_pasien'               => 'required|string|max:255',
-            'alamat_pasien'             => 'nullable|string|max:255',
-            'no_hp_pasien'              => 'nullable|string|max:20',
-            'tanggal_lahir_pasien'      => 'nullable|date',
-            'jenis_kelamin_pasien'      => 'nullable|in:Laki-laki,Perempuan',
+            'nama_pasien' => 'required|string|max:255',
+            'alamat_pasien' => 'nullable|string|max:255',
+            'no_hp_pasien' => 'nullable|string|max:20',
+            'tanggal_lahir_pasien' => 'nullable|date',
+            'jenis_kelamin_pasien' => 'nullable|in:Laki-laki,Perempuan',
 
-            'nik'                       => 'nullable|string|max:20',
-            'no_bpjs'                   => 'nullable|string|max:50',
-            'golongan_darah'            => 'nullable|string|max:3',
-            'status_perkawinan'         => 'nullable|string|max:50',
-            'pekerjaan'                 => 'nullable|string|max:100',
+            'nik' => 'nullable|string|max:20',
+            'no_bpjs' => 'nullable|string|max:50',
+            'golongan_darah' => 'nullable|string|max:3',
+            'status_perkawinan' => 'nullable|string|max:50',
+            'pekerjaan' => 'nullable|string|max:100',
 
-            'nama_penanggung_jawab'     => 'nullable|string|max:255',
-            'no_hp_penanggung_jawab'    => 'nullable|string|max:20',
+            'nama_penanggung_jawab' => 'nullable|string|max:255',
+            'no_hp_penanggung_jawab' => 'nullable|string|max:20',
 
-            'alergi'                    => 'nullable|string',
+            'alergi' => 'nullable|string',
             // kalau suatu saat no_emr boleh diedit:
-            'no_emr'                    => 'nullable|string|max:50',
+            'no_emr' => 'nullable|string|max:50',
         ]);
 
         // ==== Update User ====
         $user->username = $request->username_pasien;
-        $user->email    = $request->email_pasien;
+        $user->email = $request->email_pasien;
 
         if ($request->filled('password_pasien')) {
             $user->password = Hash::make($request->password_pasien);
@@ -195,8 +190,8 @@ class PasienController extends Controller
                 $extension = 'jpg';
             }
 
-            $fileName = 'pasien_' . time() . '.' . $extension;
-            $path = 'pasien/' . $fileName;
+            $fileName = 'pasien_'.time().'.'.$extension;
+            $path = 'pasien/'.$fileName;
 
             if ($extension === 'svg') {
                 Storage::disk('public')->put($path, file_get_contents($file));
@@ -217,33 +212,32 @@ class PasienController extends Controller
         $no_emr = $request->input('no_emr', $pasien->no_emr); // readonly di form, tapi siap kalau nanti boleh diedit
 
         $pasien->update([
-            'no_emr'                 => $no_emr,
-            'barcode_pasien'         => $no_emr,                 // ⬅️ sync dengan no_emr
-            'foto_pasien'            => $fotoPath,
+            'no_emr' => $no_emr,
+            'barcode_pasien' => $no_emr,                 // ⬅️ sync dengan no_emr
+            'foto_pasien' => $fotoPath,
 
-            'nama_pasien'            => $request->nama_pasien,
-            'alamat'                 => $request->alamat_pasien,
-            'tanggal_lahir'          => $request->tanggal_lahir_pasien,
-            'jenis_kelamin'          => $request->jenis_kelamin_pasien,
-            'no_hp_pasien'           => $request->no_hp_pasien,
+            'nama_pasien' => $request->nama_pasien,
+            'alamat' => $request->alamat_pasien,
+            'tanggal_lahir' => $request->tanggal_lahir_pasien,
+            'jenis_kelamin' => $request->jenis_kelamin_pasien,
+            'no_hp_pasien' => $request->no_hp_pasien,
 
-            'nik'                    => $request->nik,
-            'no_bpjs'                => $request->no_bpjs,
-            'golongan_darah'         => $request->golongan_darah,
-            'status_perkawinan'      => $request->status_perkawinan,
-            'pekerjaan'              => $request->pekerjaan,
+            'nik' => $request->nik,
+            'no_bpjs' => $request->no_bpjs,
+            'golongan_darah' => $request->golongan_darah,
+            'status_perkawinan' => $request->status_perkawinan,
+            'pekerjaan' => $request->pekerjaan,
 
-            'nama_penanggung_jawab'  => $request->nama_penanggung_jawab,
+            'nama_penanggung_jawab' => $request->nama_penanggung_jawab,
             'no_hp_penanggung_jawab' => $request->no_hp_penanggung_jawab,
 
-            'alergi'                 => $request->alergi,
+            'alergi' => $request->alergi,
         ]);
 
         return response()->json([
             'message' => 'Data pasien berhasil diperbarui.',
         ]);
     }
-
 
     public function deletePasien($id)
     {
@@ -273,7 +267,7 @@ class PasienController extends Controller
 
             // 🔹 Ambil angka terakhir dari format RM-00000001
             if ($lastPasien && preg_match('/RM-(\d+)/', $lastPasien->no_emr, $matches)) {
-                $lastNumber = (int)$matches[1];
+                $lastNumber = (int) $matches[1];
             }
 
             // 🔹 Ambil semua pasien yang belum punya no_emr
@@ -287,12 +281,12 @@ class PasienController extends Controller
                 $counter++;
 
                 // 🔹 Format sama dengan createPasien(): RM-00000001
-                $newNoEmr = 'RM-' . str_pad($counter, 8, '0', STR_PAD_LEFT);
+                $newNoEmr = 'RM-'.str_pad($counter, 8, '0', STR_PAD_LEFT);
 
                 // 🔹 Pastikan unik (antisipasi edge case)
                 $exists = \App\Models\Pasien::where('no_emr', $newNoEmr)->exists();
                 if ($exists) {
-                    $newNoEmr .= '-' . substr(uniqid(), -3);
+                    $newNoEmr .= '-'.substr(uniqid(), -3);
                 }
 
                 // 🔹 Update ke pasien
@@ -308,7 +302,8 @@ class PasienController extends Controller
                 ->with('success', 'Generate no_emr selesai dan sinkron dengan format RM-00000001.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Gagal generate no_emr: ' . $e->getMessage());
+
+            return back()->with('error', 'Gagal generate no_emr: '.$e->getMessage());
         }
     }
 
@@ -325,7 +320,7 @@ class PasienController extends Controller
 
         return view('admin.manajemenPengguna.detail-data-pasien', [
             'pasien' => $pasien,
-            'umur'   => $umur,
+            'umur' => $umur,
         ]);
     }
 
@@ -337,7 +332,7 @@ class PasienController extends Controller
         $umur = null;
         if ($pasien->tanggal_lahir) {
             $tglLahir = Carbon::parse($pasien->tanggal_lahir);
-            $diff     = $tglLahir->diff(Carbon::now());
+            $diff = $tglLahir->diff(Carbon::now());
 
             $umur = sprintf(
                 '%d Tahun %d Bulan %d Hari',
@@ -349,7 +344,56 @@ class PasienController extends Controller
 
         return view('admin.manajemenPengguna.cetak-stiker-pasien', [
             'pasien' => $pasien,
-            'umur'   => $umur,
+            'umur' => $umur,
         ]);
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $allowedColumns = [
+            'nama_pasien',
+            'username',
+            'email',
+            'nik',
+            'no_bpjs',
+            'no_emr',
+            'alamat',
+            'no_hp_pasien',
+            'tanggal_lahir',
+            'jenis_kelamin',
+            'golongan_darah',
+            'status_perkawinan',
+            'pekerjaan',
+            'nama_penanggung_jawab',
+            'no_hp_penanggung_jawab',
+            'alergi',
+            'barcode_pasien',
+            'created_at',
+        ];
+
+        $columns = $request->input('columns', []);
+        $tanggalDari = $request->input('tanggal_dari');
+        $tanggalSampai = $request->input('tanggal_sampai');
+
+        if (! is_array($columns) || empty($columns)) {
+            return back()->with('error', 'Pilih minimal 1 kolom untuk export.');
+        }
+
+        $columns = array_values(array_intersect($columns, $allowedColumns));
+
+        if (empty($columns)) {
+            return back()->with('error', 'Kolom export tidak valid.');
+        }
+
+        if ($tanggalDari && $tanggalSampai && $tanggalDari > $tanggalSampai) {
+            return back()->with('error', 'Rentang tanggal tidak valid.');
+        }
+
+        $fileName = 'data_pasien_'.now()->format('Ymd_His').'.xlsx';
+
+        return Excel::download(
+            new PasienExport($columns, $tanggalDari, $tanggalSampai),
+            $fileName
+        );
     }
 }

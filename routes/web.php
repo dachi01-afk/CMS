@@ -6,14 +6,16 @@ use App\Http\Controllers\Admin\JadwalKunjunganController;
 use App\Http\Controllers\Admin\KategoriLayananController;
 use App\Http\Controllers\Admin\LaporanController;
 use App\Http\Controllers\Admin\LayananController;
+use App\Http\Controllers\Admin\ManagementPerawatController;
 use App\Http\Controllers\Admin\ManajemenPenggunaController;
 use App\Http\Controllers\Admin\OrderLayananController;
-use App\Http\Controllers\Admin\PengambilanObatController;
+use App\Http\Controllers\Admin\PasienHariIniController as AdminPasienHariIniController;
 use App\Http\Controllers\Admin\PengaturanKlinikController;
 use App\Http\Controllers\Admin\PoliController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Api\APIWebController;
 use App\Http\Controllers\Apoteker\Obat\PenjualanObatController;
+use App\Http\Controllers\ApproveDiskonPenjualanObatController;
 use App\Http\Controllers\Dokter\AuthController;
 use App\Http\Controllers\Dokter\DokterController as DokterDokterController;
 use App\Http\Controllers\Farmasi\BahanHabisPakaiController;
@@ -21,6 +23,7 @@ use App\Http\Controllers\Farmasi\BrandFarmasiController;
 use App\Http\Controllers\Farmasi\CetakResepObatController;
 use App\Http\Controllers\Farmasi\DepotController;
 use App\Http\Controllers\Farmasi\FarmasiController;
+use App\Http\Controllers\Farmasi\HutangBahanHabisPakaiController;
 use App\Http\Controllers\Farmasi\JenisObatController;
 use App\Http\Controllers\Farmasi\KadaluarsaBHPController;
 use App\Http\Controllers\Farmasi\KadaluarsaObatController;
@@ -31,23 +34,29 @@ use App\Http\Controllers\Farmasi\PengambilanObatController as FarmasiPengambilan
 use App\Http\Controllers\Farmasi\PenggunaanBHPController;
 use App\Http\Controllers\Farmasi\PenggunaanObatController;
 use App\Http\Controllers\Farmasi\PesananDanStokMasuk;
-use App\Http\Controllers\Farmasi\RestockDanReturnController;
-use App\Http\Controllers\Farmasi\RestockDanReturnObatController;
+use App\Http\Controllers\Farmasi\RestockBahanHabisPakaiController;
+use App\Http\Controllers\Farmasi\RestockObatController;
+use App\Http\Controllers\Farmasi\ReturnBahanHabisPakaiController;
+use App\Http\Controllers\Farmasi\ReturnObatController;
 use App\Http\Controllers\Farmasi\SatuanObatController;
+use App\Http\Controllers\Farmasi\StokMasukBahanHabisPakaiController;
+use App\Http\Controllers\Farmasi\StokMasukObatController;
 use App\Http\Controllers\Farmasi\StokObatController;
 use App\Http\Controllers\Farmasi\SupplierController;
 use App\Http\Controllers\Farmasi\TipeDepotController;
 use App\Http\Controllers\JenisSpesialisController;
 use App\Http\Controllers\Kasir\DiskonApprovalController;
+use App\Http\Controllers\Kasir\HutangController;
 use App\Http\Controllers\Kasir\KasirController;
 use App\Http\Controllers\Kasir\MetodePembayaranController;
+use App\Http\Controllers\Kasir\PiutangBahanHabisPakaiController;
+use App\Http\Controllers\Kasir\PiutangObatController;
 use App\Http\Controllers\Kasir\RiwayatTransaksiController;
+use App\Http\Controllers\Kasir\TransaksiInsightController as KasirTransaksiInsightController;
 use App\Http\Controllers\Kasir\TransaksiLayananController;
 use App\Http\Controllers\Kasir\TransaksiObatController;
 use App\Http\Controllers\Management\AdminController;
-use App\Http\Controllers\Management\ApotekerController;
 use App\Http\Controllers\Management\DokterController;
-use App\Http\Controllers\Management\EMRController;
 use App\Http\Controllers\Management\JadwalDokterController;
 use App\Http\Controllers\Management\PasienController;
 use App\Http\Controllers\Management\UserController;
@@ -59,6 +68,9 @@ use App\Http\Controllers\Perawat\PerawatController;
 use App\Http\Controllers\Perawat\RiwayatPemeriksaanController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\QrCodeController;
+use App\Http\Controllers\SuperAdmin\ApproveDiskonOrderLayananController;
+use App\Http\Controllers\SuperAdmin\ApproveDiskonOrderLayananManagerController;
+use App\Http\Controllers\SuperAdmin\ApproveDiskonPenjualanObatManagerController;
 use App\Http\Controllers\SuperAdmin\DiskonApprovalManagerController;
 use App\Http\Controllers\SuperAdmin\PasienHariIniController;
 use App\Http\Controllers\SuperAdmin\PasienInsightController;
@@ -69,20 +81,17 @@ use App\Http\Controllers\Testing\TestingController;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-use Yajra\DataTables\Facades\DataTables;
-use App\Http\Controllers\Admin\PasienHariIniController as AdminPasienHariIniController;
-use App\Http\Controllers\Kasir\TransaksiInsightController as KasirTransaksiInsightController;
 
 // Rest of your web routes remain the same...
 Route::get('/')->middleware('checkAuth');
 
 Route::middleware('auth')->post('/heartbeat', function () {
     User::where('id', Auth::id())->update([
-        'terakhir_login' => now()
+        'terakhir_login' => now(),
     ]);
 
     return response()->json([
-        'success' => true
+        'success' => true,
     ]);
 });
 
@@ -232,6 +241,7 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::get('/get_admin_by_id/{id}', [AdminController::class, 'getAdminById'])->name('get_admin_by_id');
         Route::put('/update_admin/{id}', [AdminController::class, 'updateAdmin'])->name('update_admin');
         Route::delete('/delete_admin/{id}', [AdminController::class, 'deleteAdmin'])->name('delete_admin');
+
         // crud dokter
         Route::get('/data_dokter', [ManajemenPenggunaController::class, 'dataDokter'])->name('data_dokter');
         Route::get('/get_dokter_by_id/{id}', [DokterController::class, 'getDokterById'])->name('get_dokter_by_id');
@@ -243,14 +253,6 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::post('/add_farmasi', [FarmasiController::class, 'createFarmasi'])->name('add_farmasi');
         Route::get('/get_farmasi_by_id/{id}', [FarmasiController::class, 'getFarmasiById'])->name('get_farmasi_by_id');
         Route::put('/update_farmasi/{id}', [FarmasiController::class, 'updateFarmasi'])->name('update_farmasi');
-
-        // crud perawat
-        Route::get('/data_perawat', [ManajemenPenggunaController::class, 'dataPerawat'])->name('data_perawat');
-        Route::post('/add_perawat', [PerawatController::class, 'createPerawat'])->name('add_perawat');
-        Route::get('/get_perawat_by_id/{id}', [PerawatController::class, 'getPerawatById'])->name('get_perawat_by_id');
-        Route::get('/list_poli', [PerawatController::class, 'listPoli']);
-        Route::get('/poli/{poliId}/dokter', [PerawatController::class, 'listDokterByPoli']);
-        Route::put('/update_perawat/{id}', [PerawatController::class, 'updatePerawat'])->name('update_perawat');
 
         // crud kasir
         Route::get('/data_kasir', [ManajemenPenggunaController::class, 'dataKasir'])->name('data_kasir');
@@ -266,6 +268,26 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::delete('/search', [PasienController::class, 'search'])->name('pasien');
         Route::get('/cetak-stiker-pasien/{noEMR}', [PasienController::class, 'cetakStiker'])->name('cetak.stiker.pasien');
         Route::get('/show-detail-data-pasien/{noEMR}', [PasienController::class, 'showPasien'])->name('show.detail.pasien');
+
+        // export excel
+        Route::get('/pasien/export/excel', [PasienController::class, 'exportExcel'])
+            ->name('export_pasien_excel');
+
+    });
+
+    Route::prefix('management-pengguna')->group(function () {
+        Route::get('/', [ManajemenPenggunaController::class, 'index'])->name('management.pengguna.index');
+        Route::get('/get-data-poli', [ManajemenPenggunaController::class, 'getDataPoli'])->name('get.data.poli');
+
+        // Perawat
+        Route::prefix('perawat')->group(function () {
+            Route::get('/', [ManagementPerawatController::class, 'index'])->name('perawat');
+            Route::get('/get-data', [ManagementPerawatController::class, 'getDataPerawat'])->name('get.data.perawat');
+            Route::get('/get-data-detail/{slug}', [ManagementPerawatController::class, 'getDataDetailPerawat'])->name('get.data.detail.perawat');
+            Route::get('/get-data-dokter-poli/{slug}', [ManagementPerawatController::class, 'getDataDokterPoli'])->name('get.data.dokter.poli');
+
+            Route::post('/update-data-perawat/{slug}', [ManagementPerawatController::class, 'updateDataPerawat'])->name('update.data.perawat');
+        });
     });
 
     Route::prefix('pengaturan_klinik')->name('pengaturan_klinik.')->group(function () {
@@ -325,6 +347,9 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
     Route::prefix('/order-layanan')->group(function () {
         Route::get('/', [OrderLayananController::class, 'index'])->name('order.layanan.index');
         Route::get('/get-data-order-layanan', [OrderLayananController::class, 'getDataOrderLayanan'])->name('order.layanan.get.data.order.layanan');
+
+        Route::get('/get-data-detail/{kodeTransaksi}', [OrderLayananController::class, 'getDetailOrderLayanan'])->name('get.data.detail.order.layanan');
+
         Route::get('/get-data-pasien', [OrderLayananController::class, 'searchPasien'])->name('order.layanan.get.data.pasien');
         Route::get('/get-data-poli', [OrderLayananController::class, 'getDataPoli'])->name('order.layanan.get.data.poli');
         Route::get('/get-data-jadwal-dokter-hari-ini', [OrderLayananController::class, 'getJadwalDokterHariIni'])->name('order.layanan.get.data.jadwal.dokter.hari.ini');
@@ -352,6 +377,7 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
         Route::get('/penjualan-obat/hari-ini', [PenjualanObatController::class, 'penjualanObatHariIniPage'])->name('farmasi.penjualan.obat.hari.ini.index');
         Route::get('/get-data-penjualan-obat/hari-ini', [PenjualanObatController::class, 'penjualanObatHariIni'])->name('farmasi.penjualan.obat.hari.ini.data');
         Route::get('/penjualan-obat/data', [PenjualanObatController::class, 'penjualanObatData'])->name('farmasi.penjualan-obat.data');
+        Route::get('/penjualan-obat/{id}/detail', [PenjualanObatController::class, 'showDetailPenjualanObat'])->name('farmasi.penjualan.obat.detail');
 
         // Route Kategori Obat
         Route::prefix('kategori-obat')->group(function () {
@@ -384,6 +410,7 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
 
             Route::post('/pesan-obat', [OrderObatController::class, 'pesanObat'])->name('obat.pesan.obat');
             Route::get('/order/{id}', [OrderObatController::class, 'show']);
+            Route::get('/get-data-detail-order-obat/{kodeTransaksi}', [OrderObatController::class, 'getDataDetailOrderObat'])->name('get.data.detail.order.obat');
             Route::put('/order/{id}', [OrderObatController::class, 'update']);
             Route::delete('/order/{id}', [OrderObatController::class, 'destroy']);
         });
@@ -403,7 +430,7 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('/get-data-kadaluarsa-obat', [KadaluarsaObatController::class, 'getDataKadaluarsaObat'])->name('get.data.kadaluarsa.obat');
         });
 
-        // Route Bahan Habis Pakai 
+        // Route Bahan Habis Pakai
         Route::prefix('bahan-habis-pakai')->group(function () {
             Route::get('/', [BahanHabisPakaiController::class, 'index'])->name('bahan.habis.pakai');
             Route::get('/get-data-bhp', [BahanHabisPakaiController::class, 'getDataBahanHabisPakai'])->name('get.data.bahan.habis.pakai');
@@ -422,7 +449,7 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('get-data-depot', [PemakaianBahanHabisPakaiController::class, 'getDataDepot'])->name('get.data.depot.pemakaian.bhp');
         });
 
-        // Route Penggunaan BHP 
+        // Route Penggunaan BHP
         Route::prefix('penggunaan-bhp')->group(function () {
             Route::get('/', [PenggunaanBHPController::class, 'index'])->name('penggunaan.bhp');
             Route::get('/get-data-penggunaan-bhp', [PenggunaanBHPController::class, 'getDataPenggunaanBHP'])->name('get.data.penggunaan.bhp');
@@ -430,7 +457,7 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('/print-pdf-data-penggunaan-bhp', [PenggunaanBHPController::class, 'printPdf'])->name('print.pdf.data.penggunaan.bhp');
         });
 
-        // Route Kadaluarsa BHP 
+        // Route Kadaluarsa BHP
         Route::prefix('kadaluarsa-bhp')->group(function () {
             Route::get('/', [KadaluarsaBHPController::class, 'index'])->name('kadaluarsa.bhp');
             Route::get('/get-data-warning-kadaluarsa-bhp', [KadaluarsaBHPController::class, 'getWarningKadaluarsa'])->name('get.data.warning.kadaluarsa.bhp');
@@ -447,44 +474,92 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
         });
 
         Route::prefix('restock-obat')->group(function () {
-            Route::get('/', [RestockDanReturnObatController::class, 'index'])->name('index.restock.obat');
+            Route::get('/', [RestockObatController::class, 'index'])->name('farmasi.restock.obat');
+            Route::get('/get-data-restock-obat', [RestockObatController::class, 'getDataRestockObat'])->name('farmasi.get.data.restock.obat');
+            Route::get('/get-data-batch-obat-by-obat-id/{obatId}', [RestockObatController::class, 'getDataBatchObatByObatId'])->name('farmasi.get.data.batch.obat.by.obat.id');
+            Route::post('/create-data-restock-obat', [RestockObatController::class, 'createDataRestockObat'])->name('farmasi.create.data.restock.obat');
+            Route::get('/get-data-detail-restock-obat/{id}', [RestockObatController::class, 'getDetailRestockObat'])->name('farmasi.get.data.restock.obat.by.id');
+            Route::post('/cancel/{noFaktur}', [RestockObatController::class, 'cancelRestockObat'])->name('farmasi.cancel.restock.obat');
         });
 
-        // Route Restock Dan Return Obat Dan Barang 
-        // Route::prefix('restock-return')->group(function () {
-        //     Route::get('/', [RestockDanReturnController::class, 'index'])->name('restock.return.obat.dan.barang');
+        Route::prefix('riwayat-restock-obat')->group(function () {
+            Route::get('/get-data-riwayat-restock-obat', [RestockObatController::class, 'getDataRiwayatRestockObat'])->name('farmasi.get.data.riwayat.restock.obat');
+        });
 
-        //     Route::get('/get-data-restock-dan-return-barang-dan-obat', [RestockDanReturnController::class, 'getDataRestockDanReturnBarangDanObat'])->name('get.data.restock.dan.return');
+        Route::prefix('stok-masuk-obat')->group(function () {
+            Route::get('/', [StokMasukObatController::class, 'index'])->name('farmasi.stok.masuk.obat');
+            Route::get('/get-data-stok-masuk-obat', [StokMasukObatController::class, 'getDataStokMasukObat'])->name('farmasi.get.data.stok.masuk.obat');
+            Route::get('/get-data-detail-stok-masuk-obat/{noFaktur}', [StokMasukObatController::class, 'getDataDetailStokMasukObat'])->name('farmasi.get.data.detail.stok.masuk.obat');
+            Route::post('/konfirmasi/{id}', [StokMasukObatController::class, 'konfirmasiStokMasukObat'])->name('farmasi.konfirmasi.stok.masuk.obat');
+        });
 
-        //     // ✅ META dropdown form
-        //     Route::get('/form-meta', [RestockDanReturnController::class, 'getFormMeta'])->name('farmasi.restock_return.form_meta');
+        Route::prefix('riwayat-stok-masuk-obat')->group(function () {
+            Route::get('/get-data-riwayat-stok-masuk-obat', [StokMasukObatController::class, 'getDataRiwayatStokMasukobat'])->name('farmasi.get.data.riwayat.stok.masuk.obat');
+        });
 
-        //     // ✅ search select
-        //     Route::get('/obat', [RestockDanReturnController::class, 'getDataObat'])->name('farmasi.restock_return.obat');
-        //     Route::get('/bhp', [RestockDanReturnController::class, 'getDataBHP'])->name('farmasi.restock_return.bhp');
+        Route::prefix('restock-bahan-habis-pakai')->group(function () {
+            Route::get('/', [RestockBahanHabisPakaiController::class, 'index'])->name('farmasi.restock.bahan-habis-pakai');
+            Route::get('/get-data-restock-bahan-habis-pakai', [RestockBahanHabisPakaiController::class, 'getDataRestockBahanHabisPakai'])->name('farmasi.get.data.restock.bahan.habis.pakai');
+            Route::get('/get-data-batch-bahan-habis-pakai-by-id/{bhpId}', [RestockBahanHabisPakaiController::class, 'getDataBatchBahanHabisPakaiById'])->name('farmasi.get.data.batch.bahan.habis.pakai.by.id');
+            Route::post('/create-data-restock-bahan-habis-pakai', [RestockBahanHabisPakaiController::class, 'createDataRestockRestockBahanHabisPakai'])->name('farmasi.create.data.restock.bahan.habis.pakai');
+            Route::get('/get-data-detail-restock-bahan-habis-pakai/{id}', [RestockBahanHabisPakaiController::class, 'getDetailRestockBahanHabisPakai'])->name('farmasi.get.data.restock.bahan.habis.pakai.by.id');
+            Route::post('/cancel/{noFaktur}', [RestockBahanHabisPakaiController::class, 'cancelRestockBahanHabisPakai'])->name('farmasi.cancel.restock.bahan.habis.pakai');
+        });
 
-        //     // ✅ meta per item (harga lama + kategori + satuan + batch/expired histori)
-        //     Route::get('/obat/{id}/meta', [RestockDanReturnController::class, 'getMetaObat'])->name('farmasi.restock_return.obat_meta');
-        //     Route::get('/bhp/{id}/meta', [RestockDanReturnController::class, 'getMetaBhp'])->name('farmasi.restock_return.bhp_meta');
+        Route::prefix('riwayat-restock-bahan-habis-pakai')->group(function () {
+            Route::get('/get-data-riwayat-restock-bahan-habis-pakai', [RestockBahanHabisPakaiController::class, 'getDataRiwayatRestockBahanHabisPakai'])->name('farmasi.get.data.riwayat.restock.bahan.habis.pakai');
+        });
 
-        //     Route::get('/get-data-batch-expired/{id}', [RestockDanReturnController::class, 'getDataBatchObat']);
+        Route::prefix('stok-masuk-bahan-habis-pakai')->group(function () {
+            Route::get('/', [StokMasukBahanHabisPakaiController::class, 'index'])->name('farmasi.stok.masuk.bahan.habis.pakai');
+            Route::get('/get-data-stok-masuk-bahan-habis-pakai', [StokMasukBahanHabisPakaiController::class, 'getDataStokMasukBahanHabisPakai'])->name('farmasi.get.data.stok.masuk.bahan.habis.pakai');
+            Route::get('/get-data-detail-stok-masuk-bahan-habis-pakai/{noFaktur}', [StokMasukBahanHabisPakaiController::class, 'getDataDetailStokMasukBahanHabisPakai'])->name('farmasi.get.data.detail.stok.masuk.bahan.habis.pakai');
+            Route::post('/konfirmasi/{id}', [StokMasukBahanHabisPakaiController::class, 'konfirmasiStokMasukBahanHabisPakai'])->name('farmasi.konfirmasi.stok.masuk.bahan.habis.pakai');
+        });
 
-        //     Route::get('/get-data-depot', [RestockDanReturnController::class, 'getDataDepot'])->name('farmasi.restock_return.get.data.depot');
-        //     Route::get('/get-data-depot-bhp', [RestockDanReturnController::class, 'getDataDepotBhp'])->name('farmasi.restock_return.get.data.depot.bhp');
+        Route::prefix('riwayat-stok-masuk-bahan-habis-pakai')->group(function () {
+            Route::get('/get-data-riwayat-stok-masuk-bahan-habis-pakai', [StokMasukBahanHabisPakaiController::class, 'getDataRiwayatStokMasukBahanHabisPakai'])->name('farmasi.get.data.riwayat.stok.masuk.bahan.habis.pakai');
+        });
 
-        //     Route::get('/get-batches-by-obat/{id}', [RestockDanReturnController::class, 'getBatchesByObat']);
-        //     Route::get('/get-stok-batch/{id}', [RestockDanReturnController::class, 'getStokBatch']);
+        // Return Obat
+        Route::prefix('/return-obat')->group(function () {
+            Route::get('/', [ReturnObatController::class, 'index'])->name('farmasi.return.obat');
+            Route::get('/get-data-return-obat', [ReturnObatController::class, 'getDataReturnObat'])->name('farmasi.get.data.return.obat');
+            Route::get('/get-data-return-obat-by-no-return/{noReturn}', [ReturnObatController::class, 'getDataReturnObatByNoReturn'])->name('farmasi.get.data.return.obat.by.no.return');
+            Route::get('/get-data-obat', [ReturnObatController::class, 'getDataObat'])->name('farmasi.get.data.obat');
+            Route::get('/get-data-batch-by-obat-id/{obatId}', [ReturnObatController::class, 'getDataBatchByObatId'])->name('farmasi.get.data.batch.by.obat.id');
+            Route::get('/get-stok-batch-obat-depot/{batchObatId}/{depotId}', [ReturnObatController::class, 'getStokBatchObatDepot'])->name('farmasi.get.stok.batch.obat.depot');
+            Route::post('/create-data-return-obat', [ReturnObatController::class, 'createDataReturnObat'])->name('farmasi.create.data.return.obat');
+            Route::post('/konfirmasi-return-obat/{kodeReturn}', [ReturnObatController::class, 'konfirmasiReturnObat'])->name('farmasi.konfirmasi.return.obat');
 
-        //     // ✅ store
-        //     Route::post('/store', [RestockDanReturnController::class, 'store'])->name('create.data.restock.dan.return');
-        // });
+            Route::get('/get-data-supplier', [ReturnObatController::class, 'getDataSupplier'])->name('farmasi.get.data.supplier');
+            Route::get('/get-depot-by-supplier', [ReturnObatController::class, 'getDepotBySupplier'])->name('farmasi.get.depot.by.supplier');
+            Route::get('/get-obat-by-supplier-depot', [ReturnObatController::class, 'getObatBySupplierDepot'])->name('farmasi.get.obat.by.supplier.depot');
+        });
+
+        Route::prefix('/riwayat-return-obat')->group(function () {
+            Route::get('/get-data', [ReturnObatController::class, 'getDataRiwayatReturnObat'])->name('get.data.riwayat.return.obat');
+            Route::get('/get-data-summary', [ReturnObatController::class, 'getSummaryRiwayatReturnObat'])->name('get.data.summary.riwayat.return.obat');
+            Route::get('/get-data-detail-riwayat-return-obat/{kodeReturn}', [ReturnObatController::class, 'getDataDetailRiwayatReturnObat'])->name('get.data.detail.riwayat.return.obat');
+        });
+
+        // Return Bahan Habis Pakai
+        Route::prefix('return-bahan-habis-pakai')->group(function () {
+            Route::get('/', [ReturnBahanHabisPakaiController::class, 'index'])->name('farmasi.return.bahan.habis.pakai');
+            Route::get('/get-data-return-bahan-habis-pakai', [ReturnBahanHabisPakaiController::class, 'getDataReturnBhp'])->name('farmasi.get.data.return.bahan.habis.pakai');
+            Route::get('/get-data-bahan-habis-pakai', [ReturnBahanHabisPakaiController::class, 'getDataBhp'])->name('farmasi.get.data.bahan.habis.pakai');
+            Route::get('/get-data-batch-by-bahan-habis-pakai-id/{bhpId}', [ReturnBahanHabisPakaiController::class, 'getDataBatchByBhpId'])->name('farmasi.get.data.batch.by.bhp.id');
+            Route::get('/get-stok-batch-bhp-depot/{batchBhpId}/{depotId}', [ReturnBahanHabisPakaiController::class, 'getStokBatchBhpDepot'])->name('farmasi.get.stok.batch.bhp.depot');
+            Route::get('/get-data-return-bhp-by-kode-return/{noReturn}', [ReturnBahanHabisPakaiController::class, 'getDataReturnBhpByKodeReturn'])->name('farmasi.get.data.return.bhp.by.kode.return');
+            Route::post('/create-data-return-bahan-habis-pakai', [ReturnBahanHabisPakaiController::class, 'createDataReturnBhp'])->name('farmasi.create.data.return.bahan.habis.pakai');
+        });
 
         // Route Depot
         Route::prefix('depot')->group(function () {
             Route::get('/', [DepotController::class, 'index'])->name('depot.index');
             Route::get('/get-data-depot', [DepotController::class, 'dataTables'])->name('get.data.depot.dataTables');
-            Route::get("/get-data-obat-by-depot/{id}", [DepotController::class, 'getDataObatByDepotId'])->name('get.data.obat.by.depot.id');
-            Route::get("/get-data-repair-obat-by-depot/{id}", [DepotController::class, 'getDataRepairStokObatByDepotId'])->name('get.data.repair.obat.by.depot.id');
+            Route::get('/get-data-obat-by-depot/{id}', [DepotController::class, 'getDataObatByDepotId'])->name('get.data.obat.by.depot.id');
+            Route::get('/get-data-repair-obat-by-depot/{id}', [DepotController::class, 'getDataRepairStokObatByDepotId'])->name('get.data.repair.obat.by.depot.id');
             Route::post('/repair-stok-obat', [DepotController::class, 'repairStokObat'])->name('repair.stok.obat');
             Route::get('/get-data-repair-bhp-by-depot/{id}', [DepotController::class, 'getDataRepairStokBHPByDepotId'])->name('get.data.repair.bhp.by.depot.id');
             Route::post('/repair-stok-bhp', [DepotController::class, 'repairStokBHP'])->name('repair.stok.bhp');
@@ -494,7 +569,6 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
             Route::get('/', [PesananDanStokMasuk::class, 'index'])->name('pesanan.dan.stok.masuk.index');
             Route::get('/get-data-pesanan-dan-stok-masuk', [PesananDanStokMasuk::class, 'getData'])->name('pesanan.dan.stok.masuk.get.data');
         });
-
 
         // Route Brand Farmasi
         Route::get('/get-data-brand-farmasi', [BrandFarmasiController::class, 'getDataBrandFarmasi'])->name('get.data.brand.farmasi');
@@ -511,23 +585,22 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
         Route::post('/create-data-satuan-obat', [SatuanObatController::class, 'createDataSatuanObat'])->name('create.data.satuan.obat');
         Route::post('/delete-data-satuan-obat', [SatuanObatController::class, 'deleteDataSatuanObat'])->name('delete.data.satuan.obat');
 
-        // Route Tipe Depot 
+        // Route Tipe Depot
         Route::get('/get-data-tipe-depot', [TipeDepotController::class, 'getDataTipeDepot'])->name('get.data.tipe.depot');
         Route::post('/create-data-tipe-depot', [TipeDepotController::class, 'createDataTipeDepot'])->name('create.data.tipe.depot');
         Route::post('/delete-data-tipe-depot', [TipeDepotController::class, 'deleteDataTipeDepot'])->name('delete.data.tipe.depot');
 
-        // Route Depot 
+        // Route Depot
         Route::get('/get-data-depot', [DepotController::class, 'getDataDepot'])->name('get.data.depot');
         Route::post('/create-data-depot', [DepotController::class, 'createDataDepot'])->name('create.data.depot');
         Route::post('/delete-data-depot', [DepotController::class, 'deleteDataDepot'])->name('delete.data.depot');
 
-        // Route Supplier 
+        // Route Supplier
         Route::get('/get-data-supplier', [SupplierController::class, 'getDataSupplier'])->name('get.data.supplier');
         Route::get('/get-data-supplier-by-id/{id}', [SupplierController::class, 'showDataSupplier'])->name('get.data.supplier.by.id');
         Route::post('/create-data-supplier', [SupplierController::class, 'createDataSupplier'])->name('create.data.supplier');
         Route::post('/delete-data-supplier', [SupplierController::class, 'deleteDataSupplier'])->name('delete.data.supplier');
         Route::post('/update-data-supplier', [SupplierController::class, 'updateDataSupplier'])->name('update.data.supplier');
-
 
         Route::prefix('pengambilan-obat')->group(function () {
             Route::get('/', [FarmasiPengambilanObatController::class, 'index'])->name('pengambilan.obat');
@@ -544,7 +617,7 @@ Route::middleware(['auth', 'role:Farmasi'])->group(function () {
 
             Route::get('get-data-resep-obat-detail/{id}', [FarmasiPengambilanObatController::class, 'getDataResepObatDetail'])->name('pengambilan.obat.get.data.resep.obat.detail');
 
-            // Route Antrian Hari Ini Yang Sudah Selesai 
+            // Route Antrian Hari Ini Yang Sudah Selesai
             Route::get('/get-data-resep-obat-selesai', [FarmasiPengambilanObatController::class, 'getDataResepObatYangSudahSelesai'])->name('pengambilan.obat.get.data.resep.obat.selesai');
         });
     });
@@ -568,6 +641,8 @@ Route::middleware(['auth', 'role:Kasir'])->group(function () {
 
         Route::get('/insight/obat', [KasirTransaksiInsightController::class, 'obat'])
             ->name('kasir.insight.obat');
+
+        Route::get('/insight/obat/{id}/detail', [KasirTransaksiInsightController::class, 'showDetailPenjualanObat'])->name('kasir.insight.detail.penjualan.obat');
 
         Route::get('/insight/layanan', [KasirTransaksiInsightController::class, 'layanan'])
             ->name('kasir.insight.layanan');
@@ -603,61 +678,122 @@ Route::middleware(['auth', 'role:Kasir'])->group(function () {
         Route::get('/get-data-transaksi-obat', [TransaksiObatController::class, 'getDataTransaksiObat'])->name('get.data.transaksi.obat');
         Route::get('/transaksi-obat/{kodeTransaksi}', [TransaksiObatController::class, 'transaksiObat'])->name('kasir.transaksi.obat');
 
+        Route::post('/transaksi-obat/{penjualanObat}/diskon/request', [ApproveDiskonPenjualanObatController::class, 'requestApproval'])->name('kasir.transaksi.obat.diskon.request');
+        Route::get('/transaksi-obat/{penjualanObat}/diskon/status', [ApproveDiskonPenjualanObatController::class, 'status'])->name('kasir.transaksi.obat.diskon.status');
+
         Route::post('/pembayaran-cash-transaksi-obat', [TransaksiObatController::class, 'transaksiCash'])->name('kasir.transaksi.obat.cash');
         Route::post('/pembayaran-transfer-transaksi-obat', [TransaksiObatController::class, 'transaksiTransfer'])->name('kasir.transaksi.obat.transfer');
 
         // Route Untuk Riwayat Transaksi Obat
-        Route::get('/get-data-riwayat-transaksi-obat', [PenjualanObatController::class, 'getDataRiwayatTransaksiObat'])->name('get.data.riwayat.transaksi.obat');
-        Route::get('/');
+        Route::prefix('riwayat-transaksi-obat')->group(function () {
+            Route::get('/get-data', [TransaksiObatController::class, 'getDataRiwayatTransaksiObat'])->name('get.data.riwayat.transaksi.obat');
+            Route::get('/kwitansi-transaksi-obat/{kodeTransaksi}', [TransaksiObatController::class, 'kwitansiTransaksiObat'])->name('get.show.kwitansi.transaksi.obat');
+        });
 
         // Riwayat Transaksi
         Route::get('/riwayat-transaksi', [RiwayatTransaksiController::class, 'index'])->name('kasir.riwayat.transaksi');
         Route::get('/get-data-riwayat-pembayaran', [KasirController::class, 'getDataRiwayatPembayaran'])->name('get.data.riwayat.pembayaran');
 
         // Transaksi Layanan
-        // Transaksi Layanan
-        Route::get(
-            '/get-data-transaksi-layanan',
-            [TransaksiLayananController::class, 'getDataTransaksiLayanan']
-        )->name('kasir.get.data.transaksi.layanan');
+        Route::prefix('transaksi-layanan')->group(function () {
+            Route::get('/get-data', [TransaksiLayananController::class, 'getDataTransaksiLayanan'])->name('kasir.get.data.transaksi.layanan');
+            Route::get('/detail-orderan/{kodeTransaksi}', [TransaksiLayananController::class, 'detailTransaksiLayanan'])->name('kasir.detail.orderan.transaksi.layanan');
+            Route::post('/pembayaran/cash', [TransaksiLayananController::class, 'pembayaranLayananCash'])->name('kasir.pembayaran.cash.layanan');
+            Route::post('/pembayaran/transfer', [TransaksiLayananController::class, 'pembayaranLayananTransfer'])->name('kasir.pembayaran.transfer.layanan');
+            Route::post('/pembayaran/{orderLayanan}/diskon/request', [ApproveDiskonOrderLayananController::class, 'requestApproval'])->name('kasir.request.diskon.order.layanan');
+            Route::get('/pembayaran/{orderLayanan}/diskon/status', [ApproveDiskonOrderLayananController::class, 'status'])->name('kasir.status.diskon.order.layanan');
+        });
 
-        Route::get('/show-detail-transaksi-layanan/{kodeTransaksi}', [TransaksiLayananController::class, 'showDetailTransaksiLayanan'])->name('kasir.show.detail.transaksi.layanan');
+        Route::get('/transaksi-layanan/{kodeTransaksi}/proses', [TransaksiLayananController::class, 'prosesPembayaranLayanan'])->name('kasir.proses.pembayaran.layanan');
 
-        Route::get('/proses-pembayaran-layanan/{kodeTransaksi}', [TransaksiLayananController::class, 'prosesPembayaranLayanan'])->name('kasir.proses.pembayaran.layanan');
+        Route::prefix('riwayat-transaksi-layanan')->group(function () {
+            Route::get('/get-data', [TransaksiLayananController::class, 'getDataRiwayatTransaksiLayanan'])->name('kasir.get.data.riwaya.transaksi.layanan');
+            Route::get('/kwitansi-transaksi-layanan/{kodeTransaksi}', [TransaksiLayananController::class, 'kwitansiTransaksiLayanan'])->name('kasir.show.kwitansi.transaksi.layanan');
+        });
 
-        Route::post('/layanan-pembayaran-cash', [TransaksiLayananController::class, 'pembayaranLayananCash'])->name('kasir.layanan.pembayaran.cash');
-        Route::post('/layanan-pembayaran-transfer', [TransaksiLayananController::class, 'pembayaranLayananTransfer'])->name('kasir.layanan.pembayaran.transfer');
+        // Route::get('/riwayat-transaksi-layanan', [TransaksiLayananController::class, 'getDataRiwayatTransaksiLayanan'])->name('kasir.get.data.riwayat.transaksi.layanan');
+
+        // Route::get('/show-detail-transaksi-layanan/{kodeTransaksi}', [TransaksiLayananCofntroller::class, 'showDetailTransaksiLayanan'])->name('kasir.show.detail.transaksi.layanan');
+
+        // Route::get('/proses-pembayaran-layanan/{kodeTransaksi}', [TransaksiLayananController::class, 'prosesPembayaranLayanan'])->name('kasir.proses.pembayaran.layanan');
+
+        // Route::post('/layanan-pembayaran-cash', [TransaksiLayananController::class, 'pembayaranLayananCash'])->name('kasir.layanan.pembayaran.cash');
+        // Route::post('/layanan-pembayaran-transfer', [TransaksiLayananController::class, 'pembayaranLayananTransfer'])->name('kasir.layanan.pembayaran.transfer');
 
         // Riwayat Transaksi Layanan
-        Route::get('/get-data-riwayat-transaksi-layanan', [TransaksiLayananController::class, 'getDataRiwayatTransaksiLayanan'])->name('kasir.get.data.riwayat.transaksi.layanan');
-        Route::get('/kwitansi-transaksi-layanan/{kodeTransaksi}', [TransaksiLayananController::class, 'kwitansiTransaksiLayanan'])->name('kasir.show.kwitansi.transaksi.layanan');
+        // Route::get('/get-data-riwayat-transaksi-layanan', [TransaksiLayananController::class, 'getDataRiwayatTransaksiLayanan'])->name('kasir.get.data.riwayat.transaksi.layanan');
+        // Route::get('/kwitansi-transaksi-layanan/{kodeTransaksi}', [TransaksiLayananController::class, 'kwitansiTransaksiLayanan'])->name('kasir.show.kwitansi.transaksi.layanan');
 
         // Delete Transaksi
         Route::delete('/pembayaran/{id}', [KasirController::class, 'deletePembayaran'])->name('kasir.pembayaran.delete');
+
+        Route::prefix('/hutang-obat')->group(function () {
+            Route::get('/', [HutangController::class, 'index'])->name('kasir.hutang');
+            Route::get('/get-data-hutang-obat', [HutangController::class, 'getDataHutangObat'])->name('kasir.get.data.hutang.obat');
+            Route::get('/get-data-detail-hutang-obat/{noFaktur}', [HutangController::class, 'getDataDetailHutangObat'])->name('kasir.get.data.detail.hutang.obat');
+            Route::get('/pembayaran/{noFaktur}', [HutangController::class, 'halamanPembayaranHutangObat'])->name('kasir.pembayaran.hutang.obat');
+            Route::post('/pembayaran-cash/{noFaktur}', [HutangController::class, 'transaksiCash'])->name('kasir.pembayaran.cash.hutang.obat');
+            Route::post('/pembayaran-transfer/{noFaktur}', [HutangController::class, 'transaksiTransfer'])->name('kasir.pembayaran.transfer.hutang.obat');
+        });
+
+        Route::prefix('/riwayat-hutang')->group(function () {
+            Route::get('/get-data-riwayat-hutang', [HutangController::class, 'getDataRiwayatHutang'])->name('kasir.get.data.riwayat.hutang');
+            Route::get('/get-data-detail-riwayat-hutang/{noFaktur}', [HutangController::class, 'getDataDetailRiwayatHutang'])->name('kasir.get.data.detail.riwayat.hutang');
+        });
+
+        Route::prefix('/hutang-bahan-habis-pakai')->group(function () {
+            Route::get('/', [HutangBahanHabisPakaiController::class, 'index'])->name('kasir.hutang.bahan.habis.pakai');
+            Route::get('/get-data-hutang-bahan-habis-pakai', [HutangBahanHabisPakaiController::class, 'getDataHutangBahanHabisPakai'])->name('kasir.get.data.hutang.bahan.habis.pakai');
+            Route::get('/get-data-detail-hutang-bahan-habis-pakai/{noFaktur}', [HutangBahanHabisPakaiController::class, 'getDataDetailHutangBahanHabisPakai'])->name('kasir.get.data.detail.hutang.bahan.habis.pakai');
+            Route::get('/pembayaran/{noFaktur}', [HutangBahanHabisPakaiController::class, 'halamanPembayaranHutangBahanHabisPakai'])->name('kasir.pembayaran.hutang.bahan.habis.pakai');
+            Route::post('/pembayaran-cash/{noFaktur}', [HutangBahanHabisPakaiController::class, 'transaksiCash'])->name('kasir.pembayaran.cash.hutang.bahan.habis.pakai');
+            Route::post('/pembayaran-transfer/{noFaktur}', [HutangBahanHabisPakaiController::class, 'transaksiTransfer'])->name('kasir.pembayaran.transfer.hutang.bahan.habis.pakai');
+        });
+
+        Route::prefix('/riwayat-hutang-bahan-habis-pakai')->group(function () {
+            Route::get('/get-data-riwayat-hutang-bahan-habis-pakai', [HutangBahanHabisPakaiController::class, 'getDataRiwayatHutangBahanHabisPakai'])->name('kasir.get.data.riwayat.hutang.bahan.habis.pakai');
+            Route::get('/get-data-detail-riwayat-hutang-bahan-habis-pakai/{noFaktur}', [HutangBahanHabisPakaiController::class, 'getDataDetailRiwayatHutangBahanHabisPakai'])->name('kasir.get.data.detail.riwayat.hutang.bahan.habis.pakai');
+        });
+
+        // Piutang Obat
+        Route::prefix('/piutang-obat')->group(function () {
+            Route::get('/', [PiutangObatController::class, 'index'])->name('kasir.piutang.obat');
+            Route::get('/get-data-piutang-obat', [PiutangObatController::class, 'getDataPiutangObat'])->name('kasir.get.data.piutang.obat');
+            Route::get('/get-data-detail-piutang-obat/{noReferensi}', [PiutangObatController::class, 'getDetailPiutangObat'])->name('kasir.get.data.detail.piutang.obat');
+        });
+
+        // Piutang Bahan Habis Pakai
+        Route::prefix('/piutang-bahan-habis-pakai')->group(function () {
+            Route::get('/', [PiutangBahanHabisPakaiController::class, 'index'])->name('kasir.piutang.bahan.habis.pakai');
+            Route::get('/get-data-piutang-bahan-habis-pakai', [PiutangBahanHabisPakaiController::class, 'getDataPiutangBahanHabisPakai'])->name('kasir.get.data.piutang.bahan.habis.pakai');
+            Route::get('/get-data-detail-piutang-bahan-habis-pakai/{id}', [PiutangBahanHabisPakaiController::class, 'getDetailPiutangBahanHabisPakai'])->name('kasir.get.data.deatail.piutang.bahan.habis.pakai');
+        });
     });
 });
 
 Route::middleware(['auth', 'role:Perawat'])->group(function () {
     Route::prefix('perawat')->group(function () {
-        Route::get('/dashboard', [PerawatController::class, 'dashboard'])->name('perawat.dashboard');
+        Route::get('/', [PerawatController::class, 'index'])->name('perawat.dashboard');
         Route::get('/chart', [PerawatController::class, 'chartDashboard'])->name('perawat.chart');
-
 
         Route::get('/kunjungan', [KunjunganController::class, 'index'])->name('perawat.kunjungan');
         Route::get('/getDataKunjunganHariIni', [KunjunganController::class, 'getDataKunjunganHariIni'])->name('perawat.get.data.kunjungan.hari.ini');
         Route::post('/updateStatusKunjunganKeEngaged/{id}', [KunjunganController::class, 'updateStatusKunjunganKeEngaged'])->name('perawat.update.status.kunjungan.ke.engaged');
         Route::get('/getDataKunjunganDenganStatusEngaged', [KunjunganController::class, 'getDataKunjunganDenganStatusEngaged'])->name('perawat.get.data.kunjungan.dengan.status.engaged');
+        Route::get('/get-data-detail-kunjungan-engaged/{id}', [KunjunganController::class, 'detailKunjunganEngaged'])->name('get.data.detail.kunjungan.engaged');
         Route::get('/form-pengisian-vital-sign/{id}', [KunjunganController::class, 'formPengisianVitalSign'])->name('perawat.form.pengisian.vital.sign');
         Route::post('/submitDataVitalSignPasien/{id}', [KunjunganController::class, 'submitDataVitalSignPasien'])->name('perawat.submit.data.vital.sign.pasien');
 
         Route::prefix('order-lab')->group(function () {
             Route::get('/get-data-order-lab', [OrderLabController::class, 'getDataHasilLab'])->name('get.data.order.lab');
+            Route::get('/get-data-detail-order-lab/{noOrderLab}', [OrderLabController::class, 'getDataDetailOrderLab'])->name('get.data.detail.order.lab');
             Route::get('/input-hasil/{id}', [OrderLabController::class, 'inputHasil'])->name('input.hasil.order.lab');
             Route::post('/simpan-hasil-lab', [OrderLabController::class, 'simpanHasil'])->name('simpan.hasil.order.lab');
         });
 
         Route::prefix('order-radiologi')->group(function () {
             Route::get('/get-data-order-radiologi',  [OrderRadiologiController::class, 'getDataOrderRadiologi'])->name('get.data.order.radiologi');
+            Route::get('/get-data-detail-order-radiologi/{id}',  [OrderRadiologiController::class, 'detailOrderRadiologi'])->name('get.data.detail.order.radiologi');
             Route::get('/input-hasil/{id}', [OrderRadiologiController::class, 'inputHasil'])->name('input.hasil.order.radiologi');
             Route::post('/simpan-hasil', [OrderRadiologiController::class, 'simpanHasil'])->name('simpan-hasil');
         });
@@ -680,17 +816,17 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
 
 Route::middleware(['auth', 'superAdmin'])->prefix('super-admin')->group(function () {
 
-    // delete data dokter 
+    // delete data dokter
     Route::delete('/delete_dokter/{id}', [DokterController::class, 'deleteDokter'])->name('delete_dokter');
 
-    // delete data pasien 
+    // delete data pasien
     Route::delete('/delete_pasien/{id}', [PasienController::class, 'deletePasien'])->name('delete_pasien');
 
-    // delete data farmasi 
+    // delete data farmasi
     Route::delete('/delete_farmasi/{id}', [FarmasiController::class, 'deleteFarmasi'])->name('delete_farmasi');
 
     // delete data perawat
-    Route::delete('/delete_perawat/{id}', [PerawatController::class, 'deletePerawat'])->name('delete_perawat');
+    Route::post('/delete_perawat/{slug}', [ManagementPerawatController::class, 'deleteDataPerawat'])->name('delete.data.perawat');
 
     // delete data kasir
     Route::delete('/delete_kasir/{id}', [KasirController::class, 'deleteKasir'])->name('delete_kasir');
@@ -705,6 +841,17 @@ Route::middleware(['auth', 'superAdmin'])->prefix('super-admin')->group(function
     Route::post('/diskon-approval/{approval}/approve', [DiskonApprovalManagerController::class, 'approve'])->name('super.admin.diskon.approve');
     Route::post('/diskon-approval/{approval}/reject', [DiskonApprovalManagerController::class, 'reject'])->name('super.admin.diskon.reject');
 
+    // Approve Diskon Penjualan Obat
+    Route::get('/approve-diskon-penjualan-obat', [ApproveDiskonPenjualanObatManagerController::class, 'index'])->name('super.admin.approve.diskon.penjualan.obat');
+    Route::get('/approve-diskon-penjualan-obat/get-data-belum-approve', [ApproveDiskonPenjualanObatManagerController::class, 'getDataBelumApprove']);
+    Route::get('/approve-diskon-penjualan-obat/get-data-sudah-approve', [ApproveDiskonPenjualanObatManagerController::class, 'getDataSudahApprove'])->name('super.admin.data.approve-diskon-penjualan-obat');
+
+    Route::get('/approve-diskon-penjualan-obat/{approval}/detail-items', [ApproveDiskonPenjualanObatManagerController::class, 'getDetailItems'])->name('super.admin.diskon.penjualan.obat.detail_items');
+    Route::get('/approve-diskon-penjualan-obat/{approval}/detail-items-sudah-approve', [ApproveDiskonPenjualanObatManagerController::class, 'getDetailSudahApprove'])->name('super.admin.diskon.penjualan.obat.detail_items.sudah.approve');
+
+    Route::post('/approve-diskon-penjualan-obat/{approval}/approve', [ApproveDiskonPenjualanObatManagerController::class, 'approve'])->name('super.admin.approve.diskon.penjualan.obat.approve');
+    Route::post('/approve-diskon-penjualan-obat/{approval}/reject', [ApproveDiskonPenjualanObatManagerController::class, 'reject'])->name('super.admin.reject.diskon.penjualan.obat');
+
     Route::get('index', [SuperAdminController::class, 'dashboard'])->name('super.admin.index');
     Route::get('/dashboard/chart-kunjungan', [SuperAdminController::class, 'chartKunjungan'])->name('super.admin.chart.kunjungan');
     Route::get('/dashboard/report-kunjungan/pdf', [SuperAdminController::class, 'reportKunjunganPdf'])->name('super.admin.report.kunjungan.pdf');
@@ -717,6 +864,16 @@ Route::middleware(['auth', 'superAdmin'])->prefix('super-admin')->group(function
 
     Route::get('/transaksi/insight', [TransaksiInsightController::class, 'index'])->name('super.admin.transaksi.insight.index');
     Route::get('/transaksi/insight/{id}', [TransaksiInsightController::class, 'show'])->name('super.admin.transaksi.insight.show');
+
+    Route::prefix('approve-diskon-order-layanan')->group(function () {
+        Route::get('/', [ApproveDiskonOrderLayananManagerController::class, 'index'])->name('super.admin.approve.diskon.order.layanan.index');
+        Route::get('/get-data-belum-approve', [ApproveDiskonOrderLayananManagerController::class, 'getDataBelumApprove'])->name('super.admin.get.data.diskon.order.layanan.belum.approve');
+        Route::get('/get-data-sudah-approve', [ApproveDiskonOrderLayananManagerController::class, 'getDataSudahApprove'])->name('super.admin.get.data.diskon.order.layanan.sudah.approve');
+        Route::get('/get-data-detail/{approval}', [ApproveDiskonOrderLayananManagerController::class, 'getDetailDiskonOrderLayanan'])->name('super.admin.get.data.detail.diskon.order.layanan.belum.approve');
+
+        Route::post('/approve/{approval}', [ApproveDiskonOrderLayananManagerController::class, 'approve'])->name('super.admin.approve.diskon.order.layanan');
+        Route::post('/reject/{approval}', [ApproveDiskonOrderLayananManagerController::class, 'reject'])->name('super.admin.reject.diskon.order.layanan');
+    });
 });
 
 Route::get('/login-dokter', [AuthController::class, 'login'])->name('login.dokter');
@@ -724,4 +881,4 @@ Route::post('/proses-login-dokter', [AuthController::class, 'prosesLogin'])->nam
 
 Route::get('/is-global', [LayananController::class, 'isGlobal'])->name('layanan.is.global');
 
-require __DIR__ . '/auth.php';
+require __DIR__.'/auth.php';

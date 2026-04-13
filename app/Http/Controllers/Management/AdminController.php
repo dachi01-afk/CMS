@@ -139,8 +139,8 @@ class AdminController extends Controller
         $user = $admin->user;
 
         $validated = $request->validate([
-            'username' => 'required|string|max:255|unique:user,username,' . $user->id,
-            'email' => 'required|email|max:255|unique:user,email,' . $user->id,
+            'username' => 'required|string|max:255',
+            'email' => 'required|email|max:255|',
             'password' => 'nullable|string|min:6|confirmed',
             'nama_admin' => 'required|string|max:255',
             'no_hp' => 'nullable|string|max:20',

@@ -1,6 +1,6 @@
 import axios from "axios";
 import { Modal } from "flowbite";
-import $ from "jquery";
+import $, { ajax } from "jquery";
 
 const rupiah = (angka = 0) =>
     Number(angka || 0).toLocaleString("id-ID", {
@@ -35,6 +35,14 @@ $(function () {
     const pasienIdInput = document.getElementById("pasien_id");
     const penjualanObatIdInput = document.getElementById("penjualan_obat_id");
 
+    const badgeMode = document.getElementById("badge-mode-penjualan-obat");
+    const modalTitle = document.getElementById("modal-title-penjualan-obat");
+    const modalSubtitle = document.getElementById(
+        "modal-subtitle-penjualan-obat",
+    );
+    const statusInfo = document.getElementById("transaction-status-info");
+    const btnResetPasien = document.getElementById("btn-reset-pasien");
+
     function getHargaObat(obat) {
         return Number(
             obat?.harga_jual_obat ??
@@ -43,6 +51,56 @@ $(function () {
                 obat?.harga_satuan ??
                 0,
         );
+    }
+
+    function setModeTambah() {
+        editMode = false;
+        modalTitle.textContent = "Tambah Order Obat";
+        modalSubtitle.textContent =
+            "Pilih pasien, tambahkan obat, lalu simpan transaksi.";
+        $("#btn-submit-penjualan-obat").text("Simpan Order");
+        badgeMode.classList.add("hidden");
+        statusInfo.innerHTML = `
+            Status transaksi otomatis dibuat sebagai
+            <span class="font-semibold">Belum Bayar</span>.
+        `;
+    }
+
+    function setModeEdit() {
+        editMode = true;
+        modalTitle.textContent = "Edit Order Obat";
+        modalSubtitle.textContent =
+            "Perbarui pasien atau daftar obat, lalu simpan perubahan transaksi.";
+        $("#btn-submit-penjualan-obat").text("Update Order");
+        badgeMode.classList.remove("hidden");
+        statusInfo.innerHTML = `
+            Anda sedang mengubah data order obat yang masih
+            <span class="font-semibold">Belum Bayar</span>.
+        `;
+    }
+
+    function clearPasien() {
+        pasienIdInput.value = "";
+        resepIdInput.value = "";
+        $("#tanggal_kunjungan").val("");
+        searchPasienInput.value = "";
+        $("#nama_pasien").text("");
+        $("#alamat_pasien").text("");
+        $("#jk_pasien").text("");
+        $("#no_emr_pasien").text("");
+        pasienDataDiv.classList.add("hidden");
+        pasienResultsDiv.classList.add("hidden");
+    }
+
+    function fillPasien(pasien) {
+        pasienIdInput.value = pasien.id ?? "";
+        $("#nama_pasien").text(pasien.nama_pasien ?? "-");
+        $("#alamat_pasien").text(pasien.alamat ?? "-");
+        $("#jk_pasien").text(pasien.jenis_kelamin ?? "-");
+        $("#no_emr_pasien").text(pasien.no_emr ?? "-");
+        searchPasienInput.value = pasien.nama_pasien ?? "";
+        pasienDataDiv.classList.remove("hidden");
+        pasienResultsDiv.classList.add("hidden");
     }
 
     const table = $table.DataTable({
@@ -102,8 +160,6 @@ $(function () {
                         day: "2-digit",
                         month: "long",
                         year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
                     });
                 },
             },
@@ -214,22 +270,20 @@ $(function () {
     }
 
     function resetForm() {
-        editMode = false;
         selectedItems = [];
-
         $form[0].reset();
+
         penjualanObatIdInput.value = "";
-        pasienIdInput.value = "";
-        resepIdInput.value = "";
+        clearPasien();
 
-        $("#modal-title-penjualan-obat").text("Tambah Order Obat");
-        $("#btn-submit-penjualan-obat").text("Simpan Order");
-
-        pasienDataDiv.classList.add("hidden");
-        pasienResultsDiv.classList.add("hidden");
-        obatResultsDiv.classList.add("hidden");
         selectedObatList.innerHTML = "";
+        obatResultsDiv.classList.add("hidden");
+        searchObatInput.value = "";
 
+        btnResetPasien.classList.add("hidden");
+
+        setModeTambah();
+        renderSelectedItems();
         updateSummary();
     }
 
@@ -239,12 +293,11 @@ $(function () {
             0,
         );
 
-        const grandTotal = selectedItems.reduce(
-            (sum, item) =>
-                sum +
-                Number(item.jumlah || 0) * Number(item.harga_jual_obat || 0),
-            0,
-        );
+        const grandTotal = selectedItems.reduce((sum, item) => {
+            const harga = Number(item.harga_jual_obat || 0);
+            const jumlah = Number(item.jumlah || 0);
+            return sum + harga * jumlah;
+        }, 0);
 
         $("#summary-total-item").text(totalItem);
         $("#summary-grand-total").text(rupiah(grandTotal));
@@ -313,11 +366,22 @@ $(function () {
             return;
         }
 
+        const stok = Number(obat.jumlah ?? 0);
+
+        if (stok < 1) {
+            Swal.fire({
+                icon: "warning",
+                title: "Stok habis",
+                text: "Obat ini tidak memiliki stok yang cukup.",
+            });
+            return;
+        }
+
         selectedItems.push({
             obat_id: obat.id,
             nama_obat: obat.nama_obat,
             harga_jual_obat: getHargaObat(obat),
-            stok: Number(obat.jumlah ?? 0),
+            stok,
             jumlah: 1,
         });
 
@@ -335,6 +399,9 @@ $(function () {
             if (res.data?.resep_id) {
                 resepIdInput.value = res.data.resep_id;
                 $("#tanggal_kunjungan").val(res.data.tanggal_kunjungan ?? "");
+            } else {
+                resepIdInput.value = "";
+                $("#tanggal_kunjungan").val("");
             }
         } catch (error) {
             console.error("Gagal mengambil resep aktif", error);
@@ -377,16 +444,8 @@ $(function () {
                 `;
 
                 item.onclick = async () => {
-                    pasienIdInput.value = pasien.id;
-                    $("#nama_pasien").text(pasien.nama_pasien);
-                    $("#alamat_pasien").text(pasien.alamat ?? "-");
-                    $("#jk_pasien").text(pasien.jenis_kelamin ?? "-");
-                    $("#no_emr_pasien").text(pasien.no_emr ?? "-");
-
-                    pasienDataDiv.classList.remove("hidden");
-                    pasienResultsDiv.classList.add("hidden");
-                    searchPasienInput.value = pasien.nama_pasien;
-
+                    fillPasien(pasien);
+                    btnResetPasien.classList.remove("hidden");
                     await fetchResepAktif(pasien.id);
                 };
 
@@ -448,11 +507,16 @@ $(function () {
     searchPasienInput.addEventListener("keyup", onSearchPasien);
     searchObatInput.addEventListener("keyup", onSearchObat);
 
+    btnResetPasien.addEventListener("click", () => {
+        clearPasien();
+        btnResetPasien.classList.add("hidden");
+    });
+
     $(document).on("input", ".qty-input", function () {
         const index = Number($(this).data("index"));
         let qty = Number($(this).val());
 
-        if (qty < 1) qty = 1;
+        if (Number.isNaN(qty) || qty < 1) qty = 1;
         if (qty > selectedItems[index].stok) qty = selectedItems[index].stok;
 
         selectedItems[index].jumlah = qty;
@@ -467,7 +531,6 @@ $(function () {
 
     $("#btn-open-modal-penjualan-obat").on("click", function () {
         resetForm();
-        renderSelectedItems();
         if (modal) modal.show();
     });
 
@@ -484,26 +547,30 @@ $(function () {
 
         try {
             resetForm();
-            editMode = true;
+            setModeEdit();
 
             const res = await axios.get(`/farmasi/order-obat/order/${id}`);
             const data = res.data.data;
-
-            $("#modal-title-penjualan-obat").text("Edit Order Obat");
-            $("#btn-submit-penjualan-obat").text("Update Order");
 
             penjualanObatIdInput.value = data.id;
             pasienIdInput.value = data.pasien_id;
             resepIdInput.value = data.resep_id ?? "";
 
-            searchPasienInput.value = data.pasien?.nama_pasien ?? "";
-            $("#nama_pasien").text(data.pasien?.nama_pasien ?? "-");
-            $("#alamat_pasien").text(data.pasien?.alamat ?? "-");
-            $("#jk_pasien").text(data.pasien?.jenis_kelamin ?? "-");
-            $("#no_emr_pasien").text(data.pasien?.no_emr ?? "-");
-            pasienDataDiv.classList.remove("hidden");
+            fillPasien({
+                id: data.pasien_id,
+                nama_pasien: data.pasien?.nama_pasien ?? "-",
+                alamat: data.pasien?.alamat ?? "-",
+                jenis_kelamin: data.pasien?.jenis_kelamin ?? "-",
+                no_emr: data.pasien?.no_emr ?? "-",
+            });
 
-            selectedItems = (data.details || []).map((item) => ({
+            btnResetPasien.classList.remove("hidden");
+
+            selectedItems = (
+                data.penjualan_obat_detail ||
+                data.details ||
+                []
+            ).map((item) => ({
                 obat_id: item.obat_id,
                 nama_obat: item.obat?.nama_obat ?? "-",
                 harga_jual_obat: getHargaObat(item),
@@ -512,6 +579,7 @@ $(function () {
             }));
 
             renderSelectedItems();
+
             if (modal) modal.show();
         } catch (error) {
             console.error(error);
@@ -559,6 +627,21 @@ $(function () {
             return;
         }
 
+        const invalidQty = selectedItems.find(
+            (item) =>
+                Number(item.jumlah) < 1 ||
+                Number(item.jumlah) > Number(item.stok),
+        );
+
+        if (invalidQty) {
+            Swal.fire(
+                "Validasi",
+                `Qty obat ${invalidQty.nama_obat} tidak valid`,
+                "warning",
+            );
+            return;
+        }
+
         const payload = {
             pasien_id: pasienIdInput.value,
             resep_id: resepIdInput.value || null,
@@ -599,6 +682,261 @@ $(function () {
                     "Terjadi kesalahan saat menyimpan data",
                 "error",
             );
+        }
+    });
+});
+
+$(function () {
+    const SELECTOR = {
+        modal: "#modal-detail-order-obat",
+        closeBtn:
+            "#btn-close-modal-detail-order-obat, #btn-tutup-modal-detail-order-obat",
+        triggerBtn: ".btn-detail-order-obat",
+        tbody: "#detail-order-obat-tbody",
+
+        kodeTransaksi: "#detail-kode-transaksi-order-obat",
+        tanggalTransaksi: "#detail-tanggal-transaksi-order-obat",
+        jumlahItem: "#detail-jumlah-item-order-obat",
+        totalTagihan: "#detail-total-tagihan-order-obat",
+        namaPasien: "#detail-nama-pasien-order-obat",
+        noRm: "#detail-no-rm-order-obat",
+        metodePembayaran: "#detail-metode-pembayaran-order-obat",
+
+        summaryTotalItem: "#summary-total-item-detail-order-obat",
+        summarySubtotal: "#summary-subtotal-detail-order-obat",
+        summaryDiskon: "#summary-diskon-detail-order-obat",
+        summaryBiayaLain: "#summary-biaya-lain-detail-order-obat",
+        summaryGrandTotal: "#summary-grand-total-detail-order-obat",
+
+        statusBadge: "#detail-status-badge",
+        statusText: "#detail-status-text",
+        createdAt: "#detail-created-at",
+        updatedAt: "#detail-updated-at",
+    };
+
+    function lockPageScroll() {
+        $("html, body").addClass("overflow-hidden");
+    }
+
+    function unlockPageScroll() {
+        $("html, body").removeClass("overflow-hidden");
+    }
+
+    function openDetailModal() {
+        $(SELECTOR.modal).removeClass("hidden").addClass("flex");
+        lockPageScroll();
+    }
+
+    function closeDetailModal() {
+        $(SELECTOR.modal).addClass("hidden").removeClass("flex");
+        unlockPageScroll();
+    }
+
+    function formatTanggal(value) {
+        if (!value) return "-";
+
+        const date = new Date(value);
+        if (isNaN(date.getTime())) return value;
+
+        return date.toLocaleString("id-ID", {
+            timeZone: "Asia/Jakarta",
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+        });
+    }
+
+    function setText(selector, value) {
+        $(selector).text(value ?? "-");
+    }
+
+    function setCurrency(selector, value) {
+        $(selector).text(rupiah(value ?? 0));
+    }
+
+    function setDetailStatusBadge(status) {
+        const badgeClasses = [
+            "bg-slate-100",
+            "text-slate-700",
+            "bg-emerald-100",
+            "text-emerald-700",
+            "bg-amber-100",
+            "text-amber-700",
+            "bg-rose-100",
+            "text-rose-700",
+        ];
+
+        const $badge = $(SELECTOR.statusBadge);
+
+        $badge.text(status || "-").removeClass(badgeClasses.join(" "));
+
+        if (status === "Sudah Bayar") {
+            $badge.addClass("bg-emerald-100 text-emerald-700");
+        } else if (status === "Belum Bayar") {
+            $badge.addClass("bg-amber-100 text-amber-700");
+        } else {
+            $badge.addClass("bg-slate-100 text-slate-700");
+        }
+
+        setText(SELECTOR.statusText, status || "-");
+    }
+
+    function renderLoadingState() {
+        const loadingText = "Loading...";
+
+        [
+            SELECTOR.kodeTransaksi,
+            SELECTOR.tanggalTransaksi,
+            SELECTOR.jumlahItem,
+            SELECTOR.totalTagihan,
+            SELECTOR.namaPasien,
+            SELECTOR.noRm,
+            SELECTOR.metodePembayaran,
+            SELECTOR.summaryTotalItem,
+            SELECTOR.summarySubtotal,
+            SELECTOR.summaryDiskon,
+            SELECTOR.summaryBiayaLain,
+            SELECTOR.summaryGrandTotal,
+            SELECTOR.statusText,
+            SELECTOR.createdAt,
+            SELECTOR.updatedAt,
+        ].forEach((selector) => setText(selector, loadingText));
+
+        $(SELECTOR.tbody).html(`
+            <tr>
+                <td colspan="7" class="px-4 py-8 text-center text-slate-500">
+                    Memuat detail order obat...
+                </td>
+            </tr>
+        `);
+    }
+
+    function renderEmptyRows(message = "Tidak ada detail obat.") {
+        $(SELECTOR.tbody).html(`
+            <tr>
+                <td colspan="7" class="px-4 py-6 text-center text-slate-500">
+                    ${message}
+                </td>
+            </tr>
+        `);
+    }
+
+    function renderDetailRows(details = []) {
+        if (!details.length) {
+            renderEmptyRows();
+            return;
+        }
+
+        const rows = details
+            .map((item, index) => {
+                return `
+                    <tr class="hover:bg-slate-50">
+                        <td class="px-4 py-3 text-slate-700">${index + 1}</td>
+                        <td class="px-4 py-3">
+                            <div class="font-medium text-slate-800">
+                                ${item.nama_obat ?? "-"}
+                            </div>
+                        </td>
+                        <td class="px-4 py-3 text-slate-700">
+                            ${item.batch ?? "-"}
+                        </td>
+                        <td class="px-4 py-3 text-slate-700">
+                            ${item.expired_at ?? "-"}
+                        </td>
+                        <td class="px-4 py-3 text-center text-slate-700">
+                            ${item.jumlah ?? 0}
+                        </td>
+                        <td class="px-4 py-3 text-right text-slate-700">
+                            ${rupiah(item.harga_satuan ?? 0)}
+                        </td>
+                        <td class="px-4 py-3 text-right font-semibold text-slate-800">
+                            ${rupiah(item.total_setelah_diskon ?? item.sub_total ?? 0)}
+                        </td>
+                    </tr>
+                `;
+            })
+            .join("");
+
+        $(SELECTOR.tbody).html(rows);
+    }
+
+    function renderOrderData(order = {}) {
+        const totalFinal =
+            order.total_setelah_diskon ?? order.total_tagihan ?? 0;
+
+        setText(SELECTOR.kodeTransaksi, order.kode_transaksi ?? "-");
+        setText(
+            SELECTOR.tanggalTransaksi,
+            order.tanggal_transaksi_format ??
+                formatTanggal(order.tanggal_transaksi),
+        );
+        setText(SELECTOR.jumlahItem, `${order.jumlah_item ?? 0} Item`);
+        setCurrency(SELECTOR.totalTagihan, totalFinal);
+
+        setText(SELECTOR.namaPasien, order.nama_pasien ?? "-");
+        setText(SELECTOR.noRm, order.no_emr ?? "-");
+        setText(SELECTOR.metodePembayaran, order.metode_pembayaran ?? "-");
+
+        setText(SELECTOR.summaryTotalItem, `${order.jumlah_item ?? 0} Item`);
+        setCurrency(SELECTOR.summarySubtotal, order.subtotal ?? 0);
+        setCurrency(SELECTOR.summaryDiskon, order.diskon_nilai ?? 0);
+        setCurrency(SELECTOR.summaryBiayaLain, order.biaya_lain ?? 0);
+        setCurrency(SELECTOR.summaryGrandTotal, totalFinal);
+
+        setText(SELECTOR.createdAt, order.created_at ?? "-");
+        setText(SELECTOR.updatedAt, order.updated_at ?? "-");
+
+        setDetailStatusBadge(order.status ?? "-");
+    }
+
+    function fetchDetailOrder(url) {
+        $.ajax({
+            url,
+            type: "GET",
+            beforeSend: function () {
+                renderLoadingState();
+                openDetailModal();
+            },
+            success: function (response) {
+                const order = response?.dataOrderObat ?? {};
+                const details = response?.dataDetailOrderObat ?? [];
+
+                renderOrderData(order);
+                renderDetailRows(details);
+            },
+            error: function (xhr) {
+                console.error(xhr.responseText);
+                closeDetailModal();
+
+                Swal.fire(
+                    "Gagal",
+                    "Terjadi kesalahan saat mengambil detail order obat",
+                    "error",
+                );
+            },
+        });
+    }
+
+    $(document).on("click", SELECTOR.triggerBtn, function () {
+        const url = $(this).data("urlDetailOrderObat");
+        if (!url) return;
+
+        fetchDetailOrder(url);
+    });
+
+    $(SELECTOR.closeBtn).on("click", function () {
+        closeDetailModal();
+    });
+
+    $(SELECTOR.modal).on("click", function (e) {
+        if (e.target === this) {
+            closeDetailModal();
+        }
+    });
+
+    $(document).on("keydown", function (e) {
+        if (e.key === "Escape" && !$(SELECTOR.modal).hasClass("hidden")) {
+            closeDetailModal();
         }
     });
 });

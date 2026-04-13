@@ -2,6 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\Dokter;
+use App\Models\Kunjungan;
+use App\Models\Pasien;
+use App\Models\Pembayaran;
+use App\Models\Perawat;
+use App\Models\Poli;
+use App\Models\Resep;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class EMR extends Model
@@ -61,6 +69,7 @@ class EMR extends Model
         return $query->where('perawat_id', $perawatId);
     }
 
+<<<<<<< HEAD
     public function emrKklp()
     {
         return $this->hasOne(EmrKklp::class, 'emr_id');
@@ -69,5 +78,12 @@ class EMR extends Model
     public function pengkajianAwalPenyakitDalam()
     {
         return $this->hasOne(\App\Models\EmrPengkajianAwalPenyakitDalam::class, 'emr_id');
+=======
+    public function scopeHariIni(Builder $query, $tanggal = null)
+    {
+        $tanggal = $tanggal ?? now()->toDateString();
+
+        return $query->whereDate('created_at', $tanggal);
+>>>>>>> 966f6271fa8f074b540856c2d3d753633f8a11b1
     }
 }

@@ -6,10 +6,6 @@ $(function () {
     const $tableEl = $("#transaksiLayananTable");
     if (!$tableEl.length) return;
 
-    // ⬇️ ambil URL dari Blade, fallback ke path lama kalau belum diset
-    const dataUrl =
-        window.transaksiLayananDataUrl || "/kasir/get-data-transaksi-layanan";
-
     const table = $tableEl.DataTable({
         processing: true,
         serverSide: true,
@@ -21,7 +17,7 @@ $(function () {
         info: false,
         scrollX: true,
         ajax: {
-            url: dataUrl,
+            url: "/kasir/transaksi-layanan/get-data",
             type: "GET",
         },
         columns: [
@@ -32,28 +28,19 @@ $(function () {
                 searchable: false,
             },
             {
+                data: "kode_transaksi",
+                name: "kode_transaksi",
+                render: function (data) {
+                    return data || "-";
+                },
+            },
+            {
                 data: "nama_pasien",
                 name: "nama_pasien",
             },
             {
-                data: "nama_layanan",
-                name: "nama_layanan",
-            },
-            {
-                data: "kategori_layanan",
-                name: "kategori_layanan",
-            },
-            {
-                data: "jumlah",
-                name: "jumlah",
-                render: function (data) {
-                    if (!data) return "-";
-                    return data + " x"; // sekarang ini jumlah total item per transaksi
-                },
-            },
-            {
-                data: "total_tagihan",
-                name: "total_tagihan",
+                data: "total_bayar",
+                name: "total_bayar",
                 render: function (data) {
                     if (!data) return "-";
                     const n = Number(data) || 0;
@@ -65,22 +52,15 @@ $(function () {
                 },
             },
             {
-                data: "metode_pembayaran",
-                name: "metode_pembayaran",
+                data: "nama_metode",
+                name: "nama_metode",
                 render: function (data) {
                     return data || "-";
                 },
             },
             {
-                data: "kode_transaksi",
-                name: "kode_transaksi",
-                render: function (data) {
-                    return data || "-";
-                },
-            },
-            {
-                data: "tanggal_transaksi",
-                name: "tanggal_transaksi",
+                data: "tanggal_order",
+                name: "tanggal_order",
                 render: function (data) {
                     if (!data) return "-";
                     const date = new Date(data);
@@ -89,23 +69,15 @@ $(function () {
                         day: "2-digit",
                         month: "long",
                         year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
                     });
                 },
             },
             {
-                data: "status",
-                name: "status",
+                data: "status_order_layanan",
+                name: "status_order_layanan",
                 render: function (data) {
                     return data || "-";
                 },
-            },
-            {
-                data: "bukti_pembayaran",
-                name: "bukti_pembayaran",
-                orderable: false,
-                searchable: false,
             },
             {
                 data: "action",
@@ -118,7 +90,7 @@ $(function () {
         dom: "t",
         rowCallback: function (row) {
             $(row).addClass(
-                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600",
             );
             $("td", row).addClass("px-6 py-4 text-gray-900 dark:text-white");
         },
@@ -148,7 +120,7 @@ $(function () {
         $info.text(
             `Menampilkan ${info.start + 1}–${info.end} dari ${
                 info.recordsDisplay
-            } data (Halaman ${currentPage} dari ${totalPages})`
+            } data (Halaman ${currentPage} dari ${totalPages})`,
         );
 
         // Pagination numbers
@@ -162,7 +134,7 @@ $(function () {
                    class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-l-lg hover:bg-gray-100 ${prevDisabled}">
                     Previous
                 </a>
-            </li>`
+            </li>`,
         );
 
         const maxVisible = 5;
@@ -184,7 +156,7 @@ $(function () {
                        class="page-number flex items-center justify-center px-3 h-8 border ${active}">
                         ${i}
                     </a>
-                </li>`
+                </li>`,
             );
         }
 
@@ -196,7 +168,7 @@ $(function () {
                    class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-r-lg hover:bg-gray-100 ${nextDisabled}">
                     Next
                 </a>
-            </li>`
+            </li>`,
         );
     }
 

@@ -3,7 +3,7 @@ import "datatables.net-dt";
 import axios from "axios";
 
 $(function () {
-    const tabel = $("#riwayatTransaksiLayanan").DataTable({
+    const tabel = $("#tabel-riwayat-order-layanan").DataTable({
         processing: true,
         serverSide: true,
         paging: true,
@@ -12,7 +12,7 @@ $(function () {
         pageLength: 10,
         lengthChange: false,
         info: false,
-        ajax: "/kasir/get-data-riwayat-transaksi-layanan",
+        ajax: "/kasir/riwayat-transaksi-layanan/get-data",
         columns: [
             {
                 data: "DT_RowIndex",
@@ -20,34 +20,12 @@ $(function () {
                 orderable: false,
                 searchable: false,
             },
+            { data: "kode_transaksi", name: "kode_transaksi" },
             { data: "nama_pasien", name: "nama_pasien" },
+            { data: "tanggal_order", name: "tanggal_order" },
             {
-                data: "tanggal_kunjungan",
-                name: "tanggal_kunjungan",
-                render: function (data) {
-                    if (!data || data === "-") return "-";
-                    const date = new Date(data);
-                    if (isNaN(date.getTime())) return "-";
-
-                    const waktuIndonesia = date.toLocaleString("id-ID", {
-                        timeZone: "Asia/Jakarta",
-                        day: "2-digit",
-                        month: "long",
-                        year: "numeric",
-                        hour: "2-digit",
-                        minute: "2-digit",
-                    });
-
-                    return waktuIndonesia;
-                },
-            },
-            { data: "no_antrian", name: "no_antrian" },
-            { data: "nama_layanan", name: "nama_layanan" },
-            { data: "nama_kategori", name: "nama_kategori" },
-            { data: "jumlah_layanan", name: "jumlah_layanan" },
-            {
-                data: "total_tagihan",
-                name: "total_tagihan",
+                data: "subtotal",
+                name: "subtotal",
                 render: function (data) {
                     if (!data) return "-";
                     const n = Number(data) || 0;
@@ -58,8 +36,34 @@ $(function () {
                     });
                 },
             },
-            { data: "metode_pembayaran", name: "metode_pembayaran" },
-            { data: "status", name: "status" },
+            {
+                data: "potongan_pesanan",
+                name: "potongan_pesanan",
+                render: function (data) {
+                    if (!data) return "-";
+                    const n = Number(data) || 0;
+                    return n.toLocaleString("id-ID", {
+                        style: "currency",
+                        currency: "IDR",
+                        minimumFractionDigits: 0,
+                    });
+                },
+            },
+            {
+                data: "total_bayar",
+                name: "total_bayar",
+                render: function (data) {
+                    if (!data) return "-";
+                    const n = Number(data) || 0;
+                    return n.toLocaleString("id-ID", {
+                        style: "currency",
+                        currency: "IDR",
+                        minimumFractionDigits: 0,
+                    });
+                },
+            },
+            { data: "nama_metode", name: "nama_metode" },
+            { data: "status_order_layanan", name: "status_order_layanan" },
             { data: "bukti_pembayaran", name: "bukti_pembayaran" },
             {
                 data: "action",
@@ -72,10 +76,10 @@ $(function () {
         dom: "t",
         rowCallback: function (row) {
             $(row).addClass(
-                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600",
             );
             $("td", row).addClass(
-                "px-6 py-4 text-gray-900 dark:text-white align-top"
+                "px-6 py-4 text-gray-900 dark:text-white align-top",
             );
         },
     });
@@ -97,14 +101,14 @@ $(function () {
         $info.text(
             `Menampilkan ${info.start + 1}–${info.end} dari ${
                 info.recordsDisplay
-            } data (Halaman ${currentPage} dari ${totalPages})`
+            } data (Halaman ${currentPage} dari ${totalPages})`,
         );
         $pagination.empty();
 
         const prevDisabled =
             currentPage === 1 ? "opacity-50 cursor-not-allowed" : "";
         $pagination.append(
-            `<li><a href="#" id="btnPrev" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 ${prevDisabled}">Previous</a></li>`
+            `<li><a href="#" id="btnPrev" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 ${prevDisabled}">Previous</a></li>`,
         );
 
         const maxVisible = 5;
@@ -119,14 +123,14 @@ $(function () {
                     ? "text-blue-600 bg-blue-50 border-blue-300 hover:bg-blue-100"
                     : "text-gray-500 bg-white border-gray-300 hover:bg-gray-100 hover:text-gray-700";
             $pagination.append(
-                `<li><a href="#" class="page-number flex items-center justify-center px-3 h-8 border ${active}" data-page="${i}">${i}</a></li>`
+                `<li><a href="#" class="page-number flex items-center justify-center px-3 h-8 border ${active}" data-page="${i}">${i}</a></li>`,
             );
         }
 
         const nextDisabled =
             currentPage === totalPages ? "opacity-50 cursor-not-allowed" : "";
         $pagination.append(
-            `<li><a href="#" id="btnNext" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 ${nextDisabled}">Next</a></li>`
+            `<li><a href="#" id="btnNext" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 ${nextDisabled}">Next</a></li>`,
         );
     }
 

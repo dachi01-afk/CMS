@@ -192,7 +192,7 @@
     </div>
 
     @php
-        $isNonPemeriksaan = $summary->kategori_utama === 'Non Pemeriksaan';
+        $isNonPemeriksaan = $summary->kategori_layanan === 'Non Pemeriksaan';
     @endphp
 
     {{-- ==== KWITANSI ==== --}}
@@ -211,30 +211,27 @@
         <!-- Data Pembayaran -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700 mb-6">
             <div>
-                @unless ($isNonPemeriksaan)
-                    <p>
-                        <span class="font-medium">Tanggal Kunjungan:</span><br>
-                        {{ optional($summary->kunjungan)->tanggal_kunjungan
-                            ? \Carbon\Carbon::parse($summary->kunjungan->tanggal_kunjungan)->translatedFormat('d F Y')
-                            : '-' }}
-                    </p>
-                @endunless
-
                 <p class="mt-2">
                     <span class="font-medium">Nama Pembayar:</span><br>
-                    {{ optional($summary->pasien)->nama_pasien ?? '-' }}
+                    {{ $summary->pasien ?? '-' }}
                 </p>
             </div>
             <div>
-                @unless ($isNonPemeriksaan)
-                    <p>
-                        <span class="font-medium">Nomor Antrian:</span><br>
-                        {{ optional($summary->kunjungan)->no_antrian ?? (optional($summary->kunjungan)->nomor_antrian ?? '-') }}
-                    </p>
-                @endunless
                 <p class="mt-2">
                     <span class="font-medium">Metode Pembayaran:</span><br>
-                    {{ $summary->metode_pembayaran ?? 'Tunai' }}
+                    {{ $summary->metode_pembayaran ?? '-' }}
+                </p>
+            </div>
+            <div>
+                <p class="mt-2">
+                    <span class="font-medium">Tanggal Order:</span><br>
+                    {{ $summary->tanggal_order ?? '-' }}
+                </p>
+            </div>
+            <div>
+                <p class="mt-2">
+                    <span class="font-medium">Tanggal Pembayaran:</span><br>
+                    {{ $summary->tanggal_pembayaran ?? '-' }}
                 </p>
             </div>
         </div>
@@ -253,89 +250,39 @@
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-200">
-                    @php
-                        $no = 1;
-                        $totalSebelum = 0;
+                    @foreach ($dataOrderLayanan->orderLayananDetail as $index => $detail)
+                        <tr>
+                            <td class="px-3 py-2">{{ $index + 1 }}</td>
+                            <td class="px-3 py-2">{{ $detail->layanan->nama_layanan ?? '-' }}</td>
+                            <td class="px-3 py-2">{{ $detail->layanan->kategoriLayanan->nama_kategori ?? '-' }}</td>
+                            <td class="text-center px-3 py-2">{{ $detail->qty }}</td>
+                            <td class="text-right px-3 py-2">
+                                {{ number_format($detail->total_harga_item, 0, ',', '.') }}</td>
+                        </tr>
 
-                        $groupedItems = [];
-                        foreach ($items as $item) {
-                            $layananId = optional($item->layanan)->id ?? ($item->id ?? null);
-                            if (!$layananId) {
-                                continue;
-                            }
-
-                            if (!isset($groupedItems[$layananId])) {
-                                $groupedItems[$layananId] = [
-                                    'item' => $item,
-                                    'qty' => 0,
-                                    'subtotal' => 0,
-                                ];
-                            }
-
-                            $qty = (int) ($item->jumlah ?? 1);
-
-                            // === GANTI DISINI: pakai harga_sebelum_diskon
-                            $hargaSatuan = (float) (optional($item->layanan)->harga_sebelum_diskon ?? 0);
-
-                            $subtotal = $hargaSatuan * $qty;
-
-                            $groupedItems[$layananId]['qty'] += $qty;
-                            $groupedItems[$layananId]['subtotal'] += $subtotal;
-                        }
-                    @endphp
-
-
-                    @foreach ($groupedItems as $data)
-                        @php
-                            $item = $data['item'];
-                            $qty = $data['qty'];
-                            $subtotal = $data['subtotal'];
-                            $totalSebelum += $subtotal;
-
-                            $kategori =
-                                optional($item->kategoriLayanan)->nama_kategori ??
-                                (optional(optional($item->layanan)->kategoriLayanan)->nama_kategori ?? '-');
-                        @endphp
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-3 py-2">{{ $no++ }}</td>
-                            <td class="px-3 py-2">
-                                {{ optional($item->layanan)->nama_layanan ?? 'Layanan' }}
+                        {{-- Ringkasan total + diskon + total akhir --}}
+                        <tr class="bg-blue-50 font-medium text-gray-800">
+                            <td colspan="4" class="text-right px-3 py-2">Total Sebelum Diskon</td>
+                            <td class="text-right px-3 py-2">
+                                {{ number_format($summary->total_sebelum_diskon, 0, ',', '.') }}
                             </td>
-                            <td class="px-3 py-2">
-                                {{ $kategori }}
+                        </tr>
+
+                        <tr class="bg-blue-50 font-medium text-gray-800">
+                            <td colspan="4" class="text-right px-3 py-2">Diskon</td>
+                            <td class="text-right px-3 py-2">
+                                - {{ number_format($summary->diskon_nominal, 0, ',', '.') }}
                             </td>
-                            <td class="px-3 py-2 text-center">
-                                {{ $qty }}
-                            </td>
-                            <td class="px-3 py-2 text-right">
-                                {{ number_format($subtotal, 0, ',', '.') }}
+                        </tr>
+
+                        <tr class="bg-blue-100 font-semibold text-gray-900">
+                            <td colspan="4" class="text-right px-3 py-2">Total Setelah Diskon</td>
+                            <td class="text-right text-blue-700 px-3 py-2">
+                                {{ number_format($summary->total_setelah_diskon, 0, ',', '.') }}
                             </td>
                         </tr>
                     @endforeach
-
-                    {{-- Ringkasan total + diskon + total akhir --}}
-                    <tr class="bg-blue-50 font-medium text-gray-800">
-                        <td colspan="4" class="text-right px-3 py-2">Total Sebelum Diskon</td>
-                        <td class="text-right px-3 py-2">
-                            {{ number_format($summary->total_sebelum_diskon, 0, ',', '.') }}
-                        </td>
-                    </tr>
-
-                    <tr class="bg-blue-50 font-medium text-gray-800">
-                        <td colspan="4" class="text-right px-3 py-2">Diskon</td>
-                        <td class="text-right px-3 py-2">
-                            - {{ number_format($summary->diskon_nominal, 0, ',', '.') }}
-                        </td>
-                    </tr>
-
-                    <tr class="bg-blue-100 font-semibold text-gray-900">
-                        <td colspan="4" class="text-right px-3 py-2">Total Setelah Diskon</td>
-                        <td class="text-right text-blue-700 px-3 py-2">
-                            {{ number_format($summary->total_setelah_diskon, 0, ',', '.') }}
-                        </td>
-                    </tr>
                 </tbody>
-
             </table>
         </div>
 
@@ -371,9 +318,7 @@
             </p>
             <p class="text-sm text-gray-500 mt-1">
                 Tanggal Pembayaran:
-                {{ $summary->tanggal_transaksi
-                    ? \Carbon\Carbon::parse($summary->tanggal_transaksi)->translatedFormat('d F Y')
-                    : '-' }}
+                {{ $summary->tanggal_pembayaran ?? '-' }}
             </p>
         </div>
 

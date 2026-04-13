@@ -69,3 +69,5 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 60000); // 60 detik
     }
 });
+
+

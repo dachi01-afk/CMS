@@ -2,6 +2,14 @@
 
 namespace App\Models;
 
+use App\Models\BahanHabisPakai;
+use App\Models\BatchBahanHabisPakaiDepot;
+use App\Models\BatchObatDepot;
+use App\Models\MutasiStokObatDetail;
+use App\Models\Obat;
+use App\Models\RestockObat;
+use App\Models\StokTransaksiDetail;
+use App\Models\TipeDepot;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -34,6 +42,11 @@ class Depot extends Model
     public function batchBahanHabisPakaiDepot()
     {
         return $this->hasMany(BatchBahanHabisPakaiDepot::class);
+    }
+
+    public function restockObat()
+    {
+        return $this->hasMany(RestockObat::class);
     }
 
     public function tipeDepot()

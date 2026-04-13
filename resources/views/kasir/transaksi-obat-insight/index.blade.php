@@ -186,6 +186,9 @@
                                 <th
                                     class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
                                     Total</th>
+                                <th
+                                    class="px-4 py-3 text-left text-xs font-bold uppercase tracking-wider text-slate-500">
+                                    Action</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100 bg-white">
@@ -209,6 +212,15 @@
                                     <td class="px-4 py-3 text-sm font-semibold text-slate-800">
                                         Rp {{ number_format($row->total_setelah_diskon, 0, ',', '.') }}
                                     </td>
+
+                                    <td class="px-4 py-3 text-sm font-semibold text-slate-800">
+                                        <button type="button"
+                                            class="btn-detail-penjualan inline-flex items-center gap-2 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white transition hover:bg-blue-700"
+                                            data-url="{{ route('kasir.insight.detail.penjualan.obat', $row->id) }}">
+                                            <i class="fa-solid fa-eye"></i>
+                                            Detail
+                                        </button>
+                                    </td>
                                 </tr>
                             @empty
                                 <tr>
@@ -227,9 +239,75 @@
             </section>
 
         </div>
-    </main>
 
-    @vite(['resources/js/kasir/insight-transaksi.js'])
+        <div id="modalDetailPenjualan"
+            class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 px-4">
+            <div class="w-full max-w-5xl rounded-3xl bg-white shadow-2xl">
+                <div class="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                    <div>
+                        <h3 class="text-lg font-extrabold text-slate-900">Detail Transaksi Obat</h3>
+                        <p class="text-sm text-slate-500">Informasi lengkap transaksi penjualan obat</p>
+                    </div>
+                    <button type="button" id="btnCloseModalDetailPenjualan"
+                        class="rounded-xl border border-slate-200 px-3 py-2 text-sm font-bold text-slate-600 hover:bg-slate-50">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+
+                <div class="max-h-[80vh] overflow-y-auto px-6 py-5">
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+                        <div class="rounded-2xl border border-slate-200 p-4">
+                            <p class="text-xs font-semibold text-slate-500">Kode Transaksi</p>
+                            <p id="detailKodeTransaksi" class="mt-2 text-sm font-bold text-slate-900">-</p>
+                        </div>
+                        <div class="rounded-2xl border border-slate-200 p-4">
+                            <p class="text-xs font-semibold text-slate-500">Pasien</p>
+                            <p id="detailNamaPasien" class="mt-2 text-sm font-bold text-slate-900">-</p>
+                        </div>
+                        <div class="rounded-2xl border border-slate-200 p-4">
+                            <p class="text-xs font-semibold text-slate-500">Tanggal</p>
+                            <p id="detailTanggalTransaksi" class="mt-2 text-sm font-bold text-slate-900">-</p>
+                        </div>
+                        <div class="rounded-2xl border border-slate-200 p-4">
+                            <p class="text-xs font-semibold text-slate-500">Status</p>
+                            <p id="detailStatusTransaksi" class="mt-2 text-sm font-bold text-slate-900">-</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+                        <div class="rounded-2xl border border-slate-200 p-4">
+                            <p class="text-xs font-semibold text-slate-500">Metode Pembayaran</p>
+                            <p id="detailMetodePembayaran" class="mt-2 text-sm font-bold text-slate-900">-</p>
+                        </div>
+                        <div class="rounded-2xl border border-slate-200 p-4">
+                            <p class="text-xs font-semibold text-slate-500">Total Setelah Diskon</p>
+                            <p id="detailGrandTotal" class="mt-2 text-lg font-extrabold text-emerald-600">Rp 0</p>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 overflow-x-auto">
+                        <table class="min-w-full text-sm">
+                            <thead class="bg-slate-50">
+                                <tr class="text-left text-xs font-bold uppercase tracking-wide text-slate-500">
+                                    <th class="px-4 py-3">No</th>
+                                    <th class="px-4 py-3">Nama Obat</th>
+                                    <th class="px-4 py-3 text-center">Qty</th>
+                                    <th class="px-4 py-3 text-right">Harga</th>
+                                    <th class="px-4 py-3 text-right">Subtotal</th>
+                                    <th class="px-4 py-3 text-center">Diskon</th>
+                                    <th class="px-4 py-3 text-right">Setelah Diskon</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detailPenjualanItems"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        
+    </main>
 </body>
+@vite(['resources/js/kasir/insight-transaksi.js'])
 
 </html>

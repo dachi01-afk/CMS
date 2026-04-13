@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Kasir;
 
 use App\Http\Controllers\Controller;
+use App\Models\PenjualanObat;
+use App\Models\PenjualanObatDetail;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -379,5 +381,122 @@ class TransaksiInsightController extends Controller
             'jumlah' => array_values($jumlahMap),
             'pendapatan' => array_values($pendapatanMap),
         ];
+    }
+
+    public function showDetailPenjualanObat($id)
+    {
+        $penjualan = PenjualanObat::with([
+            'pasien:id,nama_pasien',
+            'metodePembayaran:id,nama_metode',
+            'penjualanObatDetail.obat:id,nama_obat',
+            'latestApprovedDiskon',
+        ])
+            ->findOrFail($id);
+
+        $approvedDiskonMap = $this->getApprovedDiskonMap($penjualan);
+
+        $details = $penjualan->penjualanObatDetail
+            ->map(fn($detail) => $this->transformDetailPenjualan($detail, $approvedDiskonMap))
+            ->values();
+
+        $totalTagihan = $details->sum('sub_total');
+        $totalSetelahDiskon = $details->sum('total_setelah_diskon');
+
+        return response()->json([
+            'data' => [
+                'id' => $penjualan->id,
+                'kode_transaksi' => $penjualan->kode_transaksi,
+                'nama_pasien' => $penjualan->pasien->nama_pasien ?? '-',
+                'tanggal_transaksi' => optional($penjualan->tanggal_transaksi)->toDateTimeString() ?? $penjualan->tanggal_transaksi,
+                'status' => $penjualan->status ?? '-',
+                'metode_pembayaran' => $penjualan->metodePembayaran->nama_metode ?? '-',
+                'total_tagihan' => (float) $totalTagihan,
+                'total_setelah_diskon' => (float) $totalSetelahDiskon,
+                'details' => $details,
+            ]
+        ]);
+    }
+
+    private function getApprovedDiskonMap(PenjualanObat $penjualan): array
+    {
+        $approval = $penjualan->latestApprovedDiskon;
+
+        if (!$approval) {
+            return [];
+        }
+
+        $items = $this->decodeDiskonItems($approval->diskon_items);
+
+        $map = [];
+        foreach ($items as $item) {
+            $detailId = (int) ($item['id'] ?? 0);
+            $persen = (float) ($item['persen'] ?? 0);
+
+            if ($detailId > 0) {
+                $map[$detailId] = $persen;
+            }
+        }
+
+        return $map;
+    }
+
+    private function transformDetailPenjualan(PenjualanObatDetail $detail, array $approvedDiskonMap = []): array
+    {
+        $qty = (int) ($detail->jumlah ?? 0);
+        $hargaSatuan = (float) ($detail->harga_satuan ?? 0);
+        $subTotal = (float) ($detail->sub_total ?? ($qty * $hargaSatuan));
+
+        $persenDiskon = (float) ($approvedDiskonMap[$detail->id] ?? 0);
+
+        $diskonTipe = $detail->diskon_tipe;
+        $diskonNilai = (float) ($detail->diskon_nilai ?? 0);
+
+        if ($persenDiskon > 0) {
+            $diskonTipe = 'persen';
+            $diskonNilai = $persenDiskon;
+        }
+
+        $totalSetelahDiskon = $detail->total_setelah_diskon;
+
+        if ($totalSetelahDiskon === null) {
+            if ($diskonTipe === 'persen') {
+                $totalSetelahDiskon = $subTotal - ($subTotal * ($diskonNilai / 100));
+            } elseif ($diskonTipe === 'nominal' || $diskonTipe === 'nomial') {
+                $totalSetelahDiskon = $subTotal - $diskonNilai;
+            } else {
+                $totalSetelahDiskon = $subTotal;
+            }
+        }
+
+        return [
+            'id' => $detail->id,
+            'obat_id' => $detail->obat_id,
+            'nama_obat' => $detail->obat->nama_obat ?? '-',
+            'jumlah' => $qty,
+            'harga_satuan' => $hargaSatuan,
+            'sub_total' => $subTotal,
+            'diskon_tipe' => $diskonTipe,
+            'diskon_nilai' => (float) $diskonNilai,
+            'total_setelah_diskon' => max((float) $totalSetelahDiskon, 0),
+        ];
+    }
+
+    private function decodeDiskonItems($raw): array
+    {
+        if (is_array($raw)) {
+            return $raw;
+        }
+
+        if (blank($raw)) {
+            return [];
+        }
+
+        $decoded = json_decode($raw, true);
+
+        if (is_string($decoded)) {
+            $decoded = json_decode($decoded, true);
+        }
+
+        return is_array($decoded) ? $decoded : [];
     }
 }

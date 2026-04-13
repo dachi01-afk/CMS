@@ -201,8 +201,7 @@
                         <span
                             class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 dark:text-slate-300 text-sm">Rp</span>
                         <input type="text" name="harga_sebelum_diskon" id="harga_sebelum_diskon_create"
-                            class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm
-                                           focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
+                            class="placeholder:text-slate-400 w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
                             placeholder="150.000">
                     </div>
                     <div id="harga_sebelum_diskon_create-error" class="text-red-600 text-sm mt-1"></div>
@@ -302,8 +301,7 @@
                         <span
                             class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-500 dark:text-slate-300 text-sm">Rp</span>
                         <input type="text" name="harga_sebelum_diskon" id="harga_sebelum_diskon_update"
-                            class="w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm
-                                           focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
+                            class="placeholder:text-slate-400 w-full pl-10 pr-3 py-2.5 rounded-lg border border-slate-300 bg-white text-slate-800 text-sm focus:ring-teal-500 focus:border-teal-500 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100"
                             placeholder="150.000">
                     </div>
                     <div id="harga_sebelum_diskon_update-error" class="text-red-600 text-sm mt-1"></div>

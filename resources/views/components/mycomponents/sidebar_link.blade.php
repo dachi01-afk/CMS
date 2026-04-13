@@ -3,21 +3,22 @@
 @php
     $isActive = Request::routeIs($href);
 
-    // Tentukan class berdasarkan status aktif
-    $baseClasses = 'flex items-center p-2 rounded-lg hover:bg-gray-100';
-    $activeClasses = ' text-blue-700 bg-blue-100 shadow-sm font-semibold';
-    $inactiveClasses = ' text-gray-900';
+    $baseClasses = 'sidebar-link group relative flex items-center rounded-lg p-2 transition overflow-visible';
+    $activeClasses = 'text-blue-700 bg-blue-100 shadow-sm font-semibold';
+    $inactiveClasses = 'text-gray-900 hover:bg-gray-100';
 
-    $linkClasses = $baseClasses . ($isActive ? $activeClasses : $inactiveClasses);
+    $linkClasses = $baseClasses . ' ' . ($isActive ? $activeClasses : $inactiveClasses);
+    $iconClasses = 'sidebar-icon fa-lg shrink-0 ' . ($isActive ? 'text-blue-700' : 'text-blue-500');
 
-    // Tentukan class icon berdasarkan status aktif
-    $iconClasses = 'fa-lg ' . ($isActive ? 'text-blue-700' : 'text-blue-500');
+    $url = Route::has($href) ? route($href) : '#';
 @endphp
 
-<li>
-    <a href="{{ route($href) }}" class="{{ $linkClasses }}">
-        {{-- Menggunakan $attributes untuk mendapatkan class icon --}}
+<li class="relative overflow-visible">
+    <a href="{{ $url }}" class="{{ $linkClasses }}" data-sidebar-tooltip="{{ trim(strip_tags($slot)) }}">
         <i {{ $attributes->merge(['class' => $iconClasses]) }}></i>
-        <span class="ml-3">{{ $slot }}</span>
+
+        <span class="sidebar-label ml-3 truncate">
+            {{ $slot }}
+        </span>
     </a>
 </li>

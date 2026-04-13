@@ -15,6 +15,7 @@ use App\Models\Poli;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
 use Yajra\DataTables\Facades\DataTables;
 
 class ManajemenPenggunaController extends Controller
@@ -316,8 +317,8 @@ class ManajemenPenggunaController extends Controller
 
         $query = Perawat::with([
             'user',
-            'perawatDokterPoli.dokter',
-            'perawatDokterPoli.poli',
+            'perawatDokterPoli.dokterPoli.dokter',
+            'perawatDokterPoli.dokterPoli.poli',
         ])
             ->select('perawat.*')
             ->latest();
@@ -360,7 +361,7 @@ class ManajemenPenggunaController extends Controller
             ->addColumn('nama_poli', function (Perawat $row) {
                 $items = $row->perawatDokterPoli
                     ->filter(function ($rel) {
-                        return !empty($rel->poli?->nama_poli);
+                        return !empty($rel->dokterPoli->poli->nama_poli);
                     })
                     ->values();
 
@@ -369,7 +370,7 @@ class ManajemenPenggunaController extends Controller
                 }
 
                 $html = $items->map(function ($rel, $idx) {
-                    $nama = $rel->poli->nama_poli ?? 'Tanpa nama poli';
+                    $nama = $rel->dokterPoli->poli->nama_poli ?? 'Tanpa nama poli';
 
                     return '
                     <div class="flex items-start gap-1 mb-0.5">
@@ -389,7 +390,7 @@ class ManajemenPenggunaController extends Controller
             ->addColumn('nama_dokter', function (Perawat $row) {
                 $items = $row->perawatDokterPoli
                     ->filter(function ($rel) {
-                        return !empty($rel->dokter?->nama_dokter);
+                        return !empty($rel->dokterPoli->dokter->nama_dokter);
                     })
                     ->values();
 
@@ -398,7 +399,7 @@ class ManajemenPenggunaController extends Controller
                 }
 
                 $html = $items->map(function ($rel, $idx) {
-                    $nama = $rel->dokter->nama_dokter ?? 'Tanpa nama dokter';
+                    $nama = $rel->dokterPoli->dokter->nama_dokter ?? 'Tanpa nama dokter';
 
                     return '
                     <div class="flex items-start gap-1 mb-0.5">
@@ -421,10 +422,10 @@ class ManajemenPenggunaController extends Controller
                 if ($search) {
                     $query->where(function ($q) use ($search) {
                         $q->where('nama_perawat', 'like', '%' . $search . '%')
-                            ->orWhereHas('perawatDokterPoli.poli', function ($qq) use ($search) {
+                            ->orWhereHas('perawatDokterPoli.dokterPoli.poli', function ($qq) use ($search) {
                                 $qq->where('nama_poli', 'like', '%' . $search . '%');
                             })
-                            ->orWhereHas('perawatDokterPoli.dokter', function ($qq) use ($search) {
+                            ->orWhereHas('perawatDokterPoli.dokterPoli.dokter', function ($qq) use ($search) {
                                 $qq->where('nama_dokter', 'like', '%' . $search . '%');
                             });
                     });
@@ -506,5 +507,20 @@ class ManajemenPenggunaController extends Controller
             })
             ->rawColumns(['foto', 'action'])
             ->make(true);
+    }
+
+    public function getDataPoli()
+    {
+        $dataPoli = Poli::get()->map(function ($data) {
+            return [
+                'id' => $data->id,
+                'nama_poli' => $data->nama_poli,
+                'slug' => Str::slug($data->nama_poli),
+            ];
+        });
+
+        return response()->json([
+            'dataPoli' => $dataPoli
+        ]);
     }
 }

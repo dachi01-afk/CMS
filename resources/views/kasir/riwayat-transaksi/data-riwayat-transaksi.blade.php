@@ -112,5 +112,4 @@
 
 </section>
 
-
 @vite(['resources/js/kasir/riwayat-transaksi/riwayat-transaksi.js'])

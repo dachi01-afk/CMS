@@ -8,7 +8,9 @@ use App\Models\DiskonApproval;
 use App\Models\Kasir;
 use App\Models\Kunjungan;
 use App\Models\MetodePembayaran;
+use App\Models\OrderLayanan;
 use App\Models\Pembayaran;
+use App\Models\PenjualanObat;
 use App\Models\User;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Exceptions\PostTooLargeException;
@@ -30,7 +32,7 @@ class KasirController extends Controller
     {
         $user = Auth::user();
 
-        return $user->name ?? $user->nama ?? 'Kasir';
+        return $user->kasir->nama_kasir ?? 'Kasir';
     }
 
     public function dashboard()
@@ -43,6 +45,8 @@ class KasirController extends Controller
 
         $chartFilter = 'bulanan';
         $chartData = $this->buildTransaksiChart($chartFilter);
+
+        // dd($summary);
 
         return view('kasir.dashboard', compact(
             'namaKasir',
@@ -108,40 +112,30 @@ class KasirController extends Controller
         // =========================
         // 3. ORDER LAYANAN NON-PEMERIKSAAN
         // =========================
-        $layananBaseQuery = DB::table('order_layanan as ol')
-            ->join('order_layanan_detail as old', 'old.order_layanan_id', '=', 'ol.id')
-            ->join('layanan as l', 'l.id', '=', 'old.layanan_id')
-            ->join('kategori_layanan as kl', 'kl.id', '=', 'l.kategori_layanan_id')
-            ->whereRaw('LOWER(kl.nama_kategori) NOT LIKE ?', ['%pemeriksaan%']);
+        $dataOrderLayanan = OrderLayanan::with([
+            'orderLayananDetail',
+            'orderLayananDetail.layanan',
+            'orderLayananDetail.layanan.kategoriLayanan'
+        ])->whereHas('orderLayananDetail.layanan.kategoriLayanan', function ($query) {
+            $query->where('nama_kategori', 'NOT LIKE', '%pemeriksaan%');
+        });
 
-        $layananHariIni = (clone $layananBaseQuery)
-            ->whereDate('ol.tanggal_order', $hariIni)
-            ->distinct('ol.id')
-            ->count('ol.id');
+        $orderanHariIni = $dataOrderLayanan->whereDate('tanggal_order', $hariIni)->count();
 
-        $layananTotal = (clone $layananBaseQuery)
-            ->distinct('ol.id')
-            ->count('ol.id');
+        $totalSeluruhOrderLayanan = $dataOrderLayanan->count('kode_transaksi');
 
-        $layananBerhasilHariIni = (clone $layananBaseQuery)
-            ->where('ol.status_order_layanan', 'Sudah Bayar')
-            ->whereDate('ol.tanggal_order', $hariIni)
-            ->distinct()
-            ->sum('ol.total_bayar');
+        $pemasukanOrderanLayananHariIni = $dataOrderLayanan->where('status_order_layanan', 'Sudah Bayar')->whereDate('tanggal_order', $hariIni)->sum('total_bayar');
 
-        $layananBerhasilTotal = (clone $layananBaseQuery)
-            ->where('ol.status_order_layanan', 'Sudah Bayar')
-            ->distinct()
-            ->sum('ol.total_bayar');
+        $totalPemasukanOrderLayanan = $dataOrderLayanan->where('status_order_layanan', 'Sudah Bayar')->sum('total_bayar');
 
         // =========================
         // TOTAL
         // =========================
-        $totalTransaksiHariIni = $pembayaranHariIni + $obatHariIni + $layananHariIni;
-        $totalTransaksi = $pembayaranTotal + $obatTotal + $layananTotal;
+        $totalTransaksiHariIni = $pembayaranHariIni + $obatHariIni + $orderanHariIni;
+        $totalTransaksi = $pembayaranTotal + $obatTotal + $totalSeluruhOrderLayanan;
 
-        $pendapatanHariIni = $pembayaranBerhasilHariIni + $obatBerhasilHariIni + $layananBerhasilHariIni;
-        $pendapatanTotal = $pembayaranBerhasilTotal + $obatBerhasilTotal + $layananBerhasilTotal;
+        $pendapatanHariIni = $pembayaranBerhasilHariIni + $obatBerhasilHariIni + $pemasukanOrderanLayananHariIni;
+        $pendapatanTotal = $pembayaranBerhasilTotal + $obatBerhasilTotal + $totalPemasukanOrderLayanan;
 
         return [
             'total_transaksi_hari_ini' => $totalTransaksiHariIni,
@@ -159,10 +153,10 @@ class KasirController extends Controller
             'obat_pendapatan_hari_ini' => $obatBerhasilHariIni,
             'obat_pendapatan_total' => $obatBerhasilTotal,
 
-            'layanan_hari_ini' => $layananHariIni,
-            'layanan_total' => $layananTotal,
-            'layanan_pendapatan_hari_ini' => $layananBerhasilHariIni,
-            'layanan_pendapatan_total' => $layananBerhasilTotal,
+            'layanan_hari_ini' => $orderanHariIni,
+            'layanan_total' => $totalSeluruhOrderLayanan,
+            'layanan_pendapatan_hari_ini' => $pemasukanOrderanLayananHariIni,
+            'layanan_pendapatan_total' => $totalPemasukanOrderLayanan,
         ];
     }
 
@@ -352,133 +346,49 @@ class KasirController extends Controller
         return view('kasir.pembayaran.kasir');
     }
 
-    public function getDataTransaksiLayanan(Request $request)
+    public function getDataOrderLayanan(Request $request)
     {
-        // ====== SUBQUERY TRANSAKSI LAYANAN ======
-        $subLayanan = DB::table('penjualan_layanan as pl')
-            ->leftJoin('pasien', 'pasien.id', '=', 'pl.pasien_id')
-            ->leftJoin('layanan', 'layanan.id', '=', 'pl.layanan_id')
-            ->leftJoin('kategori_layanan', 'kategori_layanan.id', '=', 'pl.kategori_layanan_id')
-            ->leftJoin('metode_pembayaran', 'metode_pembayaran.id', '=', 'pl.metode_pembayaran_id')
-            ->selectRaw("
-            pl.kode_transaksi,
-            pasien.nama_pasien,
+        $dataOrderLayanan = OrderLayanan::with([
+            'pasien',
+            'metodePembayaran',
+            'orderLayananDetail.layanan',
+            'orderLayananDetail.layanan.kategoriLayanan',
+        ])
+            ->whereHas('orderLayananDetail.layanan.kategoriLayanan', function ($query) {
+                $query->whereRaw('LOWER(nama_kategori) NOT LIKE ?', ['%pemeriksaan%']);
+            })
+            ->latest('tanggal_order');
 
-            -- nanti di-outer query digabung lagi
-            GROUP_CONCAT(DISTINCT layanan.nama_layanan SEPARATOR ', ') AS nama_item,
-            GROUP_CONCAT(DISTINCT kategori_layanan.nama_kategori SEPARATOR ', ') AS kategori_item,
-
-            SUM(
-                COALESCE(pl.total_setelah_diskon, pl.total_tagihan, 0)
-            ) AS total_tagihan,
-
-            MAX(metode_pembayaran.nama_metode) AS metode_pembayaran,
-            MIN(pl.tanggal_transaksi) AS tanggal_transaksi,
-
-            -- flag status numerik biar gampang di-merge
-            CASE
-                WHEN MIN(pl.status) = 'Sudah Bayar'
-                     AND MAX(pl.status) = 'Sudah Bayar'
-                THEN 1
-                ELSE 0
-            END AS status_flag,
-
-            MAX(pl.bukti_pembayaran) AS bukti_pembayaran
-        ")
-            ->groupBy(
-                'pl.kode_transaksi',
-                'pasien.nama_pasien'
-            );
-
-        // ====== SUBQUERY TRANSAKSI OBAT ======
-        $subObat = DB::table('penjualan_obat as po')
-            ->leftJoin('pasien', 'pasien.id', '=', 'po.pasien_id')
-            ->leftJoin('obat', 'obat.id', '=', 'po.obat_id')
-            ->leftJoin('metode_pembayaran', 'metode_pembayaran.id', '=', 'po.metode_pembayaran_id')
-            ->selectRaw("
-            po.kode_transaksi,
-            pasien.nama_pasien,
-
-            GROUP_CONCAT(DISTINCT obat.nama_obat SEPARATOR ', ') AS nama_item,
-            GROUP_CONCAT(DISTINCT 'Obat' SEPARATOR ', ') AS kategori_item,
-
-            SUM(
-                COALESCE(po.total_setelah_diskon, po.total_tagihan, 0)
-            ) AS total_tagihan,
-
-            MAX(metode_pembayaran.nama_metode) AS metode_pembayaran,
-            MIN(po.tanggal_transaksi) AS tanggal_transaksi,
-
-            CASE
-                WHEN MIN(po.status) = 'Sudah Bayar'
-                     AND MAX(po.status) = 'Sudah Bayar'
-                THEN 1
-                ELSE 0
-            END AS status_flag,
-
-            MAX(po.bukti_pembayaran) AS bukti_pembayaran
-        ")
-            ->groupBy(
-                'po.kode_transaksi',
-                'pasien.nama_pasien'
-            );
-
-        // ====== UNION + GROUP ULANG BERDASARKAN KODE TRANSAKSI ======
-        $query = DB::query()
-            ->fromSub(
-                $subLayanan->unionAll($subObat),
-                't'
-            )
-            ->selectRaw("
-            t.kode_transaksi,
-            t.nama_pasien,
-
-            GROUP_CONCAT(DISTINCT t.nama_item SEPARATOR ', ') AS nama_layanan,
-            GROUP_CONCAT(DISTINCT t.kategori_item SEPARATOR ', ') AS kategori_layanan,
-
-            SUM(t.total_tagihan) AS total_tagihan,
-
-            MAX(t.metode_pembayaran) AS metode_pembayaran,
-            MIN(t.tanggal_transaksi) AS tanggal_transaksi,
-
-            CASE
-                WHEN MIN(t.status_flag) = 1 AND MAX(t.status_flag) = 1
-                THEN 'Sudah Bayar'
-                ELSE 'Belum Bayar'
-            END AS status,
-
-            MAX(t.bukti_pembayaran) AS bukti_pembayaran
-        ")
-            ->groupBy(
-                't.kode_transaksi',
-                't.nama_pasien'
-            );
-
-        // ====== DATATABLES ======
-        return DataTables::of($query)
+        return DataTables::eloquent($dataOrderLayanan)
             ->addIndexColumn()
-            ->editColumn('total_tagihan', function ($row) {
-                $n = (float) $row->total_tagihan;
-                return $n > 0
-                    ? 'Rp ' . number_format($n, 0, ',', '.')
+            ->addColumn('total_tagihan', function ($row) {
+                $nominal = (float) ($row->total_bayar ?? $row->total_tagihan ?? 0);
+
+                return $nominal > 0
+                    ? 'Rp ' . number_format($nominal, 0, ',', '.')
                     : '-';
             })
-            ->editColumn('tanggal_transaksi', function ($row) {
-                if (!$row->tanggal_transaksi) return '-';
+            ->addColumn('tanggal_transaksi', function ($row) {
+                if (!$row->tanggal_order) {
+                    return '-';
+                }
 
-                return \Carbon\Carbon::parse($row->tanggal_transaksi)
+                return Carbon::parse($row->tanggal_order)
                     ->locale('id')
                     ->translatedFormat('d F Y H:i');
             })
             ->addColumn('bukti_pembayaran', function ($row) {
-                if (!$row->bukti_pembayaran) return '-';
+                if (!$row->bukti_pembayaran) {
+                    return '-';
+                }
 
                 $url = asset('storage/' . $row->bukti_pembayaran);
+
                 return '<a href="' . $url . '" target="_blank" class="text-sky-600 underline">Lihat</a>';
             })
             ->addColumn('action', function ($row) {
-                $url = route('kasir.show.kwitansi.transaksi.layanan', [
-                    'kodeTransaksi' => $row->kode_transaksi
+                $url = route('kasir.show.kwitansi.order.layanan', [
+                    'kodeTransaksi' => $row->kode_transaksi,
                 ]);
 
                 return '
@@ -706,6 +616,9 @@ class KasirController extends Controller
             ->latest()
             ->get();
 
+        $user = Auth::user();
+        $isSuperAdmin = $user && strtolower(str_replace(' ', '', $user->role)) === 'superadmin';
+
         return DataTables::of($dataPembayaran)
             ->addIndexColumn()
 
@@ -745,7 +658,7 @@ class KasirController extends Controller
                 $p->kode_transaksi ?? '-'
             )
 
-            ->addColumn('action', function ($p) {
+            ->addColumn('action', function ($p) use ($isSuperAdmin) {
 
                 $urlBayar = route('kasir.transaksi', [
                     'kode_transaksi' => $p->kode_transaksi
@@ -755,7 +668,7 @@ class KasirController extends Controller
                     'id' => $p->id
                 ]);
 
-                return '
+                $buttons = '
                 <div class="flex items-center justify-center gap-3">
                     <button class="bayarSekarang text-blue-600 hover:text-blue-800"
                             data-url="' . $urlBayar . '"
@@ -763,15 +676,32 @@ class KasirController extends Controller
                             title="Bayar Sekarang">
                         <i class="fa-regular fa-pen-to-square"></i> Bayar
                     </button>
-
-                    <button class="hapusTransaksi text-rose-600 hover:text-rose-800"
-                            data-url="' . $urlDelete . '"
-                            data-kode="' . e($p->kode_transaksi) . '"
-                            title="Hapus Transaksi">
-                        <i class="fa-solid fa-trash"></i> Hapus
-                    </button>
                 </div>
-            ';
+                ';
+
+                if ($isSuperAdmin) {
+                    $buttons = '
+                    <div class="flex items-center justify-center gap-3">
+                    <button class="bayarSekarang text-blue-600 hover:text-blue-800"
+                            data-url="' . $urlBayar . '"
+                            data-id="' . $p->id . '"
+                            title="Bayar Sekarang">
+                        <i class="fa-regular fa-pen-to-square"></i> Bayar
+                    </button>
+
+                          <button class="hapusTransaksi text-rose-600 hover:text-rose-800"
+                                data-url="' . $urlDelete . '"
+                                data-kode="' . e($p->kode_transaksi) . '"
+                                title="Hapus Transaksi">
+                                <i class="fa-solid fa-trash"></i> Hapus
+                            </button>
+                </div>
+
+                    
+                    ';
+                }
+
+                return $buttons;
             })
 
             ->rawColumns(['items', 'action'])
@@ -1686,11 +1616,11 @@ HTML;
             $user->update($updateDataUser);
 
             return response()->json(['message' => 'Data kasir berhasil diperbarui.']);
-        } catch (\Illuminate\Http\Exceptions\PostTooLargeException $e) {
+        } catch (PostTooLargeException $e) {
             return response()->json([
                 'message' => 'Ukuran file terlalu besar! Maksimal 5 MB.',
             ], 413);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validasi gagal.',
                 'errors' => $e->errors(),

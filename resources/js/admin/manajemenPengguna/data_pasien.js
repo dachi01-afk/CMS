@@ -99,7 +99,7 @@ $(function () {
         dom: "t",
         rowCallback: function (row, data) {
             $(row).addClass(
-                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                "bg-white border-b dark:bg-gray-800 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600",
             );
             $("td", row).addClass("px-6 py-4 text-gray-900 dark:text-white");
         },
@@ -122,7 +122,7 @@ $(function () {
         $info.text(
             `Menampilkan ${info.start + 1}–${info.end} dari ${
                 info.recordsDisplay
-            } data (Halaman ${currentPage} dari ${totalPages})`
+            } data (Halaman ${currentPage} dari ${totalPages})`,
         );
         $pagination.empty();
 
@@ -130,7 +130,7 @@ $(function () {
         const prevDisabled =
             currentPage === 1 ? "opacity-50 cursor-not-allowed" : "";
         $pagination.append(
-            `<li><a href="#" id="btnPrev" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 ${prevDisabled}">Previous</a></li>`
+            `<li><a href="#" id="btnPrev" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-s-lg hover:bg-gray-100 hover:text-gray-700 ${prevDisabled}">Previous</a></li>`,
         );
 
         // Pages
@@ -146,7 +146,7 @@ $(function () {
                     ? "text-blue-600 bg-blue-50 border-blue-300 hover:bg-blue-100"
                     : "text-gray-500 bg-white border-gray-300 hover:bg-gray-100 hover:text-gray-700";
             $pagination.append(
-                `<li><a href="#" class="page-number flex items-center justify-center px-3 h-8 border ${active}" data-page="${i}">${i}</a></li>`
+                `<li><a href="#" class="page-number flex items-center justify-center px-3 h-8 border ${active}" data-page="${i}">${i}</a></li>`,
             );
         }
 
@@ -154,7 +154,7 @@ $(function () {
         const nextDisabled =
             currentPage === totalPages ? "opacity-50 cursor-not-allowed" : "";
         $pagination.append(
-            `<li><a href="#" id="btnNext" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 ${nextDisabled}">Next</a></li>`
+            `<li><a href="#" id="btnNext" class="flex items-center justify-center px-3 h-8 text-gray-500 bg-white border border-gray-300 rounded-e-lg hover:bg-gray-100 hover:text-gray-700 ${nextDisabled}">Next</a></li>`,
         );
     }
 
@@ -207,7 +207,7 @@ $(function () {
         function () {
             resetAddForm();
             if (addModal) addModal.hide();
-        }
+        },
     );
 
     $formAdd.on("submit", function (e) {
@@ -319,10 +319,10 @@ $(function () {
 
                 // Penanggung jawab & medis
                 $("#edit_nama_penanggung_jawab").val(
-                    pasien.nama_penanggung_jawab
+                    pasien.nama_penanggung_jawab,
                 );
                 $("#edit_no_hp_penanggung_jawab").val(
-                    pasien.no_hp_penanggung_jawab
+                    pasien.no_hp_penanggung_jawab,
                 );
                 $("#edit_alergi").val(pasien.alergi);
                 $("#edit_catatan_medis").val(pasien.catatan_medis);
@@ -403,7 +403,7 @@ $(function () {
         function () {
             if (editModal) editModal.hide();
             resetEditForm();
-        }
+        },
     );
 });
 
@@ -545,7 +545,7 @@ document.addEventListener("DOMContentLoaded", function () {
                     placeholder.classList.add("hidden");
                     dropArea.classList.remove(
                         "border-dashed",
-                        "border-gray-400"
+                        "border-gray-400",
                     );
                     dropArea.classList.add("border-solid", "border-gray-300");
                 };
@@ -569,5 +569,110 @@ document.addEventListener("DOMContentLoaded", function () {
             resetFotoPreview();
             formEdit.reset();
         }
+    });
+});
+
+// export database pasien
+document.addEventListener("DOMContentLoaded", function () {
+    const btnExportPasien = document.getElementById("btnExportPasien");
+    const exportPasienModal = document.getElementById("exportPasienModal");
+    const closeExportPasienModal = document.getElementById(
+        "closeExportPasienModal",
+    );
+    const closeExportPasienModalFooter = document.getElementById(
+        "closeExportPasienModalFooter",
+    );
+    const formExportPasien = document.getElementById("formExportPasien");
+    const checkAllExportColumns = document.getElementById(
+        "checkAllExportColumns",
+    );
+    const exportColumnCheckboxes = document.querySelectorAll(
+        ".export-column-checkbox",
+    );
+    const exportPasienError = document.getElementById("exportPasienError");
+
+    function openExportModal() {
+        exportPasienModal.classList.remove("hidden");
+        document.body.classList.add("overflow-hidden");
+    }
+
+    function closeExportModal() {
+        exportPasienModal.classList.add("hidden");
+        document.body.classList.remove("overflow-hidden");
+        exportPasienError.classList.add("hidden");
+        exportPasienError.textContent = "";
+    }
+
+    btnExportPasien?.addEventListener("click", openExportModal);
+    closeExportPasienModal?.addEventListener("click", closeExportModal);
+    closeExportPasienModalFooter?.addEventListener("click", closeExportModal);
+
+    exportPasienModal?.addEventListener("click", function (e) {
+        if (e.target === exportPasienModal) {
+            closeExportModal();
+        }
+    });
+
+    checkAllExportColumns?.addEventListener("change", function () {
+        exportColumnCheckboxes.forEach((cb) => {
+            cb.checked = this.checked;
+        });
+    });
+
+    exportColumnCheckboxes.forEach((cb) => {
+        cb.addEventListener("change", function () {
+            const total = exportColumnCheckboxes.length;
+            const checked = document.querySelectorAll(
+                ".export-column-checkbox:checked",
+            ).length;
+            checkAllExportColumns.checked = total === checked;
+        });
+    });
+
+    formExportPasien?.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const selectedColumns = Array.from(
+            document.querySelectorAll(".export-column-checkbox:checked"),
+        ).map((el) => el.value);
+
+        if (selectedColumns.length === 0) {
+            exportPasienError.textContent =
+                "Pilih minimal 1 kolom untuk export.";
+            exportPasienError.classList.remove("hidden");
+            return;
+        }
+
+        exportPasienError.classList.add("hidden");
+        exportPasienError.textContent = "";
+
+        const tanggalDari = document.getElementById("tanggalDariExport")?.value;
+        const tanggalSampai = document.getElementById(
+            "tanggalSampaiExport",
+        )?.value;
+
+        if (tanggalDari && tanggalSampai && tanggalDari > tanggalSampai) {
+            exportPasienError.textContent =
+                "Tanggal mulai tidak boleh lebih besar dari tanggal akhir.";
+            exportPasienError.classList.remove("hidden");
+            return;
+        }
+
+        const params = new URLSearchParams();
+        selectedColumns.forEach((column) => params.append("columns[]", column));
+
+        if (tanggalDari) {
+            params.append("tanggal_dari", tanggalDari);
+        }
+
+        if (tanggalSampai) {
+            params.append("tanggal_sampai", tanggalSampai);
+        }
+
+        const baseUrl = btnExportPasien.dataset.exportUrl;
+        const exportUrl = `${baseUrl}?${params.toString()}`;
+
+        window.open(exportUrl, "_blank");
+        closeExportModal();
     });
 });

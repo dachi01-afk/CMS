@@ -7,6 +7,7 @@ use App\Models\Kunjungan;
 use App\Models\Obat;
 use App\Models\Pasien;
 use App\Models\PenjualanObat;
+use App\Models\PenjualanObatDetail;
 use App\Models\Resep;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -33,7 +34,7 @@ class PenjualanObatController extends Controller
             $jumlah   = $group->pluck('jumlah')->implode(', ');
 
             // Hitung total transaksi (subtotal semua obat)
-            $totalTagihan = $group->sum('sub_total');
+            $totalTagihan = $group->sum('total_setelah_diskon');
 
             // Format uang diterima dan kembalian (jika ada)
             $uangDiterima = $first->uang_yang_diterima ?? 0;
@@ -51,7 +52,7 @@ class PenjualanObatController extends Controller
                 'nama_pasien'       => $first->pasien->nama_pasien ?? '-',
                 'nama_obat'         => $namaObat,
                 'jumlah'            => $jumlah,
-                'sub_total'         => $totalTagihan,
+                'total_setelah_diskon'         => $totalTagihan,
                 'total_tagihan'     => 'Rp ' . number_format($totalTagihan, 0, ',', '.'),
                 'uang_diterima'     => 'Rp ' . number_format($uangDiterima, 0, ',', '.'),
                 'kembalian'         => 'Rp ' . number_format($kembalian, 0, ',', '.'),
@@ -79,7 +80,7 @@ class PenjualanObatController extends Controller
 
     public function getDataRiwayatTransaksiObat()
     {
-        $rows = PenjualanObat::with(['pasien', 'obat', 'metodePembayaran'])
+        $rows = PenjualanObat::with(['pasien', 'penjualanObatDetail.obat', 'metodePembayaran'])
             ->where('status', 'Sudah Bayar')
             ->latest()
             ->get()
@@ -94,11 +95,11 @@ class PenjualanObatController extends Controller
             $jumlah = $group->pluck('jumlah')->map(fn($item) => $item . ' capsul')->implode(', ');
 
             // ✅ Nominal & tanggal
-            $totalTagihan = $group->sum('sub_total');
+            $totalTagihan = $group->sum('total_setelah_diskon');
             $uangDiterima = $first->uang_yang_diterima ?? 0;
             $kembalian    = $first->kembalian ?? 0;
             $tanggalISO   = $first->tanggal_transaksi
-                ? \Carbon\Carbon::parse($first->tanggal_transaksi)->toIso8601String()
+                ? Carbon::parse($first->tanggal_transaksi)->toIso8601String()
                 : null;
 
             // ✅ Bukti Pembayaran (foto + teks)
@@ -124,7 +125,7 @@ class PenjualanObatController extends Controller
                 'nama_obat'         => $namaObat,
                 'dosis'             => $dosis,
                 'jumlah'            => $jumlah,
-                'sub_total'         => $totalTagihan,
+                'total_setelah_diskon'         => $totalTagihan,
                 'metode_pembayaran' => $first->metodePembayaran->nama_metode ?? '-',
                 'status'            => $first->status ?? '-',
                 'tanggal_transaksi' => $tanggalISO,
@@ -220,7 +221,7 @@ class PenjualanObatController extends Controller
                     'obat_id'           => $obatId,
                     'kode_transaksi'    => $kodeTransaksi,
                     'jumlah'            => $qty,
-                    'sub_total'         => $subTotal,
+                    'total_setelah_diskon'         => $subTotal,
                     'total_tagihan'     => $subTotal,
                     'status'            => 'Belum Bayar',
                     'tanggal_transaksi' => $now,
@@ -613,7 +614,7 @@ class PenjualanObatController extends Controller
                 'po.tanggal_transaksi',
                 'po.status',
                 DB::raw("COALESCE(p.nama_pasien, '-') as nama_pasien"),
-                DB::raw('COALESCE(SUM(pod.sub_total), 0) as total')
+                DB::raw('COALESCE(SUM(pod.total_setelah_diskon), 0) as total')
             )
             ->whereBetween('po.tanggal_transaksi', [
                 $start->toDateTimeString(),
@@ -630,7 +631,7 @@ class PenjualanObatController extends Controller
                 $end->toDateTimeString(),
             ])
             ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as total_transaksi')
-            ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
+            ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.total_setelah_diskon ELSE 0 END), 0) as total_pemasukan")
             ->first();
 
         return response()->json([
@@ -657,42 +658,33 @@ class PenjualanObatController extends Controller
         $end = $range['end'];
         $filterLabel = $range['filter_label'];
 
-        $data = DB::table('penjualan_obat as po')
-            ->leftJoin('pasien as p', 'p.id', '=', 'po.pasien_id')
-            ->leftJoin('penjualan_obat_detail as pod', 'pod.penjualan_obat_id', '=', 'po.id')
-            ->select(
-                'po.id',
-                'po.kode_transaksi',
-                'po.tanggal_transaksi',
-                'po.status',
-                DB::raw("COALESCE(p.nama_pasien, '-') as nama_pasien"),
-                DB::raw('COALESCE(SUM(pod.sub_total), 0) as total')
-            )
-            ->whereBetween('po.tanggal_transaksi', [
+        $rows = PenjualanObat::with([
+            'pasien:id,nama_pasien',
+            'penjualanObatDetail.obat:id,nama_obat',
+            'latestApprovedDiskon',
+        ])
+            ->whereBetween('tanggal_transaksi', [
                 $start->copy()->toDateTimeString(),
                 $end->copy()->toDateTimeString(),
             ])
-            ->groupBy('po.id', 'po.kode_transaksi', 'po.tanggal_transaksi', 'po.status', 'p.nama_pasien')
-            ->orderByDesc('po.tanggal_transaksi')
+            ->orderByDesc('tanggal_transaksi')
             ->get();
 
-        $summary = $this->penjualanObatJoinDetail()
-            ->whereBetween('po.tanggal_transaksi', [
-                $start->copy()->toDateTimeString(),
-                $end->copy()->toDateTimeString(),
-            ])
-            ->selectRaw('COUNT(DISTINCT po.id) as total_transaksi')
-            ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
-            ->first();
+        $data = $rows->map(fn($penjualan) => $this->transformPenjualanRow($penjualan))->values();
+
+        $summary = [
+            'total_transaksi' => $data->count(),
+            'total_pemasukan' => $data->where('status', 'Sudah Bayar')->sum('total'),
+        ];
 
         return response()->json([
             'data' => $data,
             'meta' => [
-                'periode'         => $filter['periode'],
-                'mode_label'      => $this->getPenjualanObatModeLabel($filter['periode']),
-                'filter_label'    => $filterLabel,
-                'total_transaksi' => (int) ($summary->total_transaksi ?? 0),
-                'total_pemasukan' => (float) ($summary->total_pemasukan ?? 0),
+                'periode' => $filter['periode'],
+                'mode_label' => $this->getPenjualanObatModeLabel($filter['periode']),
+                'filter_label' => $filterLabel,
+                'total_transaksi' => (int) $summary['total_transaksi'],
+                'total_pemasukan' => (float) $summary['total_pemasukan'],
             ],
         ]);
     }
@@ -722,7 +714,7 @@ class PenjualanObatController extends Controller
             $rows = $this->penjualanObatJoinDetail()
                 ->selectRaw('HOUR(po.tanggal_transaksi) as idx')
                 ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as jumlah_transaksi')
-                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
+                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.total_setelah_diskon ELSE 0 END), 0) as total_pemasukan")
                 ->whereDate('po.tanggal_transaksi', $hari)
                 ->groupBy('idx')
                 ->orderBy('idx')
@@ -749,7 +741,7 @@ class PenjualanObatController extends Controller
             $rows = $this->penjualanObatJoinDetail()
                 ->selectRaw('WEEKDAY(po.tanggal_transaksi) as idx')
                 ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as jumlah_transaksi')
-                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
+                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.total_setelah_diskon ELSE 0 END), 0) as total_pemasukan")
                 ->whereBetween(DB::raw('DATE(po.tanggal_transaksi)'), [$start->toDateString(), $end->toDateString()])
                 ->groupBy('idx')
                 ->orderBy('idx')
@@ -779,7 +771,7 @@ class PenjualanObatController extends Controller
             $rows = $this->penjualanObatJoinDetail()
                 ->selectRaw('DAY(po.tanggal_transaksi) as idx')
                 ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as jumlah_transaksi')
-                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
+                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.total_setelah_diskon ELSE 0 END), 0) as total_pemasukan")
                 ->whereBetween(DB::raw('DATE(po.tanggal_transaksi)'), [$start->toDateString(), $end->toDateString()])
                 ->groupBy('idx')
                 ->orderBy('idx')
@@ -806,7 +798,7 @@ class PenjualanObatController extends Controller
             $rows = $this->penjualanObatJoinDetail()
                 ->selectRaw('MONTH(po.tanggal_transaksi) as idx')
                 ->selectRaw('COUNT(DISTINCT po.kode_transaksi) as jumlah_transaksi')
-                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.sub_total ELSE 0 END), 0) as total_pemasukan")
+                ->selectRaw("COALESCE(SUM(CASE WHEN po.status = 'Sudah Bayar' THEN pod.total_setelah_diskon ELSE 0 END), 0) as total_pemasukan")
                 ->whereBetween(DB::raw('DATE(po.tanggal_transaksi)'), [$start->toDateString(), $end->toDateString()])
                 ->groupBy('idx')
                 ->orderBy('idx')
@@ -858,6 +850,144 @@ class PenjualanObatController extends Controller
 
             'label'   => $labels,
             'dataset' => $datasets,
+        ]);
+    }
+
+    private function decodeDiskonItems($raw): array
+    {
+        if (is_array($raw)) {
+            return $raw;
+        }
+
+        if (blank($raw)) {
+            return [];
+        }
+
+        $decoded = json_decode($raw, true);
+
+        if (is_string($decoded)) {
+            $decoded = json_decode($decoded, true);
+        }
+
+        return is_array($decoded) ? $decoded : [];
+    }
+
+    private function getApprovedDiskonMap(PenjualanObat $penjualan): array
+    {
+        $approval = $penjualan->latestApprovedDiskon;
+
+        if (!$approval) {
+            return [];
+        }
+
+        $items = $this->decodeDiskonItems($approval->diskon_items);
+
+        $map = [];
+        foreach ($items as $item) {
+            $detailId = (int) ($item['id'] ?? 0);
+            $persen = (float) ($item['persen'] ?? 0);
+
+            if ($detailId > 0) {
+                $map[$detailId] = $persen;
+            }
+        }
+
+        return $map;
+    }
+
+    private function transformDetailPenjualan(PenjualanObatDetail $detail, array $approvedDiskonMap = []): array
+    {
+        $qty = (int) ($detail->jumlah ?? 0);
+        $hargaSatuan = (float) ($detail->harga_satuan ?? 0);
+        $subTotal = (float) ($detail->sub_total ?? ($qty * $hargaSatuan));
+
+        $persenDiskon = (float) ($approvedDiskonMap[$detail->id] ?? 0);
+
+        $diskonTipe = $detail->diskon_tipe;
+        $diskonNilai = (float) ($detail->diskon_nilai ?? 0);
+
+        if ($persenDiskon > 0) {
+            $diskonTipe = 'persen';
+            $diskonNilai = $persenDiskon;
+        }
+
+        $totalSetelahDiskon = $detail->total_setelah_diskon;
+
+        if ($totalSetelahDiskon === null) {
+            if ($diskonTipe === 'persen') {
+                $totalSetelahDiskon = $subTotal - ($subTotal * ($diskonNilai / 100));
+            } elseif ($diskonTipe === 'nominal' || $diskonTipe === 'nomial') {
+                $totalSetelahDiskon = $subTotal - $diskonNilai;
+            } else {
+                $totalSetelahDiskon = $subTotal;
+            }
+        }
+
+        return [
+            'id' => $detail->id,
+            'obat_id' => $detail->obat_id,
+            'nama_obat' => $detail->obat->nama_obat ?? '-',
+            'jumlah' => $qty,
+            'harga_satuan' => $hargaSatuan,
+            'sub_total' => $subTotal,
+            'diskon_tipe' => $diskonTipe,
+            'diskon_nilai' => (float) $diskonNilai,
+            'total_setelah_diskon' => max((float) $totalSetelahDiskon, 0),
+        ];
+    }
+
+    private function transformPenjualanRow(PenjualanObat $penjualan): array
+    {
+        $approvedDiskonMap = $this->getApprovedDiskonMap($penjualan);
+
+        $details = $penjualan->penjualanObatDetail
+            ->map(fn($detail) => $this->transformDetailPenjualan($detail, $approvedDiskonMap));
+
+        $totalTagihan = $details->sum('sub_total');
+        $totalSetelahDiskon = $details->sum('total_setelah_diskon');
+
+        return [
+            'id' => $penjualan->id,
+            'kode_transaksi' => $penjualan->kode_transaksi,
+            'nama_pasien' => $penjualan->pasien->nama_pasien ?? '-',
+            'tanggal_transaksi' => optional($penjualan->tanggal_transaksi)->toDateTimeString() ?? $penjualan->tanggal_transaksi,
+            'status' => $penjualan->status ?? '-',
+            'total_tagihan' => (float) $totalTagihan,
+            'total' => (float) $totalSetelahDiskon,
+        ];
+    }
+
+    public function showDetailPenjualanObat($id)
+    {
+        $penjualan = PenjualanObat::with([
+            'pasien:id,nama_pasien',
+            'metodePembayaran:id,nama_metode',
+            'penjualanObatDetail.obat:id,nama_obat',
+            'latestApprovedDiskon',
+        ])
+            ->findOrFail($id);
+
+        $approvedDiskonMap = $this->getApprovedDiskonMap($penjualan);
+
+        $details = $penjualan->penjualanObatDetail
+            ->map(fn($detail) => $this->transformDetailPenjualan($detail, $approvedDiskonMap))
+            ->values();
+
+        $totalTagihan = $details->sum('sub_total');
+        $totalSetelahDiskon = $details->sum('total_setelah_diskon');
+
+        return response()->json([
+            'data' => [
+                'id' => $penjualan->id,
+                'kode_transaksi' => $penjualan->kode_transaksi,
+                'nama_pasien' => $penjualan->pasien->nama_pasien ?? '-',
+                'tanggal_transaksi' => optional($penjualan->tanggal_transaksi)->toDateTimeString() ?? $penjualan->tanggal_transaksi,
+                'status' => $penjualan->status ?? '-',
+                'metode_pembayaran' => $penjualan->metodePembayaran->nama_metode ?? '-',
+                'total_tagihan' => (float) $totalTagihan,
+                'total_setelah_diskon' => (float) $totalSetelahDiskon,
+                'details' => $details,
+            ]
         ]);
     }
 }

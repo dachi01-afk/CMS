@@ -6,6 +6,16 @@ $(function () {
     const $filter = $("#filterKunjunganChart");
     const $range = $("#kunjunganChartRange");
 
+    const $wrapperTanggal = $("#wrapperTanggalKunjungan");
+    const $wrapperMinggu = $("#wrapperMingguKunjungan");
+    const $wrapperBulan = $("#wrapperBulanKunjungan");
+    const $wrapperTahun = $("#wrapperTahunKunjungan");
+
+    const $tanggal = $("#filterTanggalKunjungan");
+    const $minggu = $("#filterMingguKunjungan");
+    const $bulan = $("#filterBulanKunjungan");
+    const $tahun = $("#filterTahunKunjungan");
+
     const $reportDropdownWrapper = $("#reportDropdownWrapper");
     const $reportDropdownMenu = $("#reportDropdownMenu");
     const $toggleReportDropdown = $("#btnToggleReportDropdown");
@@ -49,30 +59,157 @@ $(function () {
         $summaryDibatalkan.text(formatNumber(payload.summary_dibatalkan));
     }
 
-    function updateReportLinks(filter) {
+    function getCurrentParams() {
+        const filter = $filter.val();
+        const params = { filter };
+
+        if (filter === "harian") {
+            params.tanggal = $tanggal.val();
+        } else if (filter === "mingguan") {
+            params.minggu = $minggu.val();
+        } else if (filter === "bulanan") {
+            params.bulan = $bulan.val();
+        } else if (filter === "tahunan") {
+            params.tahun = $tahun.val();
+        }
+
+        return params;
+    }
+
+    function buildQueryString(params) {
+        const searchParams = new URLSearchParams();
+
+        Object.entries(params).forEach(([key, value]) => {
+            if (
+                value !== null &&
+                value !== undefined &&
+                String(value).trim() !== ""
+            ) {
+                searchParams.set(key, value);
+            }
+        });
+
+        return searchParams.toString();
+    }
+
+    function updateReportLinks(params = getCurrentParams()) {
         const pdfBaseUrl = $reportPdf.data("base-url");
         const excelBaseUrl = $reportExcel.data("base-url");
+        const queryString = buildQueryString(params);
 
         if (pdfBaseUrl) {
-            $reportPdf.attr(
-                "href",
-                `${pdfBaseUrl}?filter=${encodeURIComponent(filter)}`,
-            );
+            $reportPdf.attr("href", `${pdfBaseUrl}?${queryString}`);
         }
 
         if (excelBaseUrl) {
-            $reportExcel.attr(
-                "href",
-                `${excelBaseUrl}?filter=${encodeURIComponent(filter)}`,
-            );
+            $reportExcel.attr("href", `${excelBaseUrl}?${queryString}`);
         }
     }
 
+    function getValidationMessage(params = getCurrentParams()) {
+        if (params.filter === "harian" && !params.tanggal) {
+            return "Silakan pilih tanggal terlebih dahulu.";
+        }
+
+        if (params.filter === "mingguan" && !params.minggu) {
+            return "Silakan pilih minggu terlebih dahulu.";
+        }
+
+        if (params.filter === "bulanan" && !params.bulan) {
+            return "Silakan pilih bulan terlebih dahulu.";
+        }
+
+        if (params.filter === "tahunan" && !params.tahun) {
+            return "Silakan input tahun terlebih dahulu.";
+        }
+
+        return "";
+    }
+
+    function validateCurrentParams(showAlert = true) {
+        const message = getValidationMessage();
+
+        if (!message) {
+            return true;
+        }
+
+        if (showAlert) {
+            alert(message);
+        }
+
+        return false;
+    }
+
+    function syncInputsFromPayload(payload) {
+        if (!payload || !payload.selected) {
+            return;
+        }
+
+        if (payload.selected.tanggal) {
+            $tanggal.val(payload.selected.tanggal);
+        }
+
+        if (payload.selected.minggu) {
+            $minggu.val(payload.selected.minggu);
+        }
+
+        if (payload.selected.bulan) {
+            $bulan.val(payload.selected.bulan);
+        }
+
+        if (payload.selected.tahun) {
+            $tahun.val(payload.selected.tahun);
+        }
+    }
+
+    function togglePeriodInputs(filter) {
+        $wrapperTanggal.addClass("hidden");
+        $wrapperMinggu.addClass("hidden");
+        $wrapperBulan.addClass("hidden");
+        $wrapperTahun.addClass("hidden");
+
+        $tanggal.prop("disabled", true);
+        $minggu.prop("disabled", true);
+        $bulan.prop("disabled", true);
+        $tahun.prop("disabled", true);
+
+        if (filter === "harian") {
+            $wrapperTanggal.removeClass("hidden");
+            $tanggal.prop("disabled", false);
+        } else if (filter === "mingguan") {
+            $wrapperMinggu.removeClass("hidden");
+            $minggu.prop("disabled", false);
+        } else if (filter === "bulanan") {
+            $wrapperBulan.removeClass("hidden");
+            $bulan.prop("disabled", false);
+        } else if (filter === "tahunan") {
+            $wrapperTahun.removeClass("hidden");
+            $tahun.prop("disabled", false);
+        }
+    }
+
+    function setLoadingState(isLoading) {
+        $filter.prop("disabled", isLoading);
+
+        if (isLoading) {
+            $tanggal.prop("disabled", true);
+            $minggu.prop("disabled", true);
+            $bulan.prop("disabled", true);
+            $tahun.prop("disabled", true);
+        } else {
+            togglePeriodInputs($filter.val());
+        }
+
+        $toggleReportDropdown
+            .prop("disabled", isLoading)
+            .toggleClass("opacity-60", isLoading);
+    }
+
     function getMaxTicksLimit(filter) {
-        if (filter === "harian") return 12;
-        if (filter === "mingguan") return 8;
+        if (filter === "harian") return 1;
+        if (filter === "mingguan") return 7;
         if (filter === "bulanan") return 12;
-        return 6;
+        return 12;
     }
 
     function chartConfig(payload) {
@@ -84,38 +221,54 @@ $(function () {
                     {
                         label: "Kunjungan Aktif",
                         data: payload.kunjungan_aktif,
-                        backgroundColor: "#f59e0b",
+                        backgroundColor: "rgba(245, 158, 11, 0.85)",
                         borderColor: "#f59e0b",
                         borderWidth: 1,
                         borderRadius: 8,
                         borderSkipped: false,
-                        stack: "kunjungan",
-                        categoryPercentage: 0.72,
-                        barPercentage: 0.9,
+                        categoryPercentage: 0.68,
+                        barPercentage: 0.78,
+                        order: 2,
                     },
                     {
                         label: "Kunjungan Selesai",
                         data: payload.kunjungan_selesai,
-                        backgroundColor: "#10b981",
+                        backgroundColor: "rgba(16, 185, 129, 0.85)",
                         borderColor: "#10b981",
                         borderWidth: 1,
                         borderRadius: 8,
                         borderSkipped: false,
-                        stack: "kunjungan",
-                        categoryPercentage: 0.72,
-                        barPercentage: 0.9,
+                        categoryPercentage: 0.68,
+                        barPercentage: 0.78,
+                        order: 2,
                     },
                     {
                         label: "Kunjungan Dibatalkan",
                         data: payload.kunjungan_dibatalkan,
-                        backgroundColor: "#f43f5e",
+                        backgroundColor: "rgba(244, 63, 94, 0.85)",
                         borderColor: "#f43f5e",
                         borderWidth: 1,
                         borderRadius: 8,
                         borderSkipped: false,
-                        stack: "kunjungan",
-                        categoryPercentage: 0.72,
-                        barPercentage: 0.9,
+                        categoryPercentage: 0.68,
+                        barPercentage: 0.78,
+                        order: 2,
+                    },
+                    {
+                        type: "line",
+                        label: "Total Kunjungan",
+                        data: payload.total_kunjungan,
+                        borderColor: "#0f172a",
+                        backgroundColor: "#0f172a",
+                        borderWidth: 2,
+                        tension: 0.32,
+                        pointRadius: 3,
+                        pointHoverRadius: 5,
+                        pointBorderWidth: 2,
+                        pointBackgroundColor: "#ffffff",
+                        pointBorderColor: "#0f172a",
+                        fill: false,
+                        order: 1,
                     },
                 ],
             },
@@ -156,18 +309,18 @@ $(function () {
                         padding: 12,
                         displayColors: true,
                         callbacks: {
-                            footer: function (tooltipItems) {
-                                const dataIndex = tooltipItems[0].dataIndex;
-                                const total =
-                                    payload.total_kunjungan[dataIndex] || 0;
-                                return "Total: " + formatNumber(total);
+                            label: function (context) {
+                                return (
+                                    context.dataset.label +
+                                    ": " +
+                                    formatNumber(context.parsed.y || 0)
+                                );
                             },
                         },
                     },
                 },
                 scales: {
                     x: {
-                        stacked: true,
                         grid: {
                             display: false,
                             drawBorder: false,
@@ -184,9 +337,8 @@ $(function () {
                         },
                     },
                     y: {
-                        stacked: true,
                         beginAtZero: true,
-                        grace: "10%",
+                        grace: "12%",
                         ticks: {
                             precision: 0,
                             color: "#64748b",
@@ -205,9 +357,13 @@ $(function () {
     }
 
     function renderChart(payload) {
+        syncInputsFromPayload(payload);
         $range.text(payload.range_text);
         updateSummaryCards(payload);
-        updateReportLinks(payload.filter);
+        updateReportLinks({
+            filter: payload.filter,
+            ...(payload.selected || {}),
+        });
 
         if (managerChart) {
             managerChart.destroy();
@@ -217,20 +373,20 @@ $(function () {
         managerChart = new Chart(ctx, chartConfig(payload));
     }
 
-    function loadChartData(filter) {
-        updateReportLinks(filter);
+    function loadChartData() {
+        if (!validateCurrentParams()) {
+            return;
+        }
+
+        const params = getCurrentParams();
+        updateReportLinks(params);
 
         $.ajax({
             url: $chartSection.data("chart-url"),
             type: "GET",
-            data: {
-                filter: filter,
-            },
+            data: params,
             beforeSend: function () {
-                $filter.prop("disabled", true);
-                $toggleReportDropdown
-                    .prop("disabled", true)
-                    .addClass("opacity-60");
+                setLoadingState(true);
             },
             success: function (response) {
                 renderChart(response);
@@ -240,10 +396,7 @@ $(function () {
                 alert("Gagal memuat data grafik kunjungan.");
             },
             complete: function () {
-                $filter.prop("disabled", false);
-                $toggleReportDropdown
-                    .prop("disabled", false)
-                    .removeClass("opacity-60");
+                setLoadingState(false);
             },
         });
     }
@@ -251,6 +404,12 @@ $(function () {
     $toggleReportDropdown.on("click", function (e) {
         e.preventDefault();
         e.stopPropagation();
+
+        if (!validateCurrentParams()) {
+            return;
+        }
+
+        updateReportLinks();
         $reportDropdownMenu.toggleClass("hidden");
     });
 
@@ -263,20 +422,62 @@ $(function () {
         }
     });
 
-    $reportPdf.on("click", function () {
+    $reportPdf.on("click", function (e) {
+        if (!validateCurrentParams()) {
+            e.preventDefault();
+            return;
+        }
+
+        updateReportLinks();
         $reportDropdownMenu.addClass("hidden");
     });
 
-    $reportExcel.on("click", function () {
+    $reportExcel.on("click", function (e) {
+        if (!validateCurrentParams()) {
+            e.preventDefault();
+            return;
+        }
+
+        updateReportLinks();
         $reportDropdownMenu.addClass("hidden");
     });
-
-    renderChart(initialChartData);
-    updateReportLinks($filter.val());
 
     $filter.on("change", function () {
-        loadChartData($(this).val());
+        togglePeriodInputs($(this).val());
+        updateReportLinks();
+        loadChartData();
     });
+
+    $tanggal.on("change", function () {
+        if ($filter.val() === "harian") {
+            updateReportLinks();
+            loadChartData();
+        }
+    });
+
+    $minggu.on("change", function () {
+        if ($filter.val() === "mingguan") {
+            updateReportLinks();
+            loadChartData();
+        }
+    });
+
+    $bulan.on("change", function () {
+        if ($filter.val() === "bulanan") {
+            updateReportLinks();
+            loadChartData();
+        }
+    });
+
+    $tahun.on("change", function () {
+        if ($filter.val() === "tahunan") {
+            updateReportLinks();
+            loadChartData();
+        }
+    });
+
+    togglePeriodInputs(initialChartData.filter || $filter.val());
+    renderChart(initialChartData);
 
     $(window).on("resize", function () {
         if (managerChart) {
