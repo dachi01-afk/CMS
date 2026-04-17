@@ -9,6 +9,7 @@ use App\Models\Obat;
 use App\Models\RestockObat;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 use Throwable;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -122,7 +123,7 @@ class StokMasukObatController extends Controller
                     $dataStokMasuk = RestockObat::with('restockObatDetail')->findOrFail($id);
 
                     if ($dataStokMasuk->status_restock !== 'Pending') {
-                        throw new \RuntimeException('Data restock ini sudah dikonfirmasi sebelumnya.');
+                        throw new RuntimeException('Data restock ini sudah dikonfirmasi sebelumnya.');
                     }
 
                     foreach ($dataStokMasuk->restockObatDetail as $dataDetail) {
@@ -131,7 +132,7 @@ class StokMasukObatController extends Controller
                         $dataObat = Obat::find($dataDetail->obat_id);
 
                         if (! $dataObat) {
-                            throw new \RuntimeException('Data obat tidak ditemukan di database.');
+                            throw new RuntimeException('Data obat tidak ditemukan di database.');
                         }
 
                         $dataObat->increment('jumlah', $jumlahStokMasuk);
@@ -144,7 +145,18 @@ class StokMasukObatController extends Controller
                         $dataDepotObat->stok_obat = ($dataDepotObat->stok_obat ?? 0) + $jumlahStokMasuk;
 
                         if (! $dataDepotObat->save()) {
-                            throw new \RuntimeException('Gagal menyimpan data depot obat.');
+                            throw new RuntimeException('Gagal menyimpan data depot obat.');
+                        }
+
+                        $dataBatchObatDepot = BatchObatDepot::firstOrNew([
+                            'batch_obat_id' => $dataDetail->batch_obat_id,
+                            'depot_id' => $dataStokMasuk->depot_id,
+                        ]);
+
+                        $dataBatchObatDepot->stok_obat = ($dataBatchObatDepot->stok_obat ?? 0) + $jumlahStokMasuk;
+
+                        if (! $dataBatchObatDepot->save()) {
+                            throw new RuntimeException('Gagal menyimpan data batch obat depot');
                         }
                     }
 
@@ -154,7 +166,7 @@ class StokMasukObatController extends Controller
                     $dataStokMasuk->tanggal_terima = now();
 
                     if (! $dataStokMasuk->save()) {
-                        throw new \RuntimeException('Gagal update status restock.');
+                        throw new RuntimeException('Gagal update status restock.');
                     }
                 }
             );

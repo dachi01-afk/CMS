@@ -440,7 +440,7 @@ class TransaksiLayananController extends Controller
 
     public function kwitansiTransaksiLayanan($kodeTransaksi)
     {
-        // Ambil SEMUA baris penjualan_layanan untuk kode_transaksi ini
+        // Ambil data order_layanan berdasarkan kode_transaksi
         $dataOrderLayanan = OrderLayanan::with([
             'pasien',
             'metodePembayaran',
@@ -455,40 +455,49 @@ class TransaksiLayananController extends Controller
             abort(404);
         }
 
+        // Subtotal dihitung dari akumulasi detail layanan
         $subtotal = (float) $dataOrderLayanan->orderLayananDetail->sum('total_harga_item');
 
-        $afterRow     = $dataOrderLayanan->firstWhere('total_bayar', '!=', null);
-        $totalSesudah = $afterRow
-            ? (float) $afterRow->total_bayar
+        // Total setelah diskon: pakai total_bayar dari row ini jika sudah dibayar,
+        // kalau belum dibayar (null) fallback ke subtotal
+        $totalSesudah = !is_null($dataOrderLayanan->total_bayar)
+            ? (float) $dataOrderLayanan->total_bayar
             : $subtotal;
 
+        // Diskon = selisih subtotal dengan total yang dibayar (minimal 0)
         $diskonNominal = max($subtotal - $totalSesudah, 0);
 
-        $kategoriLayanan = $dataOrderLayanan->orderLayananDetail->first()?->layanan?->kategoriLayanan?->nama_kategori;
+        // Ambil kategori layanan dari detail pertama
+        $kategoriLayanan = $dataOrderLayanan->orderLayananDetail
+            ->first()
+            ?->layanan
+            ?->kategoriLayanan
+            ?->nama_kategori;
 
         $summary = (object) [
-            'kode_transaksi'        => $dataOrderLayanan->kode_transaksi,
-            'pasien'                => $dataOrderLayanan->pasien->nama_pasien ?? '-',
-            'metode_pembayaran'     => $dataOrderLayanan->metodePembayaran->nama_metode ?? '-',
-            'tanggal_pembayaran'     => $dataOrderLayanan->getFormatTanggalPembayaran(),
-            'tanggal_order'     => $dataOrderLayanan->getFormatTanggalOrder(),
-
-            'total_sebelum_diskon'  => $subtotal,
-            'diskon_nominal'        => $diskonNominal,
-            'total_setelah_diskon'  => $totalSesudah,
-
-            'uang_yang_diterima'    => $dataOrderLayanan->uang_yang_diterima ? (float) $dataOrderLayanan->uang_yang_diterima : null,
-            'kembalian'             => $dataOrderLayanan->kembalian ? (float) $dataOrderLayanan->kembalian : null,
-
-            'kategori_layanan'        => $kategoriLayanan,
+            'kode_transaksi'       => $dataOrderLayanan->kode_transaksi,
+            'pasien'               => $dataOrderLayanan->pasien->nama_pasien ?? '-',
+            'metode_pembayaran'    => $dataOrderLayanan->metodePembayaran->nama_metode ?? '-',
+            'tanggal_pembayaran'   => $dataOrderLayanan->getFormatTanggalPembayaran(),
+            'tanggal_order'        => $dataOrderLayanan->getFormatTanggalOrder(),
+            'total_sebelum_diskon' => $subtotal,
+            'diskon_nominal'       => $diskonNominal,
+            'total_setelah_diskon' => $totalSesudah,
+            'uang_yang_diterima'   => $dataOrderLayanan->uang_yang_diterima
+                ? (float) $dataOrderLayanan->uang_yang_diterima
+                : null,
+            'kembalian'            => $dataOrderLayanan->kembalian
+                ? (float) $dataOrderLayanan->kembalian
+                : null,
+            'kategori_layanan'     => $kategoriLayanan,
         ];
 
         $namaPT = 'Royal Klinik';
 
         return view('kasir.riwayat-transaksi.kwitansi-transaksi-layanan', [
-            'dataOrderLayanan'   => $dataOrderLayanan,
-            'summary' => $summary,
-            'namaPT'  => $namaPT,
+            'dataOrderLayanan' => $dataOrderLayanan,
+            'summary'          => $summary,
+            'namaPT'           => $namaPT,
         ]);
     }
 }
