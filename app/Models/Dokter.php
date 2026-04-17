@@ -53,4 +53,14 @@ class Dokter extends Model
     {
         return $this->hasMany(OrderRadiologi::class);
     }
+
+    public function emrKklp()
+    {
+        return $this->hasMany(EmrKklp::class, 'dokter_id');
+    }
+
+    public function pengkajianAwalPenyakitDalam()
+    {
+        return $this->hasMany(\App\Models\EmrPengkajianAwalPenyakitDalam::class, 'dokter_id');
+    }
 }

@@ -59,6 +59,16 @@ class User extends Authenticatable
         return $this->hasOne(Kasir::class);
     }
 
+    public function pengkajianAwalPenyakitDalamCreated()
+    {
+        return $this->hasMany(\App\Models\EmrPengkajianAwalPenyakitDalam::class, 'created_by');
+    }
+
+    public function pengkajianAwalPenyakitDalamUpdated()
+    {
+        return $this->hasMany(\App\Models\EmrPengkajianAwalPenyakitDalam::class, 'updated_by');
+    }
+
     public function perawat()
     {
         return $this->hasOne(Perawat::class);

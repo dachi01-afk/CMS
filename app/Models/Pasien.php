@@ -7,7 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 class Pasien extends Model
 {
     protected $table = 'pasien';
+
     protected $primaryKey = 'id';
+
     protected $guarded = [];
 
     protected $casts = [
@@ -69,6 +71,11 @@ class Pasien extends Model
     public function orderRadiologi()
     {
         return $this->hasMany(OrderRadiologi::class);
+    }
+
+    public function emrKklp()
+    {
+        return $this->hasMany(EmrKklp::class, 'pasien_id');
     }
 
     public function getFormatTanggalLahir()

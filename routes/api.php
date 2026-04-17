@@ -1,10 +1,13 @@
 <?php
 
 use App\Http\Controllers\Api\APIMobileController;
+use App\Http\Controllers\Api\Dokter\DentalExaminationController;
+use App\Http\Controllers\Api\Dokter\PengkajianAwalPenyakitDalamController;
 use App\Http\Controllers\Api\Dokter\ResumeDokterController;
 use App\Http\Controllers\Api\LihatPemeriksaanOlehPerawat;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Dokter\OrderLayananController; // taruh di atas
+
+// taruh di atas
 
 /*
 |--------------------------------------------------------------------------
@@ -33,6 +36,8 @@ Route::middleware('throttle:6,1')->group(function () {
     Route::post('/forgot-username/send-otp', [APIMobileController::class, 'sendForgotUsernameOTP'])->name('forgot_username.send_otp');
     Route::post('/forgot-username/verify-or-change', [APIMobileController::class, 'verifyOrChangeUsernameWithOTP'])->name('forgot_username.verify_or_change');
 });
+Route::post('/test/notif-hasil-lab', [\App\Http\Controllers\Perawat\OrderLabController::class, 'testNotifikasiHasilLab']);
+Route::post('/test/notif-hasil-radiologi', [\App\Http\Controllers\Perawat\OrderRadiologiController::class, 'testNotifikasiHasilRadiologi']); // ✅ TAMBAHKAN INI
 
 // Public data routes
 Route::get('/getDataSpesialisasiDokter', [APIMobileController::class, 'getDataSpesialisasiDokter']);
@@ -82,15 +87,18 @@ Route::middleware(['auth:sanctum', 'role:Pasien'])->prefix('pasien')->name('pasi
     // Profile
     Route::get('/profile', [APIMobileController::class, 'getProfile'])->name('profile');
     Route::post('/update', [APIMobileController::class, 'updateProfile'])->name('update');
-
+    Route::get('/can-view-vital-signs', [APIMobileController::class, 'canViewVitalSigns'])
+        ->name('can_view_vital_signs');
     // Vital signs & EMR
     Route::get('/vital-terbaru', [APIMobileController::class, 'getLatestVitalPasien'])->name('vital_terbaru');
     Route::get('/vital-history', [APIMobileController::class, 'getVitalHistoryPasien'])->name('vital_history');
     Route::get('/riwayat-diagnosis/{pasien_id}', [APIMobileController::class, 'getRiwayatDiagnosisPasien'])->name('riwayat_diagnosis');
     Route::get('/hasil-lab/kunjungan/{kunjungan_id}', [APIMobileController::class, 'getHasilLabByKunjungan'])->name('hasil_lab.by_kunjungan');
-
+    Route::get('/riwayat-kunjungan/detail/{kunjunganId}', [APIMobileController::class, 'getDetailRiwayatPasienMobile'])->name('riwayat_kunjungan.detail');
     Route::prefix('notifikasi')->name('notifikasi.')->group(function () {
         Route::get('/', [APIMobileController::class, 'getNotifikasiPasien'])->name('list');
+        Route::patch('/read-all', [APIMobileController::class, 'markAllNotifikasiAsRead'])->name('mark_all_read');
+
         Route::patch('/{id}/read', [APIMobileController::class, 'markNotifikasiAsRead'])->name('mark_read');
     });
     // Dokter & jadwal
@@ -143,7 +151,7 @@ Route::middleware(['auth:sanctum', 'role:Pasien'])->prefix('pasien')->name('pasi
         Route::get('/status/{order_id}', [APIMobileController::class, 'checkPaymentStatus'])->name('status');
         Route::get('/metode-pembayaran', [APIMobileController::class, 'getDataMetodePembayaran'])->name('metode');
         Route::get('pembayaran/{kunjungan_id}', [APIMobileController::class, 'getDetailPembayaran']);
-
+        Route::get('/detail-item/{kunjungan_id}', [APIMobileController::class, 'getDetailPembayaran'])->name('detail_item');
     });
 
     // Resume dokter
@@ -217,6 +225,70 @@ Route::middleware(['auth:sanctum', 'role:Dokter'])->prefix('dokter')->name('dokt
     Route::post('/save-emr-layanan', [APIMobileController::class, 'saveEMRLayanan']);
     Route::get('/pasien/riwayat-emr/{pasien_id}', [APIMobileController::class, 'getRiwayatEMRPasien'])->name('riwayat_emr_pasien');
 
+    Route::prefix('dental')->name('dental.')->group(function () {
+        // backward compatibility - lama
+        Route::get('/form/{orderLayananId}', [DentalExaminationController::class, 'showForm'])
+            ->name('form');
+
+        // baru - standar seperti KKLP
+        Route::get('/form/kunjungan/{kunjunganId}', [DentalExaminationController::class, 'showFormByKunjungan'])
+            ->name('form_kunjungan');
+
+        Route::post('/save', [DentalExaminationController::class, 'save'])
+            ->name('save');
+
+        Route::put('/update/{id}', [DentalExaminationController::class, 'update'])
+            ->name('update');
+
+        Route::get('/{id}', [DentalExaminationController::class, 'show'])
+            ->name('show');
+
+        Route::get('/riwayat-pasien', [DentalExaminationController::class, 'riwayatPasien'])
+            ->name('riwayat_pasien');
+        Route::get('/detail/emr/{emrId}', [DentalExaminationController::class, 'showByEmr'])
+            ->name('detail_by_emr');
+        Route::delete('/{id}', [DentalExaminationController::class, 'destroy'])
+            ->name('destroy');
+    });
+    /*
+    |--------------------------------------------------------------------------
+    | KKLP FORM (DOKTER)
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('kklp')->name('kklp.')->group(function () {
+
+        // ambil data form KKLP berdasarkan kunjungan
+        Route::get('/form/{kunjunganId}', [\App\Http\Controllers\Api\Dokter\KklpController::class, 'showForm'])
+            ->name('form');
+
+        // simpan KKLP baru
+        Route::post('/save', [\App\Http\Controllers\Api\Dokter\KklpController::class, 'save'])
+            ->name('save');
+
+        // update KKLP
+        Route::put('/update/{kklpId}', [\App\Http\Controllers\Api\Dokter\KklpController::class, 'update'])
+            ->name('update');
+
+        // detail KKLP berdasarkan EMR
+        Route::get('/detail/emr/{emrId}', [\App\Http\Controllers\Api\Dokter\KklpController::class, 'detailByEmr'])
+            ->name('detail_emr');
+        Route::get('/riwayat-pasien', [\App\Http\Controllers\Api\Dokter\KklpController::class, 'riwayatPasienKklp'])
+            ->name('riwayat_pasien');
+    });
+    /*
+|--------------------------------------------------------------------------
+| PENGKAJIAN AWAL MEDIS PENYAKIT DALAM (DOKTER)
+|--------------------------------------------------------------------------
+*/
+    Route::prefix('pengkajian-awal-penyakit-dalam')->name('pengkajian_awal_penyakit_dalam.')->group(function () {
+        Route::get('/', [PengkajianAwalPenyakitDalamController::class, 'index'])->name('index');
+        Route::get('/{id}', [PengkajianAwalPenyakitDalamController::class, 'show'])->name('show');
+        Route::get('/emr/{emrId}', [PengkajianAwalPenyakitDalamController::class, 'showByEmr'])->name('show_by_emr');
+        Route::post('/save', [PengkajianAwalPenyakitDalamController::class, 'store'])->name('save');
+        Route::put('/update/{id}', [PengkajianAwalPenyakitDalamController::class, 'update'])->name('update');
+        Route::delete('/delete/{id}', [PengkajianAwalPenyakitDalamController::class, 'destroy'])->name('delete');
+    });
     // Layanan order
     Route::get('/layanan-order', [APIMobileController::class, 'getLayananOrderDokter']);
     Route::get('/detail-order-layanan/{kunjunganId}', [APIMobileController::class, 'getDetailOrderLayanan']);
