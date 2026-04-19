@@ -23,10 +23,9 @@ class OrderLayananController extends Controller
 {
     public function index()
     {
-        $dataLayanan = Layanan::with('kategoriLayanan')->orderBy('nama_layanan')->get();
         $dataPoli = Poli::all();
 
-        return view('admin.order-layanan.order-layanan', compact('dataLayanan', 'dataPoli'));
+        return view('admin.order-layanan.order-layanan', compact('dataPoli'));
     }
 
     public function getDataOrderLayanan()
@@ -51,6 +50,10 @@ class OrderLayananController extends Controller
                     'kodeTransaksi' => $dataOrderan->kode_transaksi
                 ]);
 
+                $urlOrderLayananUpdate = route('order.layanan.get.data.order.layanan.by.id', [
+                    'kodeTransaksi' => $dataOrderan->kode_transaksi
+                ]);
+
                 $html = '
         <div class="flex items-center gap-2">
             <button
@@ -68,8 +71,9 @@ class OrderLayananController extends Controller
 
             <button
                 type="button"
-                class="btn-update-order-layanan inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition duration-200 hover:scale-105 hover:from-amber-500 hover:to-orange-600 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-orange-300 active:scale-95"
+                class="btn-open-modal-update-order-layanan inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-4 py-2.5 text-sm font-semibold text-white shadow-md transition duration-200 hover:scale-105 hover:from-amber-500 hover:to-orange-600 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-orange-300 active:scale-95"
                 data-kode-transaksi="' . $dataOrderan->kode_transaksi . '"
+                data-url-update-order-layanan="' . $urlOrderLayananUpdate . '"
             >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="h-4 w-4">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487a2.25 2.25 0 1 1 3.182 3.182L8.25 19.463 4.5 20.25l.787-3.75L16.862 4.487z" />
@@ -97,7 +101,6 @@ class OrderLayananController extends Controller
 
                 return $html;
             })
-            ->rawColumns(['action'])
             ->rawColumns(['action'])
             ->make(true);
     }
@@ -342,6 +345,34 @@ class OrderLayananController extends Controller
         }
     }
 
+    public function searchLayanan(Request $request)
+    {
+        $search = $request->q;
+
+        $dataLayanan = Layanan::query()->when($search, function ($namaLayanan) use ($search) {
+            $namaLayanan->where('nama_layanan', 'like', "%{$search}%");
+        })->get();
+
+        return response()->json($dataLayanan->map(function ($item) {
+            return [
+                'id' => $item->id,
+                'nama_layanan' => $item->nama_layanan
+            ];
+        }));
+    }
+
+    public function detailDataLayanan($id)
+    {
+        $dataLayanan = Layanan::with(['kategoriLayanan'])->findOrFail($id);
+
+        return response()->json([
+            'id' => $dataLayanan->id,
+            'nama_layanan' => $dataLayanan->nama_layanan,
+            'kategori_id' => $dataLayanan->kategoriLayanan?->id,
+            'nama_kategori' => $dataLayanan->kategoriLayanan?->nama_kategori,
+            'harga_layanan' => $dataLayanan->harga_layanan,
+        ]);
+    }
 
     public function searchPasien(Request $request)
     {

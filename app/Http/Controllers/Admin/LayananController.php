@@ -331,7 +331,6 @@ class LayananController extends Controller
         }
     }
 
-
     public function deleteDataLayanan(Request $request)
     {
         $dataLayanan = Layanan::findOrFail($request->id);

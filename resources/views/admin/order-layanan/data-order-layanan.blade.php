@@ -19,7 +19,7 @@
         </div>
 
         <div class="flex items-center gap-2 md:gap-3">
-            <button id="buttonOpenModalCreateOrderLayanan" type="button"
+            <button id="button-open-modal-create-order-layanan" type="button"
                 class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl shadow-md
                        bg-gradient-to-r from-sky-500 to-teal-600 hover:from-sky-600 hover:to-teal-700
                        focus:outline-none focus:ring-2 focus:ring-sky-400">
@@ -100,11 +100,11 @@
 </section>
 
 <!-- ================= MODAL CREATE ORDER LAYANAN ================= -->
-<div id="modalCreateOrderLayanan" aria-hidden="true"
-    class="hidden fixed inset-0 z-50 flex items-start md:items-center justify-center 
+<div id="modal-create-order-layanan" aria-hidden="true"
+    class="hidden fixed inset-0 z-50 items-start md:items-center justify-center 
            w-full h-full p-4 md:p-6 bg-slate-900/60 backdrop-blur-sm overflow-y-auto overflow-x-auto">
 
-    <div class="relative w-full max-w-4xl">
+    <div class="relative w-full max-w-5xl">
         <div
             class="relative bg-white rounded-2xl shadow-2xl dark:bg-gray-800 border border-slate-100 dark:border-slate-700
            flex flex-col max-h-[90vh] overflow-y-auto overflow-x-hidden">
@@ -123,16 +123,16 @@
                         </p>
                     </div>
                 </div>
-                <button type="button" id="buttonCloseModalCreateOrderLayanan"
+                <button type="button" id="button-close-modal-create-order-layanan-header"
                     class="inline-flex items-center justify-center h-8 w-8 rounded-full text-slate-100 hover:text-white hover:bg-white/10 transition">
                     <i class="fa-solid fa-xmark text-sm"></i>
                 </button>
             </div>
 
             <!-- Form -->
-            <form id="formCreateOrderLayanan"
-                class="px-5 md:px-6 pb-5 pt-4 flex flex-col gap-6 bg-slate-50/60 dark:bg-slate-800" method="POST"
-                data-url="{{ route('order.layanan.create.data.order.layanan') }}">
+            <form id="form-create-order-layanan"
+                class="px-5 md:px-6 md:my-5 pb-5 pt-4 flex flex-col gap-6 bg-slate-50/60 dark:bg-slate-800"
+                method="POST">
                 @csrf
 
                 <!-- PASIEN -->
@@ -150,28 +150,14 @@
                     </div>
 
                     <div class="relative">
-                        <input type="text" id="pasien_search_create"
-                            class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg
-                                   focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-3 py-2.5
-                                   dark:bg-gray-600 dark:border-gray-500 dark:text-white
-                                   transition-all duration-200 hover:shadow-md"
-                            placeholder="Ketik nama / No EMR / No RM / NIK pasien...">
-
+                        <select id="pasien_search_create"
+                            placeholder="Ketik nama / No EMR / No RM / NIK pasien..."></select>
                         <input type="hidden" name="pasien_id" id="pasien_id_create">
-
-                        <div id="pasien_search_results_create"
-                            class="absolute z-20 mt-1 w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 
-                                   rounded-lg shadow-lg max-h-60 overflow-y-auto hidden text-sm">
-                        </div>
-                    </div>
-
-                    <div id="pasien_id_create-error"
-                        class="text-red-600 text-xs md:text-sm mt-2 opacity-100 transition-opacity duration-200">
                     </div>
 
                     <!-- Info pasien -->
-                    <div id="pasien_info_create"
-                        class="mt-4 hidden rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 
+                    <div id="pasien_preview_create"
+                        class="hidden mt-4 rounded-xl border border-blue-100 bg-blue-50 px-4 py-3 
                                dark:bg-gray-800 dark:border-blue-900/60">
                         <div class="flex items-start gap-3">
                             <div
@@ -183,24 +169,31 @@
                                     class="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1 dark:text-blue-300">
                                     Data Pasien Terpilih
                                 </p>
-                                <div class="grid grid-cols-1 md:grid-cols-3 gap-1 text-sm">
+                                <div class="grid grid-cols-1 md:grid-cols-4 gap-1 text-sm">
                                     <div>
                                         <span class="text-gray-500 dark:text-gray-400 text-xs">Nama Pasien</span>
-                                        <p id="pasien_nama_info_create"
+                                        <p id="preview_nama_create"
                                             class="font-semibold text-gray-800 dark:text-gray-100">
                                             -
                                         </p>
                                     </div>
                                     <div>
                                         <span class="text-gray-500 dark:text-gray-400 text-xs">No EMR</span>
-                                        <p id="pasien_no_emr_info_create"
+                                        <p id="preview_no_emr_create"
                                             class="font-semibold text-gray-800 dark:text-gray-100">
                                             -
                                         </p>
                                     </div>
                                     <div>
                                         <span class="text-gray-500 dark:text-gray-400 text-xs">Jenis Kelamin</span>
-                                        <p id="pasien_jk_info_create"
+                                        <p id="preview_jk_create"
+                                            class="font-semibold text-gray-800 dark:text-gray-100">
+                                            -
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <span class="text-gray-500 dark:text-gray-400 text-xs">No Handphone</span>
+                                        <p id="preview_no_hp_create"
                                             class="font-semibold text-gray-800 dark:text-gray-100">
                                             -
                                         </p>
@@ -208,6 +201,10 @@
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    <div id="pasien_id_create-error"
+                        class="text-red-600 text-xs md:text-sm mt-2 opacity-100 transition-opacity duration-200">
                     </div>
                 </div>
 
@@ -233,13 +230,22 @@
                             </div>
                         </div>
 
-                        <button type="button" id="btnAddLayananRow"
-                            class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg
+                        <div class="flex items-center gap-2">
+                            <button type="button" id="button-tambah-layanan"
+                                class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg
                        bg-gradient-to-r from-sky-500 to-teal-600 text-white hover:from-sky-600 hover:to-teal-700
                        shadow-sm">
-                            <i class="fa-solid fa-plus text-[10px]"></i>
-                            <span>Tambah Layanan</span>
-                        </button>
+                                <i class="fa-solid fa-plus text-[10px]"></i>
+                                <span>Tambah Layanan</span>
+                            </button>
+
+                            <!-- HAPUS BARIS -->
+                            <button type="button"
+                                class="btn-remove-item inline-flex items-center justify-center h-8 w-8 rounded-full
+                               text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30">
+                                <i class="fa-solid fa-trash text-xs"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- WRAPPER BARIS LAYANAN -->
@@ -247,72 +253,49 @@
 
                         <!-- TEMPLATE BARIS (SATU LAYANAN) -->
                         <div id="orderItemTemplate"
-                            class="order-item flex flex-col md:flex-row items-start gap-3
-                    bg-white/90 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600
-                    px-3 py-3">
+                            class="order-item flex flex-col items-start gap-3 px-3 py-3 md:grid md:grid-cols-2 md:gap-4 md:p-5
+    bg-white/90 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600">
 
                             <!-- LAYANAN -->
-                            <div class="w-full md:w-4/12">
+                            <div class="w-full md:col-span-2">
                                 <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1">
                                     Layanan
                                 </label>
-                                <select
-                                    class="layanan-select w-full bg-white border border-gray-300 text-gray-900 text-xs md:text-sm rounded-lg
-                           focus:ring-2 focus:ring-green-500 focus:border-green-500 px-2.5 py-2
-                           dark:bg-gray-700 dark:border-gray-500 dark:text-white">
-                                    @foreach ($dataLayanan as $layanan)
-                                        <option value="{{ $layanan->id }}"
-                                            data-kategori-id="{{ $layanan->kategori_layanan_id }}"
-                                            data-kategori-nama="{{ $layanan->kategoriLayanan->nama_kategori ?? '' }}"
-                                            data-harga="{{ $layanan->harga_setelah_diskon }}"
-                                            data-is-global="{{ (int) ($layanan->is_global ?? 0) }}"
-                                            data-poli-ids="{{ $layanan->polis?->pluck('id')->implode(',') ?? '' }}">
-                                            {{ $layanan->nama_layanan }}
-                                        </option>
-                                    @endforeach
+                                <select name="layanan_id[]"
+                                    class="layanan-select w-full bg-white border border-gray-300 text-gray-900 text-xs md:text-sm rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 px-2.5 py-2 dark:bg-gray-700 dark:border-gray-500 dark:text-white">
+                                    <option value="">Pilih layanan</option>
                                 </select>
                             </div>
 
                             <!-- KATEGORI -->
-                            <div class="w-full md:w-3/12">
+                            <div class="w-full">
                                 <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1">
                                     Kategori
                                 </label>
-                                <input type="text"
-                                    class="kategori-nama-input w-full bg-gray-100 border border-gray-300 text-gray-900 text-xs md:text-sm rounded-lg
-                              px-2.5 py-2 dark:bg-gray-700 dark:border-gray-500 dark:text-white"
+                                <input type="text" name="kategori_nama[]"
+                                    class="kategori-nama-input w-full bg-gray-100 border border-gray-300 text-gray-900 text-xs md:text-sm rounded-lg px-2.5 py-2 dark:bg-gray-700 dark:border-gray-500 dark:text-white"
                                     placeholder="Otomatis" readonly>
-                                <input type="hidden" class="kategori-id-input">
+                                <input type="hidden" name="kategori_id[]" class="kategori-id-input">
+                                <input type="hidden" name="harga[]" class="harga-input">
                             </div>
 
                             <!-- JUMLAH -->
-                            <div class="w-full md:w-2/12">
+                            <div class="w-full">
                                 <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1">
                                     Jumlah
                                 </label>
-                                <input type="number" min="1" value="1"
-                                    class="jumlah-input w-full bg-white border border-gray-300 text-gray-900 text-xs md:text-sm rounded-lg
-                              px-2.5 py-2 dark:bg-gray-700 dark:border-gray-500 dark:text-white">
+                                <input type="number" name="jumlah[]" min="1" value="1"
+                                    class="jumlah-input w-full bg-white border border-gray-300 text-gray-900 text-xs md:text-sm rounded-lg px-2.5 py-2 dark:bg-gray-700 dark:border-gray-500 dark:text-white">
                             </div>
 
                             <!-- SUBTOTAL -->
-                            <div class="w-full md:w-3/12">
+                            <div class="w-full md:col-span-2">
                                 <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1">
                                     Subtotal
                                 </label>
-                                <input type="text"
-                                    class="subtotal-input w-full bg-gray-100 border border-gray-300 text-gray-900 text-xs md:text-sm rounded-lg
-                              px-2.5 py-2 dark:bg-gray-700 dark:border-gray-500 dark:text-white"
+                                <input type="text" name="subtotal[]"
+                                    class="subtotal-input w-full bg-gray-100 border border-gray-300 text-gray-900 text-xs md:text-sm rounded-lg px-2.5 py-2 dark:bg-gray-700 dark:border-gray-500 dark:text-white"
                                     placeholder="Rp 0" readonly>
-                            </div>
-
-                            <!-- HAPUS BARIS -->
-                            <div class="self-stretch flex items-center md:items-start pt-5">
-                                <button type="button"
-                                    class="btn-remove-item inline-flex items-center justify-center h-8 w-8 rounded-full
-                               text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30">
-                                    <i class="fa-solid fa-trash text-xs"></i>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -403,12 +386,12 @@
 
                 <!-- BUTTONS -->
                 <div class="flex justify-end gap-3 md:gap-4 mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
-                    <button type="button" id="buttonCancaleModalCreateOrderLayanan"
+                    <button type="button" id="button-close-modal-create-order-layanan-footer"
                         class="px-5 md:px-6 py-2.5 md:py-3 text-sm font-medium text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 dark:bg-gray-600 dark:text-white transition-all duration-200 hover:shadow-lg inline-flex items-center gap-2">
                         <i class="fa-solid fa-xmark text-xs"></i>
                         <span>Batal</span>
                     </button>
-                    <button type="submit" id="saveOrderLayananButton"
+                    <button type="submit" id="button-submit-create-order-layanan"
                         class="px-5 md:px-6 py-2.5 md:py-3 text-sm font-semibold text-white bg-gradient-to-r from-sky-500 to-teal-600 rounded-lg hover:from-sky-600 hover:to-teal-700 focus:ring-2 focus:ring-sky-400 transition-all duration-200 hover:shadow-lg inline-flex items-center gap-2">
                         <i class="fa-solid fa-check text-xs"></i>
                         <span>Simpan Order</span>
@@ -473,19 +456,9 @@
                     </div>
 
                     <div class="relative">
-                        <input type="text" id="pasien_search_update"
-                            class="w-full bg-white border border-gray-300 text-gray-900 text-sm rounded-lg
-                                   focus:ring-2 focus:ring-blue-500 focus:border-blue-500 px-3 py-2.5
-                                   dark:bg-gray-600 dark:border-gray-500 dark:text-white
-                                   transition-all duration-200 hover:shadow-md"
-                            placeholder="Ketik nama / No EMR / No RM / NIK pasien...">
-
+                        <select id="pasien_search_update"
+                            placeholder="Ketik nama / No EMR / No RM / NIK pasien..."></select>
                         <input type="hidden" name="pasien_id" id="pasien_id_update">
-
-                        <div id="pasien_search_results_update"
-                            class="absolute z-20 mt-1 w-full bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 
-                                   rounded-lg shadow-lg max-h-60 overflow-y-auto hidden text-sm">
-                        </div>
                     </div>
 
                     <div id="pasien_id_update-error"
@@ -556,13 +529,22 @@
                             </div>
                         </div>
 
-                        <button type="button" id="btnAddLayananRowUpdate"
-                            class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg
+                        <div>
+                            <button type="button" id="btnAddLayananRowUpdate"
+                                class="inline-flex items-center gap-2 px-3 py-1.5 text-xs font-medium rounded-lg
                        bg-gradient-to-r from-sky-500 to-teal-600 text-white hover:from-sky-600 hover:to-teal-700
                        shadow-sm">
-                            <i class="fa-solid fa-plus text-[10px]"></i>
-                            <span>Tambah Layanan</span>
-                        </button>
+                                <i class="fa-solid fa-plus text-[10px]"></i>
+                                <span>Tambah Layanan</span>
+                            </button>
+
+                            <!-- HAPUS BARIS -->
+                            <button type="button"
+                                class="btn-remove-item-update inline-flex items-center justify-center h-8 w-8 rounded-full
+                               text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30">
+                                <i class="fa-solid fa-trash text-xs"></i>
+                            </button>
+                        </div>
                     </div>
 
                     <!-- WRAPPER BARIS LAYANAN -->
@@ -570,12 +552,12 @@
 
                         <!-- TEMPLATE BARIS (SATU LAYANAN) -->
                         <div id="orderItemTemplateUpdate"
-                            class="order-item flex flex-col md:flex-row items-start gap-3
+                            class="order-item flex flex-col md:grid md:grid-cols-2 items-start gap-3
                     bg-white/90 dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-600
                     px-3 py-3">
 
                             <!-- LAYANAN -->
-                            <div class="w-full md:w-4/12">
+                            <div class="w-full md:col-span-2">
                                 <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1">
                                     Layanan
                                 </label>
@@ -583,20 +565,12 @@
                                     class="layanan-select w-full bg-white border border-gray-300 text-gray-900 text-xs md:text-sm rounded-lg
                            focus:ring-2 focus:ring-green-500 focus:border-green-500 px-2.5 py-2
                            dark:bg-gray-700 dark:border-gray-500 dark:text-white">
-                                    @foreach ($dataLayanan as $layanan)
-                                        <option value="{{ $layanan->id }}"
-                                            data-kategori-id="{{ $layanan->kategori_layanan_id }}"
-                                            data-kategori-nama="{{ $layanan->kategoriLayanan->nama_kategori ?? '' }}"
-                                            data-harga="{{ $layanan->getRawOriginal('harga_setelah_diskon') ?? 0 }}"
-                                            data-is-global="{{ $layanan->is_global ? 'true' : 'false' }}">
-                                            {{ $layanan->nama_layanan }}
-                                        </option>
-                                    @endforeach
+                                    <option value="">-- Pilih Layanan --</option>
                                 </select>
                             </div>
 
                             <!-- KATEGORI -->
-                            <div class="w-full md:w-3/12">
+                            <div class="w-full">
                                 <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1">
                                     Kategori
                                 </label>
@@ -605,10 +579,11 @@
                               px-2.5 py-2 dark:bg-gray-700 dark:border-gray-500 dark:text-white"
                                     placeholder="Otomatis" readonly>
                                 <input type="hidden" class="kategori-id-input">
+                                <input type="hidden" class="harga-input">
                             </div>
 
                             <!-- JUMLAH -->
-                            <div class="w-full md:w-2/12">
+                            <div class="w-full">
                                 <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1">
                                     Jumlah
                                 </label>
@@ -618,7 +593,7 @@
                             </div>
 
                             <!-- SUBTOTAL -->
-                            <div class="w-full md:w-3/12">
+                            <div class="w-full md:col-span-2">
                                 <label class="block text-xs font-semibold text-gray-700 dark:text-gray-200 mb-1">
                                     Subtotal
                                 </label>
@@ -626,15 +601,6 @@
                                     class="subtotal-input w-full bg-gray-100 border border-gray-300 text-gray-900 text-xs md:text-sm rounded-lg
                               px-2.5 py-2 dark:bg-gray-700 dark:border-gray-500 dark:text-white"
                                     placeholder="Rp 0" readonly>
-                            </div>
-
-                            <!-- HAPUS BARIS -->
-                            <div class="self-stretch flex items-center md:items-start pt-5">
-                                <button type="button"
-                                    class="btn-remove-item inline-flex items-center justify-center h-8 w-8 rounded-full
-                               text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30">
-                                    <i class="fa-solid fa-trash text-xs"></i>
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -742,7 +708,7 @@
 </div>
 
 <div id="modal-detail-order-layanan"
-    class="hidden fixed inset-0 z-50 flex items-start md:items-center justify-center 
+    class="hidden fixed inset-0 z-50 items-start md:items-center justify-center 
            w-full h-full p-4 md:p-6 bg-slate-900/60 backdrop-blur-sm overflow-y-auto overflow-x-auto">
 
     <div class="relative w-full max-w-6xl">

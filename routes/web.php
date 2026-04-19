@@ -350,6 +350,9 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
 
         Route::get('/get-data-detail/{kodeTransaksi}', [OrderLayananController::class, 'getDetailOrderLayanan'])->name('get.data.detail.order.layanan');
 
+        Route::get('/get-data-layanan', [OrderLayananController::class, 'searchLayanan'])->name('order.layanan.search.data.layanan');
+        Route::get('/get-detail-data-layanan/{id}', [OrderLayananController::class, 'detailDataLayanan'])->name('order.layanan.get.detail.data.layanan');
+
         Route::get('/get-data-pasien', [OrderLayananController::class, 'searchPasien'])->name('order.layanan.get.data.pasien');
         Route::get('/get-data-poli', [OrderLayananController::class, 'getDataPoli'])->name('order.layanan.get.data.poli');
         Route::get('/get-data-jadwal-dokter-hari-ini', [OrderLayananController::class, 'getJadwalDokterHariIni'])->name('order.layanan.get.data.jadwal.dokter.hari.ini');
