@@ -32,6 +32,10 @@ class DentalExamination extends Model
         'gigi_anomali_ada',
         'gigi_anomali_keterangan',
         'lain_lain',
+
+        // TAMBAHAN: masuk tabel dental_examinations
+        'terapi',
+
         'd_index',
         'm_index',
         'f_index',

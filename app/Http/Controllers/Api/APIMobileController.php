@@ -3198,7 +3198,7 @@ class APIMobileController extends Controller
         }
     }
 
-    private function mapDentalForMobile(?DentalExamination $dental): ?array
+    private function mapDentalForMobile($dental): ?array
     {
         if (! $dental) {
             return null;
@@ -3230,6 +3230,9 @@ class APIMobileController extends Controller
             'gigi_anomali_keterangan' => $dental->gigi_anomali_keterangan,
 
             'lain_lain' => $dental->lain_lain,
+
+            // TAMBAHAN: masuk dari tabel dental_examinations
+            'terapi' => $dental->terapi,
 
             'd_index' => $dental->d_index,
             'm_index' => $dental->m_index,

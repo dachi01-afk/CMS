@@ -57,6 +57,9 @@ class DentalExaminationController extends Controller
 
             'lain_lain' => 'nullable|string',
 
+            // TAMBAHAN: masuk tabel dental_examinations
+            'terapi' => 'nullable|string',
+
             'd_index' => 'nullable|integer|min:0',
             'm_index' => 'nullable|integer|min:0',
             'f_index' => 'nullable|integer|min:0',
@@ -69,7 +72,7 @@ class DentalExaminationController extends Controller
             'diperiksa_oleh' => 'nullable|string|max:255',
             'tanggal_pemeriksaan' => 'nullable|date',
 
-            // VITAL SIGN - ikut pola KKLP / EMR
+            // VITAL SIGN + DIAGNOSIS - masuk tabel emr
             'tekanan_darah' => 'nullable|string|max:255',
             'suhu_tubuh' => 'nullable|string|max:255',
             'nadi' => 'nullable|string|max:255',
@@ -78,6 +81,7 @@ class DentalExaminationController extends Controller
             'tinggi_badan' => 'nullable|string|max:255',
             'berat_badan' => 'nullable|string|max:255',
             'imt' => 'nullable|string|max:255',
+            'diagnosis' => 'nullable|string',
 
             'status' => 'nullable|in:draft,completed,cancelled',
 
@@ -167,6 +171,10 @@ class DentalExaminationController extends Controller
         return $kunjungan;
     }
 
+    /**
+     * Sync field milik tabel emr dari form dental.
+     * Jangan masukkan field-field ini ke tabel dental_examinations.
+     */
     private function syncEmrVitalSign(Request $request, ?EMR $emr): void
     {
         if (! $emr) {
@@ -205,6 +213,10 @@ class DentalExaminationController extends Controller
 
         if ($request->has('imt')) {
             $payload['imt'] = $request->imt;
+        }
+
+        if ($request->has('diagnosis')) {
+            $payload['diagnosis'] = $request->diagnosis;
         }
 
         if (! empty($payload)) {
@@ -712,15 +724,13 @@ class DentalExaminationController extends Controller
 
                 $emr = $kunjungan->emr;
 
-                // sync vital sign ke EMR seperti pola KKLP
-                $this->syncEmrVitalSign($request, $emr);
-
                 $dental = DentalExamination::updateOrCreate(
                     [
                         'kunjungan_id' => $kunjungan->id,
+                        'pasien_id' => $kunjungan->pasien_id,
                     ],
                     [
-                        'pasien_id' => $request->pasien_id ?? $kunjungan->pasien_id,
+                        'pasien_id' => $kunjungan->pasien_id,
                         'kunjungan_id' => $kunjungan->id,
                         'order_layanan_id' => $request->order_layanan_id,
                         'tanggal_kunjungan' => $request->tanggal_kunjungan ?? $kunjungan->tanggal_kunjungan,
@@ -739,6 +749,10 @@ class DentalExaminationController extends Controller
                         'gigi_anomali_ada' => $request->gigi_anomali_ada,
                         'gigi_anomali_keterangan' => $request->gigi_anomali_keterangan,
                         'lain_lain' => $request->lain_lain,
+
+                        // TAMBAHAN: masuk tabel dental_examinations
+                        'terapi' => $request->terapi,
+
                         'd_index' => $request->d_index,
                         'm_index' => $request->m_index,
                         'f_index' => $request->f_index,
@@ -754,6 +768,9 @@ class DentalExaminationController extends Controller
                     ]
                 );
 
+                // Field ini masuk tabel emr, bukan dental_examinations
+                $this->syncEmrVitalSign($request, $emr);
+
                 $sync = [
                     'resep_id' => null,
                     'order_lab_id' => null,
@@ -767,6 +784,7 @@ class DentalExaminationController extends Controller
                 }
 
                 $pembayaran = null;
+
                 if (($request->status ?? 'draft') === 'completed') {
                     $pembayaran = $this->rebuildPembayaranDental(
                         $emr,
@@ -821,7 +839,29 @@ class DentalExaminationController extends Controller
             $request->validate($this->validationRules(true));
 
             $result = DB::transaction(function () use ($request, $dentalExam, $dokter) {
-                $payload = $request->except(['_token', '_method']);
+                // Jangan masukkan field emr/support ke tabel dental_examinations
+                $payload = $request->except([
+                    '_token',
+                    '_method',
+
+                    // Field tabel emr
+                    'tekanan_darah',
+                    'suhu_tubuh',
+                    'nadi',
+                    'pernapasan',
+                    'saturasi_oksigen',
+                    'tinggi_badan',
+                    'berat_badan',
+                    'imt',
+                    'diagnosis',
+
+                    // Data support, diproses terpisah
+                    'resep',
+                    'layanan',
+                    'lab_tests',
+                    'radiologi_tests',
+                ]);
+
                 $payload['updated_by'] = Auth::id();
 
                 $kunjungan = null;
@@ -845,11 +885,12 @@ class DentalExaminationController extends Controller
                     $payload['pasien_id'] = $payload['pasien_id'] ?? $kunjungan->pasien_id;
                 }
 
+                // terapi akan ikut masuk dari $payload ke dental_examinations
                 $dentalExam->update($payload);
 
                 $emr = $kunjungan?->emr;
 
-                // sync vital sign ke EMR seperti pola KKLP
+                // Field ini masuk tabel emr, bukan dental_examinations
                 $this->syncEmrVitalSign($request, $emr);
 
                 $sync = [
@@ -867,6 +908,7 @@ class DentalExaminationController extends Controller
                 }
 
                 $pembayaran = null;
+
                 if ($kunjungan && (($request->status ?? $dentalExam->status) === 'completed')) {
                     $pembayaran = $this->rebuildPembayaranDental(
                         $emr,
@@ -1055,6 +1097,9 @@ class DentalExaminationController extends Controller
                 'gigi_anomali_ada' => $dentalExam->gigi_anomali_ada,
                 'gigi_anomali_keterangan' => $dentalExam->gigi_anomali_keterangan,
                 'lain_lain' => $dentalExam->lain_lain,
+
+                // TAMBAHAN: terapi dari tabel dental_examinations
+                'terapi' => $dentalExam->terapi,
 
                 'd_index' => $dentalExam->d_index,
                 'm_index' => $dentalExam->m_index,
