@@ -7,7 +7,7 @@ use App\Models\MetodePembayaran;
 use App\Models\OrderLayanan;
 use App\Models\PenjualanLayanan;
 use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
+// use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -354,7 +354,7 @@ class TransaksiLayananController extends Controller
                 'success' => true,
                 'message' => 'Pembayaran layanan (transfer) berhasil diproses.',
             ]);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             Log::error('Error pembayaran layanan transfer', [
                 'message' => $e->getMessage(),
                 'file'    => $e->getFile(),
@@ -440,7 +440,6 @@ class TransaksiLayananController extends Controller
 
     public function kwitansiTransaksiLayanan($kodeTransaksi)
     {
-        // Ambil data order_layanan berdasarkan kode_transaksi
         $dataOrderLayanan = OrderLayanan::with([
             'pasien',
             'metodePembayaran',
@@ -455,47 +454,145 @@ class TransaksiLayananController extends Controller
             abort(404);
         }
 
-        // Subtotal dihitung dari akumulasi detail layanan
-        $subtotal = (float) $dataOrderLayanan->orderLayananDetail->sum('total_harga_item');
+        /*
+    |--------------------------------------------------------------------------
+    | Ambil diskon per-item dari tabel approve_diskon_order_layanan
+    |--------------------------------------------------------------------------
+    | Format dari database bisa double encoded, contoh:
+    | "[{\"id\":25,\"persen\":10}]"
+    */
+        $approveDiskon = DB::table('approve_diskon_order_layanan')
+            ->where('order_layanan_id', $dataOrderLayanan->id)
+            ->where('status', 'approved')
+            ->latest('id')
+            ->first();
 
-        // Total setelah diskon: pakai total_bayar dari row ini jika sudah dibayar,
-        // kalau belum dibayar (null) fallback ke subtotal
-        $totalSesudah = !is_null($dataOrderLayanan->total_bayar)
-            ? (float) $dataOrderLayanan->total_bayar
-            : $subtotal;
+        $diskonItems = [];
 
-        // Diskon = selisih subtotal dengan total yang dibayar (minimal 0)
-        $diskonNominal = max($subtotal - $totalSesudah, 0);
+        if ($approveDiskon && !empty($approveDiskon->diskon_items)) {
+            $decoded = json_decode($approveDiskon->diskon_items, true);
 
-        // Ambil kategori layanan dari detail pertama
+            // Handle kalau JSON-nya double encoded/string JSON
+            if (is_string($decoded)) {
+                $decoded = json_decode($decoded, true);
+            }
+
+            if (is_array($decoded)) {
+                foreach ($decoded as $itemDiskon) {
+                    $detailId = $itemDiskon['id'] ?? null;
+
+                    if ($detailId) {
+                        $diskonItems[(int) $detailId] = [
+                            'persen' => (float) ($itemDiskon['persen'] ?? 0),
+                        ];
+                    }
+                }
+            }
+        }
+
+        /*
+    |--------------------------------------------------------------------------
+    | Siapkan rincian item + diskon per-item
+    |--------------------------------------------------------------------------
+    */
+        $details = $dataOrderLayanan->orderLayananDetail->map(function ($detail) use ($diskonItems) {
+            $qty = (int) ($detail->qty ?? 1);
+            $hargaSatuan = (float) ($detail->harga_satuan ?? 0);
+            $subtotalItem = (float) ($detail->total_harga_item ?? ($hargaSatuan * $qty));
+
+            $diskonPersen = (float) data_get($diskonItems, $detail->id . '.persen', 0);
+            $diskonNominal = $subtotalItem * ($diskonPersen / 100);
+
+            if ($diskonNominal > $subtotalItem) {
+                $diskonNominal = $subtotalItem;
+            }
+
+            $totalSetelahDiskon = max($subtotalItem - $diskonNominal, 0);
+
+            return (object) [
+                'id'                    => $detail->id,
+                'layanan'               => $detail->layanan,
+                'qty'                   => $qty,
+                'harga_satuan'          => $hargaSatuan,
+                'subtotal_item'         => $subtotalItem,
+                'diskon_persen'         => $diskonPersen,
+                'diskon_nominal'        => $diskonNominal,
+                'total_setelah_diskon'  => $totalSetelahDiskon,
+            ];
+        });
+
+        /*
+    |--------------------------------------------------------------------------
+    | Hitung total berdasarkan item
+    |--------------------------------------------------------------------------
+    */
+        $subtotal = (float) $details->sum('subtotal_item');
+        $diskonNominal = (float) $details->sum('diskon_nominal');
+        $totalSesudah = (float) $details->sum('total_setelah_diskon');
+
+        /*
+    |--------------------------------------------------------------------------
+    | Fallback jika tidak ada diskon item, tapi data lama masih pakai header
+    |--------------------------------------------------------------------------
+    */
+        $potonganPesanan = (float) ($dataOrderLayanan->potongan_pesanan ?? 0);
+
+        if ($diskonNominal <= 0 && $potonganPesanan > 0) {
+            $diskonNominal = $potonganPesanan;
+
+            $totalSesudah = (float) ($dataOrderLayanan->total_bayar ?? 0);
+
+            if ($totalSesudah <= 0) {
+                $totalSesudah = max($subtotal - $diskonNominal, 0);
+            }
+        }
+
+        /*
+    |--------------------------------------------------------------------------
+    | Ambil kategori layanan dari detail pertama
+    |--------------------------------------------------------------------------
+    */
         $kategoriLayanan = $dataOrderLayanan->orderLayananDetail
             ->first()
             ?->layanan
             ?->kategoriLayanan
             ?->nama_kategori;
 
+        /*
+    |--------------------------------------------------------------------------
+    | Summary untuk Blade
+    |--------------------------------------------------------------------------
+    */
         $summary = (object) [
             'kode_transaksi'       => $dataOrderLayanan->kode_transaksi,
+
             'pasien'               => $dataOrderLayanan->pasien->nama_pasien ?? '-',
             'metode_pembayaran'    => $dataOrderLayanan->metodePembayaran->nama_metode ?? '-',
+
             'tanggal_pembayaran'   => $dataOrderLayanan->getFormatTanggalPembayaran(),
             'tanggal_order'        => $dataOrderLayanan->getFormatTanggalOrder(),
+
             'total_sebelum_diskon' => $subtotal,
             'diskon_nominal'       => $diskonNominal,
             'total_setelah_diskon' => $totalSesudah,
-            'uang_yang_diterima'   => $dataOrderLayanan->uang_yang_diterima
+
+            'uang_yang_diterima'   => !is_null($dataOrderLayanan->uang_yang_diterima)
                 ? (float) $dataOrderLayanan->uang_yang_diterima
                 : null,
-            'kembalian'            => $dataOrderLayanan->kembalian
+
+            'kembalian'            => !is_null($dataOrderLayanan->kembalian)
                 ? (float) $dataOrderLayanan->kembalian
                 : null,
+
             'kategori_layanan'     => $kategoriLayanan,
+            'status_order_layanan' => $dataOrderLayanan->status_order_layanan ?? '-',
         ];
 
         $namaPT = 'Royal Klinik';
 
         return view('kasir.riwayat-transaksi.kwitansi-transaksi-layanan', [
             'dataOrderLayanan' => $dataOrderLayanan,
+            'details'          => $details,
             'summary'          => $summary,
             'namaPT'           => $namaPT,
         ]);
