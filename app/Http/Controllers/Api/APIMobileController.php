@@ -689,7 +689,9 @@ class APIMobileController extends Controller
         $data = $request->all();
 
         $user = $request->user();
+
         $dokter = \App\Models\Dokter::where('user_id', $user->id)->first();
+
         if (! $dokter) {
             return response()->json([
                 'success' => false,
@@ -700,7 +702,10 @@ class APIMobileController extends Controller
         $data['dokter_id'] = $dokter->id;
 
         if (! empty($data['kunjungan_id'])) {
-            $k = DB::table('kunjungan')->where('id', $data['kunjungan_id'])->first();
+            $k = DB::table('kunjungan')
+                ->where('id', $data['kunjungan_id'])
+                ->first();
+
             if ($k && empty($data['pasien_id'])) {
                 $data['pasien_id'] = (int) $k->pasien_id;
             }
@@ -708,7 +713,10 @@ class APIMobileController extends Controller
 
         $jenisIds = [];
 
-        if (isset($data['jenis_pemeriksaan_radiologi_ids']) && is_array($data['jenis_pemeriksaan_radiologi_ids'])) {
+        if (
+            isset($data['jenis_pemeriksaan_radiologi_ids']) &&
+            is_array($data['jenis_pemeriksaan_radiologi_ids'])
+        ) {
             foreach ($data['jenis_pemeriksaan_radiologi_ids'] as $v) {
                 if (is_numeric($v)) {
                     $jenisIds[] = (int) $v;
@@ -730,6 +738,7 @@ class APIMobileController extends Controller
                     $raw = $it['id']
                         ?? $it['radiologi_test_id']
                         ?? $it['jenis_pemeriksaan_radiologi_id']
+                        ?? $it['jenis_radiologi_id']
                         ?? $it['value']
                         ?? null;
 
@@ -746,16 +755,17 @@ class APIMobileController extends Controller
             }
         }
 
-        $data['jenis_pemeriksaan_radiologi_ids'] = array_values(array_unique(array_filter($jenisIds, fn ($x) => (int) $x > 0)));
-
-        // ❌ HAPUS AUTO-FILL tanggal & jam
+        $data['jenis_pemeriksaan_radiologi_ids'] = array_values(
+            array_unique(
+                array_filter($jenisIds, fn ($x) => (int) $x > 0)
+            )
+        );
 
         $v = Validator::make($data, [
             'dokter_id' => 'required|exists:dokter,id',
             'pasien_id' => 'required|exists:pasien,id',
             'jenis_pemeriksaan_radiologi_ids' => 'required|array|min:1',
             'jenis_pemeriksaan_radiologi_ids.*' => 'required|exists:jenis_pemeriksaan_radiologi,id',
-            // ✅ TIDAK ADA validasi tanggal_pemeriksaan & jam_pemeriksaan
         ]);
 
         if ($v->fails()) {
@@ -767,23 +777,23 @@ class APIMobileController extends Controller
         }
 
         return DB::transaction(function () use ($data) {
-
             $no = 'RAD-'.date('Ymd').'-'.strtoupper(Str::random(6));
 
-            // ✅ FIX: tanggal_pemeriksaan & jam_pemeriksaan = NULL
             $orderId = DB::table('order_radiologi')->insertGetId([
                 'no_order_radiologi' => $no,
+                'kunjungan_id' => $data['kunjungan_id'] ?? null,
                 'dokter_id' => (int) $data['dokter_id'],
                 'pasien_id' => (int) $data['pasien_id'],
                 'tanggal_order' => now()->toDateString(),
-                'tanggal_pemeriksaan' => null, // ✅ NULL - ISI NANTI VIA FLUTTER
-                'jam_pemeriksaan' => null,     // ✅ NULL - ISI NANTI VIA FLUTTER
+                'tanggal_pemeriksaan' => $data['tanggal_pemeriksaan'] ?? null,
+                'jam_pemeriksaan' => $data['jam_pemeriksaan'] ?? null,
                 'status' => 'Pending',
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
 
             $details = [];
+
             foreach ($data['jenis_pemeriksaan_radiologi_ids'] as $jpId) {
                 $details[] = [
                     'order_radiologi_id' => $orderId,
@@ -793,12 +803,20 @@ class APIMobileController extends Controller
                     'updated_at' => now(),
                 ];
             }
+
             DB::table('order_radiologi_detail')->insert($details);
 
-            $order = DB::table('order_radiologi')->where('id', $orderId)->first();
+            $order = DB::table('order_radiologi')
+                ->where('id', $orderId)
+                ->first();
 
             $detailRows = DB::table('order_radiologi_detail as d')
-                ->join('jenis_pemeriksaan_radiologi as j', 'j.id', '=', 'd.jenis_pemeriksaan_radiologi_id')
+                ->join(
+                    'jenis_pemeriksaan_radiologi as j',
+                    'j.id',
+                    '=',
+                    'd.jenis_pemeriksaan_radiologi_id'
+                )
                 ->where('d.order_radiologi_id', $orderId)
                 ->select(
                     'd.id as order_radiologi_detail_id',
@@ -806,10 +824,24 @@ class APIMobileController extends Controller
                     'j.id as jenis_id',
                     'j.kode_pemeriksaan',
                     'j.nama_pemeriksaan',
-                    'j.deskripsi',
                     'j.harga_pemeriksaan_radiologi'
                 )
-                ->get();
+                ->get()
+                ->map(function ($row) {
+                    return [
+                        'order_radiologi_detail_id' => $row->order_radiologi_detail_id,
+                        'status_pemeriksaan' => $row->status_pemeriksaan,
+                        'jenis_id' => $row->jenis_id,
+                        'kode_pemeriksaan' => $row->kode_pemeriksaan,
+                        'nama_pemeriksaan' => $row->nama_pemeriksaan,
+
+                        // Tabel jenis_pemeriksaan_radiologi tidak punya kolom deskripsi.
+                        'deskripsi' => null,
+
+                        'harga_pemeriksaan_radiologi' => $row->harga_pemeriksaan_radiologi,
+                    ];
+                })
+                ->values();
 
             return response()->json([
                 'success' => true,
@@ -3473,6 +3505,7 @@ class APIMobileController extends Controller
     {
         try {
             $userId = Auth::id();
+
             $dokter = Dokter::where('user_id', $userId)->first();
 
             if (! $dokter) {
@@ -3486,22 +3519,18 @@ class APIMobileController extends Controller
                 'pasien',
                 'poli',
                 'dokter.jenisSpesialis',
-                'emr' => function ($query) {
-                    $query->with([
-                        'resep.obat',
-                        'perawat',
-                        'dokter.jenisSpesialis',
-                        'emrKklp.orangtua',
-                        'emrKklp.heteroanamnesis',
-                        'emrKklp.familyApgar',
-                        'emrKklp.familyScreem',
-                        'emrKklp.anggotaKeluarga',
-                        'emrKklp.homevisit',
-                        'emrKklp.familyPlan',
-                        'emrKklp.copcPlan',
-                        'emrKklp.ekstremitas',
-                    ]);
-                },
+                'emr.perawat',
+                'emr.dokter.jenisSpesialis',
+                'emr.resep.obat',
+                'emr.emrKklp.orangtua',
+                'emr.emrKklp.heteroanamnesis',
+                'emr.emrKklp.familyApgar',
+                'emr.emrKklp.familyScreem',
+                'emr.emrKklp.anggotaKeluarga',
+                'emr.emrKklp.homevisit',
+                'emr.emrKklp.familyPlan',
+                'emr.emrKklp.copcPlan',
+                'emr.emrKklp.ekstremitas',
             ])
                 ->where('id', $kunjunganId)
                 ->whereHas('emr')
@@ -3515,368 +3544,89 @@ class APIMobileController extends Controller
             }
 
             $emr = $kunjungan->emr;
-            $kklp = $emr?->emrKklp;
+            $pasien = $kunjungan->pasien;
+            $poli = $kunjungan->poli;
+            $dokterPemeriksa = $kunjungan->dokter;
+            $perawat = $emr?->perawat;
 
-            $pengkajianPenyakitDalam = null;
+            /*
+            |--------------------------------------------------------------------------
+            | PENGKAJIAN PENYAKIT DALAM
+            |--------------------------------------------------------------------------
+            */
+            $pengkajianModel = null;
+
             if ($emr) {
-                $pengkajianPenyakitDalam = EmrPengkajianAwalPenyakitDalam::with([
+                $pengkajianModel = EmrPengkajianAwalPenyakitDalam::with([
                     'dokter',
                     'riwayat',
                     'penunjang',
-                ])->where('emr_id', $emr->id)->first();
-            }
-
-            // ✅ TAMBAHKAN INI - Fetch Dental Examination
-            $dentalExamination = null;
-            if ($emr) {
-                $dentalExamination = \App\Models\DentalExamination::with(['pasien', 'kunjungan'])
-                    ->where('kunjungan_id', $kunjungan->id)
+                ])
+                    ->where('emr_id', $emr->id)
                     ->first();
             }
 
-            $isKklp = $kklp ? true : false;
-            $formType = $isKklp ? 'kklp' : 'general';
+            $pengkajian = $this->mapPengkajianPenyakitDalamForMobile($pengkajianModel);
 
-            $responseData = [
-                'id' => $kunjungan->id,
-                'kunjungan_id' => $kunjungan->id,
-                'tanggal_kunjungan' => $kunjungan->tanggal_kunjungan,
-                'no_antrian' => $kunjungan->no_antrian,
-                'status' => $kunjungan->status,
-                'keluhan_awal' => $kunjungan->keluhan_awal,
-                'created_at' => $kunjungan->created_at,
-                'updated_at' => $kunjungan->updated_at,
-
-                'form_type' => $formType,
-                'is_kklp' => $isKklp,
-
-                'pasien' => $kunjungan->pasien ? [
-                    'id' => $kunjungan->pasien->id,
-                    'nama_pasien' => $kunjungan->pasien->nama_pasien,
-                    'no_emr' => $kunjungan->pasien->no_emr,
-                    'alamat' => $kunjungan->pasien->alamat,
-                    'tanggal_lahir' => $kunjungan->pasien->tanggal_lahir,
-                    'jenis_kelamin' => $kunjungan->pasien->jenis_kelamin,
-                    'no_hp' => $kunjungan->pasien->no_hp_pasien ?? null,
-                    'nik' => $kunjungan->pasien->nik ?? null,
-                    'pekerjaan' => $kunjungan->pasien->pekerjaan ?? null,
-                ] : null,
-
-                'poli' => $kunjungan->poli ? [
-                    'id' => $kunjungan->poli->id,
-                    'nama_poli' => $kunjungan->poli->nama_poli,
-                ] : null,
-
-                'dokter' => $kunjungan->dokter ? [
-                    'id' => $kunjungan->dokter->id,
-                    'nama_dokter' => $kunjungan->dokter->nama_dokter,
-                    'foto_dokter' => $kunjungan->dokter->foto_dokter,
-                    'no_hp' => $kunjungan->dokter->no_hp,
-                    'pengalaman' => $kunjungan->dokter->pengalaman,
-                    'jenis_spesialis' => $kunjungan->dokter->jenisSpesialis ? [
-                        'id' => $kunjungan->dokter->jenisSpesialis->id,
-                        'nama_spesialis' => $kunjungan->dokter->jenisSpesialis->nama_spesialis,
-                    ] : null,
-                    'poli' => $kunjungan->poli ? [
-                        'id' => $kunjungan->poli->id,
-                        'nama_poli' => $kunjungan->poli->nama_poli,
-                    ] : null,
-                ] : null,
-
-                'emr' => $emr ? [
-                    'id' => $emr->id,
-                    'keluhan_utama' => $emr->keluhan_utama,
-                    'diagnosis' => $emr->diagnosis,
-                    'riwayat_penyakit_sekarang' => $emr->riwayat_penyakit_sekarang ?? null,
-                    'riwayat_penyakit_dahulu' => $emr->riwayat_penyakit_dahulu,
-                    'riwayat_penyakit_keluarga' => $emr->riwayat_penyakit_keluarga,
-                    'tekanan_darah' => $emr->tekanan_darah,
-                    'suhu_tubuh' => $emr->suhu_tubuh,
-                    'nadi' => $emr->nadi,
-                    'pernapasan' => $emr->pernapasan,
-                    'saturasi_oksigen' => $emr->saturasi_oksigen,
-                    'tinggi_badan' => $emr->tinggi_badan ?? null,
-                    'berat_badan' => $emr->berat_badan ?? null,
-                    'imt' => $emr->imt ?? null,
-                    'tanggal_pemeriksaan' => $emr->tanggal ?? null,
-                    'waktu_pemeriksaan' => $emr->waktu ?? null,
-
-                    'tanda_vital' => [
-                        'tekanan_darah' => $emr->tekanan_darah,
-                        'suhu_tubuh' => $emr->suhu_tubuh,
-                        'nadi' => $emr->nadi,
-                        'pernapasan' => $emr->pernapasan,
-                        'saturasi_oksigen' => $emr->saturasi_oksigen,
-                        'tinggi_badan' => $emr->tinggi_badan ?? null,
-                        'berat_badan' => $emr->berat_badan ?? null,
-                        'imt' => $emr->imt ?? null,
-                    ],
-
-                    'perawat' => $emr->perawat ? [
-                        'id' => $emr->perawat->id,
-                        'nama_perawat' => $emr->perawat->nama_perawat,
-                        'foto_perawat' => $emr->perawat->foto_perawat,
-                        'no_hp_perawat' => $emr->perawat->no_hp_perawat,
-                    ] : null,
-                ] : null,
-            ];
-
-            // RESEP OBAT
-            if ($emr && $emr->resep && $emr->resep->obat) {
-                $responseData['resep_obat'] = $emr->resep->obat->map(function ($item) use ($emr) {
-                    return [
-                        'id' => $item->id,
-                        'nama_obat' => $item->nama_obat ?? null,
-                        'jumlah' => $item->pivot->jumlah ?? null,
-                        'dosis' => $item->pivot->dosis ?? null,
-                        'keterangan' => $item->pivot->keterangan ?? null,
-                        'status' => $emr->resep->status ?? null,
-                    ];
-                })->values()->toArray();
-            } else {
-                $responseData['resep_obat'] = [];
+            if ($pengkajianModel && is_array($pengkajian)) {
+                $pengkajian['dokter'] = $pengkajianModel->dokter ? [
+                    'id' => $pengkajianModel->dokter->id,
+                    'nama_dokter' => $pengkajianModel->dokter->nama_dokter,
+                ] : null;
             }
 
-            // LAYANAN
-            $layananRows = DB::table('kunjungan_layanan as kl')
-                ->join('layanan as l', 'l.id', '=', 'kl.layanan_id')
-                ->where('kl.kunjungan_id', $kunjungan->id)
-                ->select(
-                    'l.id',
-                    'l.nama_layanan',
-                    'kl.jumlah',
-                    DB::raw('COALESCE(l.harga_setelah_diskon, l.harga_sebelum_diskon, 0) as harga_layanan')
-                )
-                ->get();
+            /*
+            |--------------------------------------------------------------------------
+            | DENTAL EXAMINATION
+            |--------------------------------------------------------------------------
+            */
+            $dentalExamination = null;
 
-            $responseData['layanan'] = $layananRows->map(function ($item) {
-                return [
-                    'id' => $item->id,
-                    'nama_layanan' => $item->nama_layanan,
-                    'jumlah' => $item->jumlah,
-                    'harga_layanan' => $item->harga_layanan,
-                ];
-            })->values()->toArray();
+            if (Schema::hasTable('dental_examinations')) {
+                $dentalQuery = DentalExamination::query();
+                $hasDentalFilter = false;
 
-            // LAB TESTS
-            $labTests = DB::table('order_lab as ol')
-                ->join('order_lab_detail as old', 'ol.id', '=', 'old.order_lab_id')
-                ->join('jenis_pemeriksaan_lab as jpl', 'jpl.id', '=', 'old.jenis_pemeriksaan_lab_id')
-                ->where('ol.kunjungan_id', $kunjungan->id)
-                ->select(
-                    'old.id',
-                    'jpl.nama_pemeriksaan',
-                    'ol.tanggal_pemeriksaan',
-                    'ol.jam_pemeriksaan',
-                    'old.status_pemeriksaan as status'
-                )
-                ->get();
+                if (Schema::hasColumn('dental_examinations', 'kunjungan_id')) {
+                    $dentalQuery->where('kunjungan_id', $kunjungan->id);
+                    $hasDentalFilter = true;
+                }
 
-            $responseData['lab_tests'] = $labTests->map(function ($item) {
-                return [
-                    'id' => $item->id,
-                    'nama_pemeriksaan' => $item->nama_pemeriksaan,
-                    'tanggal_pemeriksaan' => $item->tanggal_pemeriksaan,
-                    'jam_pemeriksaan' => $item->jam_pemeriksaan,
-                    'status' => $item->status,
-                ];
-            })->values()->toArray();
+                if ($emr && Schema::hasColumn('dental_examinations', 'emr_id')) {
+                    if ($hasDentalFilter) {
+                        $dentalQuery->orWhere('emr_id', $emr->id);
+                    } else {
+                        $dentalQuery->where('emr_id', $emr->id);
+                        $hasDentalFilter = true;
+                    }
+                }
 
-            // RADIOLOGI TESTS
-            $radiologiTests = DB::table('order_radiologi as orad')
-                ->join('order_radiologi_detail as ord', 'orad.id', '=', 'ord.order_radiologi_id')
-                ->join('jenis_pemeriksaan_radiologi as jpr', 'jpr.id', '=', 'ord.jenis_pemeriksaan_radiologi_id')
-                ->where('orad.kunjungan_id', $kunjungan->id)
-                ->select(
-                    'ord.id',
-                    'jpr.nama_pemeriksaan',
-                    'orad.tanggal_pemeriksaan',
-                    'orad.jam_pemeriksaan',
-                    'ord.status_pemeriksaan as status'
-                )
-                ->get();
+                if (! $hasDentalFilter && Schema::hasColumn('dental_examinations', 'pasien_id')) {
+                    $dentalQuery->where('pasien_id', $kunjungan->pasien_id);
 
-            $responseData['radiologi_tests'] = $radiologiTests->map(function ($item) {
-                return [
-                    'id' => $item->id,
-                    'nama_pemeriksaan' => $item->nama_pemeriksaan,
-                    'tanggal_pemeriksaan' => $item->tanggal_pemeriksaan,
-                    'jam_pemeriksaan' => $item->jam_pemeriksaan,
-                    'status' => $item->status,
-                ];
-            })->values()->toArray();
+                    if (Schema::hasColumn('dental_examinations', 'tanggal_kunjungan')) {
+                        $dentalQuery->whereDate('tanggal_kunjungan', $kunjungan->tanggal_kunjungan);
+                    }
 
-            // PENGKAJIAN PENYAKIT DALAM
-            $responseData['pengkajian_penyakit_dalam'] = null;
+                    $hasDentalFilter = true;
+                }
 
-            if ($pengkajianPenyakitDalam) {
-                $responseData['pengkajian_penyakit_dalam'] = [
-                    'id' => $pengkajianPenyakitDalam->id,
-                    'emr_id' => $pengkajianPenyakitDalam->emr_id,
-                    'dokter_id' => $pengkajianPenyakitDalam->dokter_id,
-                    'tanggal_pengkajian' => $pengkajianPenyakitDalam->tanggal_pengkajian,
-                    'jam_pengkajian' => $pengkajianPenyakitDalam->jam_pengkajian,
-                    'alergi' => $pengkajianPenyakitDalam->alergi,
-                    'sumber_data' => $pengkajianPenyakitDalam->sumber_data,
-                    'sumber_data_lainnya' => $pengkajianPenyakitDalam->sumber_data_lainnya,
-
-                    'nyeri_ada' => $pengkajianPenyakitDalam->nyeri_ada,
-                    'skala_nyeri' => $pengkajianPenyakitDalam->skala_nyeri,
-                    'karakteristik_nyeri' => $pengkajianPenyakitDalam->karakteristik_nyeri,
-                    'lokasi_nyeri' => $pengkajianPenyakitDalam->lokasi_nyeri,
-                    'durasi_nyeri' => $pengkajianPenyakitDalam->durasi_nyeri,
-                    'frekuensi_nyeri' => $pengkajianPenyakitDalam->frekuensi_nyeri,
-                    'tren_nyeri' => $pengkajianPenyakitDalam->tren_nyeri,
-
-                    'keluhan_utama' => $pengkajianPenyakitDalam->keluhan_utama,
-                    'riwayat_penyakit_sekarang' => $pengkajianPenyakitDalam->riwayat_penyakit_sekarang,
-
-                    'riwayat_keluarga_hipertensi' => $pengkajianPenyakitDalam->riwayat_keluarga_hipertensi,
-                    'riwayat_keluarga_kencing_manis' => $pengkajianPenyakitDalam->riwayat_keluarga_kencing_manis,
-                    'riwayat_keluarga_jantung' => $pengkajianPenyakitDalam->riwayat_keluarga_jantung,
-                    'riwayat_keluarga_asthma' => $pengkajianPenyakitDalam->riwayat_keluarga_asthma,
-                    'riwayat_penyakit_keluarga_lain' => $pengkajianPenyakitDalam->riwayat_penyakit_keluarga_lain,
-                    'riwayat_pekerjaan_sosial_ekonomi_psikologi_kebiasaan' => $pengkajianPenyakitDalam->riwayat_pekerjaan_sosial_ekonomi_psikologi_kebiasaan,
-
-                    'keadaan_umum' => $pengkajianPenyakitDalam->keadaan_umum,
-                    'status_gizi' => $pengkajianPenyakitDalam->status_gizi,
-
-                    'gcs_e' => $pengkajianPenyakitDalam->gcs_e,
-                    'gcs_m' => $pengkajianPenyakitDalam->gcs_m,
-                    'gcs_v' => $pengkajianPenyakitDalam->gcs_v,
-                    'tindakan_resusitasi' => $pengkajianPenyakitDalam->tindakan_resusitasi,
-
-                    'berat_badan' => $pengkajianPenyakitDalam->berat_badan,
-                    'tinggi_badan' => $pengkajianPenyakitDalam->tinggi_badan,
-                    'tensi_sistolik' => $pengkajianPenyakitDalam->tensi_sistolik,
-                    'tensi_diastolik' => $pengkajianPenyakitDalam->tensi_diastolik,
-                    'suhu_axila' => $pengkajianPenyakitDalam->suhu_axila,
-                    'suhu_rectal' => $pengkajianPenyakitDalam->suhu_rectal,
-                    'nadi' => $pengkajianPenyakitDalam->nadi,
-                    'respirasi' => $pengkajianPenyakitDalam->respirasi,
-                    'saturasi_o2' => $pengkajianPenyakitDalam->saturasi_o2,
-                    'saturasi_o2_dengan' => $pengkajianPenyakitDalam->saturasi_o2_dengan,
-
-                    'pemeriksaan_kulit' => $pengkajianPenyakitDalam->pemeriksaan_kulit,
-                    'pemeriksaan_kepala_dan_leher' => $pengkajianPenyakitDalam->pemeriksaan_kepala_dan_leher,
-                    'pemeriksaan_telinga_hidung_mulut' => $pengkajianPenyakitDalam->pemeriksaan_telinga_hidung_mulut,
-                    'pemeriksaan_leher' => $pengkajianPenyakitDalam->pemeriksaan_leher,
-
-                    'paru_inspeksi' => $pengkajianPenyakitDalam->paru_inspeksi,
-                    'paru_palpasi' => $pengkajianPenyakitDalam->paru_palpasi,
-                    'paru_perkusi' => $pengkajianPenyakitDalam->paru_perkusi,
-                    'paru_auskultasi' => $pengkajianPenyakitDalam->paru_auskultasi,
-
-                    'jantung_inspeksi' => $pengkajianPenyakitDalam->jantung_inspeksi,
-                    'jantung_palpasi' => $pengkajianPenyakitDalam->jantung_palpasi,
-                    'jantung_perkusi' => $pengkajianPenyakitDalam->jantung_perkusi,
-                    'jantung_auskultasi' => $pengkajianPenyakitDalam->jantung_auskultasi,
-
-                    'pemeriksaan_ekstremitas' => $pengkajianPenyakitDalam->pemeriksaan_ekstremitas,
-                    'pemeriksaan_alat_kelamin_dan_rektum' => $pengkajianPenyakitDalam->pemeriksaan_alat_kelamin_dan_rektum,
-                    'pemeriksaan_neurologis' => $pengkajianPenyakitDalam->pemeriksaan_neurologis,
-
-                    'diagnosa_kerja' => $pengkajianPenyakitDalam->diagnosa_kerja,
-                    'diagnosa_diferensial' => $pengkajianPenyakitDalam->diagnosa_diferensial,
-                    'terapi_tindakan' => $pengkajianPenyakitDalam->terapi_tindakan,
-                    'rencana_kerja' => $pengkajianPenyakitDalam->rencana_kerja,
-
-                    'boleh_pulang' => $pengkajianPenyakitDalam->boleh_pulang,
-                    'tanggal_pulang' => $pengkajianPenyakitDalam->tanggal_pulang,
-                    'jam_keluar' => $pengkajianPenyakitDalam->jam_keluar,
-                    'kontrol_poliklinik' => $pengkajianPenyakitDalam->kontrol_poliklinik,
-                    'nama_poli_kontrol' => $pengkajianPenyakitDalam->nama_poli_kontrol,
-                    'tanggal_kontrol' => $pengkajianPenyakitDalam->tanggal_kontrol,
-                    'dirawat_di_ruang' => $pengkajianPenyakitDalam->dirawat_di_ruang,
-                    'kelas_rawat' => $pengkajianPenyakitDalam->kelas_rawat,
-
-                    'tanggal_ttd_dokter' => $pengkajianPenyakitDalam->tanggal_ttd_dokter,
-                    'jam_ttd_dokter' => $pengkajianPenyakitDalam->jam_ttd_dokter,
-                    'nama_dokter_ttd' => $pengkajianPenyakitDalam->nama_dokter_ttd,
-                    'status_form' => $pengkajianPenyakitDalam->status_form,
-
-                    'dokter' => $pengkajianPenyakitDalam->dokter ? [
-                        'id' => $pengkajianPenyakitDalam->dokter->id,
-                        'nama_dokter' => $pengkajianPenyakitDalam->dokter->nama_dokter,
-                    ] : null,
-
-                    'riwayat' => $pengkajianPenyakitDalam->riwayat
-                        ? $pengkajianPenyakitDalam->riwayat->values()->toArray()
-                        : [],
-
-                    'penunjang' => $pengkajianPenyakitDalam->penunjang
-                        ? $pengkajianPenyakitDalam->penunjang->values()->toArray()
-                        : [],
-                ];
+                if ($hasDentalFilter) {
+                    $dentalExamination = $dentalQuery->orderByDesc('id')->first();
+                }
             }
 
-            // ✅ TAMBAHKAN INI - Dental Examination Response
-            $responseData['dental_examination'] = null;
-
-            if ($dentalExamination) {
-                $responseData['dental_examination'] = [
-                    'id' => $dentalExamination->id,
-                    'pasien_id' => $dentalExamination->pasien_id,
-                    'kunjungan_id' => $dentalExamination->kunjungan_id,
-                    'order_layanan_id' => $dentalExamination->order_layanan_id,
-                    'tanggal_kunjungan' => $dentalExamination->tanggal_kunjungan,
-                    'dpjp_nama' => $dentalExamination->dpjp_nama,
-                    'ppjp_nama' => $dentalExamination->ppjp_nama,
-                    'status' => $dentalExamination->status,
-                    'diperiksa_oleh' => $dentalExamination->diperiksa_oleh,
-                    'tanggal_pemeriksaan' => $dentalExamination->tanggal_pemeriksaan,
-
-                    // Odontogram - NORMALIZED
-                    'gigi_dewasa_atas' => $this->normalizeOdontogram($dentalExamination->gigi_dewasa_atas),
-                    'gigi_dewasa_bawah' => $this->normalizeOdontogram($dentalExamination->gigi_dewasa_bawah),
-                    'gigi_anak_atas' => $this->normalizeOdontogram($dentalExamination->gigi_anak_atas),
-                    'gigi_anak_bawah' => $this->normalizeOdontogram($dentalExamination->gigi_anak_bawah),
-
-                    // Pemeriksaan Klinis
-                    'occlusi' => $dentalExamination->occlusi,
-                    'torus_palatinus' => $dentalExamination->torus_palatinus,
-                    'torus_mandibularis' => $dentalExamination->torus_mandibularis,
-                    'palatum' => $dentalExamination->palatum,
-                    'diastema_ada' => $dentalExamination->diastema_ada,
-                    'diastema_keterangan' => $dentalExamination->diastema_keterangan,
-                    'gigi_anomali_ada' => $dentalExamination->gigi_anomali_ada,
-                    'gigi_anomali_keterangan' => $dentalExamination->gigi_anomali_keterangan,
-                    'lain_lain' => $dentalExamination->lain_lain,
-
-                    // DMF Index
-                    'd_index' => $dentalExamination->d_index,
-                    'm_index' => $dentalExamination->m_index,
-                    'f_index' => $dentalExamination->f_index,
-
-                    // Dokumentasi
-                    'jumlah_foto' => $dentalExamination->jumlah_foto,
-                    'jenis_foto' => $dentalExamination->jenis_foto,
-                    'jumlah_rontgen' => $dentalExamination->jumlah_rontgen,
-                    'jenis_rontgen' => $dentalExamination->jenis_rontgen,
-
-                    'created_at' => $dentalExamination->created_at,
-                    'updated_at' => $dentalExamination->updated_at,
-                ];
-            }
-
-            // DATA KKLP (existing code tetap sama)
-            $responseData['kklp'] = null;
+            /*
+            |--------------------------------------------------------------------------
+            | KKLP DETAIL
+            |--------------------------------------------------------------------------
+            */
+            $kklp = $emr?->emrKklp;
+            $kklpDetail = null;
 
             if ($kklp) {
-                $responseData['kklp'] = [
-                    'id' => $kklp->id,
-                    'form' => [
-                        'id' => $kklp->id,
-                        'diagnosis_holistik' => $kklp->diagnosis_holistik ?? null,
-                        'uraian_diagnosis_holistik' => $kklp->uraian_diagnosis_holistik ?? null,
-                        'biologis' => $kklp->biologis ?? null,
-                        'psikologis' => $kklp->psikologis ?? null,
-                        'sosial' => $kklp->sosial ?? null,
-                        'fungsional' => $kklp->fungsional ?? null,
-                        'derajat_fungsional' => $kklp->derajat_fungsional ?? null,
-                        'prognosis' => $kklp->prognosis ?? null,
-                        'penatalaksanaan' => $kklp->penatalaksanaan ?? null,
-                    ],
+                $kklpDetail = [
+                    'form' => $kklp->toArray(),
+                    'emr' => $emr ? $emr->toArray() : null,
                     'orangtua' => $kklp->orangtua ? $kklp->orangtua->values()->toArray() : [],
                     'heteroanamnesis' => $kklp->heteroanamnesis ? $kklp->heteroanamnesis->toArray() : null,
                     'family_apgars' => $kklp->familyApgar ? $kklp->familyApgar->toArray() : null,
@@ -3889,15 +3639,382 @@ class APIMobileController extends Controller
                 ];
             }
 
+            /*
+            |--------------------------------------------------------------------------
+            | LAYANAN YANG SUDAH DIPILIH DOKTER
+            |--------------------------------------------------------------------------
+            */
+            $layanan = [];
+
+            if (Schema::hasTable('kunjungan_layanan') && Schema::hasTable('layanan')) {
+                $layanan = DB::table('kunjungan_layanan as kl')
+                    ->leftJoin('layanan as l', 'l.id', '=', 'kl.layanan_id')
+                    ->where('kl.kunjungan_id', $kunjungan->id)
+                    ->select(
+                        'kl.id',
+                        'kl.layanan_id',
+                        'kl.jumlah',
+                        'l.nama_layanan',
+                        'l.harga_sebelum_diskon',
+                        'l.harga_setelah_diskon'
+                    )
+                    ->get()
+                    ->map(function ($row) {
+                        $hargaRaw = $row->harga_setelah_diskon ?? $row->harga_sebelum_diskon ?? 0;
+
+                        return [
+                            'id' => $row->id,
+                            'layanan_id' => $row->layanan_id,
+                            'nama_layanan' => $row->nama_layanan,
+                            'jumlah' => (int) ($row->jumlah ?? 1),
+                            'harga_layanan' => $hargaRaw,
+                            'harga_layanan_raw' => $hargaRaw,
+                        ];
+                    })
+                    ->values()
+                    ->toArray();
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | RESEP OBAT YANG SUDAH DIPILIH DOKTER
+            |--------------------------------------------------------------------------
+            */
+            $resepObat = [];
+
+            $resepId = $emr?->resep_id;
+
+            if (! $resepId && Schema::hasTable('resep')) {
+                $resepId = DB::table('resep')
+                    ->where('kunjungan_id', $kunjungan->id)
+                    ->orderByDesc('id')
+                    ->value('id');
+            }
+
+            if ($resepId && Schema::hasTable('resep_obat') && Schema::hasTable('obat')) {
+                $resepObat = DB::table('resep_obat as ro')
+                    ->leftJoin('obat as o', 'o.id', '=', 'ro.obat_id')
+                    ->where('ro.resep_id', $resepId)
+                    ->select(
+                        'ro.id',
+                        'ro.resep_id',
+                        'ro.obat_id',
+                        'ro.jumlah',
+                        'ro.dosis',
+                        'ro.keterangan',
+                        'o.nama_obat',
+                        'o.harga_jual_obat'
+                    )
+                    ->get()
+                    ->map(function ($row) {
+                        return [
+                            'id' => $row->id,
+                            'resep_id' => $row->resep_id,
+                            'obat_id' => $row->obat_id,
+                            'nama_obat' => $row->nama_obat,
+                            'jumlah' => (int) ($row->jumlah ?? 1),
+                            'dosis' => $row->dosis,
+                            'keterangan' => $row->keterangan,
+                            'harga_obat' => $row->harga_jual_obat ?? 0,
+                        ];
+                    })
+                    ->values()
+                    ->toArray();
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | ORDER LAB YANG SUDAH DIPILIH DOKTER
+            |--------------------------------------------------------------------------
+            */
+            $labTests = [];
+
+            if (
+                Schema::hasTable('order_lab') &&
+                Schema::hasTable('order_lab_detail') &&
+                Schema::hasTable('jenis_pemeriksaan_lab')
+            ) {
+                $orderLab = DB::table('order_lab')
+                    ->where('kunjungan_id', $kunjungan->id)
+                    ->orderByDesc('id')
+                    ->first();
+
+                if ($orderLab) {
+                    $labQuery = DB::table('order_lab_detail as old')
+                        ->leftJoin('jenis_pemeriksaan_lab as jpl', 'jpl.id', '=', 'old.jenis_pemeriksaan_lab_id')
+                        ->where('old.order_lab_id', $orderLab->id);
+
+                    if (Schema::hasTable('hasil_lab')) {
+                        $labQuery->leftJoin('hasil_lab as hl', 'hl.order_lab_detail_id', '=', 'old.id')
+                            ->select(
+                                'old.id',
+                                'old.order_lab_id',
+                                'old.jenis_pemeriksaan_lab_id',
+                                'old.status_pemeriksaan',
+                                'jpl.kode_pemeriksaan',
+                                'jpl.nama_pemeriksaan',
+                                'jpl.nilai_normal',
+                                'jpl.harga_pemeriksaan_lab',
+                                'hl.nilai_hasil',
+                                'hl.nilai_rujukan',
+                                'hl.catatan as hasil_catatan',
+                                'hl.tanggal_pemeriksaan as hasil_tanggal_pemeriksaan',
+                                'hl.jam_pemeriksaan as hasil_jam_pemeriksaan'
+                            );
+                    } else {
+                        $labQuery->select(
+                            'old.id',
+                            'old.order_lab_id',
+                            'old.jenis_pemeriksaan_lab_id',
+                            'old.status_pemeriksaan',
+                            'jpl.kode_pemeriksaan',
+                            'jpl.nama_pemeriksaan',
+                            'jpl.nilai_normal',
+                            'jpl.harga_pemeriksaan_lab',
+                            DB::raw('NULL as nilai_hasil'),
+                            DB::raw('NULL as nilai_rujukan'),
+                            DB::raw('NULL as hasil_catatan'),
+                            DB::raw('NULL as hasil_tanggal_pemeriksaan'),
+                            DB::raw('NULL as hasil_jam_pemeriksaan')
+                        );
+                    }
+
+                    $labTests = $labQuery
+                        ->get()
+                        ->map(function ($row) use ($orderLab) {
+                            return [
+                                'id' => $row->id,
+                                'order_lab_id' => $row->order_lab_id,
+                                'lab_test_id' => $row->jenis_pemeriksaan_lab_id,
+                                'jenis_pemeriksaan_lab_id' => $row->jenis_pemeriksaan_lab_id,
+                                'kode_pemeriksaan' => $row->kode_pemeriksaan,
+                                'nama_pemeriksaan' => $row->nama_pemeriksaan,
+                                'lab_test_nama' => $row->nama_pemeriksaan,
+                                'nilai_normal' => $row->nilai_normal,
+                                'harga' => $row->harga_pemeriksaan_lab ?? 0,
+                                'tanggal_pemeriksaan' => $orderLab->tanggal_pemeriksaan ?? $row->hasil_tanggal_pemeriksaan,
+                                'jam_pemeriksaan' => $orderLab->jam_pemeriksaan ?? $row->hasil_jam_pemeriksaan,
+                                'tanggal_kunjungan_terjadwal' => $orderLab->tanggal_pemeriksaan ?? $row->hasil_tanggal_pemeriksaan,
+                                'jam_kunjungan_terjadwal' => $orderLab->jam_pemeriksaan ?? $row->hasil_jam_pemeriksaan,
+                                'catatan' => $row->hasil_catatan,
+                                'catatan_jadwal' => $row->hasil_catatan,
+                                'status' => $row->status_pemeriksaan,
+                                'hasil' => $row->nilai_hasil,
+                            ];
+                        })
+                        ->values()
+                        ->toArray();
+                }
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | ORDER RADIOLOGI YANG SUDAH DIPILIH DOKTER
+            |--------------------------------------------------------------------------
+            */
+            $radiologiTests = [];
+
+            if (
+                Schema::hasTable('order_radiologi') &&
+                Schema::hasTable('order_radiologi_detail') &&
+                Schema::hasTable('jenis_pemeriksaan_radiologi')
+            ) {
+                $orderRadiologi = DB::table('order_radiologi')
+                    ->where('kunjungan_id', $kunjungan->id)
+                    ->orderByDesc('id')
+                    ->first();
+
+                if ($orderRadiologi) {
+                    $radiologiQuery = DB::table('order_radiologi_detail as ord')
+                        ->leftJoin('jenis_pemeriksaan_radiologi as jpr', 'jpr.id', '=', 'ord.jenis_pemeriksaan_radiologi_id')
+                        ->where('ord.order_radiologi_id', $orderRadiologi->id);
+
+                    if (Schema::hasTable('hasil_radiologi')) {
+                        $radiologiQuery->leftJoin('hasil_radiologi as hr', 'hr.order_radiologi_detail_id', '=', 'ord.id')
+                            ->select(
+                                'ord.id',
+                                'ord.order_radiologi_id',
+                                'ord.jenis_pemeriksaan_radiologi_id',
+                                'ord.status_pemeriksaan',
+                                'jpr.kode_pemeriksaan',
+                                'jpr.nama_pemeriksaan',
+                                'jpr.harga_pemeriksaan_radiologi',
+                                'hr.foto_hasil_radiologi',
+                                'hr.keterangan as hasil_keterangan',
+                                'hr.tanggal_pemeriksaan as hasil_tanggal_pemeriksaan',
+                                'hr.jam_pemeriksaan as hasil_jam_pemeriksaan'
+                            );
+                    } else {
+                        $radiologiQuery->select(
+                            'ord.id',
+                            'ord.order_radiologi_id',
+                            'ord.jenis_pemeriksaan_radiologi_id',
+                            'ord.status_pemeriksaan',
+                            'jpr.kode_pemeriksaan',
+                            'jpr.nama_pemeriksaan',
+                            'jpr.harga_pemeriksaan_radiologi',
+                            DB::raw('NULL as foto_hasil_radiologi'),
+                            DB::raw('NULL as hasil_keterangan'),
+                            DB::raw('NULL as hasil_tanggal_pemeriksaan'),
+                            DB::raw('NULL as hasil_jam_pemeriksaan')
+                        );
+                    }
+
+                    $radiologiTests = $radiologiQuery
+                        ->get()
+                        ->map(function ($row) use ($orderRadiologi) {
+                            return [
+                                'id' => $row->id,
+                                'order_radiologi_id' => $row->order_radiologi_id,
+                                'jenis_radiologi_id' => $row->jenis_pemeriksaan_radiologi_id,
+                                'jenis_pemeriksaan_radiologi_id' => $row->jenis_pemeriksaan_radiologi_id,
+                                'kode_pemeriksaan' => $row->kode_pemeriksaan,
+                                'nama_pemeriksaan' => $row->nama_pemeriksaan,
+                                'jenis_radiologi_nama' => $row->nama_pemeriksaan,
+
+                                // Tabel jenis_pemeriksaan_radiologi kamu tidak punya kolom deskripsi.
+                                'deskripsi' => null,
+
+                                'harga' => $row->harga_pemeriksaan_radiologi ?? 0,
+                                'tanggal_pemeriksaan' => $orderRadiologi->tanggal_pemeriksaan ?? $row->hasil_tanggal_pemeriksaan,
+                                'jam_pemeriksaan' => $orderRadiologi->jam_pemeriksaan ?? $row->hasil_jam_pemeriksaan,
+                                'tanggal_kunjungan_terjadwal' => $orderRadiologi->tanggal_pemeriksaan ?? $row->hasil_tanggal_pemeriksaan,
+                                'jam_kunjungan_terjadwal' => $orderRadiologi->jam_pemeriksaan ?? $row->hasil_jam_pemeriksaan,
+                                'catatan' => $row->hasil_keterangan,
+                                'catatan_jadwal' => $row->hasil_keterangan,
+                                'status' => $row->status_pemeriksaan,
+                                'hasil' => $row->hasil_keterangan,
+                                'foto_hasil_radiologi' => $row->foto_hasil_radiologi,
+                            ];
+                        })
+                        ->values()
+                        ->toArray();
+                }
+            }
+
+            /*
+            |--------------------------------------------------------------------------
+            | FORM TYPE
+            |--------------------------------------------------------------------------
+            */
+            $formType = $this->resolveFormType(
+                $dokterPemeriksa ?? $dokter,
+                $kunjungan,
+                $emr,
+                $dentalExamination
+            );
+
             return response()->json([
                 'success' => true,
+                'status' => 200,
                 'message' => 'Detail riwayat pasien berhasil diambil',
-                'data' => $responseData,
-            ], 200);
+                'data' => [
+                    'id' => $kunjungan->id,
+                    'kunjungan_id' => $kunjungan->id,
+                    'pasien_id' => $kunjungan->pasien_id,
+                    'poli_id' => $kunjungan->poli_id,
+                    'dokter_id' => $kunjungan->dokter_id,
+                    'tanggal_kunjungan' => $kunjungan->tanggal_kunjungan,
+                    'no_antrian' => $kunjungan->no_antrian,
+                    'status' => $kunjungan->status,
+                    'keluhan_awal' => $kunjungan->keluhan_awal,
+                    'form_type' => $formType,
 
+                    'pasien' => $pasien ? [
+                        'id' => $pasien->id,
+                        'nama_pasien' => $pasien->nama_pasien,
+                        'alamat' => $pasien->alamat,
+                        'tanggal_lahir' => $pasien->tanggal_lahir,
+                        'jenis_kelamin' => $pasien->jenis_kelamin,
+                        'no_emr' => $pasien->no_emr,
+                        'no_rekam_medis' => $pasien->no_emr,
+                        'no_hp_pasien' => $pasien->no_hp_pasien ?? null,
+                        'pekerjaan' => $pasien->pekerjaan ?? null,
+                        'agama' => $pasien->agama ?? null,
+                        'pendidikan_terakhir' => $pasien->pendidikan_terakhir ?? null,
+                        'suku_bangsa' => $pasien->suku_bangsa ?? null,
+                    ] : null,
+
+                    'poli' => $poli ? [
+                        'id' => $poli->id,
+                        'nama_poli' => $poli->nama_poli,
+                    ] : null,
+
+                    'dokter' => $dokterPemeriksa ? [
+                        'id' => $dokterPemeriksa->id,
+                        'nama_dokter' => $dokterPemeriksa->nama_dokter,
+                        'no_hp' => $dokterPemeriksa->no_hp,
+                        'pengalaman' => $dokterPemeriksa->pengalaman,
+                        'spesialis' => $dokterPemeriksa->jenisSpesialis ? [
+                            'id' => $dokterPemeriksa->jenisSpesialis->id,
+                            'nama_spesialis' => $dokterPemeriksa->jenisSpesialis->nama_spesialis,
+                        ] : null,
+                    ] : null,
+
+                    'dokter_pemeriksa' => $dokterPemeriksa ? [
+                        'id' => $dokterPemeriksa->id,
+                        'nama_dokter' => $dokterPemeriksa->nama_dokter,
+                        'foto_dokter' => $dokterPemeriksa->foto_dokter,
+                        'spesialis' => $dokterPemeriksa->jenisSpesialis ? [
+                            'id' => $dokterPemeriksa->jenisSpesialis->id,
+                            'nama_spesialis' => $dokterPemeriksa->jenisSpesialis->nama_spesialis,
+                        ] : null,
+                    ] : null,
+
+                    'perawat' => $perawat ? [
+                        'id' => $perawat->id,
+                        'nama_perawat' => $perawat->nama_perawat,
+                        'foto_perawat' => $perawat->foto_perawat,
+                        'no_hp_perawat' => $perawat->no_hp_perawat,
+                    ] : null,
+
+                    'emr' => $emr ? [
+                        'id' => $emr->id,
+                        'pasien_id' => $emr->pasien_id ?? $kunjungan->pasien_id,
+                        'kunjungan_id' => $kunjungan->id,
+                        'dokter_id' => $emr->dokter_id,
+                        'perawat_id' => $emr->perawat_id,
+                        'resep_id' => $emr->resep_id,
+                        'keluhan_utama' => $emr->keluhan_utama,
+                        'riwayat_penyakit_sekarang' => $emr->riwayat_penyakit_sekarang ?? null,
+                        'riwayat_penyakit_dahulu' => $emr->riwayat_penyakit_dahulu,
+                        'riwayat_penyakit_keluarga' => $emr->riwayat_penyakit_keluarga,
+                        'tekanan_darah' => $emr->tekanan_darah,
+                        'suhu_tubuh' => $emr->suhu_tubuh,
+                        'nadi' => $emr->nadi,
+                        'pernapasan' => $emr->pernapasan,
+                        'saturasi_oksigen' => $emr->saturasi_oksigen,
+                        'tinggi_badan' => $emr->tinggi_badan,
+                        'berat_badan' => $emr->berat_badan,
+                        'imt' => $emr->imt,
+                        'diagnosis' => $emr->diagnosis,
+                        'created_at' => optional($emr->created_at)->toISOString(),
+                        'updated_at' => optional($emr->updated_at)->toISOString(),
+                        'perawat' => $perawat ? [
+                            'id' => $perawat->id,
+                            'nama_perawat' => $perawat->nama_perawat,
+                        ] : null,
+                    ] : null,
+
+                    'layanan' => $layanan,
+                    'resep_obat' => $resepObat,
+                    'resep' => $resepObat,
+                    'lab_tests' => $labTests,
+                    'radiologi_tests' => $radiologiTests,
+
+                    'dental_examination' => $dentalExamination ? $dentalExamination->toArray() : null,
+
+                    'pengkajian_penyakit_dalam' => $pengkajian,
+                    'pengkajian_awal_penyakit_dalam' => $pengkajian,
+
+                    'kklp' => $kklpDetail,
+                    'kklp_detail' => $kklpDetail,
+                ],
+            ], 200);
         } catch (\Throwable $e) {
             Log::error('ERROR getDetailRiwayatPasien: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
+                'kunjungan_id' => $kunjunganId,
             ]);
 
             return response()->json([
