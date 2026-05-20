@@ -226,6 +226,8 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::post('/delete-data-layanan', [LayananController::class, 'deleteDataLayanan'])->name('layanan.delete.data');
     });
 
+    Route::get('/layanan/export-excel', [LayananController::class, 'exportExcel'])->name('layanan.export.excel');
+
     Route::prefix('manajemen_pengguna')->name('manajemen_pengguna.')->group(function () {
         Route::get('/', [ManajemenPenggunaController::class, 'index'])->name('index');
 
@@ -795,8 +797,8 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
         });
 
         Route::prefix('order-radiologi')->group(function () {
-            Route::get('/get-data-order-radiologi',  [OrderRadiologiController::class, 'getDataOrderRadiologi'])->name('get.data.order.radiologi');
-            Route::get('/get-data-detail-order-radiologi/{id}',  [OrderRadiologiController::class, 'detailOrderRadiologi'])->name('get.data.detail.order.radiologi');
+            Route::get('/get-data-order-radiologi', [OrderRadiologiController::class, 'getDataOrderRadiologi'])->name('get.data.order.radiologi');
+            Route::get('/get-data-detail-order-radiologi/{id}', [OrderRadiologiController::class, 'detailOrderRadiologi'])->name('get.data.detail.order.radiologi');
             Route::get('/input-hasil/{id}', [OrderRadiologiController::class, 'inputHasil'])->name('input.hasil.order.radiologi');
             Route::post('/simpan-hasil', [OrderRadiologiController::class, 'simpanHasil'])->name('simpan-hasil');
         });

@@ -21,6 +21,15 @@
         </div>
 
         <div class="flex items-center gap-2 md:gap-3">
+            <!-- Tombol Export -->
+            <button id="btnExportLayanan" type="button" data-export-url="{{ route('layanan.export.excel') }}"
+                class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl shadow-md
+               bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700
+               focus:outline-none focus:ring-2 focus:ring-emerald-400">
+                <i class="fa-solid fa-file-excel text-xs"></i>
+                <span>Export Excel</span>
+            </button>
+
             <!-- Tombol Info -->
             <button type="button" id="btnInfoLayanan"
                 class="hidden md:inline-flex items-center gap-2 px-3 py-2 text-xs md:text-sm rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 dark:bg-slate-700 dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-600">
@@ -31,8 +40,8 @@
             <!-- Tombol Tambah -->
             <button id="buttonModalCreateLayanan" type="button"
                 class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white rounded-xl shadow-md
-                       bg-gradient-to-r from-sky-500 to-teal-600 hover:from-sky-600 hover:to-teal-700
-                       focus:outline-none focus:ring-2 focus:ring-sky-400">
+               bg-gradient-to-r from-sky-500 to-teal-600 hover:from-sky-600 hover:to-teal-700
+               focus:outline-none focus:ring-2 focus:ring-sky-400">
                 <i class="fa-solid fa-plus text-xs"></i>
                 <span>Tambah Data Layanan</span>
             </button>
@@ -85,12 +94,41 @@
                 <thead
                     class="text-xs font-semibold uppercase bg-gradient-to-r from-sky-500 to-teal-500 text-white tracking-wide">
                     <tr>
-                        <th class="px-6 py-3">No</th>
-                        <th class="px-6 py-3">Nama Layanan</th>
-                        <th class="px-6 py-3">Poli</th>
-                        <th class="px-6 py-3">Harga Layanan</th>
-                        <th class="px-6 py-3">Kategori Layanan</th>
-                        <th class="px-6 py-3 text-center w-32">Aksi</th>
+                        <th class="px-6 py-3 cursor-pointer select-none">
+                            No
+                        </th>
+
+                        <th class="px-6 py-3 cursor-pointer select-none">
+                            <div class="flex items-center gap-2">
+                                <span>Nama Layanan</span>
+                                <i class="fa-solid fa-sort text-[10px] opacity-80"></i>
+                            </div>
+                        </th>
+
+                        <th class="px-6 py-3 cursor-pointer select-none">
+                            <div class="flex items-center gap-2">
+                                <span>Poli</span>
+                                <i class="fa-solid fa-sort text-[10px] opacity-80"></i>
+                            </div>
+                        </th>
+
+                        <th class="px-6 py-3 cursor-pointer select-none">
+                            <div class="flex items-center gap-2">
+                                <span>Harga Layanan</span>
+                                <i class="fa-solid fa-sort text-[10px] opacity-80"></i>
+                            </div>
+                        </th>
+
+                        <th class="px-6 py-3 cursor-pointer select-none">
+                            <div class="flex items-center gap-2">
+                                <span>Kategori Layanan</span>
+                                <i class="fa-solid fa-sort text-[10px] opacity-80"></i>
+                            </div>
+                        </th>
+
+                        <th class="px-6 py-3 text-center w-32">
+                            Aksi
+                        </th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-700"></tbody>
@@ -317,6 +355,135 @@
                         class="px-5 py-2.5 text-sm font-semibold rounded-lg bg-teal-600 text-white hover:bg-teal-700 shadow-md
                                focus:ring-4 focus:ring-teal-200 dark:focus:ring-teal-800">
                         Simpan Perubahan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{{-- ================= MODAL EXPORT EXCEL LAYANAN ================= --}}
+<div id="exportLayananModal" aria-hidden="true"
+    class="hidden fixed inset-0 z-[60] flex items-start md:items-center justify-center
+           w-full h-full p-4 md:p-6 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
+    <div class="relative w-full max-w-2xl">
+        <div
+            class="relative bg-white rounded-2xl shadow-2xl dark:bg-slate-800
+                   border border-slate-100 dark:border-slate-700 flex flex-col overflow-hidden">
+
+            {{-- HEADER --}}
+            <div
+                class="flex items-start justify-between gap-3 px-6 pt-5 pb-4
+                       border-b border-slate-100 dark:border-slate-700
+                       bg-gradient-to-r from-emerald-500 to-green-600">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="h-10 w-10 rounded-xl bg-emerald-500 flex items-center justify-center shadow-md text-white">
+                        <i class="fa-solid fa-file-excel text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base md:text-lg font-semibold text-slate-50">
+                            Export Data Layanan ke Excel
+                        </h3>
+                        <p class="text-xs text-emerald-50/90 mt-0.5">
+                            Pilih kolom layanan yang ingin dimasukkan ke file Excel.
+                        </p>
+                    </div>
+                </div>
+
+                <button type="button" id="closeExportLayananModal"
+                    class="inline-flex items-center justify-center h-8 w-8 rounded-full
+                           text-slate-100 hover:text-white hover:bg-white/10 transition">
+                    <i class="fa-solid fa-xmark text-sm"></i>
+                </button>
+            </div>
+
+            {{-- BODY --}}
+            <form id="formExportLayanan" class="px-6 pb-5 pt-4 bg-slate-50/60 dark:bg-slate-800">
+                <div
+                    class="flex items-center gap-2 text-xs rounded-xl px-3 py-2
+                           bg-emerald-50 text-emerald-700 border border-emerald-100
+                           dark:bg-emerald-900/40 dark:text-emerald-100 dark:border-emerald-800">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>
+                        Pilih minimal 1 kolom. Kolom <strong>Nama Layanan</strong>,
+                        <strong>Harga</strong>, dan <strong>Kategori</strong> biasanya wajib.
+                        Kalau tidak, Excel-nya cuma jadi pajangan. Elegan, tapi hampa.
+                    </span>
+                </div>
+
+                <div class="mt-4 flex items-center justify-between gap-3">
+                    <label
+                        class="inline-flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200 cursor-pointer">
+                        <input type="checkbox" id="checkAllExportLayananColumns"
+                            class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                        <span>Pilih Semua</span>
+                    </label>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
+                    @php
+                        $exportLayananColumns = [
+                            'nama_layanan' => 'Nama Layanan',
+                            'poli' => 'Poli',
+                            'harga_sebelum_diskon' => 'Harga Layanan',
+                            'kategori_layanan' => 'Kategori Layanan',
+                            'is_global' => 'Status Global',
+                            'created_at' => 'Tanggal Dibuat',
+                        ];
+                    @endphp
+
+                    @foreach ($exportLayananColumns as $value => $label)
+                        <label
+                            class="flex items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700
+                                   bg-white dark:bg-slate-900/30 px-4 py-3 cursor-pointer hover:border-emerald-400 transition">
+                            <input type="checkbox" name="columns[]" value="{{ $value }}"
+                                class="export-layanan-column-checkbox rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                                {{ in_array($value, ['nama_layanan', 'poli', 'harga_sebelum_diskon', 'kategori_layanan']) ? 'checked' : '' }}>
+                            <span class="text-sm text-slate-700 dark:text-slate-200">{{ $label }}</span>
+                        </label>
+                    @endforeach
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                    <div class="space-y-1">
+                        <label for="tanggalDariExportLayanan"
+                            class="block text-sm font-medium text-slate-800 dark:text-slate-100">
+                            Dari Tanggal
+                        </label>
+                        <input type="date" id="tanggalDariExportLayanan" name="tanggal_dari"
+                            class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-xl
+                                   focus:ring-emerald-500 focus:border-emerald-500 px-3 py-2.5
+                                   dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50">
+                    </div>
+
+                    <div class="space-y-1">
+                        <label for="tanggalSampaiExportLayanan"
+                            class="block text-sm font-medium text-slate-800 dark:text-slate-100">
+                            Sampai Tanggal
+                        </label>
+                        <input type="date" id="tanggalSampaiExportLayanan" name="tanggal_sampai"
+                            class="w-full bg-white border border-slate-300 text-slate-900 text-sm rounded-xl
+                                   focus:ring-emerald-500 focus:border-emerald-500 px-3 py-2.5
+                                   dark:bg-slate-700 dark:border-slate-600 dark:text-slate-50">
+                    </div>
+                </div>
+
+                <div id="exportLayananError" class="text-red-600 text-sm mt-4 hidden"></div>
+
+                {{-- FOOTER --}}
+                <div class="flex justify-end gap-3 mt-6 border-t border-slate-200 pt-4 dark:border-slate-700">
+                    <button type="button" id="closeExportLayananModalFooter"
+                        class="px-5 py-2.5 text-sm font-medium text-slate-700 bg-slate-200 rounded-xl
+                               hover:bg-slate-300 dark:bg-slate-700 dark:text-slate-100 dark:hover:bg-slate-600">
+                        Batal
+                    </button>
+
+                    <button type="submit"
+                        class="px-5 py-2.5 text-sm font-semibold text-white rounded-xl
+                               bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700
+                               focus:ring-2 focus:ring-emerald-400">
+                        Download Excel
                     </button>
                 </div>
             </form>

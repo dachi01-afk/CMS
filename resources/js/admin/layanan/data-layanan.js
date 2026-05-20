@@ -16,6 +16,7 @@ $(function () {
         paging: true,
         searching: true,
         ordering: true,
+        order: [[1, "asc"]], // default sort: Nama Layanan ASC
         pageLength: 10,
         lengthChange: false,
         info: false,
@@ -33,43 +34,48 @@ $(function () {
                 searchable: false,
             },
 
-            { data: "nama_layanan", name: "nama_layanan" },
+            {
+                data: "nama_layanan",
+                name: "nama_layanan",
+                orderable: true,
+                searchable: true,
+            },
 
-            // Poli (global / spesifik)
             {
                 data: "poli_label",
                 name: "poli_label",
-                orderable: false,
-                searchable: false,
+                orderable: false, // jangan sort dulu, ini kolom custom/pivot
+                searchable: true,
                 defaultContent: "-",
                 render: function (data, type, row) {
                     if (!data) return "-";
 
-                    // optional: kasih badge sederhana kalau global
                     if (row.is_global === true || row.is_global === 1) {
                         return `<span class="inline-flex items-center px-2 py-1 text-xs font-semibold rounded-lg
-                          bg-emerald-50 text-emerald-700 border border-emerald-100">
-                        ${data}
-                    </span>`;
+                    bg-emerald-50 text-emerald-700 border border-emerald-100">
+                    ${data}
+                </span>`;
                     }
 
-                    return data; // list nama poli
+                    return data;
                 },
             },
 
-            // Harga sebelum diskon (format Rp di FE, value tetap angka)
             {
                 data: "harga_sebelum_diskon",
                 name: "harga_sebelum_diskon",
+                orderable: true,
+                searchable: true,
                 render: function (data) {
                     return "Rp " + toRupiah(data);
                 },
             },
 
-            // Kategori
             {
                 data: "nama_kategori",
-                name: "kategoriLayanan.nama_kategori", // ✅ penting untuk serverSide (relasi)
+                name: "nama_kategori",
+                orderable: true,
+                searchable: true,
                 defaultContent: "-",
             },
 
@@ -643,5 +649,123 @@ $(function () {
                     });
             }
         });
+    });
+});
+
+// export database layanan
+document.addEventListener("DOMContentLoaded", function () {
+    const btnExportLayanan = document.getElementById("btnExportLayanan");
+    const exportLayananModal = document.getElementById("exportLayananModal");
+    const closeExportLayananModal = document.getElementById(
+        "closeExportLayananModal",
+    );
+    const closeExportLayananModalFooter = document.getElementById(
+        "closeExportLayananModalFooter",
+    );
+    const formExportLayanan = document.getElementById("formExportLayanan");
+    const checkAllExportLayananColumns = document.getElementById(
+        "checkAllExportLayananColumns",
+    );
+    const exportLayananColumnCheckboxes = document.querySelectorAll(
+        ".export-layanan-column-checkbox",
+    );
+    const exportLayananError = document.getElementById("exportLayananError");
+
+    function openExportModal() {
+        exportLayananModal?.classList.remove("hidden");
+        document.body.classList.add("overflow-hidden");
+    }
+
+    function closeExportModal() {
+        exportLayananModal?.classList.add("hidden");
+        document.body.classList.remove("overflow-hidden");
+
+        if (exportLayananError) {
+            exportLayananError.classList.add("hidden");
+            exportLayananError.textContent = "";
+        }
+    }
+
+    btnExportLayanan?.addEventListener("click", openExportModal);
+    closeExportLayananModal?.addEventListener("click", closeExportModal);
+    closeExportLayananModalFooter?.addEventListener("click", closeExportModal);
+
+    exportLayananModal?.addEventListener("click", function (e) {
+        if (e.target === exportLayananModal) {
+            closeExportModal();
+        }
+    });
+
+    checkAllExportLayananColumns?.addEventListener("change", function () {
+        exportLayananColumnCheckboxes.forEach((cb) => {
+            cb.checked = this.checked;
+        });
+    });
+
+    exportLayananColumnCheckboxes.forEach((cb) => {
+        cb.addEventListener("change", function () {
+            const total = exportLayananColumnCheckboxes.length;
+            const checked = document.querySelectorAll(
+                ".export-layanan-column-checkbox:checked",
+            ).length;
+
+            if (checkAllExportLayananColumns) {
+                checkAllExportLayananColumns.checked = total === checked;
+            }
+        });
+    });
+
+    formExportLayanan?.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const selectedColumns = Array.from(
+            document.querySelectorAll(
+                ".export-layanan-column-checkbox:checked",
+            ),
+        ).map((el) => el.value);
+
+        if (selectedColumns.length === 0) {
+            exportLayananError.textContent =
+                "Pilih minimal 1 kolom untuk export.";
+            exportLayananError.classList.remove("hidden");
+            return;
+        }
+
+        exportLayananError.classList.add("hidden");
+        exportLayananError.textContent = "";
+
+        const tanggalDari = document.getElementById(
+            "tanggalDariExportLayanan",
+        )?.value;
+        const tanggalSampai = document.getElementById(
+            "tanggalSampaiExportLayanan",
+        )?.value;
+
+        if (tanggalDari && tanggalSampai && tanggalDari > tanggalSampai) {
+            exportLayananError.textContent =
+                "Tanggal mulai tidak boleh lebih besar dari tanggal akhir.";
+            exportLayananError.classList.remove("hidden");
+            return;
+        }
+
+        const params = new URLSearchParams();
+
+        selectedColumns.forEach((column) => {
+            params.append("columns[]", column);
+        });
+
+        if (tanggalDari) {
+            params.append("tanggal_dari", tanggalDari);
+        }
+
+        if (tanggalSampai) {
+            params.append("tanggal_sampai", tanggalSampai);
+        }
+
+        const baseUrl = btnExportLayanan.dataset.exportUrl;
+        const exportUrl = `${baseUrl}?${params.toString()}`;
+
+        window.open(exportUrl, "_blank");
+        closeExportModal();
     });
 });
