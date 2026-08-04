@@ -2295,7 +2295,6 @@ $(function () {
                 $("#edit_obat_id").val(data.id);
                 $("#edit_batch_id").val(batchTerpilih?.id || "");
                 $("#kode_obat").text(data.kode_obat || "-");
-                $("#edit_barcode").val(data.barcode || "");
                 $("#edit_nama_obat").val(data.nama_obat || "");
                 $("#edit_kandungan").val(data.kandungan_obat || "");
                 $("#edit_dosis").val(data.dosis || "");
@@ -2482,6 +2481,23 @@ $(function () {
             });
     }
 
+    // Buka modal Edit Obat langsung dari tombol pada kolom Aksi DataTables.
+    // Delegated event dipakai karena baris DataTables dibuat secara dinamis.
+    $(document).on("click", ".btn-update-obat", function () {
+        const id = $(this).data("id");
+
+        if (!id) {
+            Swal.fire({
+                icon: "warning",
+                title: "Data tidak ditemukan",
+                text: "ID obat tidak tersedia.",
+            });
+            return;
+        }
+
+        openUpdateObatModal(id);
+    });
+
     $(document).on("click", ".btn-update-batch", function () {
         const obatId = $(this).data("obat-id");
         const batchId = $(this).data("batch-id");
@@ -2599,7 +2615,6 @@ $(function () {
 
         const formData = {
             batch_id: $("#edit_batch_id").val(),
-            barcode: $("#edit_barcode").val(),
             nama_obat: $("#edit_nama_obat").val(),
             brand_farmasi_id: $("#edit_brand_farmasi_id").val(),
             kategori_obat: $("#edit_kategori_obat").val(),

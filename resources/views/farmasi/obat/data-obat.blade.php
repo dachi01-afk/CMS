@@ -829,7 +829,7 @@
             <form id="formModalUpdate" class="px-6 py-5 space-y-7 overflow-y-auto" data-url="" method="POST">
                 @csrf
                 <input type="hidden" name="obat_id" id="edit_obat_id">
-                <input type="hidden" name="obat_id" id="edit_batch_id">
+                <input type="hidden" name="batch_id" id="edit_batch_id">
 
                 <!-- Section: Identitas Obat -->
                 <div class="space-y-4">
@@ -849,31 +849,16 @@
                                 </p>
                             </div>
                         </div>
-                        <div>
+                        <div class="text-right">
                             <h4 class="text-xs font-semibold tracking-wide text-gray-800 uppercase dark:text-gray-200">
                                 Kode Obat
                             </h4>
-                            <p class="text-[13px] text-gray-500 dark:text-gray-400" id="kode_obat"></p>
-                        </div>
-                    </div>
-
-                    <!-- Barcode -->
-                    <div class="grid grid-cols-1">
-                        <div>
-                            <label for="edit_barcode"
-                                class="block text-xs font-medium text-gray-600 dark:text-gray-300">
-                                Barcode
-                            </label>
-                            <div class="mt-1 flex gap-2">
-                                <input type="text" name="barcode" id="edit_barcode"
-                                    class="block w-full text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
-                                    placeholder="Scan / masukkan barcode" autocomplete="off">
-                                <button type="button"
-                                    class="hidden md:inline-flex items-center px-3 py-2 text-[11px] font-medium rounded-lg border border-dashed border-gray-300 text-gray-500 hover:border-blue-400 hover:text-blue-600 dark:border-gray-600 dark:text-gray-300 dark:hover:border-blue-500">
-                                    <i class="fa-solid fa-barcode text-xs mr-1"></i> Scan
-                                </button>
-                            </div>
-                            <div id="edit_barcode-error" class="text-red-600 text-[11px] mt-1"></div>
+                            <p id="kode_obat"
+                                class="mt-1 inline-flex items-center rounded-lg border border-blue-100 bg-blue-50 px-3 py-1.5 text-[13px] font-semibold text-blue-700 dark:border-blue-900/50 dark:bg-blue-900/30 dark:text-blue-200"
+                                aria-live="polite">-</p>
+                            <p class="mt-1 text-[10px] text-gray-400 dark:text-gray-500">
+                                Kode obat tidak diubah melalui form ini.
+                            </p>
                         </div>
                     </div>
 
