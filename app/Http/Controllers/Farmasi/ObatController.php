@@ -120,8 +120,7 @@ class ObatController extends Controller
             ->editColumn('total_harga', function ($obat) {
                 return is_null($obat->total_harga) ? 0 : (float) $obat->total_harga;
             })
-
-            // AKSI
+            
             // AKSI
             ->addColumn('action', function ($obat) {
                 return '

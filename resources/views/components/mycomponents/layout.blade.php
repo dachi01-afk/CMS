@@ -211,9 +211,7 @@
         <div class="flex min-h-screen bg-slate-50 dark:bg-slate-900">
             <!-- SIDEBAR -->
             <aside id="logo-sidebar"
-                class="app-sidebar fixed top-0 left-0 z-40 w-64 h-screen pt-20 sm:pt-20 transition-all duration-300 -translate-x-full sm:translate-x-0
-       bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border-r border-slate-200 dark:border-slate-800 shadow-sm"
-                aria-label="Sidebar">
+                class="app-sidebar fixed top-0 left-0 z-40 w-64 h-screen pt-20 sm:pt-20 transition-all duration-300 -translate-x-full sm:translate-x-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border-r border-slate-200 dark:border-slate-800 shadow-sm" aria-label="Sidebar">
 
                 <div class="flex flex-col h-full">
                     <!-- BRANDING -->
