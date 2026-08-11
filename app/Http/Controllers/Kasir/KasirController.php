@@ -1108,9 +1108,17 @@ HTML;
     {
         $request->validate([
             'id' => ['required', 'exists:pembayaran,id'],
-            'bukti_pembayaran' => ['required', 'file', 'mimes:jpeg,jpg,png,gif,webp,svg,jfif', 'max:5120'],
-            'metode_pembayaran_id' => ['required', 'exists:metode_pembayaran,id'],
-            'diskon_items' => ['required', 'string'],
+            'bukti_pembayaran' => [
+                'required',
+                'image',
+                'mimes:jpeg,jpg,png,gif,webp',
+                'max:5120',
+            ],
+            'metode_pembayaran_id' => [
+                'required',
+                'exists:metode_pembayaran,id',
+            ],
+            'diskon_items' => ['required', 'json'],
         ]);
 
         $pembayaranId = (int) $request->id;
