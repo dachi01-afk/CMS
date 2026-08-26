@@ -758,10 +758,6 @@ class KasirController extends Controller
                 optional($p->emr->kunjungan->pasien)->nama_pasien ?? '-'
             )
 
-            // ->editColumn('nama_pasien', function ($dataPembayaran) {
-            //     return $dataPembayaran->emr->kunjungan->pasien->nama_pasien ?? '-';
-            // })
-
             ->addColumn(
                 'tanggal_kunjungan',
                 fn($p) =>
