@@ -48,7 +48,7 @@ class OrderLayanan extends Model
 
     public function pasien()
     {
-        return $this->belongsTo(Pasien::class, 'pasien_id');
+        return $this->belongsTo(Pasien::class);
     }
 
     public function poli()

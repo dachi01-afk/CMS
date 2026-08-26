@@ -25,10 +25,10 @@ class TransaksiLayananController extends Controller
 
         return DataTables::of($dataOrderLayanan)
             ->addIndexColumn()
-            ->editColumn('nama_pasien', function ($dataOrderan) {
+            ->addColumn('nama_pasien', function ($dataOrderan) {
                 return $dataOrderan->pasien->nama_pasien ?? '-';
             })
-            ->editColumn('nama_metode', function ($dataOrderan) {
+            ->addColumn('nama_metode', function ($dataOrderan) {
                 return $dataOrderan->metodePembayaran->nama_metode ?? '-';
             })
             ->addColumn('action', function ($dataOrderan) {
@@ -393,16 +393,16 @@ class TransaksiLayananController extends Controller
                     });
                 };
             })
-            ->editColumn('nama_pasien', function ($dataOrderLayanan) {
+            ->addColumn('nama_pasien', function ($dataOrderLayanan) {
                 return $dataOrderLayanan->pasien->nama_pasien ?? '-';
             })
-            ->editColumn('nama_metode', function ($dataOrderLayanan) {
+            ->addColumn('nama_metode', function ($dataOrderLayanan) {
                 return $dataOrderLayanan->metodePembayaran->nama_metode ?? '-';
             })
-            ->editColumn('tanggal_order', function ($dataOrderLayanan) {
+            ->addColumn('tanggal_order', function ($dataOrderLayanan) {
                 return $dataOrderLayanan->getFormatTanggalOrder();
             })
-            ->editColumn('bukti_pembayaran', function ($dataOrderLayanan) {
+            ->addColumn('bukti_pembayaran', function ($dataOrderLayanan) {
                 if (!$dataOrderLayanan->bukti_pembayaran) {
                     return '<span class="text-gray-400 italic">Tidak ada</span>';
                 }

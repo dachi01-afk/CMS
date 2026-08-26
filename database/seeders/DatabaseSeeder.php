@@ -79,6 +79,9 @@ class DatabaseSeeder extends Seeder
             // OrderRadiologiSeeder::class,
             // OrderRadiologiDetailSeeder::class,
             PembayaranSeeder::class,
+
+            OrderLayananSeeder::class,
+            OrderLayananDetailSeeder::class,
         ]);
 
         // $this->call([OrderRadiologiSeeder::class, OrderRadiologiDetailSeeder::class]);
