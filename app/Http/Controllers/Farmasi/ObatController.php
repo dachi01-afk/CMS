@@ -122,7 +122,6 @@ class ObatController extends Controller
             })
 
             // AKSI
-            // AKSI
             ->addColumn('action', function ($obat) {
                 return '
                         <div class="flex items-center justify-center gap-2">
@@ -132,6 +131,14 @@ class ObatController extends Controller
                                 data-id="' . $obat->id . '" 
                                 title="Lihat Detail">
                                 <i class="fa-solid fa-eye text-xs"></i>
+                            </button>
+
+                            <button 
+                                class="btn-update-obat inline-flex items-center justify-center w-8 h-8 rounded-lg 
+                                    bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100"
+                                data-id="' . $obat->id . '" 
+                                title="Edit Obat">
+                                <i class="fa-solid fa-pen-to-square text-xs"></i>
                             </button>
 
                             <button 

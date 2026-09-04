@@ -8,12 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (!Schema::hasTable('dental_examinations')) {
+        if (! Schema::hasTable('dental_examinations')) {
             return;
         }
 
         Schema::table('dental_examinations', function (Blueprint $table) {
-            // ✅ UBAH: Kolom DMF index jadi nullable
             $table->integer('d_index')->nullable()->default(0)->change();
             $table->integer('m_index')->nullable()->default(0)->change();
             $table->integer('f_index')->nullable()->default(0)->change();
@@ -22,10 +21,14 @@ return new class extends Migration
 
     public function down(): void
     {
+        if (! Schema::hasTable('dental_examinations')) {
+            return;
+        }
+
         Schema::table('dental_examinations', function (Blueprint $table) {
-            $table->integer('d_index')->nullable(false)->change();
-            $table->integer('m_index')->nullable(false)->change();
-            $table->integer('f_index')->nullable(false)->change();
+            $table->integer('d_index')->nullable(false)->default(0)->change();
+            $table->integer('m_index')->nullable(false)->default(0)->change();
+            $table->integer('f_index')->nullable(false)->default(0)->change();
         });
     }
 };

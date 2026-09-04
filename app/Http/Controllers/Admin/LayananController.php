@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\LayananExport;
 use App\Http\Controllers\Controller;
 use App\Models\KategoriLayanan;
 use App\Models\Layanan;
@@ -12,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Validator;
-use Illuminate\Validation\Rule;
+use Maatwebsite\Excel\Facades\Excel;
 use Yajra\DataTables\Facades\DataTables;
 
 class LayananController extends Controller
@@ -20,6 +21,7 @@ class LayananController extends Controller
     public function index()
     {
         $dataKategoriLayanan = KategoriLayanan::all();
+
         return view('admin.layanan.layanan', compact('dataKategoriLayanan'));
     }
 
@@ -30,17 +32,15 @@ class LayananController extends Controller
                 'kategoriLayanan',
                 'layananPoli:id,nama_poli',
             ])
-            ->latest();
+            ->select('layanan.*');
 
         return DataTables::eloquent($query)
             ->addIndexColumn()
 
-            // NAMA LAYANAN
             ->editColumn('nama_layanan', function ($row) {
                 return $row->nama_layanan ?? '-';
             })
 
-            // ✅ KOLOM POLI (LOGIC GLOBAL VS PIVOT)
             ->addColumn('poli_label', function ($row) {
                 $isGlobal = (int) ($row->is_global ?? 0);
 
@@ -48,41 +48,34 @@ class LayananController extends Controller
                     return 'Dapat Diakses Oleh Semua Poli';
                 }
 
-                // ambil nama poli dari relasi pivot
                 $names = $row->layananPoli
                     ? $row->layananPoli->pluck('nama_poli')->filter()->values()->all()
                     : [];
 
-                if (count($names) === 0) {
-                    return 'Belum ditentukan';
-                }
-
-                return implode(', ', $names);
+                return count($names) > 0 ? implode(', ', $names) : 'Belum ditentukan';
             })
 
-            // HARGA SEBELUM DISKON (angka mentah)
-            ->addColumn('harga_sebelum_diskon', function ($row) {
-                return is_null($row->harga_sebelum_diskon) ? 0 : (float) $row->harga_sebelum_diskon;
+            ->editColumn('harga_sebelum_diskon', function ($row) {
+                return is_null($row->harga_sebelum_diskon)
+                    ? 0
+                    : (float) $row->harga_sebelum_diskon;
             })
 
-            // KATEGORI
             ->addColumn('nama_kategori', function ($row) {
                 return optional($row->kategoriLayanan)->nama_kategori ?? '-';
             })
 
-            // GLOBAL BOOLEAN
             ->addColumn('is_global', function ($row) {
                 return (bool) ($row->is_global ?? false);
             })
 
-            // AKSI
             ->addColumn('action', function ($row) {
                 return '
                 <div class="flex items-center justify-center gap-2">
                     <button 
                         class="btn-edit-layanan inline-flex items-center justify-center w-8 h-8 rounded-lg 
                                bg-blue-50 text-blue-600 hover:bg-blue-100 border border-blue-100"
-                        data-id="' . $row->id . '" 
+                        data-id="'.$row->id.'" 
                         title="Edit">
                         <i class="fa-regular fa-pen-to-square text-xs"></i>
                     </button>
@@ -90,7 +83,7 @@ class LayananController extends Controller
                     <button 
                         class="btn-delete-layanan inline-flex items-center justify-center w-8 h-8 rounded-lg 
                                bg-red-50 text-red-600 hover:bg-red-100 border border-red-100"
-                        data-id="' . $row->id . '" 
+                        data-id="'.$row->id.'" 
                         title="Hapus">
                         <i class="fa-regular fa-trash-can text-xs"></i>
                     </button>
@@ -98,26 +91,62 @@ class LayananController extends Controller
             ';
             })
 
+            // SORT NAMA LAYANAN
+            ->orderColumn('nama_layanan', function ($query, $order) {
+                $query->orderBy('layanan.nama_layanan', $order);
+            })
+
+            // SORT HARGA
+            ->orderColumn('harga_sebelum_diskon', function ($query, $order) {
+                $query->orderBy('layanan.harga_sebelum_diskon', $order);
+            })
+
+            // SORT KATEGORI
+            ->orderColumn('nama_kategori', function ($query, $order) {
+                $query
+                    ->leftJoin('kategori_layanan', 'layanan.kategori_layanan_id', '=', 'kategori_layanan.id')
+                    ->orderBy('kategori_layanan.nama_kategori', $order)
+                    ->select('layanan.*');
+            })
+
+            // SEARCH KATEGORI
+            ->filterColumn('nama_kategori', function ($query, $keyword) {
+                $query->whereHas('kategoriLayanan', function ($q) use ($keyword) {
+                    $q->where('nama_kategori', 'like', "%{$keyword}%");
+                });
+            })
+
+            // SEARCH POLI
+            ->filterColumn('poli_label', function ($query, $keyword) {
+                $query->where(function ($q) use ($keyword) {
+                    $q->whereHas('layananPoli', function ($poliQuery) use ($keyword) {
+                        $poliQuery->where('nama_poli', 'like', "%{$keyword}%");
+                    });
+
+                    if (stripos('Dapat Diakses Oleh Semua Poli', $keyword) !== false) {
+                        $q->orWhere('layanan.is_global', 1);
+                    }
+                });
+            })
+
             ->rawColumns(['action'])
             ->toJson();
     }
 
-
-
     public function createDataLayanan(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'kategori_layanan_id'      => 'required|exists:kategori_layanan,id',
-            'nama_layanan'             => 'required|string|max:255',
-            'harga_sebelum_diskon'     => 'required|numeric|min:0',
+            'kategori_layanan_id' => 'required|exists:kategori_layanan,id',
+            'nama_layanan' => 'required|string|max:255',
+            'harga_sebelum_diskon' => 'required|numeric|min:0',
 
             // ✅ PENTING:
             // kalau is_global = 1, poli_id diabaikan dari validasi (supaya min:1 tidak error walau poli_id=[])
-            'poli_id'                  => 'exclude_if:is_global,1|array|min:1',
-            'poli_id.*'                => 'integer|exists:poli,id',
+            'poli_id' => 'exclude_if:is_global,1|array|min:1',
+            'poli_id.*' => 'integer|exists:poli,id',
         ], [
             'poli_id.required_if' => 'Jika layanan tidak global, minimal pilih 1 poli.',
-            'poli_id.min'         => 'Minimal pilih 1 poli.',
+            'poli_id.min' => 'Minimal pilih 1 poli.',
         ]);
 
         // ❌ HAPUS dd() ini, karena bikin proses berhenti
@@ -127,7 +156,7 @@ class LayananController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi gagal.',
-                'errors'  => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -135,10 +164,10 @@ class LayananController extends Controller
             $result = DB::transaction(function () use ($request) {
 
                 $layanan = Layanan::create([
-                    'kategori_layanan_id'      => $request->kategori_layanan_id,
-                    'nama_layanan'             => $request->nama_layanan,
-                    'harga_sebelum_diskon'     => $request->harga_sebelum_diskon,
-                    'is_global'                => 1,
+                    'kategori_layanan_id' => $request->kategori_layanan_id,
+                    'nama_layanan' => $request->nama_layanan,
+                    'harga_sebelum_diskon' => $request->harga_sebelum_diskon,
+                    'is_global' => 1,
                 ]);
 
                 // ✅ kalau tidak global → simpan pivot
@@ -156,7 +185,7 @@ class LayananController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Berhasil menambahkan data layanan.',
-                'data'    => $result
+                'data' => $result,
             ], 201);
         } catch (\Throwable $e) {
             return response()->json([
@@ -174,12 +203,12 @@ class LayananController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $data
+                'data' => $data,
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal memuat daftar kategori layanan.'
+                'message' => 'Gagal memuat daftar kategori layanan.',
             ], 500);
         }
     }
@@ -191,12 +220,12 @@ class LayananController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $data
+                'data' => $data,
             ]);
         } catch (Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal memuat daftar poli.'
+                'message' => 'Gagal memuat daftar poli.',
             ], 500);
         }
     }
@@ -219,11 +248,16 @@ class LayananController extends Controller
     {
         // helper: terima numeric murni atau string rupiah "150.000"
         $toNumber = function ($value) {
-            if ($value === null || $value === '') return 0;
-            if (is_numeric($value)) return (float) $value;
+            if ($value === null || $value === '') {
+                return 0;
+            }
+            if (is_numeric($value)) {
+                return (float) $value;
+            }
 
             // ambil digit saja (rupiah tanpa desimal)
             $digits = preg_replace('/\D+/', '', (string) $value);
+
             return $digits === '' ? 0 : (float) $digits;
         };
 
@@ -235,7 +269,7 @@ class LayananController extends Controller
 
             // kita validasi minimal ada, nanti dicek numeriknya manual supaya bisa terima "150.000"
             'harga_sebelum_diskon' => ['required'],
-            'poli_id'   => ['exclude_if:is_global,1', 'array', 'min:1'],
+            'poli_id' => ['exclude_if:is_global,1', 'array', 'min:1'],
             'poli_id.*' => ['integer', 'exists:poli,id'],
         ], [
             'id.required' => 'ID layanan wajib ada.',
@@ -254,7 +288,7 @@ class LayananController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validasi gagal. Periksa input Anda.',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -270,7 +304,7 @@ class LayananController extends Controller
                     return response()->json([
                         'success' => false,
                         'message' => 'Validasi gagal.',
-                        'errors' => ['harga_sebelum_diskon' => ['Harga layanan tidak boleh negatif.']]
+                        'errors' => ['harga_sebelum_diskon' => ['Harga layanan tidak boleh negatif.']],
                     ], 422);
                 }
 
@@ -290,7 +324,7 @@ class LayananController extends Controller
                 }
 
                 // ✅ pivot layanan_poli
-                if ((int)$request->is_global === 0) {
+                if ((int) $request->is_global === 0) {
                     $poliId = $request->input('poli_id', []);
                     $layanan->layananPoli()->sync($poliId);
                 } else {
@@ -308,7 +342,7 @@ class LayananController extends Controller
                         'diskon' => $layanan->diskon,
                         'harga_setelah_diskon' => $layanan->harga_setelah_diskon,
                         'diskon_tipe' => Schema::hasColumn('layanan', 'diskon_tipe') ? $layanan->diskon_tipe : null,
-                    ]
+                    ],
                 ], 200);
             });
         } catch (\Throwable $e) {
@@ -338,7 +372,7 @@ class LayananController extends Controller
         $dataLayanan->delete();
 
         return response()->json([
-            'message' => "Berhasil Menghapus 1 Data Layanan",
+            'message' => 'Berhasil Menghapus 1 Data Layanan',
         ]);
     }
 
@@ -347,5 +381,27 @@ class LayananController extends Controller
         $dataLayanan = Layanan::isGlobal();
 
         return response()->json([$dataLayanan]);
+    }
+
+    public function exportExcel(Request $request)
+    {
+        $columns = $request->input('columns', []);
+        $tanggalDari = $request->input('tanggal_dari');
+        $tanggalSampai = $request->input('tanggal_sampai');
+
+        if (! is_array($columns) || count($columns) === 0) {
+            return back()->with('error', 'Pilih minimal 1 kolom untuk export.');
+        }
+
+        if ($tanggalDari && $tanggalSampai && $tanggalDari > $tanggalSampai) {
+            return back()->with('error', 'Tanggal mulai tidak boleh lebih besar dari tanggal akhir.');
+        }
+
+        $filename = 'data-layanan-'.now()->format('Ymd-His').'.xlsx';
+
+        return Excel::download(
+            new LayananExport($columns, $tanggalDari, $tanggalSampai),
+            $filename
+        );
     }
 }

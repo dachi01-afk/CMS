@@ -14,7 +14,7 @@
             </div>
             <div>
                 <h2 class="text-xl md:text-2xl font-bold text-slate-800 dark:text-slate-50">
-                    Riwayat Transaksi Order Layanan
+                    Riwayat Transaksi Order Layanan 
                 </h2>
                 <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
                     Lihat riwayat pembayaran order layanan yang sudah diproses oleh kasir.

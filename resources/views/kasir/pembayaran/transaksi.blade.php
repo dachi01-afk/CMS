@@ -492,7 +492,8 @@
                             </label>
 
                             <div class="relative">
-                                <i class="fa-solid fa-credit-card absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                                <i
+                                    class="fa-solid fa-credit-card absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"></i>
                                 <select id="pilih-metode-pembayaran"
                                     class="w-full rounded-xl border border-gray-200 bg-white py-2.5 pl-10 pr-3 text-sm font-semibold text-gray-900 shadow-sm focus:border-primary-500 focus:ring-primary-500 dark:border-gray-700 dark:bg-gray-800 dark:text-white">
                                     @foreach ($dataMetodePembayaran as $metodePembayaran)
@@ -551,8 +552,10 @@
                             <i class="fa-solid fa-money-bill-wave"></i>
                         </div>
                         <div>
-                            <h3 class="text-base font-semibold text-gray-900 dark:text-white">Konfirmasi Pembayaran
-                                (Cash)</h3>
+                            <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                                Konfirmasi Pembayaran
+                                (<span id="judul-metode-cash">Cash</span>)
+                            </h3>
                             <p class="text-xs text-gray-500 dark:text-gray-400">Masukkan uang diterima untuk hitung
                                 kembalian.</p>
                         </div>
@@ -631,9 +634,12 @@
                             <i class="fa-solid fa-building-columns"></i>
                         </div>
                         <div>
-                            <h3 class="text-base font-semibold text-gray-900 dark:text-white">Konfirmasi Pembayaran
-                                (Transfer)</h3>
-                            <p class="text-xs text-gray-500 dark:text-gray-400">Unggah bukti transfer untuk verifikasi.
+                            <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+                                Konfirmasi Pembayaran
+                                (<span id="judul-metode-non-cash">Transfer</span>)
+                            </h3>
+                            <p class="text-xs text-gray-500 dark:text-gray-400">Unggah bukti pembayaran untuk
+                                verifikasi.
                             </p>
                         </div>
                     </div>
@@ -722,6 +728,8 @@
 
             const modalCash = document.getElementById('pembayaranCash');
             const modalTransfer = document.getElementById('pembayaranTransfer');
+            const judulMetodeCash = document.getElementById('judul-metode-cash');
+            const judulMetodeNonCash = document.getElementById('judul-metode-non-cash');
 
             const totalAwalInput = document.getElementById('total_tagihan_awal');
             const totalHargaDisplay = document.getElementById('total_harga_display');
@@ -1183,26 +1191,34 @@
                     }
 
                     const metodeID = selected.value;
-                    const metodeText = (selected.textContent || "").toLowerCase();
+                    const metodeText = (selected.textContent || "").trim();
+                    const metodeKey = metodeText.toLowerCase();
 
                     const cashInput = document.getElementById("metode-pembayaran-cash");
                     const transferInput = document.getElementById("metode-pembayaran-transfer");
 
-                    if (cashInput) cashInput.value = metodeID;
-                    if (transferInput) transferInput.value = metodeID;
-
                     closeAll();
 
-                    if (metodeText.includes("cash")) {
+                    if (metodeKey === "cash") {
+                        if (cashInput) {
+                            cashInput.value = metodeID;
+                        }
+
+                        if (judulMetodeCash) {
+                            judulMetodeCash.textContent = metodeText;
+                        }
+
                         openModal(modalCash);
-                    } else if (metodeText.includes("transfer")) {
-                        openModal(modalTransfer);
                     } else {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: 'Metode belum dikenali',
-                            text: 'Metode pembayaran belum dikenali sistem.'
-                        });
+                        if (transferInput) {
+                            transferInput.value = metodeID;
+                        }
+
+                        if (judulMetodeNonCash) {
+                            judulMetodeNonCash.textContent = metodeText;
+                        }
+
+                        openModal(modalTransfer);
                     }
                 });
             }
