@@ -9,6 +9,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('dental_examinations')) {
+            return;
+        }
+
         // 1. Tambah kolom kunjungan_id kalau belum ada
         if (!Schema::hasColumn('dental_examinations', 'kunjungan_id')) {
             Schema::table('dental_examinations', function (Blueprint $table) {

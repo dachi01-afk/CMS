@@ -2422,10 +2422,10 @@ class APIMobileController extends Controller
                 ]);
             }
 
-            if ($kunjungan->status !== 'Engaged') {
+            if (! in_array($kunjungan->status, ['Engaged', 'Payment'])) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Kunjungan harus dalam status Engaged untuk dapat melengkapi EMR',
+                    'message' => 'Kunjungan harus dalam status Engaged atau Payment untuk dapat melengkapi/mengedit EMR',
                 ], 400);
             }
 
@@ -2442,38 +2442,45 @@ class APIMobileController extends Controller
                 */
                 $resepId = $emr->resep_id;
 
-                if (! empty($request->resep)) {
-                    if (! $resepId) {
-                        $resepId = DB::table('resep')->insertGetId([
-                            'kunjungan_id' => $kunjungan->id,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-                    } else {
-                        DB::table('resep')->where('id', $resepId)->update([
-                            'kunjungan_id' => $kunjungan->id,
-                            'updated_at' => now(),
-                        ]);
-                    }
-
-                    DB::table('resep_obat')->where('resep_id', $resepId)->delete();
-
-                    foreach ($request->resep as $item) {
-                        $obat = Obat::findOrFail($item['obat_id']);
-
-                        if (! is_null($obat->jumlah) && $obat->jumlah < (int) $item['jumlah']) {
-                            throw new \Exception("Stok obat {$obat->nama_obat} tidak mencukupi. Stok tersedia: {$obat->jumlah}");
+                if ($request->has('resep')) {
+                    if (! empty($request->resep)) {
+                        if (! $resepId) {
+                            $resepId = DB::table('resep')->insertGetId([
+                                'kunjungan_id' => $kunjungan->id,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ]);
+                        } else {
+                            DB::table('resep')->where('id', $resepId)->update([
+                                'kunjungan_id' => $kunjungan->id,
+                                'updated_at' => now(),
+                            ]);
                         }
 
-                        DB::table('resep_obat')->insert([
-                            'resep_id' => $resepId,
-                            'obat_id' => $obat->id,
-                            'jumlah' => (int) $item['jumlah'],
-                            'dosis' => $item['dosis'] ?? $obat->dosis ?? null,
-                            'keterangan' => $item['keterangan'] ?? null,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
+                        DB::table('resep_obat')->where('resep_id', $resepId)->delete();
+
+                        foreach ($request->resep as $item) {
+                            $obat = Obat::findOrFail($item['obat_id']);
+
+                            if (! is_null($obat->jumlah) && $obat->jumlah < (int) $item['jumlah']) {
+                                throw new \Exception("Stok obat {$obat->nama_obat} tidak mencukupi. Stok tersedia: {$obat->jumlah}");
+                            }
+
+                            DB::table('resep_obat')->insert([
+                                'resep_id' => $resepId,
+                                'obat_id' => $obat->id,
+                                'jumlah' => (int) $item['jumlah'],
+                                'dosis' => $item['dosis'] ?? $obat->dosis ?? null,
+                                'keterangan' => $item['keterangan'] ?? null,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ]);
+                        }
+                    } else {
+                        // Dokter mengosongkan / menghapus resep
+                        if ($resepId) {
+                            DB::table('resep_obat')->where('resep_id', $resepId)->delete();
+                        }
                     }
                 }
 
@@ -2545,58 +2552,86 @@ class APIMobileController extends Controller
                 */
                 $orderLabId = null;
 
-                if (! empty($request->lab_tests)) {
+                if ($request->has('lab_tests')) {
                     $existing = DB::table('order_lab')
                         ->where('kunjungan_id', $kunjungan->id)
                         ->whereIn('status', ['Pending', 'Diproses'])
                         ->orderByDesc('id')
                         ->first();
 
-                    $firstLabTest = $request->lab_tests[0];
-                    $tanggalPemeriksaan = $firstLabTest['tanggal_pemeriksaan'] ?? null;
-                    $jamPemeriksaan = $firstLabTest['jam_pemeriksaan'] ?? null;
+                    if (! empty($request->lab_tests)) {
+                        $firstLabTest = $request->lab_tests[0];
+                        $tanggalPemeriksaan = $firstLabTest['tanggal_pemeriksaan'] ?? null;
+                        $jamPemeriksaan = $firstLabTest['jam_pemeriksaan'] ?? null;
 
-                    if ($existing) {
-                        $orderLabId = $existing->id;
+                        if ($existing) {
+                            $orderLabId = $existing->id;
 
-                        DB::table('order_lab_detail')
-                            ->where('order_lab_id', $orderLabId)
-                            ->delete();
+                            DB::table('order_lab_detail')
+                                ->where('order_lab_id', $orderLabId)
+                                ->delete();
 
-                        DB::table('order_lab')->where('id', $orderLabId)->update([
-                            'dokter_id' => $dokter->id,
-                            'pasien_id' => $kunjungan->pasien_id,
-                            'tanggal_order' => now()->toDateString(),
-                            'tanggal_pemeriksaan' => $tanggalPemeriksaan,
-                            'jam_pemeriksaan' => $jamPemeriksaan,
-                            'status' => 'Pending',
-                            'updated_at' => now(),
-                        ]);
+                            DB::table('order_lab')->where('id', $orderLabId)->update([
+                                'dokter_id' => $dokter->id,
+                                'pasien_id' => $kunjungan->pasien_id,
+                                'tanggal_order' => now()->toDateString(),
+                                'tanggal_pemeriksaan' => $tanggalPemeriksaan,
+                                'jam_pemeriksaan' => $jamPemeriksaan,
+                                'status' => 'Pending',
+                                'updated_at' => now(),
+                            ]);
+                        } else {
+                            $noOrderLab = 'LAB-'.date('Ymd').'-'.strtoupper(Str::random(6));
+
+                            $orderLabId = DB::table('order_lab')->insertGetId([
+                                'no_order_lab' => $noOrderLab,
+                                'kunjungan_id' => $kunjungan->id,
+                                'dokter_id' => $dokter->id,
+                                'pasien_id' => $kunjungan->pasien_id,
+                                'tanggal_order' => now()->toDateString(),
+                                'tanggal_pemeriksaan' => $tanggalPemeriksaan,
+                                'jam_pemeriksaan' => $jamPemeriksaan,
+                                'status' => 'Pending',
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ]);
+                        }
+
+                        foreach ($request->lab_tests as $labTest) {
+                            DB::table('order_lab_detail')->insert([
+                                'order_lab_id' => $orderLabId,
+                                'jenis_pemeriksaan_lab_id' => $labTest['lab_test_id'],
+                                'status_pemeriksaan' => 'Pending',
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ]);
+                        }
+
+                        if (Schema::hasColumn('emr', 'order_lab_id')) {
+                            $emr->update([
+                                'order_lab_id' => $orderLabId,
+                            ]);
+                            $emr->refresh();
+                        }
                     } else {
-                        $noOrderLab = 'LAB-'.date('Ymd').'-'.strtoupper(Str::random(6));
+                        // Dokter menghapus semua order lab
+                        if ($existing) {
+                            DB::table('order_lab_detail')
+                                ->where('order_lab_id', $existing->id)
+                                ->delete();
+                            DB::table('order_lab')
+                                ->where('id', $existing->id)
+                                ->delete();
+                        }
 
-                        $orderLabId = DB::table('order_lab')->insertGetId([
-                            'no_order_lab' => $noOrderLab,
-                            'kunjungan_id' => $kunjungan->id,
-                            'dokter_id' => $dokter->id,
-                            'pasien_id' => $kunjungan->pasien_id,
-                            'tanggal_order' => now()->toDateString(),
-                            'tanggal_pemeriksaan' => $tanggalPemeriksaan,
-                            'jam_pemeriksaan' => $jamPemeriksaan,
-                            'status' => 'Pending',
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-                    }
+                        if (Schema::hasColumn('emr', 'order_lab_id')) {
+                            $emr->update([
+                                'order_lab_id' => null,
+                            ]);
+                            $emr->refresh();
+                        }
 
-                    foreach ($request->lab_tests as $labTest) {
-                        DB::table('order_lab_detail')->insert([
-                            'order_lab_id' => $orderLabId,
-                            'jenis_pemeriksaan_lab_id' => $labTest['lab_test_id'],
-                            'status_pemeriksaan' => 'Pending',
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
+                        $orderLabId = null;
                     }
                 }
 
@@ -2607,58 +2642,86 @@ class APIMobileController extends Controller
                 */
                 $orderRadiologiId = null;
 
-                if (! empty($request->radiologi_tests)) {
+                if ($request->has('radiologi_tests')) {
                     $existingRad = DB::table('order_radiologi')
                         ->where('kunjungan_id', $kunjungan->id)
                         ->whereIn('status', ['Pending', 'Diproses'])
                         ->orderByDesc('id')
                         ->first();
 
-                    $firstRadiologiTest = $request->radiologi_tests[0];
-                    $tanggalPemeriksaan = $firstRadiologiTest['tanggal_pemeriksaan'] ?? null;
-                    $jamPemeriksaan = $firstRadiologiTest['jam_pemeriksaan'] ?? null;
+                    if (! empty($request->radiologi_tests)) {
+                        $firstRadiologiTest = $request->radiologi_tests[0];
+                        $tanggalPemeriksaan = $firstRadiologiTest['tanggal_pemeriksaan'] ?? null;
+                        $jamPemeriksaan = $firstRadiologiTest['jam_pemeriksaan'] ?? null;
 
-                    if ($existingRad) {
-                        $orderRadiologiId = $existingRad->id;
+                        if ($existingRad) {
+                            $orderRadiologiId = $existingRad->id;
 
-                        DB::table('order_radiologi_detail')
-                            ->where('order_radiologi_id', $orderRadiologiId)
-                            ->delete();
+                            DB::table('order_radiologi_detail')
+                                ->where('order_radiologi_id', $orderRadiologiId)
+                                ->delete();
 
-                        DB::table('order_radiologi')->where('id', $orderRadiologiId)->update([
-                            'dokter_id' => $dokter->id,
-                            'pasien_id' => $kunjungan->pasien_id,
-                            'tanggal_order' => now()->toDateString(),
-                            'tanggal_pemeriksaan' => $tanggalPemeriksaan,
-                            'jam_pemeriksaan' => $jamPemeriksaan,
-                            'status' => 'Pending',
-                            'updated_at' => now(),
-                        ]);
+                            DB::table('order_radiologi')->where('id', $orderRadiologiId)->update([
+                                'dokter_id' => $dokter->id,
+                                'pasien_id' => $kunjungan->pasien_id,
+                                'tanggal_order' => now()->toDateString(),
+                                'tanggal_pemeriksaan' => $tanggalPemeriksaan,
+                                'jam_pemeriksaan' => $jamPemeriksaan,
+                                'status' => 'Pending',
+                                'updated_at' => now(),
+                            ]);
+                        } else {
+                            $noOrderRadiologi = 'RAD-'.date('Ymd').'-'.strtoupper(Str::random(6));
+
+                            $orderRadiologiId = DB::table('order_radiologi')->insertGetId([
+                                'no_order_radiologi' => $noOrderRadiologi,
+                                'kunjungan_id' => $kunjungan->id,
+                                'dokter_id' => $dokter->id,
+                                'pasien_id' => $kunjungan->pasien_id,
+                                'tanggal_order' => now()->toDateString(),
+                                'tanggal_pemeriksaan' => $tanggalPemeriksaan,
+                                'jam_pemeriksaan' => $jamPemeriksaan,
+                                'status' => 'Pending',
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ]);
+                        }
+
+                        foreach ($request->radiologi_tests as $rad) {
+                            DB::table('order_radiologi_detail')->insert([
+                                'order_radiologi_id' => $orderRadiologiId,
+                                'jenis_pemeriksaan_radiologi_id' => $rad['jenis_radiologi_id'],
+                                'status_pemeriksaan' => 'Pending',
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ]);
+                        }
+
+                        if (Schema::hasColumn('emr', 'order_radiologi_id')) {
+                            $emr->update([
+                                'order_radiologi_id' => $orderRadiologiId,
+                            ]);
+                            $emr->refresh();
+                        }
                     } else {
-                        $noOrderRadiologi = 'RAD-'.date('Ymd').'-'.strtoupper(Str::random(6));
+                        // Dokter menghapus semua order radiologi
+                        if ($existingRad) {
+                            DB::table('order_radiologi_detail')
+                                ->where('order_radiologi_id', $existingRad->id)
+                                ->delete();
+                            DB::table('order_radiologi')
+                                ->where('id', $existingRad->id)
+                                ->delete();
+                        }
 
-                        $orderRadiologiId = DB::table('order_radiologi')->insertGetId([
-                            'no_order_radiologi' => $noOrderRadiologi,
-                            'kunjungan_id' => $kunjungan->id,
-                            'dokter_id' => $dokter->id,
-                            'pasien_id' => $kunjungan->pasien_id,
-                            'tanggal_order' => now()->toDateString(),
-                            'tanggal_pemeriksaan' => $tanggalPemeriksaan,
-                            'jam_pemeriksaan' => $jamPemeriksaan,
-                            'status' => 'Pending',
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
-                    }
+                        if (Schema::hasColumn('emr', 'order_radiologi_id')) {
+                            $emr->update([
+                                'order_radiologi_id' => null,
+                            ]);
+                            $emr->refresh();
+                        }
 
-                    foreach ($request->radiologi_tests as $rad) {
-                        DB::table('order_radiologi_detail')->insert([
-                            'order_radiologi_id' => $orderRadiologiId,
-                            'jenis_pemeriksaan_radiologi_id' => $rad['jenis_radiologi_id'],
-                            'status_pemeriksaan' => 'Pending',
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
+                        $orderRadiologiId = null;
                     }
                 }
 
@@ -6139,6 +6202,175 @@ class APIMobileController extends Controller
 
             $resolvedOrderLayananId = $this->resolveOrderLayananIdFromKunjungan($kunjungan);
 
+            // Layanan yang sudah dipilih
+            $layanan = [];
+            if (Schema::hasTable('kunjungan_layanan') && Schema::hasTable('layanan')) {
+                $layanan = DB::table('kunjungan_layanan as kl')
+                    ->leftJoin('layanan as l', 'l.id', '=', 'kl.layanan_id')
+                    ->where('kl.kunjungan_id', $kunjungan->id)
+                    ->select(
+                        'kl.id',
+                        'kl.layanan_id',
+                        'kl.jumlah',
+                        'l.nama_layanan',
+                        'l.harga_sebelum_diskon',
+                        'l.harga_setelah_diskon'
+                    )
+                    ->get()
+                    ->map(function ($row) {
+                        $hargaRaw = $row->harga_setelah_diskon ?? $row->harga_sebelum_diskon ?? 0;
+                        return [
+                            'id' => $row->id,
+                            'layanan_id' => $row->layanan_id,
+                            'nama_layanan' => $row->nama_layanan,
+                            'jumlah' => (int) ($row->jumlah ?? 1),
+                            'harga_layanan' => $hargaRaw,
+                            'harga' => $hargaRaw,
+                        ];
+                    })
+                    ->values()
+                    ->toArray();
+            }
+
+            // Resep obat yang sudah dipilih
+            $resepObat = [];
+            $resepId = $emr?->resep_id;
+            if (! $resepId && Schema::hasTable('resep')) {
+                $resepId = DB::table('resep')
+                    ->where('kunjungan_id', $kunjungan->id)
+                    ->orderByDesc('id')
+                    ->value('id');
+            }
+            if ($resepId && Schema::hasTable('resep_obat') && Schema::hasTable('obat')) {
+                $resepObat = DB::table('resep_obat as ro')
+                    ->leftJoin('obat as o', 'o.id', '=', 'ro.obat_id')
+                    ->where('ro.resep_id', $resepId)
+                    ->select(
+                        'ro.id',
+                        'ro.resep_id',
+                        'ro.obat_id',
+                        'ro.jumlah',
+                        'ro.dosis',
+                        'ro.keterangan',
+                        'o.nama_obat',
+                        'o.harga_jual_obat'
+                    )
+                    ->get()
+                    ->map(function ($row) {
+                        return [
+                            'id' => $row->id,
+                            'resep_id' => $row->resep_id,
+                            'obat_id' => $row->obat_id,
+                            'nama_obat' => $row->nama_obat,
+                            'jumlah' => (int) ($row->jumlah ?? 1),
+                            'dosis' => $row->dosis,
+                            'keterangan' => $row->keterangan,
+                            'harga' => $row->harga_jual_obat ?? 0,
+                            'harga_obat' => $row->harga_jual_obat ?? 0,
+                        ];
+                    })
+                    ->values()
+                    ->toArray();
+            }
+
+            // Order lab yang sudah dipilih
+            $labTests = [];
+            if (
+                Schema::hasTable('order_lab') &&
+                Schema::hasTable('order_lab_detail') &&
+                Schema::hasTable('jenis_pemeriksaan_lab')
+            ) {
+                $orderLab = DB::table('order_lab')
+                    ->where('kunjungan_id', $kunjungan->id)
+                    ->whereIn('status', ['Pending', 'Diproses'])
+                    ->orderByDesc('id')
+                    ->first();
+
+                if ($orderLab) {
+                    $labTests = DB::table('order_lab_detail as old')
+                        ->leftJoin('jenis_pemeriksaan_lab as jpl', 'jpl.id', '=', 'old.jenis_pemeriksaan_lab_id')
+                        ->where('old.order_lab_id', $orderLab->id)
+                        ->select(
+                            'old.id',
+                            'old.order_lab_id',
+                            'old.jenis_pemeriksaan_lab_id',
+                            'old.status_pemeriksaan',
+                            'jpl.kode_pemeriksaan',
+                            'jpl.nama_pemeriksaan',
+                            'jpl.nilai_normal',
+                            'jpl.satuan',
+                            'jpl.harga_pemeriksaan_lab'
+                        )
+                        ->get()
+                        ->map(function ($row) use ($orderLab) {
+                            return [
+                                'id' => $row->id,
+                                'order_lab_id' => $row->order_lab_id,
+                                'lab_test_id' => $row->jenis_pemeriksaan_lab_id,
+                                'nama_pemeriksaan' => $row->nama_pemeriksaan,
+                                'nilai_normal' => $row->nilai_normal ?? '-',
+                                'satuan' => $row->satuan ?? '',
+                                'harga' => $row->harga_pemeriksaan_lab ?? 0,
+                                'tanggal_kunjungan_terjadwal' => $orderLab->tanggal_pemeriksaan,
+                                'jam_kunjungan_terjadwal' => $orderLab->jam_pemeriksaan,
+                                'tanggal_pemeriksaan' => $orderLab->tanggal_pemeriksaan,
+                                'jam_pemeriksaan' => $orderLab->jam_pemeriksaan,
+                                'status' => $row->status_pemeriksaan,
+                            ];
+                        })
+                        ->values()
+                        ->toArray();
+                }
+            }
+
+            // Order radiologi yang sudah dipilih
+            $radiologiTests = [];
+            if (
+                Schema::hasTable('order_radiologi') &&
+                Schema::hasTable('order_radiologi_detail') &&
+                Schema::hasTable('jenis_pemeriksaan_radiologi')
+            ) {
+                $orderRadiologi = DB::table('order_radiologi')
+                    ->where('kunjungan_id', $kunjungan->id)
+                    ->whereIn('status', ['Pending', 'Diproses'])
+                    ->orderByDesc('id')
+                    ->first();
+
+                if ($orderRadiologi) {
+                    $radiologiTests = DB::table('order_radiologi_detail as ord')
+                        ->leftJoin('jenis_pemeriksaan_radiologi as jpr', 'jpr.id', '=', 'ord.jenis_pemeriksaan_radiologi_id')
+                        ->where('ord.order_radiologi_id', $orderRadiologi->id)
+                        ->select(
+                            'ord.id',
+                            'ord.order_radiologi_id',
+                            'ord.jenis_pemeriksaan_radiologi_id',
+                            'ord.status_pemeriksaan',
+                            'jpr.kode_pemeriksaan',
+                            'jpr.nama_pemeriksaan',
+                            'jpr.deskripsi',
+                            'jpr.harga_pemeriksaan_radiologi'
+                        )
+                        ->get()
+                        ->map(function ($row) use ($orderRadiologi) {
+                            return [
+                                'id' => $row->id,
+                                'order_radiologi_id' => $row->order_radiologi_id,
+                                'jenis_radiologi_id' => $row->jenis_pemeriksaan_radiologi_id,
+                                'nama_pemeriksaan' => $row->nama_pemeriksaan,
+                                'deskripsi' => $row->deskripsi,
+                                'harga' => $row->harga_pemeriksaan_radiologi ?? 0,
+                                'tanggal_kunjungan_terjadwal' => $orderRadiologi->tanggal_pemeriksaan,
+                                'jam_kunjungan_terjadwal' => $orderRadiologi->jam_pemeriksaan,
+                                'tanggal_pemeriksaan' => $orderRadiologi->tanggal_pemeriksaan,
+                                'jam_pemeriksaan' => $orderRadiologi->jam_pemeriksaan,
+                                'status' => $row->status_pemeriksaan,
+                            ];
+                        })
+                        ->values()
+                        ->toArray();
+                }
+            }
+
             $responseData = [
                 'id' => (int) $kunjungan->id,
                 'pasien_id' => (int) $kunjungan->pasien_id,
@@ -6196,6 +6428,11 @@ class APIMobileController extends Controller
                         'no_hp_perawat' => $emr->perawat->no_hp_perawat,
                     ] : null,
                 ] : null,
+
+                'lab_tests' => $labTests,
+                'radiologi_tests' => $radiologiTests,
+                'resep' => $resepObat,
+                'layanan' => $layanan,
 
                 'debug_kunjungan_raw' => $kunjungan->toArray(),
                 'debug_order_layanan_resolved' => [

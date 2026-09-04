@@ -8,6 +8,10 @@ return new class extends Migration
 {
     public function up(): void
     {
+        if (!Schema::hasTable('dental_examinations')) {
+            return;
+        }
+
         Schema::table('dental_examinations', function (Blueprint $table) {
             // ✅ UBAH: Kolom DMF index jadi nullable
             $table->integer('d_index')->nullable()->default(0)->change();
