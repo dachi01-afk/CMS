@@ -849,8 +849,15 @@ $(function () {
                 .map((item) => {
                     const id = item?.id ?? item?.obat_id ?? null;
                     const jumlah = item?.jumlah ?? item?.qty ?? null;
+                    const depotId = item?.depot_id ?? null;
+
                     if (!id || !jumlah) return null;
-                    return { id: Number(id), jumlah: Number(jumlah) };
+
+                    return {
+                        id: Number(id),
+                        jumlah: Number(jumlah),
+                        depot_id: depotId ? Number(depotId) : null,
+                    };
                 })
                 .filter(Boolean);
         }
@@ -860,6 +867,16 @@ $(function () {
                 icon: "warning",
                 title: "Oops",
                 text: "Resep ID tidak ditemukan.",
+            });
+            return;
+        }
+
+        const adaDepotKosong = obatData.some((item) => !item.depot_id);
+        if (adaDepotKosong) {
+            Swal.fire({
+                icon: "warning",
+                title: "Depot belum lengkap",
+                text: "Ada obat yang belum diisi depot-nya. Silakan gunakan 'Update Resep Obat' terlebih dahulu.",
             });
             return;
         }
@@ -926,6 +943,7 @@ $(function () {
 
     // TomSelect instances untuk UPDATE
     const tomObatInstancesUpdate = {};
+    const tomDepotInstancesUpdate = {};
     const selectedObatDataUpdate = {};
 
     const rowElUpdate = (idx) =>
@@ -979,6 +997,23 @@ $(function () {
               <span class="obat-kode">Kode: -</span>
               <span class="obat-stok">Stok: -</span>
             </div>
+          </div>
+
+          <div class="lg:col-span-2">
+              <label class="block text-xs font-medium text-slate-700 dark:text-slate-200 mb-1">
+                Depot <span class="text-rose-500">*</span>
+              </label>
+
+              <select class="depot-select-update w-full"
+                  name="obat[${idx}][depot_id]"
+                  data-index="${idx}"
+                  disabled>
+                  <option value="">Pilih depot</option>
+              </select>
+
+              <p class="mt-1 text-[11px] text-slate-400 depot-hint">
+                  Pilih obat terlebih dahulu.
+              </p>
           </div>
 
           <div class="lg:col-span-2">
@@ -1058,6 +1093,81 @@ $(function () {
         });
     }
 
+    function resetDepotRowUpdate(idx, message = "Pilih obat terlebih dahulu.") {
+        const $row = rowElUpdate(idx);
+
+        if (tomDepotInstancesUpdate[idx]) {
+            try {
+                tomDepotInstancesUpdate[idx].destroy();
+            } catch (_) {}
+            delete tomDepotInstancesUpdate[idx];
+        }
+
+        const $select = $row.find(".depot-select-update");
+        $select.empty().append(`<option value="">Pilih depot</option>`);
+        $select.prop("disabled", true);
+        $row.find(".depot-hint").text(message);
+    }
+
+    function initTomSelectDepotUpdate(
+        idx,
+        depots = [],
+        selectedDepotId = null,
+    ) {
+        const $row = rowElUpdate(idx);
+        const $select = $row.find(".depot-select-update");
+
+        if (tomDepotInstancesUpdate[idx]) {
+            try {
+                tomDepotInstancesUpdate[idx].destroy();
+            } catch (_) {}
+            delete tomDepotInstancesUpdate[idx];
+        }
+
+        $select.empty().append(`<option value="">Pilih depot</option>`);
+
+        if (!Array.isArray(depots) || depots.length === 0) {
+            $select.prop("disabled", true);
+            $row.find(".depot-hint").text("Obat ini belum memiliki depot.");
+            return;
+        }
+
+        depots.forEach((d) => {
+            $select.append(`<option value="${d.id}">${d.nama_depot}</option>`);
+        });
+
+        $select.prop("disabled", false);
+        $row.find(".depot-hint").text("Pilih depot.");
+
+        tomDepotInstancesUpdate[idx] = new TomSelect($select[0], {
+            maxItems: 1,
+            create: false,
+            placeholder: "Pilih depot...",
+        });
+
+        // ✅ preselect kalau ada depot_id yang tersimpan
+        if (selectedDepotId) {
+            tomDepotInstancesUpdate[idx].setValue(
+                String(selectedDepotId),
+                true,
+            );
+        }
+    }
+
+    function loadDepotForRowUpdate(idx, obatId, selectedDepotId = null) {
+        resetDepotRowUpdate(idx, "Memuat depot...");
+        axios
+            .get(urlDepotByObatId, { params: { obat_id: obatId } })
+            .then((res) => {
+                const depots = res.data?.data ?? res.data ?? [];
+                initTomSelectDepotUpdate(idx, depots, selectedDepotId);
+            })
+            .catch((err) => {
+                console.error("LOAD DEPOT ERROR (update):", err);
+                resetDepotRowUpdate(idx, "Gagal memuat depot. Coba lagi.");
+            });
+    }
+
     function initTomSelectObatRowUpdate(idx) {
         const $select = $(
             `${obatRowsUpdateId} .obat-row[data-index="${idx}"] .obat-select-update`,
@@ -1097,6 +1207,7 @@ $(function () {
                     $row.find(".harga-input").val("Rp0");
                     $row.find(".total-raw").val(0);
                     $row.find(".total-input").val("Rp0");
+                    resetDepotRowUpdate(idx, "Pilih obat terlebih dahulu.");
                     return;
                 }
 
@@ -1112,6 +1223,8 @@ $(function () {
                 $row.find(".harga-input").val(
                     formatRupiah(obat.harga_umum || 0),
                 );
+
+                loadDepotForRowUpdate(idx, value);
 
                 recalcRowTotalUpdate(idx);
             },
@@ -1154,6 +1267,12 @@ $(function () {
                 formatRupiah(prefill.harga_umum || 0),
             );
 
+            loadDepotForRowUpdate(
+                idx,
+                prefill.obat_id,
+                prefill.depot_id ?? null,
+            );
+
             recalcRowTotalUpdate(idx);
         }
     }
@@ -1169,6 +1288,13 @@ $(function () {
         $("#update_resep_id").val(id);
         $(obatRowsUpdateId).empty();
         destroyAllTomUpdate();
+
+        Object.keys(tomDepotInstancesUpdate).forEach((k) => {
+            try {
+                tomDepotInstancesUpdate[k].destroy();
+            } catch (_) {}
+            delete tomDepotInstancesUpdate[k];
+        });
 
         axios
             .get(urlShowResep(id))
@@ -1215,11 +1341,17 @@ $(function () {
             } catch (_) {}
             delete tomObatInstancesUpdate[idx];
         }
+        if (tomDepotInstancesUpdate[idx]) {
+            // ✅ tambahkan
+            try {
+                tomDepotInstancesUpdate[idx].destroy();
+            } catch (_) {}
+            delete tomDepotInstancesUpdate[idx];
+        }
         delete selectedObatDataUpdate[idx];
 
         $row.remove();
 
-        // reindex sederhana: (kalau mau rapih seperti create, bisa dibuatkan fungsi reindex khusus update)
         if ($(obatRowsUpdateId).children(".obat-row").length === 0)
             addObatRowUpdate(null);
     });

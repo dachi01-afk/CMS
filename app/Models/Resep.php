@@ -26,7 +26,9 @@ class Resep extends Model
 
     public function obat()
     {
-        return $this->belongsToMany(Obat::class, 'resep_obat', 'resep_id', 'obat_id')->withPivot(['jumlah', 'dosis', 'keterangan']);
+        return $this->belongsToMany(Obat::class, 'resep_obat')
+            ->withPivot('depot_id', 'jumlah', 'dosis', 'keterangan')
+            ->withTimestamps();
     }
 
     public static function getDataResepObat($id)

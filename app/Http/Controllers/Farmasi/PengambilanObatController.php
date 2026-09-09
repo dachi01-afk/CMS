@@ -27,7 +27,7 @@ class PengambilanObatController extends Controller
 
     public function getDataResepObat()
     {
-        $hariIni = Carbon::today();
+        // $hariIni = Carbon::today();
 
         // 🔹 Ambil semua data dulu (COLLECTION)
         $data = Resep::with([
@@ -39,11 +39,11 @@ class PengambilanObatController extends Controller
             'kunjungan.poli.dokter',
         ])
             ->where('status', 'waiting')
-            ->where(function ($q) use ($hariIni) {
-                $q->whereHas('kunjungan', function ($kunjungan) use ($hariIni) {
-                    $kunjungan->whereDate('tanggal_kunjungan', $hariIni);
-                });
-            })
+            // ->where(function ($q) use ($hariIni) {
+            //     $q->whereHas('kunjungan', function ($kunjungan) use ($hariIni) {
+            //         $kunjungan->whereDate('tanggal_kunjungan', $hariIni);
+            //     });
+            // })
             ->latest()
             ->get(); // ✅ PENTING: GET
 
@@ -91,6 +91,7 @@ class PengambilanObatController extends Controller
                 $dataObat = $row->obat->map(fn($ob) => [
                     'id'     => $ob->id,
                     'jumlah' => $ob->pivot->jumlah,
+                    'depot_id' => $ob->pivot->depot_id,
                 ])->values();
 
                 $jsonObat = e(json_encode($dataObat));
@@ -144,22 +145,103 @@ class PengambilanObatController extends Controller
     }
 
     /**
-     * Decrement stok obat secara aman (cek stok cukup + baris dikunci).
+     * Kurangi stok obat secara FEFO (First Expired First Out) dari sebuah depot tertentu.
+     * Mengurangi 3 level sekaligus: batch_obat_depot -> depot_obat -> obat.jumlah
+     *
+     * @throws ValidationException kalau stok tidak cukup di level manapun
      */
-    private function safeDecreaseObat(int $obatId, int $qty): void
+    private function safeDecreaseObat(int $obatId, int $depotId, int $qty): void
     {
         if ($qty <= 0) return;
 
-        // Satu query, atomic: hanya jalan kalau stok cukup
-        $affected = DB::table('obat')
+        // ==========================================
+        // 1) Lock & ambil baris depot_obat (level depot)
+        // ==========================================
+        $depotObat = DB::table('depot_obat')
+            ->where('obat_id', $obatId)
+            ->where('depot_id', $depotId)
+            ->lockForUpdate()
+            ->first();
+
+        if (! $depotObat || $depotObat->stok_obat < $qty) {
+            throw ValidationException::withMessages([
+                'obat' => "Stok obat ID {$obatId} di depot ID {$depotId} tidak mencukupi (tersedia: " . ($depotObat->stok_obat ?? 0) . ", diminta: {$qty})."
+            ]);
+        }
+
+        // ==========================================
+        // 2) Ambil batch-batch obat ini di depot ini, urut FEFO, dengan lock
+        // ==========================================
+        $batches = DB::table('batch_obat_depot as bod')
+            ->join('batch_obat as bo', 'bo.id', '=', 'bod.batch_obat_id')
+            ->where('bo.obat_id', $obatId)
+            ->where('bod.depot_id', $depotId)
+            ->where('bod.stok_obat', '>', 0)
+            ->orderBy('bo.tanggal_kadaluarsa_obat', 'asc') // FEFO: expired paling dekat duluan
+            ->orderBy('bod.id', 'asc')                // tie-breaker biar konsisten
+            ->lockForUpdate()
+            ->select('bod.id as batch_obat_depot_id', 'bod.stok_obat', 'bo.tanggal_kadaluarsa_obat')
+            ->get();
+
+        // Validasi total stok batch cukup (jaga-jaga kalau depot_obat & batch tidak sinkron)
+        $totalBatchStok = $batches->sum('stok_obat');
+        if ($totalBatchStok < $qty) {
+            throw ValidationException::withMessages([
+                'obat' => "Stok batch untuk obat ID {$obatId} di depot ID {$depotId} tidak mencukupi (tersedia: {$totalBatchStok}, diminta: {$qty})."
+            ]);
+        }
+
+        // ==========================================
+        // 3) Kurangi per batch, FEFO, sampai qty habis
+        // ==========================================
+        $sisa = $qty;
+
+        foreach ($batches as $batch) {
+            if ($sisa <= 0) break;
+
+            $ambil = min($batch->stok_obat, $sisa);
+
+            DB::table('batch_obat_depot')
+                ->where('id', $batch->batch_obat_depot_id)
+                ->decrement('stok_obat', $ambil);
+
+            $sisa -= $ambil;
+        }
+
+        if ($sisa > 0) {
+            // Harusnya tidak akan pernah terjadi karena sudah divalidasi di atas,
+            // tapi ini pengaman terakhir.
+            throw ValidationException::withMessages([
+                'obat' => "Gagal mengalokasikan stok batch untuk obat ID {$obatId} secara penuh."
+            ]);
+        }
+
+        // ==========================================
+        // 4) Kurangi level depot (depot_obat.stok_obat)
+        // ==========================================
+        $affectedDepot = DB::table('depot_obat')
+            ->where('obat_id', $obatId)
+            ->where('depot_id', $depotId)
+            ->where('stok_obat', '>=', $qty)
+            ->decrement('stok_obat', $qty);
+
+        if (! $affectedDepot) {
+            throw ValidationException::withMessages([
+                'obat' => "Gagal mengurangi stok depot untuk obat ID {$obatId} di depot ID {$depotId}."
+            ]);
+        }
+
+        // ==========================================
+        // 5) Kurangi level global (obat.jumlah)
+        // ==========================================
+        $affectedObat = DB::table('obat')
             ->where('id', $obatId)
             ->where('jumlah', '>=', $qty)
             ->decrement('jumlah', $qty);
 
-        if ($affected === 0) {
-            // rollback otomatis karena di dalam DB::transaction caller
+        if (! $affectedObat) {
             throw ValidationException::withMessages([
-                'obat' => "Stok obat ID {$obatId} tidak mencukupi untuk dikurangi {$qty}."
+                'obat' => "Stok global obat ID {$obatId} tidak mencukupi untuk dikurangi {$qty}."
             ]);
         }
     }
@@ -168,15 +250,11 @@ class PengambilanObatController extends Controller
     {
         $request->validate([
             'resep_id'            => ['required', 'exists:resep,id'],
-
-            // ✅ enum status cuma 2: waiting, done
-            // FE kirim status yang sekarang dari DB (data-status)
             'status_now'          => ['required', 'in:waiting,done'],
-
-            // obat_list tetap dipakai untuk cek resep & kurangi stok saat done
             'obat_list'           => ['required', 'array', 'min:1'],
             'obat_list.*.id'      => ['required', 'exists:obat,id'],
             'obat_list.*.jumlah'  => ['required', 'integer', 'min:1'],
+            // depot_id TIDAK divalidasi 'required' di sini karena sumber kebenarannya dari DB, bukan dari FE
         ]);
 
         try {
@@ -184,30 +262,35 @@ class PengambilanObatController extends Controller
                 /** @var \App\Models\Resep $resep */
                 $resep = Resep::with(['obat'])->lockForUpdate()->findOrFail($request->resep_id);
 
-                // ✅ source of truth: status dari DB
                 $dbStatus = $resep->status ?? 'waiting';
 
-                // ✅ anti-stale: kalau FE kirim status berbeda dari DB, minta refresh
                 if ($dbStatus !== $request->status_now) {
                     throw new Exception('Status resep sudah berubah. Silakan refresh tabel terlebih dahulu.');
                 }
 
-                // ==========================================
-                // 0) Idempotent guard: kalau sudah done, stop
-                // ==========================================
                 if ($dbStatus === 'done') {
                     throw new Exception('Resep sudah selesai (Done). Tidak dapat diupdate lagi.');
                 }
 
-                // ==========================================
-                // 1) Karena enum cuma 2 → otomatis naik ke DONE
-                // ==========================================
                 $targetStatus = 'done';
 
-                // ==================================================
-                // 2) Kalau mau set done → wajib cek pembayaran dulu
-                // ==================================================
-                // 🔍 A) Cek pembayaran dari jalur EMR (kunjungan)
+                // ==========================================
+                // ✅ GUARD BARU: pastikan semua item sudah punya depot_id
+                // ==========================================
+                $itemTanpaDepot = $resep->obat->filter(function ($ob) {
+                    return empty($ob->pivot->depot_id);
+                });
+
+                if ($itemTanpaDepot->isNotEmpty()) {
+                    $namaObatKosong = $itemTanpaDepot->pluck('nama_obat')->implode(', ');
+                    throw new Exception(
+                        "Depot belum diisi untuk obat: {$namaObatKosong}. Silakan isi lewat 'Update Resep Obat' terlebih dahulu sebelum mengubah status."
+                    );
+                }
+
+                // ==========================================
+                // Cek pembayaran (tidak berubah)
+                // ==========================================
                 $pembayaran = Pembayaran::whereHas('emr', function ($q) use ($resep) {
                     $q->where('resep_id', $resep->id);
                 })->first();
@@ -217,7 +300,6 @@ class PengambilanObatController extends Controller
                         throw new Exception('Status pembayaran masih "Belum Bayar". Silakan lakukan pembayaran terlebih dahulu.');
                     }
                 } else {
-                    // 🔍 B) Jalur beli obat langsung (OTC/penjualan obat)
                     $obatIds = collect($request->obat_list)->pluck('id')->all();
 
                     $penjualan = PenjualanObat::whereIn('obat_id', $obatIds)
@@ -231,29 +313,18 @@ class PengambilanObatController extends Controller
                 }
 
                 // ==========================================
-                // 3) Saat DONE: kurangi stok (sekali saja)
+                // ✅ Kurangi stok FEFO, sumber depot_id & jumlah dari DB (bukan dari FE)
                 // ==========================================
-                foreach ($request->obat_list as $obatData) {
-                    $obatId      = (int) $obatData['id'];
-                    $jumlahAmbil = (int) $obatData['jumlah'];
+                foreach ($resep->obat as $obatPivot) {
+                    $obatId      = $obatPivot->id;
+                    $depotId     = (int) $obatPivot->pivot->depot_id;
+                    $jumlahAmbil = (int) $obatPivot->pivot->jumlah;
 
-                    // Pastikan obat memang ada di resep
-                    $obatPivot = $resep->obat->firstWhere('id', $obatId);
-                    if (! $obatPivot) {
-                        throw new Exception("Obat dengan ID {$obatId} tidak ada di resep.");
-                    }
-
-                    $jumlahDiResep = (int) ($obatPivot->pivot->jumlah ?? 0);
-                    if ($jumlahAmbil > $jumlahDiResep) {
-                        throw new Exception("Jumlah pengambilan untuk obat '{$obatPivot->nama_obat}' melebihi jumlah resep.");
-                    }
-
-                    // ✅ Kurangi stok (sekali, karena kita pastikan status DB belum done)
-                    $this->safeDecreaseObat($obatId, $jumlahAmbil);
+                    $this->safeDecreaseObat($obatId, $depotId, $jumlahAmbil);
                 }
 
                 // ==========================================
-                // 4) Update status resep
+                // Update status resep
                 // ==========================================
                 $resep->update([
                     'status' => $targetStatus,
@@ -269,7 +340,6 @@ class PengambilanObatController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            // ✅ error bisnis jangan 500, pakai 422
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
@@ -716,6 +786,7 @@ class PengambilanObatController extends Controller
                         'jumlah'     => (int) ($ob->pivot->jumlah ?? 1),
                         'dosis'      => $ob->pivot->dosis,
                         'keterangan' => $ob->pivot->keterangan,
+                        'depot_id'   => $ob->pivot->depot_id ?? null,
                     ];
                 })->values(),
             ]
@@ -727,6 +798,7 @@ class PengambilanObatController extends Controller
         $validated = $request->validate([
             'obat' => ['required', 'array', 'min:1'],
             'obat.*.obat_id' => ['required', 'integer', 'exists:obat,id'],
+            'obat.*.depot_id'   => ['required', 'integer', 'exists:depot,id'],
             'obat.*.jumlah' => ['required', 'integer', 'min:1'],
             'obat.*.dosis' => ['required', 'string', 'max:255'],
             'obat.*.keterangan' => ['nullable', 'string', 'max:255'],
@@ -747,6 +819,7 @@ class PengambilanObatController extends Controller
             $syncData = [];
             foreach ($validated['obat'] as $row) {
                 $syncData[$row['obat_id']] = [
+                    'depot_id'   => $row['depot_id'],
                     'jumlah'     => $row['jumlah'],
                     'dosis'      => $row['dosis'],
                     'keterangan' => $row['keterangan'] ?? null,
@@ -772,7 +845,7 @@ class PengambilanObatController extends Controller
 
     public function getDataResepObatYangSudahSelesai()
     {
-        $hariIni = Carbon::today();
+        // $hariIni = Carbon::today();
 
         // 🔹 Ambil semua data dulu (COLLECTION)
         $data = Resep::with([
@@ -781,11 +854,12 @@ class PengambilanObatController extends Controller
             'kunjungan.poli.dokter',
         ])
             ->where('status', 'done')
-            ->where(function ($q) use ($hariIni) {
-                $q->whereHas('kunjungan', function ($kunjungan) use ($hariIni) {
-                    $kunjungan->whereDate('tanggal_kunjungan', $hariIni);
-                })->orWhereDate('created_at', $hariIni);
-            })->get(); // ✅ PENTING: GET
+            // ->where(function ($q) use ($hariIni) {
+            //     $q->whereHas('kunjungan', function ($kunjungan) use ($hariIni) {
+            //         $kunjungan->whereDate('tanggal_kunjungan', $hariIni);
+            //     })->orWhereDate('created_at', $hariIni);
+            // })
+            ->get(); // ✅ PENTING: GET
 
         return DataTables::of($data)
             ->addIndexColumn()
@@ -830,6 +904,7 @@ class PengambilanObatController extends Controller
                 $dataObat = $row->obat->map(fn($ob) => [
                     'id'     => $ob->id,
                     'jumlah' => $ob->pivot->jumlah,
+                    'depot_id' => $ob->pivot->depot_id,
                 ])->values();
 
                 $jsonObat = e(json_encode($dataObat));
