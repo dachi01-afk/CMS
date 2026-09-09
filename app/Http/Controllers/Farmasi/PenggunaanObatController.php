@@ -34,30 +34,15 @@ class PenggunaanObatController extends Controller
         $endDate   = $request->input('end_date');   // Y-m-d
         $namaObat  = $request->input('nama_obat');
 
-        // ✅ status ada di tabel resep
-        $statusDiambil = 'Sudah Diambil'; // SESUAIKAN bila enum kamu beda: 'diambil', 'done', dll.
+        $statusDiambil = 'done';
 
         $query = Obat::query()
             ->from('obat')
-            ->leftJoin('resep_obat', function ($join) {
-                $join->on('obat.id', '=', 'resep_obat.obat_id');
-                // ⛔ jangan filter status di sini lagi, karena status bukan di resep_obat
-            })
-            ->leftJoin('resep', function ($join) use ($statusDiambil) {
-                $join->on('resep_obat.resep_id', '=', 'resep.id')
-                    ->where('resep.status', '=', $statusDiambil); // ✅ pindah ke sini
-            })
+            ->leftJoin('resep_obat', 'obat.id', '=', 'resep_obat.obat_id')
+            // ✅ JOIN resep tanpa filter status di sini
+            ->leftJoin('resep', 'resep_obat.resep_id', '=', 'resep.id')
             ->leftJoin('kunjungan', 'resep.kunjungan_id', '=', 'kunjungan.id')
             ->leftJoin('satuan_obat', 'obat.satuan_obat_id', '=', 'satuan_obat.id')
-            ->when($startDate && $endDate, function ($q) use ($startDate, $endDate) {
-                // 🔁 filter range tanggal berdasarkan tanggal item resep (pivot) terakhir berubah
-                // ✅ TAMBAHAN LOGIC: tetap tampilkan obat yang belum pernah terjual (resep_obat NULL)
-                $q->where(function ($w) use ($startDate, $endDate) {
-                    $w->whereBetween(DB::raw('DATE(resep_obat.updated_at)'), [$startDate, $endDate])
-                        ->orWhereNull('resep_obat.id'); // atau orWhereNull('resep_obat.updated_at')
-                });
-            })
-
             ->when($namaObat, function ($q) use ($namaObat) {
                 $q->where('obat.nama_obat', 'like', '%' . $namaObat . '%');
             })
@@ -68,14 +53,53 @@ class PenggunaanObatController extends Controller
                 'obat.jumlah as sisa_obat',
                 'obat.harga_jual_obat',
                 'satuan_obat.nama_satuan_obat as satuan',
+            ]);
 
-                // ✅ karena join resep sudah di-filter statusnya, SUM hanya menghitung yang statusnya "Sudah Diambil"
-                DB::raw('COALESCE(SUM(resep_obat.jumlah), 0) as penggunaan_umum'),
-                DB::raw('COALESCE(SUM(resep_obat.jumlah * obat.harga_jual_obat), 0) as nominal_umum'),
+        // ✅ Bangun ekspresi CASE WHEN secara dinamis, tergantung ada filter tanggal atau tidak
+        if ($startDate && $endDate) {
+            $query->addSelect([
+                DB::raw("
+                COALESCE(SUM(
+                    CASE
+                        WHEN resep.status = " . DB::getPdo()->quote($statusDiambil) . "
+                         AND DATE(resep_obat.updated_at) BETWEEN " . DB::getPdo()->quote($startDate) . " AND " . DB::getPdo()->quote($endDate) . "
+                        THEN resep_obat.jumlah
+                        ELSE 0
+                    END
+                ), 0) as penggunaan_umum
+            "),
+                DB::raw("
+                COALESCE(SUM(
+                    CASE
+                        WHEN resep.status = " . DB::getPdo()->quote($statusDiambil) . "
+                         AND DATE(resep_obat.updated_at) BETWEEN " . DB::getPdo()->quote($startDate) . " AND " . DB::getPdo()->quote($endDate) . "
+                        THEN resep_obat.jumlah * obat.harga_jual_obat
+                        ELSE 0
+                    END
+                ), 0) as nominal_umum
+            "),
+            ]);
+        } else {
+            $query->addSelect([
+                DB::raw("
+                COALESCE(SUM(
+                    CASE WHEN resep.status = " . DB::getPdo()->quote($statusDiambil) . "
+                    THEN resep_obat.jumlah ELSE 0 END
+                ), 0) as penggunaan_umum
+            "),
+                DB::raw("
+                COALESCE(SUM(
+                    CASE WHEN resep.status = " . DB::getPdo()->quote($statusDiambil) . "
+                    THEN resep_obat.jumlah * obat.harga_jual_obat ELSE 0 END
+                ), 0) as nominal_umum
+            "),
+            ]);
+        }
 
-                DB::raw('0 as penggunaan_bpjs'),
-                DB::raw('0 as nominal_bpjs'),
-            ])
+        $query->addSelect([
+            DB::raw('0 as penggunaan_bpjs'),
+            DB::raw('0 as nominal_bpjs'),
+        ])
             ->groupBy(
                 'obat.id',
                 'obat.nama_obat',

@@ -123,8 +123,7 @@ $(function () {
             {
                 data: "nama_obat",
                 name: "nama_obat",
-                className:
-                    "px-3 py-2 align-top font-semibold text-[12px] text-slate-800 dark:text-slate-50",
+                className: "px-3 py-2 align-top font-semibold text-[12px] text-slate-800 dark:text-slate-50",
                 render: function (data, type, row) {
                     if (!data) return "-";
                     let badge = "";
