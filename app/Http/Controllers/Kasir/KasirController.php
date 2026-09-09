@@ -5,11 +5,19 @@ namespace App\Http\Controllers\Kasir;
 use App\Helpers\NotificationHelper;
 use App\Http\Controllers\Controller;
 use App\Models\DiskonApproval;
+use App\Models\EMR;
+use App\Models\HasilLab;
+use App\Models\HasilRadiologi;
 use App\Models\Kasir;
 use App\Models\Kunjungan;
 use App\Models\MetodePembayaran;
+use App\Models\OrderLab;
+use App\Models\OrderLabDetail;
 use App\Models\OrderLayanan;
+use App\Models\OrderRadiologi;
+use App\Models\OrderRadiologiDetail;
 use App\Models\Pembayaran;
+use App\Models\PembayaranDetail;
 use App\Models\PenjualanObat;
 use App\Models\User;
 use Carbon\CarbonPeriod;
@@ -735,6 +743,159 @@ class KasirController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Transaksi berhasil dihapus.',
+        ]);
+    }
+
+    public function deleteItemTransaksi($detailId)
+    {
+        $detail = PembayaranDetail::with(['pembayaran.emr.kunjungan'])->findOrFail($detailId);
+        $pembayaran = $detail->pembayaran;
+
+        if (!$pembayaran) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data pembayaran tidak ditemukan.',
+            ], 404);
+        }
+
+        $isLab = !empty($detail->order_lab_detail_id) || str_starts_with((string) $detail->nama_item, 'Lab:');
+        $isRadiologi = !empty($detail->order_radiologi_detail_id) || str_starts_with((string) $detail->nama_item, 'Radiologi:');
+
+        if (!$isLab && !$isRadiologi) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Hanya item Order Lab dan Order Radiologi yang dapat dihapus melalui aksi ini.',
+            ], 422);
+        }
+
+        $deletedItemName = $detail->nama_item;
+
+        DB::transaction(function () use ($detail, $pembayaran, $isLab, $isRadiologi) {
+            $kunjunganId = $pembayaran->emr?->kunjungan_id;
+
+            // 1. Tangani Order Lab
+            if ($isLab) {
+                $orderLabDetail = null;
+                if (!empty($detail->order_lab_detail_id)) {
+                    $orderLabDetail = OrderLabDetail::find($detail->order_lab_detail_id);
+                }
+
+                // Fallback pencarian bila order_lab_detail_id kosong
+                if (!$orderLabDetail && $kunjunganId) {
+                    $cleanName = trim(preg_replace('/^Lab:\s*/i', '', (string) $detail->nama_item));
+                    $orderLabDetail = OrderLabDetail::whereHas('orderLab', function ($q) use ($kunjunganId) {
+                        $q->where('kunjungan_id', $kunjunganId);
+                    })->whereHas('jenisPemeriksaanLab', function ($q) use ($cleanName) {
+                        $q->where('nama_pemeriksaan', $cleanName);
+                    })->first();
+                }
+
+                if ($orderLabDetail) {
+                    $orderLabId = $orderLabDetail->order_lab_id;
+
+                    // Hapus hasil lab jika ada
+                    HasilLab::where('order_lab_detail_id', $orderLabDetail->id)->delete();
+
+                    // Hapus detail lab
+                    $orderLabDetail->delete();
+
+                    // Periksa sisa detail pada order_lab
+                    $remainingLabDetails = OrderLabDetail::where('order_lab_id', $orderLabId)->count();
+                    if ($remainingLabDetails === 0) {
+                        EMR::where('order_lab_id', $orderLabId)->update(['order_lab_id' => null]);
+                        OrderLab::where('id', $orderLabId)->delete();
+                    }
+                }
+            }
+
+            // 2. Tangani Order Radiologi
+            if ($isRadiologi) {
+                $orderRadDetail = null;
+                if (!empty($detail->order_radiologi_detail_id)) {
+                    $orderRadDetail = OrderRadiologiDetail::find($detail->order_radiologi_detail_id);
+                }
+
+                // Fallback pencarian bila order_radiologi_detail_id kosong
+                if (!$orderRadDetail && $kunjunganId) {
+                    $cleanName = trim(preg_replace('/^Radiologi:\s*/i', '', (string) $detail->nama_item));
+                    $orderRadDetail = OrderRadiologiDetail::whereHas('orderRadiologi', function ($q) use ($kunjunganId) {
+                        $q->where('kunjungan_id', $kunjunganId);
+                    })->whereHas('jenisPemeriksaanRadiologi', function ($q) use ($cleanName) {
+                        $q->where('nama_pemeriksaan', $cleanName);
+                    })->first();
+                }
+
+                if ($orderRadDetail) {
+                    $orderRadId = $orderRadDetail->order_radiologi_id;
+
+                    // Hapus file foto hasil jika ada
+                    $hasilRad = HasilRadiologi::where('order_radiologi_detail_id', $orderRadDetail->id)->get();
+                    foreach ($hasilRad as $hr) {
+                        if ($hr->foto_hasil_radiologi && Storage::disk('public')->exists($hr->foto_hasil_radiologi)) {
+                            Storage::disk('public')->delete($hr->foto_hasil_radiologi);
+                        }
+                    }
+                    HasilRadiologi::where('order_radiologi_detail_id', $orderRadDetail->id)->delete();
+
+                    // Hapus detail radiologi
+                    $orderRadDetail->delete();
+
+                    // Periksa sisa detail pada order_radiologi
+                    $remainingRadDetails = OrderRadiologiDetail::where('order_radiologi_id', $orderRadId)->count();
+                    if ($remainingRadDetails === 0) {
+                        EMR::where('order_radiologi_id', $orderRadId)->update(['order_radiologi_id' => null]);
+                        OrderRadiologi::where('id', $orderRadId)->delete();
+                    }
+                }
+            }
+
+            // 3. Hapus item dari pembayaran_detail
+            $deletedDetailId = $detail->id;
+            $detail->delete();
+
+            // 4. Hitung ulang total pada pembayaran
+            $remainingDetails = PembayaranDetail::where('pembayaran_id', $pembayaran->id)->get();
+            $newTotalTagihan = (float) $remainingDetails->sum('subtotal');
+
+            // Hitung total setelah diskon
+            $hasDetailDiscount = $remainingDetails->some(fn($d) => !is_null($d->total_setelah_diskon));
+            if ($hasDetailDiscount) {
+                $newTotalSetelahDiskon = (float) $remainingDetails->sum(function ($d) {
+                    return !is_null($d->total_setelah_diskon) ? (float) $d->total_setelah_diskon : (float) $d->subtotal;
+                });
+            } else {
+                $newTotalSetelahDiskon = $newTotalTagihan;
+            }
+
+            $updateData = [
+                'total_tagihan' => $newTotalTagihan,
+                'total_setelah_diskon' => $newTotalSetelahDiskon,
+            ];
+
+            // Jika statusnya 'Sudah Bayar', sesuaikan uang kembalian agar balance
+            if ($pembayaran->status === 'Sudah Bayar') {
+                $uangDiterima = (float) ($pembayaran->uang_yang_diterima ?? 0);
+                if ($uangDiterima > 0) {
+                    $updateData['kembalian'] = max($uangDiterima - $newTotalSetelahDiskon, 0);
+                }
+            }
+
+            $pembayaran->update($updateData);
+
+            // 5. Bersihkan dari DiskonApproval jika ID detail ini tercatat di diskon_items
+            $latestApproval = DiskonApproval::where('pembayaran_id', $pembayaran->id)->latest('id')->first();
+            if ($latestApproval && $latestApproval->diskon_items) {
+                $items = is_string($latestApproval->diskon_items) ? json_decode($latestApproval->diskon_items, true) : $latestApproval->diskon_items;
+                if (is_array($items)) {
+                    $filtered = array_values(array_filter($items, fn($it) => (int) ($it['id'] ?? 0) !== (int) $deletedDetailId));
+                    $latestApproval->update(['diskon_items' => json_encode($filtered)]);
+                }
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => "Item '{$deletedItemName}' berhasil dihapus secara permanen dari sistem.",
         ]);
     }
 

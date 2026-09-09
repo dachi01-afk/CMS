@@ -281,7 +281,7 @@
                                     <p class="text-xs text-gray-500 dark:text-gray-400">Sumber: pembayaran_detail</p>
                                 </div>
                             </div>
-                            <span
+                            <span id="badge-count-lab"
                                 class="rounded-full bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700 ring-1 ring-gray-200 dark:bg-gray-900/30 dark:text-gray-200 dark:ring-gray-700">
                                 {{ $itemsLab?->count() ?? 0 }} item
                             </span>
@@ -300,17 +300,29 @@
                                     </tr>
                                 </thead>
 
-                                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                <tbody id="tbody-order-lab" class="divide-y divide-gray-200 dark:divide-gray-700">
                                     @forelse ($itemsLab as $item)
                                         <tr class="item-row hover:bg-gray-50/70 dark:hover:bg-gray-900/20"
                                             data-detail-id="{{ $item->id }}"
                                             data-subtotal="{{ (float) ($item->subtotal ?? 0) }}">
                                             <td class="px-5 py-4">
-                                                <div class="font-medium text-gray-900 dark:text-white">
-                                                    {{ $item->nama_item }}
-                                                </div>
-                                                <div class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                                                    Rp {{ number_format($item->harga ?? 0, 0, ',', '.') }} / item
+                                                <div class="flex items-center justify-between gap-3">
+                                                    <div>
+                                                        <div class="font-medium text-gray-900 dark:text-white">
+                                                            {{ $item->nama_item }}
+                                                        </div>
+                                                        <div class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                                            Rp {{ number_format($item->harga ?? 0, 0, ',', '.') }} / item
+                                                        </div>
+                                                    </div>
+                                                    <button type="button"
+                                                        class="btn-delete-order-item inline-flex h-8 w-8 items-center justify-center rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-950/30 transition-colors"
+                                                        data-detail-id="{{ $item->id }}"
+                                                        data-nama-item="{{ $item->nama_item }}"
+                                                        data-type="lab"
+                                                        title="Hapus Order Lab">
+                                                        <i class="fa-solid fa-trash-can text-sm"></i>
+                                                    </button>
                                                 </div>
                                             </td>
 
@@ -368,7 +380,7 @@
                                     <p class="text-xs text-gray-500 dark:text-gray-400">Sumber: pembayaran_detail</p>
                                 </div>
                             </div>
-                            <span
+                            <span id="badge-count-radiologi"
                                 class="rounded-full bg-gray-50 px-3 py-1 text-xs font-semibold text-gray-700 ring-1 ring-gray-200 dark:bg-gray-900/30 dark:text-gray-200 dark:ring-gray-700">
                                 {{ $itemsRadiologi?->count() ?? 0 }} item
                             </span>
@@ -387,17 +399,29 @@
                                     </tr>
                                 </thead>
 
-                                <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                <tbody id="tbody-order-radiologi" class="divide-y divide-gray-200 dark:divide-gray-700">
                                     @forelse ($itemsRadiologi as $item)
                                         <tr class="item-row hover:bg-gray-50/70 dark:hover:bg-gray-900/20"
                                             data-detail-id="{{ $item->id }}"
                                             data-subtotal="{{ (float) ($item->subtotal ?? 0) }}">
                                             <td class="px-5 py-4">
-                                                <div class="font-medium text-gray-900 dark:text-white">
-                                                    {{ $item->nama_item }}
-                                                </div>
-                                                <div class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
-                                                    Rp {{ number_format($item->harga ?? 0, 0, ',', '.') }} / item
+                                                <div class="flex items-center justify-between gap-3">
+                                                    <div>
+                                                        <div class="font-medium text-gray-900 dark:text-white">
+                                                            {{ $item->nama_item }}
+                                                        </div>
+                                                        <div class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                                                            Rp {{ number_format($item->harga ?? 0, 0, ',', '.') }} / item
+                                                        </div>
+                                                    </div>
+                                                    <button type="button"
+                                                        class="btn-delete-order-item inline-flex h-8 w-8 items-center justify-center rounded-lg text-rose-500 hover:bg-rose-50 hover:text-rose-700 dark:text-rose-400 dark:hover:bg-rose-950/30 transition-colors"
+                                                        data-detail-id="{{ $item->id }}"
+                                                        data-nama-item="{{ $item->nama_item }}"
+                                                        data-type="radiologi"
+                                                        title="Hapus Order Radiologi">
+                                                        <i class="fa-solid fa-trash-can text-sm"></i>
+                                                    </button>
                                                 </div>
                                             </td>
 
@@ -1491,6 +1515,121 @@
                     }
                 });
             }
+
+            // Event listener untuk tombol hapus item Order Lab & Order Radiologi
+            document.addEventListener('click', async function(e) {
+                const btn = e.target.closest('.btn-delete-order-item');
+                if (!btn) return;
+
+                const detailId = btn.dataset.detailId;
+                const namaItem = btn.dataset.namaItem || 'item ini';
+                const type = btn.dataset.type || 'order';
+                const row = btn.closest('tr.item-row');
+
+                const confirmResult = await Swal.fire({
+                    title: 'Hapus Item Pemeriksaan?',
+                    html: `Apakah Anda yakin ingin menghapus <b>${namaItem}</b> dari transaksi dan sistem?<br><span class="text-xs text-rose-600 font-semibold">Tindakan ini akan menghapus data pemeriksaan secara permanen.</span>`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#e11d48',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: '<i class="fa-solid fa-trash-can mr-1.5"></i> Ya, Hapus',
+                    cancelButtonText: 'Batal',
+                    reverseButtons: true
+                });
+
+                if (!confirmResult.isConfirmed) return;
+
+                const originalHtml = btn.innerHTML;
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin text-sm"></i>';
+
+                try {
+                    const deleteUrl = "{{ url('/kasir/transaksi/item') }}/" + detailId;
+                    const res = await fetch(deleteUrl, {
+                        method: 'DELETE',
+                        credentials: 'same-origin',
+                        headers: {
+                            'X-CSRF-TOKEN': csrfToken,
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    const data = await res.json().catch(() => null);
+
+                    if (res.ok && data?.success) {
+                        if (row) {
+                            const tbody = row.closest('tbody');
+                            row.style.transition = 'all 0.25s ease';
+                            row.style.opacity = '0';
+                            row.style.transform = 'scale(0.96)';
+
+                            setTimeout(() => {
+                                row.remove();
+
+                                if (tbody) {
+                                    const remainingCount = tbody.querySelectorAll('tr.item-row').length;
+                                    if (type === 'lab') {
+                                        const badgeLab = document.getElementById('badge-count-lab');
+                                        if (badgeLab) badgeLab.textContent = `${remainingCount} item`;
+                                        if (remainingCount === 0) {
+                                            tbody.innerHTML = `
+                                                <tr>
+                                                    <td class="px-5 py-5 text-sm text-gray-500 dark:text-gray-400" colspan="5">
+                                                        <span class="italic text-gray-400">Tidak ada order lab</span>
+                                                    </td>
+                                                </tr>
+                                            `;
+                                        }
+                                    } else if (type === 'radiologi') {
+                                        const badgeRad = document.getElementById('badge-count-radiologi');
+                                        if (badgeRad) badgeRad.textContent = `${remainingCount} item`;
+                                        if (remainingCount === 0) {
+                                            tbody.innerHTML = `
+                                                <tr>
+                                                    <td class="px-5 py-5 text-sm text-gray-500 dark:text-gray-400" colspan="5">
+                                                        <span class="italic text-gray-400">Tidak ada order radiologi</span>
+                                                    </td>
+                                                </tr>
+                                            `;
+                                        }
+                                    }
+                                }
+
+                                recalcAll(true);
+                            }, 250);
+                        }
+
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Berhasil Dihapus',
+                            text: data.message || 'Item berhasil dihapus dari sistem.',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        btn.disabled = false;
+                        btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                        btn.innerHTML = originalHtml;
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Gagal Menghapus',
+                            text: data?.message || 'Terjadi kesalahan saat menghapus item.'
+                        });
+                    }
+                } catch (err) {
+                    console.error(err);
+                    btn.disabled = false;
+                    btn.classList.remove('opacity-50', 'cursor-not-allowed');
+                    btn.innerHTML = originalHtml;
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: 'Tidak dapat terhubung ke server.'
+                    });
+                }
+            });
 
             applyApprovalState(window.__SERVER_APPROVAL_STATUS__, window.__SERVER_APPROVAL_ITEMS__ || []);
             recalcAll(true);

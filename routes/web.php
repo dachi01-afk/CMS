@@ -663,6 +663,7 @@ Route::middleware(['auth', 'role:Kasir'])->group(function () {
 
         Route::get('/get-data-pembayaran', [KasirController::class, 'getDataPembayaran'])->name('get.data.pembayaran');
         Route::get('/transaksi/{kode_transaksi}', [KasirController::class, 'transaksi'])->name('kasir.transaksi');
+        Route::delete('/transaksi/item/{detailId}', [KasirController::class, 'deleteItemTransaksi'])->name('kasir.transaksi.item.delete');
         Route::get('/kwitansi/{kodeTransaksi}', [KasirController::class, 'showKwitansi'])->name('show.kwitansi');
 
         Route::post('/pembayaran/{pembayaran}/diskon/request', [DiskonApprovalController::class, 'requestApproval'])->name('kasir.pembayaran.diskon.request');
