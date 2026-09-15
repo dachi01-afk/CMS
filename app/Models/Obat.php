@@ -235,6 +235,7 @@ class Obat extends Model
     {
         return $this->update([
             'nama_obat' => $data['nama_obat'],
+            'harga_jual_obat' => $data['harga_jual_obat'],
         ]);
     }
 }

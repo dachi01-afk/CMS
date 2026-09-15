@@ -246,7 +246,6 @@ class ObatController extends Controller
         DB::beginTransaction();
 
         try {
-            // Menggunakan method yang kita buat di model
             $obat->updateDataObat($request->validated());
 
             DB::commit();
@@ -258,10 +257,13 @@ class ObatController extends Controller
             ]);
         } catch (\Throwable $e) {
             DB::rollBack();
+
+            report($e); // log error asli ke storage/logs untuk debugging
+
             return response()->json([
                 'status'  => 500,
                 'message' => 'Gagal mengupdate data obat',
-                'error'   => $e->getMessage(),
+                'error'   => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }

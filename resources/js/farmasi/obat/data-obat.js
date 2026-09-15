@@ -2627,7 +2627,7 @@ $(function () {
             harga_beli_satuan: parseRupiahNumberUpdate(
                 $("#edit_harga_beli_satuan").val(),
             ),
-            harga_jual_umum: parseRupiahNumberUpdate(
+            harga_jual_obat: parseRupiahNumberUpdate(
                 $("#edit_harga_jual_umum").val(),
             ),
             harga_otc: parseRupiahNumberUpdate($("#edit_harga_otc").val()),

@@ -1149,7 +1149,7 @@
                             <div class="relative mt-1">
                                 <span
                                     class="absolute inset-y-0 left-0 flex items-center pl-3 text-[11px] text-gray-400">Rp</span>
-                                <input type="text" name="harga_jual_umum" id="edit_harga_jual_umum"
+                                <input type="text" name="harga_jual_obat" id="edit_harga_jual_umum"
                                     class="block w-full pl-8 text-sm bg-transparent border border-gray-200 rounded-lg px-3 py-2 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 dark:border-gray-700 dark:bg-gray-900 dark:text-white"
                                     placeholder="0" autocomplete="off">
                             </div>
