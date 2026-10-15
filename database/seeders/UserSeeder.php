@@ -69,17 +69,17 @@ class UserSeeder extends Seeder
             'role' => 'Kasir',
         ]);
 
-        // Seeder 1 Data User Dengan Role Auditor.
-        // Pencarian memakai email saja supaya seeder tetap idempoten meski
-        // hash password berbeda setiap kali dijalankan.
-        User::updateOrCreate(
-            ['email' => 'auditor@gmail.com'],
-            [
-                'username' => 'Auditor',
-                'password' => Hash::make('passwordAuditor'),
-                'role' => 'Auditor',
-            ]
-        );
+        // // Seeder 1 Data User Dengan Role Auditor.
+        // // Pencarian memakai email saja supaya seeder tetap idempoten meski
+        // // hash password berbeda setiap kali dijalankan.
+        // User::updateOrCreate(
+        //     ['email' => 'auditor@gmail.com'],
+        //     [
+        //         'username' => 'Auditor',
+        //         'password' => Hash::make('passwordAuditor'),
+        //         'role' => 'Auditor',
+        //     ]
+        // );
 
         // Seeder 1 Data User Dengan Role Pasien. 
         User::updateOrCreate([

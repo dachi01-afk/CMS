@@ -6,6 +6,7 @@ use App\Models\Auditor;
 use App\Models\User;
 use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
 
 class AuditorSeeder extends Seeder
 {
@@ -15,6 +16,18 @@ class AuditorSeeder extends Seeder
      */
     public function run(): void
     {
+        // Seeder 1 Data User Dengan Role Auditor.
+        // Pencarian memakai email saja supaya seeder tetap idempoten meski
+        // hash password berbeda setiap kali dijalankan.
+        User::updateOrCreate(
+            ['email' => 'auditor@gmail.com'],
+            [
+                'username' => 'Auditor',
+                'password' => Hash::make('passwordAuditor'),
+                'role' => 'Auditor',
+            ]
+        );
+        
         $faker = Faker::create('id_ID');
 
         $auditorUsers = User::where('role', 'Auditor')->get();
