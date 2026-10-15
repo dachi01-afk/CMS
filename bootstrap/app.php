@@ -5,6 +5,7 @@ use App\Http\Middleware\IsSuperAdmin;
 use App\Http\Middleware\RecordAuditableRequest;
 use App\Http\Middleware\RedirectIfAuthenticatedWithRole;
 use App\Http\Middleware\RoleMiddleware;
+use App\Http\Middleware\SetAuditContext;
 use App\Http\Middleware\TerakhirLogin;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -23,12 +24,22 @@ return Application::configure(basePath: dirname(__DIR__))
         // ✅ AKTIFKAN CORS GLOBAL (TANPA ARRAY)
         $middleware->append(HandleCors::class);
 
-        // ✅ PENJAGA READ-ONLY AUDITOR + PENCATATAN AKSES OTOMATIS
-        // Dipasang di seluruh request web supaya pembatasan auditor berlaku
-        // untuk semua endpoint, bukan hanya halaman auditor.
+        // ✅ AUDIT LOG + PENJAGA READ-ONLY AUDITOR
+        // Dipasang di seluruh request web DAN api (aplikasi mobile):
+        //  - SetAuditContext       : memberi tahu trigger database siapa pelakunya
+        //  - RecordAuditableRequest: mencatat akses halaman/data, export, cetak, login mobile,
+        //                            termasuk akses yang ditolak (403)
+        //  - EnsureAuditorReadOnly : auditor tidak bisa mengubah data apa pun
         $middleware->web(append: [
-            EnsureAuditorReadOnly::class,
+            SetAuditContext::class,
             RecordAuditableRequest::class,
+            EnsureAuditorReadOnly::class,
+        ]);
+
+        $middleware->api(append: [
+            SetAuditContext::class,
+            RecordAuditableRequest::class,
+            EnsureAuditorReadOnly::class,
         ]);
 
         // ✅ ALIAS MIDDLEWARE KUSTOM

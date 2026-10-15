@@ -15,8 +15,9 @@
                         Riwayat per Entitas
                     </h1>
                     <p class="text-sm text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                        Pilih satu pasien untuk melihat seluruh perubahan data dan daftar pengguna yang pernah
-                        mengakses data pasien beserta rekam medisnya.
+                        Pilih satu pasien untuk melihat SEMUA aktivitas yang berkaitan dengannya: data diri,
+                        kunjungan, rekam medis, resep, lab, radiologi, pembayaran, serta siapa saja yang pernah
+                        membuka datanya, dari web maupun aplikasi mobile.
                     </p>
                 </div>
             </div>
@@ -65,8 +66,25 @@
                 <div class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                     <p class="text-xs font-semibold uppercase tracking-wide text-slate-500">Rekam Medis Terkait</p>
                     <p class="mt-1 text-2xl font-bold text-slate-800">{{ $emrCount }}</p>
+                    <p class="text-xs text-slate-500">{{ number_format($moduleSummary->sum()) }} aktivitas tercatat</p>
                 </div>
             </div>
+
+            {{-- Ringkasan per modul (klik untuk menyaring) --}}
+            @if ($moduleSummary->isNotEmpty())
+                <div class="flex flex-wrap gap-2">
+                    <a href="{{ route('auditor.logs.entity', ['no_emr' => $pasien->no_emr]) }}"
+                        class="rounded-full border px-3 py-1 text-xs font-semibold {{ $selectedModule ? 'border-slate-300 text-slate-600 bg-white' : 'border-sky-600 bg-sky-600 text-white' }}">
+                        Semua ({{ $moduleSummary->sum() }})
+                    </a>
+                    @foreach ($moduleSummary as $module => $total)
+                        <a href="{{ route('auditor.logs.entity', ['no_emr' => $pasien->no_emr, 'module' => $module]) }}"
+                            class="rounded-full border px-3 py-1 text-xs font-semibold {{ $selectedModule === $module ? 'border-sky-600 bg-sky-600 text-white' : 'border-slate-300 text-slate-600 bg-white hover:bg-slate-50' }}">
+                            {{ $module }} ({{ $total }})
+                        </a>
+                    @endforeach
+                </div>
+            @endif
 
             {{-- Siapa saja yang mengakses --}}
             <div
@@ -76,7 +94,7 @@
                         Siapa Saja yang Mengakses Data Ini
                     </h2>
                     <p class="text-xs text-slate-500 mt-1">
-                        Dihitung dari log aksi <span class="font-mono">view</span> pada pasien dan rekam medisnya.
+                        Dihitung dari aksi membuka, mencetak, dan mengekspor data yang berkaitan dengan pasien ini.
                     </p>
                 </div>
                 <div class="overflow-x-auto">
@@ -117,7 +135,7 @@
                 <div class="px-5 py-4 border-b border-slate-200 dark:border-slate-700">
                     <h2 class="text-base font-bold text-slate-800 dark:text-slate-50">Semua Aktivitas Entitas Ini</h2>
                     <p class="text-xs text-slate-500 mt-1">
-                        Perubahan data pasien, rekam medis, serta akses baca terhadap keduanya.
+                        Seluruh perubahan dan akses terhadap data yang berkaitan dengan pasien ini.
                     </p>
                 </div>
                 <div class="overflow-x-auto">
@@ -129,6 +147,7 @@
                                 <th class="px-4 py-3">Action</th>
                                 <th class="px-4 py-3">Modul</th>
                                 <th class="px-4 py-3">Deskripsi</th>
+                                <th class="px-4 py-3">Sumber</th>
                                 <th class="px-4 py-3 text-center">Detail</th>
                             </tr>
                         </thead>
@@ -143,6 +162,7 @@
                                     <td class="px-4 py-3">@include('auditor.partials.action-badge', ['action' => $log->action])</td>
                                     <td class="px-4 py-3">{{ $log->module }}</td>
                                     <td class="px-4 py-3">{{ $log->description }}</td>
+                                    <td class="px-4 py-3 whitespace-nowrap text-slate-500">{{ $log->source_label }}</td>
                                     <td class="px-4 py-3 text-center">
                                         <a href="{{ route('auditor.logs.show', $log->id) }}"
                                             class="text-sky-600 hover:text-sky-800"><i class="fa-regular fa-eye"></i></a>
@@ -150,7 +170,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="6" class="px-4 py-6 text-center text-slate-500">
+                                    <td colspan="7" class="px-4 py-6 text-center text-slate-500">
                                         Belum ada aktivitas tercatat untuk entitas ini.
                                     </td>
                                 </tr>

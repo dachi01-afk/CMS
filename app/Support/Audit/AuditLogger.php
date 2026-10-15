@@ -44,6 +44,10 @@ class AuditLogger
 
             [$type, $id] = self::resolveAuditable($auditable);
 
+            $pasienId = array_key_exists('pasien_id', $context)
+                ? $context['pasien_id']
+                : ($auditable instanceof Model ? PasienResolver::forModel($auditable) : null);
+
             return AuditLog::create([
                 'user_id' => $user?->getKey(),
                 'user_name' => $context['user_name'] ?? self::resolveUserName($user),
@@ -59,6 +63,8 @@ class AuditLogger
                 'user_agent' => $request ? Str::limit((string) $request->userAgent(), 1000, '') : null,
                 'url' => $request ? Str::limit($request->fullUrl(), 2000, '') : null,
                 'http_method' => $request?->method(),
+                'pasien_id' => $pasienId,
+                'source' => $context['source'] ?? self::currentSource($request),
             ]);
         } catch (Throwable $e) {
             // Kegagalan audit log tidak boleh menggagalkan permintaan user.
@@ -93,6 +99,12 @@ class AuditLogger
         }
 
         return $clean === [] ? null : $clean;
+    }
+
+    /** Apakah nama kolom/field termasuk rahasia (password, token, OTP, ...). */
+    public static function isSensitiveField(string $key): bool
+    {
+        return self::isExcluded($key, config('audit.excluded_fields', []));
     }
 
     /**
@@ -168,6 +180,20 @@ class AuditLogger
 
     protected static function currentRequest(): mixed
     {
-        return app()->runningInConsole() ? null : request();
+        if (app()->runningInConsole() && ! app()->runningUnitTests()) {
+            return null;
+        }
+
+        return app()->bound('request') ? request() : null;
+    }
+
+    /** web, mobile (API), atau sistem (artisan / antrian / tanpa request). */
+    protected static function currentSource($request): string
+    {
+        if ($request && $request->route()) {
+            return $request->is('api/*') ? 'mobile' : 'web';
+        }
+
+        return AuditContext::source();
     }
 }

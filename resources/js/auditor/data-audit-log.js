@@ -16,6 +16,7 @@ $(function () {
             module: $("#filter-module").val() || "",
             action: $("#filter-action").val() || "",
             keyword: $("#filter-keyword").val() || "",
+            source: $("#filter-source").val() || "",
         };
     }
 
@@ -68,6 +69,11 @@ $(function () {
             {
                 data: "description",
                 name: "description"
+            },
+            {
+                data: "source_label",
+                name: "source",
+                orderable: false,
             },
             {
                 data: "ip_address",

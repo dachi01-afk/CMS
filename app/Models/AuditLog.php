@@ -69,6 +69,8 @@ class AuditLog extends Model
             ->when($filters['role'] ?? null, fn (Builder $q, $role) => $q->where('user_role', $role))
             ->when($filters['module'] ?? null, fn (Builder $q, $module) => $q->where('module', $module))
             ->when($filters['action'] ?? null, fn (Builder $q, $action) => $q->where('action', $action))
+            ->when($filters['source'] ?? null, fn (Builder $q, $source) => $q->where('source', $source))
+            ->when($filters['pasien_id'] ?? null, fn (Builder $q, $pasienId) => $q->where('pasien_id', $pasienId))
             ->when($filters['keyword'] ?? null, function (Builder $q, string $keyword) {
                 $keyword = trim($keyword);
 
@@ -81,6 +83,23 @@ class AuditLog extends Model
                         ->orWhere('auditable_type', 'like', "%{$keyword}%");
                 });
             });
+    }
+
+    /** Pasien yang berkaitan dengan log ini. */
+    public function pasien()
+    {
+        return $this->belongsTo(Pasien::class, 'pasien_id');
+    }
+
+    /** Label sumber aktivitas untuk tampilan. */
+    public function getSourceLabelAttribute(): string
+    {
+        return match ($this->source) {
+            'web' => 'Web',
+            'mobile' => 'Aplikasi Mobile',
+            'sistem' => 'Sistem',
+            default => '-',
+        };
     }
 
     public function scopeForEntity(Builder $query, ?string $type, $id): Builder
@@ -97,6 +116,9 @@ class AuditLog extends Model
             return null;
         }
 
-        return class_basename($this->auditable_type);
+        // Log dari trigger untuk tabel tanpa model berisi nama tabel.
+        return str_contains($this->auditable_type, '\\')
+            ? class_basename($this->auditable_type)
+            : \Illuminate\Support\Str::headline($this->auditable_type);
     }
 }

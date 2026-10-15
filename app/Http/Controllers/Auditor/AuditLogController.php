@@ -30,6 +30,7 @@ class AuditLogController extends Controller
             'actions' => $this->actionOptions(),
             'roles' => $this->roleOptions(),
             'users' => $this->userOptions(),
+            'sources' => $this->sourceOptions(),
         ]);
     }
 
@@ -43,6 +44,7 @@ class AuditLogController extends Controller
         return DataTables::eloquent($query)
             ->addIndexColumn()
             ->editColumn('created_at', fn (AuditLog $log) => $log->created_at?->format('d-m-Y H:i:s'))
+            ->addColumn('source_label', fn (AuditLog $log) => $log->source_label)
             ->addColumn('action_label', fn (AuditLog $log) => view('auditor.partials.action-badge', ['action' => $log->action])->render())
             ->addColumn('aksi', fn (AuditLog $log) => '<a href="'.route('auditor.logs.show', $log->id).'" class="text-sky-600 hover:text-sky-800" title="Detail"><i class="fa-regular fa-eye"></i> Detail</a>')
             ->rawColumns(['action_label', 'aksi'])
@@ -52,7 +54,7 @@ class AuditLogController extends Controller
     /** Detail satu baris log, termasuk perbandingan nilai lama vs baru. */
     public function show($id)
     {
-        $log = AuditLog::with('user')->findOrFail($id);
+        $log = AuditLog::with(['user', 'pasien'])->findOrFail($id);
 
         return view('auditor.logs.show', [
             'log' => $log,
@@ -60,13 +62,18 @@ class AuditLogController extends Controller
         ]);
     }
 
-    /** Riwayat lengkap satu pasien: semua perubahan + siapa saja yang mengakses. */
+    /**
+     * Riwayat lengkap satu pasien: SEMUA aktivitas yang berkaitan dengan pasien
+     * (data diri, kunjungan, rekam medis, resep, lab, radiologi, pembayaran,
+     * dst.) beserta siapa saja yang pernah membuka datanya.
+     */
     public function entity(Request $request)
     {
         $noEmr = $request->input('no_emr');
         $pasien = null;
         $logs = null;
         $accessors = collect();
+        $moduleSummary = collect();
         $emrIds = collect();
 
         if ($noEmr) {
@@ -75,35 +82,27 @@ class AuditLogController extends Controller
             if ($pasien) {
                 $emrIds = EMR::where('pasien_id', $pasien->id)->pluck('id');
 
-                $logs = AuditLog::query()
-                    ->where(function ($query) use ($pasien, $emrIds) {
-                        $query->where(function ($sub) use ($pasien) {
-                            $sub->where('auditable_type', Pasien::class)
-                                ->where('auditable_id', $pasien->id);
-                        })->orWhere(function ($sub) use ($emrIds) {
-                            $sub->where('auditable_type', EMR::class)
-                                ->whereIn('auditable_id', $emrIds);
-                        });
-                    })
+                $base = fn () => AuditLog::query()->where('pasien_id', $pasien->id);
+
+                $logs = $base()
+                    ->when($request->filled('module'), fn ($q) => $q->where('module', $request->input('module')))
                     ->orderByDesc('created_at')
+                    ->orderByDesc('id')
                     ->paginate(25)
                     ->withQueryString();
 
-                $accessors = AuditLog::query()
-                    ->where('action', 'view')
-                    ->where(function ($query) use ($pasien, $emrIds) {
-                        $query->where(function ($sub) use ($pasien) {
-                            $sub->where('auditable_type', Pasien::class)
-                                ->where('auditable_id', $pasien->id);
-                        })->orWhere(function ($sub) use ($emrIds) {
-                            $sub->where('auditable_type', EMR::class)
-                                ->whereIn('auditable_id', $emrIds);
-                        });
-                    })
+                $accessors = $base()
+                    ->whereIn('action', ['view', 'print', 'export'])
                     ->selectRaw('user_name, user_role, COUNT(*) as total, MAX(created_at) as terakhir')
                     ->groupBy('user_name', 'user_role')
                     ->orderByDesc('total')
                     ->get();
+
+                $moduleSummary = $base()
+                    ->selectRaw('module, COUNT(*) as total')
+                    ->groupBy('module')
+                    ->orderByDesc('total')
+                    ->pluck('total', 'module');
             }
         }
 
@@ -112,6 +111,8 @@ class AuditLogController extends Controller
             'pasien' => $pasien,
             'logs' => $logs,
             'accessors' => $accessors,
+            'moduleSummary' => $moduleSummary,
+            'selectedModule' => $request->input('module'),
             'emrCount' => $emrIds->count(),
             'pasienOptions' => $this->pasienOptions(),
         ]);
@@ -146,6 +147,7 @@ class AuditLogController extends Controller
             'module' => $request->filled('module') ? $request->input('module') : null,
             'action' => $request->filled('action') ? $request->input('action') : null,
             'keyword' => $request->filled('keyword') ? trim((string) $request->input('keyword')) : null,
+            'source' => $request->filled('source') ? $request->input('source') : null,
         ];
     }
 
@@ -210,6 +212,12 @@ class AuditLogController extends Controller
     protected function actionOptions(): array
     {
         return AuditLog::query()->distinct()->orderBy('action')->pluck('action')->all();
+    }
+
+    /** @return array<string, string> */
+    protected function sourceOptions(): array
+    {
+        return ['web' => 'Web', 'mobile' => 'Aplikasi Mobile', 'sistem' => 'Sistem'];
     }
 
     protected function roleOptions(): array

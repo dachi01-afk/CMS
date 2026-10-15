@@ -35,6 +35,12 @@ class AuditableObserver
         'App\Models\Auditor' => 'Manajemen User',
     ];
 
+    /** @return array<string, string> */
+    public static function modules(): array
+    {
+        return self::MODULES;
+    }
+
     public static function moduleFor(string $modelClass): string
     {
         return self::MODULES[$modelClass] ?? class_basename($modelClass);
@@ -100,6 +106,12 @@ class AuditableObserver
      */
     protected function shouldLog(): bool
     {
+        // Mode trigger: perubahan data sudah dicatat oleh trigger MySQL untuk
+        // SEMUA tabel. Observer berhenti supaya tidak ada log ganda.
+        if (config('audit.capture', 'trigger') === 'trigger') {
+            return false;
+        }
+
         return ! (app()->runningInConsole() && ! Auth::check());
     }
 

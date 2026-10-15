@@ -60,15 +60,29 @@
                 </div>
 
                 <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p class="text-[11px] font-semibold uppercase text-slate-500">HTTP Method</p>
-                    <p class="mt-1 text-sm text-slate-800">{{ $log->http_method ?? '-' }}</p>
+                    <p class="text-[11px] font-semibold uppercase text-slate-500">Sumber / HTTP Method</p>
+                    <p class="mt-1 text-sm text-slate-800">{{ $log->source_label }}</p>
+                    <p class="text-xs text-slate-500">{{ $log->http_method ?? '-' }}</p>
                 </div>
 
-                <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 sm:col-span-2">
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
                     <p class="text-[11px] font-semibold uppercase text-slate-500">Entitas Terkait</p>
                     <p class="mt-1 text-sm text-slate-800 break-all">
-                        {{ $log->auditable_type ? class_basename($log->auditable_type).' #'.$log->auditable_id : '-' }}
+                        {{ $log->auditable_type ? $log->auditable_label.' #'.($log->auditable_id ?? '-') : '-' }}
                     </p>
+                </div>
+
+                <div class="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <p class="text-[11px] font-semibold uppercase text-slate-500">Pasien Terkait</p>
+                    @if ($log->pasien)
+                        <a href="{{ route('auditor.logs.entity', ['no_emr' => $log->pasien->no_emr]) }}"
+                            class="mt-1 block text-sm font-semibold text-sky-700 hover:text-sky-900">
+                            {{ $log->pasien->nama_pasien }}
+                        </a>
+                        <p class="text-xs text-slate-500">{{ $log->pasien->no_emr }}</p>
+                    @else
+                        <p class="mt-1 text-sm text-slate-800">{{ $log->pasien_id ? '#'.$log->pasien_id.' (sudah dihapus)' : '-' }}</p>
+                    @endif
                 </div>
 
                 <div class="rounded-xl border border-slate-200 bg-slate-50 p-3 lg:col-span-4">
@@ -90,7 +104,7 @@
                     Perbandingan Nilai Lama vs Baru
                 </h2>
                 <p class="text-xs text-slate-500 mt-1">
-                    Field rahasia (password, token, OTP) tidak pernah disimpan di log.
+                    Isi field rahasia (password, token, OTP) tidak pernah disimpan; perubahannya tetap terlihat di deskripsi.
                 </p>
             </div>
 

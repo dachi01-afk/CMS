@@ -105,7 +105,20 @@
                     </select>
                 </div>
 
-                <div class="lg:col-span-2">
+                <div>
+                    <label for="filter-source" class="block mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                        Sumber
+                    </label>
+                    <select id="filter-source" name="source"
+                        class="w-full border border-slate-300 dark:border-slate-600 text-sm rounded-lg px-2 py-2 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:ring-sky-500 focus:border-sky-500">
+                        <option value="">Semua sumber</option>
+                        @foreach ($sources as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
                     <label for="filter-keyword" class="block mb-1 text-xs font-semibold uppercase tracking-wide text-slate-500">
                         Kata Kunci
                     </label>
@@ -159,6 +172,7 @@
                             <th class="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap">Action</th>
                             <th class="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap">Modul</th>
                             <th class="px-3 sm:px-4 md:px-6 py-3">Deskripsi</th>
+                            <th class="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap">Sumber</th>
                             <th class="px-3 sm:px-4 md:px-6 py-3 whitespace-nowrap">IP</th>
                             <th class="px-3 sm:px-4 md:px-6 py-3 text-center whitespace-nowrap">Aksi</th>
                         </tr>

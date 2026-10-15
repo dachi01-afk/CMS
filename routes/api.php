@@ -73,7 +73,10 @@ Route::middleware(['auth:sanctum'])->group(function () {
         Route::get('/riwayat/{pasienId}', [APIMobileController::class, 'getRiwayatPembelian'])->name('riwayat');
         Route::get('/detail/{kodeTransaksi}', [APIMobileController::class, 'getDetailTransaksi'])->name('detail');
         Route::get('/sales-summary', [APIMobileController::class, 'getSalesSummary'])->name('sales_summary');
-        Route::put('/update-stok/{obatId}', [APIMobileController::class, 'updateStokObat'])->name('update_stok');
+        // Mengubah stok obat hanya boleh dilakukan role Farmasi.
+        Route::put('/update-stok/{obatId}', [APIMobileController::class, 'updateStokObat'])
+            ->middleware('role:Farmasi')
+            ->name('update_stok');
     });
 });
 
