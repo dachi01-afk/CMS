@@ -16,6 +16,8 @@ use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Api\APIWebController;
 use App\Http\Controllers\Apoteker\Obat\PenjualanObatController;
 use App\Http\Controllers\ApproveDiskonPenjualanObatController;
+use App\Http\Controllers\Auditor\AuditLogController as AuditorAuditLogController;
+use App\Http\Controllers\Auditor\AuditorDashboardController;
 use App\Http\Controllers\Dokter\AuthController;
 use App\Http\Controllers\Dokter\DokterController as DokterDokterController;
 use App\Http\Controllers\Farmasi\BahanHabisPakaiController;
@@ -818,6 +820,20 @@ Route::middleware(['auth', 'role:Perawat'])->group(function () {
             Route::get('/emr/{emr}', [RiwayatPemeriksaanController::class, 'showEmr'])->name('emr.show');
         });
     });
+});
+
+// //////// ROLE AUDITOR (READ-ONLY) ///////////
+Route::middleware(['auth', 'role:Auditor'])->prefix('auditor')->name('auditor.')->group(function () {
+    // Dashboard ringkasan aktivitas
+    Route::get('/dashboard', [AuditorDashboardController::class, 'index'])->name('dashboard');
+
+    // Audit log
+    Route::get('/logs', [AuditorAuditLogController::class, 'index'])->name('logs.index');
+    Route::get('/logs/data', [AuditorAuditLogController::class, 'data'])->name('logs.data');
+    Route::get('/logs/export', [AuditorAuditLogController::class, 'export'])->name('logs.export');
+    Route::get('/logs/entity', [AuditorAuditLogController::class, 'entity'])->name('logs.entity');
+    // Detail log diletakkan terakhir supaya tidak menangkap 'entity'/'data'.
+    Route::get('/logs/{id}', [AuditorAuditLogController::class, 'show'])->name('logs.show');
 });
 
 Route::middleware(['auth', 'superAdmin'])->prefix('super-admin')->group(function () {

@@ -2,12 +2,15 @@
 
 namespace App\Models;
 
+use App\Support\Audit\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 class Obat extends Model
 {
+    use Auditable;
+
     protected $table = 'obat';
 
     protected $guarded = [];

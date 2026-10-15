@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Support\Audit\Auditable;
 use Illuminate\Database\Eloquent\Model;
 
 class Pembayaran extends Model
 {
+    use Auditable;
+
     protected $table = 'pembayaran';
 
     protected $guarded = [];

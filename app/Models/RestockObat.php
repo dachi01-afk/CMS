@@ -7,12 +7,14 @@ use App\Models\Hutang;
 use App\Models\HutangObat;
 use App\Models\RestockObatDetail;
 use App\Models\Supplier;
+use App\Support\Audit\Auditable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class RestockObat extends Model
 {
+    use Auditable;
     /** @use HasFactory<\Database\Factories\RestockObatFactory> */
     use HasFactory;
 

@@ -2,12 +2,14 @@
 
 namespace App\Models;
 
+use App\Support\Audit\Auditable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Services\DataTable;
 
 class MutasiStokObat extends Model
 {
+    use Auditable;
     protected $table = 'mutasi_stok_obat';
 
     protected $guarded = [];

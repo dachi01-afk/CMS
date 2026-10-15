@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Middleware\EnsureAuditorReadOnly;
 use App\Http\Middleware\IsSuperAdmin;
+use App\Http\Middleware\RecordAuditableRequest;
 use App\Http\Middleware\RedirectIfAuthenticatedWithRole;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\TerakhirLogin;
@@ -20,6 +22,14 @@ return Application::configure(basePath: dirname(__DIR__))
 
         // ✅ AKTIFKAN CORS GLOBAL (TANPA ARRAY)
         $middleware->append(HandleCors::class);
+
+        // ✅ PENJAGA READ-ONLY AUDITOR + PENCATATAN AKSES OTOMATIS
+        // Dipasang di seluruh request web supaya pembatasan auditor berlaku
+        // untuk semua endpoint, bukan hanya halaman auditor.
+        $middleware->web(append: [
+            EnsureAuditorReadOnly::class,
+            RecordAuditableRequest::class,
+        ]);
 
         // ✅ ALIAS MIDDLEWARE KUSTOM
         $middleware->alias([

@@ -7,6 +7,7 @@
     <meta name="description" content="App Clinic">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="user-authenticated" content="{{ auth()->check() ? 'true' : 'false' }}">
+    <meta name="user-role" content="{{ auth()->user()->role ?? '' }}">
     <title>CMS-Royal-Klinik</title>
     <link href='{{ asset('storage/assets/royal_klinik.svg') }}' rel='shortcut icon'>
 
@@ -955,6 +956,82 @@
                     </aside>
 
                     <main class="app-main w-full pt-20 px-4 sm:pt-24 sm:ml-64 transition-all duration-300">
+                        {{ $slot }}
+                    </main>
+                </div>
+            @elseif ($role === 'Auditor')
+                <div class="flex min-h-screen bg-slate-50 dark:bg-slate-900">
+                    <aside id="logo-sidebar"
+                        class="app-sidebar fixed top-0 left-0 z-40 h-screen pt-20 transition-all duration-300 -translate-x-full sm:translate-x-0
+                            bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border-r border-slate-200 dark:border-slate-800 shadow-sm w-64"
+                        aria-label="Sidebar">
+
+                        <div class="h-full flex flex-col px-3 pb-4 overflow-y-auto overflow-x-visible">
+                            <div class="px-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-slate-700 to-slate-900 text-white shadow-md shrink-0">
+                                        <i class="fa-solid fa-shield-halved text-lg"></i>
+                                    </div>
+
+                                    <div class="flex flex-col min-w-0 sidebar-brand-text">
+                                        <span
+                                            class="text-[11px] font-semibold tracking-wide text-slate-400 dark:text-slate-500 uppercase">
+                                            CMS Royal Klinik
+                                        </span>
+                                        <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                            Panel Auditor
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <nav class="flex-1 space-y-4 text-sm font-medium">
+                                <div class="space-y-1">
+                                    <p
+                                        class="sidebar-heading px-2 text-[11px] font-semibold tracking-wide uppercase text-slate-400 dark:text-slate-500">
+                                        Monitoring
+                                    </p>
+                                    <ul class="space-y-1">
+                                        <x-mycomponents.sidebar_link href="auditor.dashboard" class="fa-solid fa-chart-line"
+                                            :active="Request::routeIs('auditor.dashboard')">
+                                            Dashboard Aktivitas
+                                        </x-mycomponents.sidebar_link>
+
+                                        <x-mycomponents.sidebar_link href="auditor.logs.index"
+                                            class="fa-solid fa-clipboard-list" :active="Request::routeIs('auditor.logs.index')">
+                                            Audit Log
+                                        </x-mycomponents.sidebar_link>
+
+                                        <x-mycomponents.sidebar_link href="auditor.logs.entity"
+                                            class="fa-solid fa-clock-rotate-left" :active="Request::routeIs('auditor.logs.entity')">
+                                            Riwayat per Entitas
+                                        </x-mycomponents.sidebar_link>
+                                    </ul>
+                                </div>
+
+                                <div class="mx-2 rounded-xl border border-sky-200 bg-sky-50 px-3 py-3">
+                                    <p class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-sky-700">
+                                        <i class="fa-solid fa-lock"></i> Akses Read-only
+                                    </p>
+                                    <p class="mt-1 text-[11px] leading-relaxed text-sky-700/80">
+                                        Role auditor hanya dapat melihat audit log dan dashboard aktivitas. Seluruh
+                                        aksi yang mengubah data diblokir di sisi server.
+                                    </p>
+                                </div>
+                            </nav>
+
+                            <div class="mt-6 pt-3 border-t border-slate-200 dark:border-slate-800 px-2">
+                                <div class="sidebar-footer-text">
+                                    <p class="text-[11px] text-slate-400 dark:text-slate-600">
+                                        © {{ now()->year }} CMS-Royal-Klinik · Auditor
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <main class="app-main flex-1 w-full pt-16 p-4 sm:pt-24 sm:ml-64 transition-all duration-300">
                         {{ $slot }}
                     </main>
                 </div>

@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Support\Audit\Auditable;
 use Illuminate\Database\Eloquent\Model;
 
 class Pasien extends Model
 {
+    use Auditable;
+
     protected $table = 'pasien';
 
     protected $primaryKey = 'id';

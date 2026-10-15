@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Support\Audit\Auditable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 class EMR extends Model
 {
+    use Auditable;
+
     protected $table = 'emr';
 
     protected $guarded = [];

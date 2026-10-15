@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Support\Audit\Auditable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -9,7 +10,7 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use Auditable, HasApiTokens, HasFactory, Notifiable;
 
     protected $table = 'user';
 
@@ -59,6 +60,21 @@ class User extends Authenticatable
         return $this->hasOne(Kasir::class);
     }
 
+    public function auditor()
+    {
+        return $this->hasOne(Auditor::class);
+    }
+
+    /**
+     * `terakhir_login` diperbarui otomatis oleh heartbeat setiap 60 detik.
+     * Kolom ini tidak dicatat sebagai perubahan manajemen user supaya audit log
+     * tidak penuh aktivitas presence yang berulang.
+     */
+    public function auditExcludedAttributes(): array
+    {
+        return ['terakhir_login'];
+    }
+
     public function pengkajianAwalPenyakitDalamCreated()
     {
         return $this->hasMany(\App\Models\EmrPengkajianAwalPenyakitDalam::class, 'created_by');
@@ -84,6 +100,7 @@ class User extends Authenticatable
             'Farmasi' => $this->farmasi?->nama_farmasi ?? '-',
             'Perawat' => $this->perawat?->nama_perawat ?? '-',
             'Kasir' => $this->kasir?->nama_kasir ?? '-',
+            'Auditor' => $this->auditor?->nama_auditor ?? '-',
             default => $this->name ?? '-',
         };
     }

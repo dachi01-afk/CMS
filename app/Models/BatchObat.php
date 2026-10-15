@@ -5,11 +5,14 @@ namespace App\Models;
 use App\Models\BatchObatDepot;
 use App\Models\Obat;
 use App\Models\RestockObatDetail;
+use App\Support\Audit\Auditable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 
 class BatchObat extends Model
 {
+    use Auditable;
+
     protected $table = 'batch_obat';
 
     protected $guarded = [];

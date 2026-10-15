@@ -11,8 +11,17 @@
 |
 */
 
+/*
+ * Test berjalan di database MySQL yang sama dengan .env (lihat phpunit.xml).
+ *
+ * Sengaja memakai DatabaseTransactions, bukan RefreshDatabase:
+ * RefreshDatabase menjalankan migrate:fresh sehingga seluruh data klinik
+ * di database development akan terhapus. DatabaseTransactions hanya
+ * membungkus setiap test dalam transaksi dan me-rollback perubahan setelah
+ * selesai, sehingga data asli tetap aman.
+ */
 pest()->extend(Tests\TestCase::class)
-    ->use(Illuminate\Foundation\Testing\RefreshDatabase::class)
+    ->use(Illuminate\Foundation\Testing\DatabaseTransactions::class)
     ->in('Feature');
 
 /*
@@ -44,4 +53,34 @@ expect()->extend('toBeOne', function () {
 function something()
 {
     // ..
+}
+
+/*
+|--------------------------------------------------------------------------
+| Helper khusus test audit
+|--------------------------------------------------------------------------
+*/
+
+/** Membuat user klinik lengkap dengan role tertentu (tanpa factory). */
+function userKlinik(string $role, array $overrides = []): App\Models\User
+{
+    $unique = Illuminate\Support\Str::lower(Illuminate\Support\Str::random(8));
+
+    return App\Models\User::create(array_merge([
+        'username' => 'test_'.Illuminate\Support\Str::slug($role).'_'.$unique,
+        'email' => 'test_'.$unique.'@example.test',
+        // Password plain: cast 'hashed' pada model User yang melakukan hashing.
+        'password' => 'Password123!',
+        'role' => $role,
+    ], $overrides));
+}
+
+/** Membuat data pasien minimal untuk keperluan test. */
+function pasienKlinik(App\Models\User $user, array $overrides = []): App\Models\Pasien
+{
+    return App\Models\Pasien::create(array_merge([
+        'user_id' => $user->id,
+        'no_emr' => 'RM-TEST-'.Illuminate\Support\Str::upper(Illuminate\Support\Str::random(6)),
+        'nama_pasien' => 'Pasien Uji '.Illuminate\Support\Str::random(4),
+    ], $overrides));
 }

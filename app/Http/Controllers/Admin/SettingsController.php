@@ -19,6 +19,11 @@ class SettingsController extends Controller
 {
     public function index()
     {
+        // Auditor hanya boleh mengakses audit log & dashboard aktivitas.
+        if (Auth::user()->role === 'Auditor') {
+            return redirect()->route('auditor.dashboard');
+        }
+
         $user = Auth::user()->load([
             'superAdmin',
             'admin',

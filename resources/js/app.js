@@ -56,7 +56,15 @@ document.addEventListener("DOMContentLoaded", () => {
             .querySelector('meta[name="user-authenticated"]')
             ?.getAttribute("content") === "true";
 
-    if (isAuthenticated) {
+    // Role auditor diblokir dari seluruh request tulis di backend (termasuk
+    // heartbeat yang memperbarui kolom terakhir_login), jadi request berkala
+    // ini sengaja tidak dikirim supaya tidak menghasilkan error 403 terus-menerus.
+    const isAuditor =
+        document
+            .querySelector('meta[name="user-role"]')
+            ?.getAttribute("content") === "Auditor";
+
+    if (isAuthenticated && !isAuditor) {
         setInterval(() => {
             axios
                 .post("/heartbeat")

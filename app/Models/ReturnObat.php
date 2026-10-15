@@ -7,11 +7,13 @@ use App\Models\PiutangObat;
 use App\Models\ReturnObatDetail;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Support\Audit\Auditable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 
 class ReturnObat extends Model
 {
+    use Auditable;
     protected $table = 'return_obat';
 
     protected $guarded = [];

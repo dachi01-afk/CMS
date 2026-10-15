@@ -40,6 +40,8 @@ class AuthenticatedSessionController extends Controller
                 return redirect()->route('perawat.dashboard');
             case 'Kasir':
                 return redirect()->route('kasir.dashboard');
+            case 'Auditor':
+                return redirect()->route('auditor.dashboard');
             default:
                 Auth::logout();
                 return redirect()->route('login')->withErrors([

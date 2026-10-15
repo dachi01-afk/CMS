@@ -181,6 +181,9 @@ export default defineConfig({
                 "resources/js/perawat/riwayat-pemeriksaan/emr.js",
                 "resources/js/perawat/riwayat-pemeriksaan/data-lab.js",
                 "resources/js/perawat/riwayat-pemeriksaan/data-radiologi.js",
+
+                // Role Auditor
+                "resources/js/auditor/data-audit-log.js",
             ],
             refresh: true,
         }),

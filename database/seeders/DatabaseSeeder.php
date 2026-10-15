@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use Database\Seeders\AdminSeeder;
+use Database\Seeders\AuditorSeeder;
 use Database\Seeders\BatchObatDepotSeeder;
 use Database\Seeders\BatchObatSeeder;
 use Database\Seeders\BrandFarmasiSeeder;
@@ -48,6 +49,7 @@ class DatabaseSeeder extends Seeder
             PerawatSeeder::class,
             FarmasiSeeder::class,
             KasirSeeder::class,
+            AuditorSeeder::class,
             PasienSeeder::class,
             PoliSeeder::class,
             KategoriLayananSeeder::class,

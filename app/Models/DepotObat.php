@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Support\Audit\Auditable;
 use Illuminate\Database\Eloquent\Model;
 
 class DepotObat extends Model
 {
+    use Auditable;
+
     protected $table = 'depot_obat';
 
     protected $guarded = [];

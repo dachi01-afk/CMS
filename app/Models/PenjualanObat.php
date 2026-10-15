@@ -6,11 +6,14 @@ use App\Models\ApproveDiskonPenjualanObat;
 use App\Models\MetodePembayaran;
 use App\Models\Pasien;
 use App\Models\PenjualanObatDetail;
+use App\Support\Audit\Auditable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 
 class PenjualanObat extends Model
 {
+    use Auditable;
+
     protected $table = 'penjualan_obat';
 
     protected $guarded = [];

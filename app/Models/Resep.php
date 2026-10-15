@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use App\Support\Audit\Auditable;
 use Illuminate\Database\Eloquent\Model;
 
 class Resep extends Model
 {
+    use Auditable;
+
     protected $table = 'resep';
 
     protected $guarded = [];
