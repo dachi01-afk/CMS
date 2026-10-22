@@ -12,6 +12,7 @@ use Illuminate\Support\Str;
 use App\Models\KategoriObat;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Support\ObatAccess;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreObatRequest;
@@ -122,7 +123,19 @@ class ObatController extends Controller
             })
 
             // AKSI
+            // Edit & Hapus data obat hanya untuk Super Admin. Untuk role lain
+            // tombol tetap tampil tetapi nonaktif (tidak bisa diklik).
             ->addColumn('action', function ($obat) {
+                $canManage = ObatAccess::canManage();
+
+                $editAttr = $canManage
+                    ? 'data-id="' . $obat->id . '" title="Edit Obat"'
+                    : 'disabled aria-disabled="true" title="Hanya Super Admin yang dapat mengedit atau menghapus data obat" style="opacity:.5;pointer-events:none;cursor:not-allowed"';
+
+                $deleteAttr = $canManage
+                    ? 'data-id="' . $obat->id . '" title="Hapus"'
+                    : 'disabled aria-disabled="true" title="Hanya Super Admin yang dapat mengedit atau menghapus data obat" style="opacity:.5;pointer-events:none;cursor:not-allowed"';
+
                 return '
                         <div class="flex items-center justify-center gap-2">
                             <button 
@@ -136,16 +149,14 @@ class ObatController extends Controller
                             <button 
                                 class="btn-update-obat inline-flex items-center justify-center w-8 h-8 rounded-lg 
                                     bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-100"
-                                data-id="' . $obat->id . '" 
-                                title="Edit Obat">
+                                ' . $editAttr . '>
                                 <i class="fa-solid fa-pen-to-square text-xs"></i>
                             </button>
 
                             <button 
                                 class="btn-delete-obat inline-flex items-center justify-center w-8 h-8 rounded-lg 
                                     bg-red-50 text-red-600 hover:bg-red-100 border border-red-100"
-                                data-id="' . $obat->id . '" 
-                                title="Hapus">
+                                ' . $deleteAttr . '>
                                 <i class="fa-regular fa-trash-can text-xs"></i>
                             </button>
                         </div>

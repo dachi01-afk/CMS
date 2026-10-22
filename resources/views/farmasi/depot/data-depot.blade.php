@@ -191,8 +191,12 @@
                         class="px-6 py-2 rounded text-sm font-medium text-gray-600 hover:bg-gray-100 transition-all">
                         Batal
                     </button>
+                    {{-- Perbaikan stok menimpa stok obat, jadi hanya untuk Super Admin. --}}
                     <button type="button" id="btn-save-repair-obat"
-                        class="bg-[#0070BA] hover:bg-blue-700 text-white px-10 py-2 rounded shadow-md text-sm font-medium transition-all">
+                        @disabled(! \App\Support\ObatAccess::canManage())
+                        title="{{ \App\Support\ObatAccess::canManage() ? 'Simpan perbaikan stok' : \App\Support\ObatAccess::LOCK_TITLE }}"
+                        class="bg-[#0070BA] hover:bg-blue-700 text-white px-10 py-2 rounded shadow-md text-sm font-medium transition-all
+                        disabled:opacity-50 disabled:cursor-not-allowed">
                         Simpan Perubahan
                     </button>
                 </div>

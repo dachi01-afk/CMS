@@ -4,6 +4,7 @@ use App\Http\Middleware\EnsureAuditorReadOnly;
 use App\Http\Middleware\IsSuperAdmin;
 use App\Http\Middleware\RecordAuditableRequest;
 use App\Http\Middleware\RedirectIfAuthenticatedWithRole;
+use App\Http\Middleware\RestrictObatWriteAccess;
 use App\Http\Middleware\RoleMiddleware;
 use App\Http\Middleware\SetAuditContext;
 use App\Http\Middleware\TerakhirLogin;
@@ -30,16 +31,19 @@ return Application::configure(basePath: dirname(__DIR__))
         //  - RecordAuditableRequest: mencatat akses halaman/data, export, cetak, login mobile,
         //                            termasuk akses yang ditolak (403)
         //  - EnsureAuditorReadOnly : auditor tidak bisa mengubah data apa pun
+        //  - RestrictObatWriteAccess : edit/hapus data obat hanya untuk Super Admin
         $middleware->web(append: [
             SetAuditContext::class,
             RecordAuditableRequest::class,
             EnsureAuditorReadOnly::class,
+            RestrictObatWriteAccess::class,
         ]);
 
         $middleware->api(append: [
             SetAuditContext::class,
             RecordAuditableRequest::class,
             EnsureAuditorReadOnly::class,
+            RestrictObatWriteAccess::class,
         ]);
 
         // ✅ ALIAS MIDDLEWARE KUSTOM

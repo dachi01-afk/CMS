@@ -61,10 +61,14 @@
                     <input type="file" name="file" id="file-input" accept=".xlsx,.xls,.csv" style="display: none;"
                         required>
 
+                    {{-- Import menimpa data obat yang sudah ada, jadi hanya untuk Super Admin. --}}
                     <button type="button" id="btn-import"
+                        @disabled(! \App\Support\ObatAccess::canManage())
+                        title="{{ \App\Support\ObatAccess::canManage() ? 'Import data obat dari Excel' : \App\Support\ObatAccess::LOCK_TITLE }}"
                         class="inline-flex items-center justify-center px-3 md:px-4 py-2 rounded-xl text-[11px] md:text-xs 
                font-medium bg-white text-emerald-700 border border-emerald-500 hover:bg-emerald-50
-               dark:bg-gray-900 dark:border-emerald-500 dark:text-emerald-300">
+               dark:bg-gray-900 dark:border-emerald-500 dark:text-emerald-300
+               disabled:opacity-50 disabled:cursor-not-allowed">
                         <i class="fa-solid fa-upload mr-1.5 text-[10px]"></i>
                         Import
                     </button>

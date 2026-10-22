@@ -191,7 +191,8 @@ test('membaca data dari aplikasi mobile tercatat dengan sumber mobile', function
 });
 
 test('perubahan data lewat API mobile tercatat atas nama user token', function () {
-    $user = userKlinik('Farmasi');
+    // Perubahan stok manual hanya boleh dilakukan Super Admin.
+    $user = userKlinik('Super Admin');
     Sanctum::actingAs($user);
 
     $obatId = DB::table('obat')->insertGetId([
@@ -251,12 +252,12 @@ test('riwayat per entitas menampilkan semua aktivitas pasien termasuk hasil lab'
         ->assertDontSee('Menambah data Order Lab Detail');
 });
 
-test('hanya role Farmasi yang bisa mengubah stok obat lewat API mobile', function () {
+test('hanya Super Admin yang bisa mengubah stok obat lewat API mobile', function () {
     $obatId = DB::table('obat')->insertGetId([
         'nama_obat' => 'Amoxicillin Uji Role', 'jumlah' => 50, 'dosis' => 500, 'total_harga' => 5000,
     ]);
 
-    foreach (['Pasien', 'Dokter', 'Perawat', 'Kasir', 'Admin'] as $role) {
+    foreach (['Pasien', 'Dokter', 'Perawat', 'Kasir', 'Admin', 'Farmasi'] as $role) {
         $user = userKlinik($role);
         Sanctum::actingAs($user);
 
@@ -269,7 +270,7 @@ test('hanya role Farmasi yang bisa mengubah stok obat lewat API mobile', functio
         app('auth')->forgetGuards();
     }
 
-    Sanctum::actingAs(userKlinik('Farmasi'));
+    Sanctum::actingAs(userKlinik('Super Admin'));
 
     $this->putJson('/api/penjualan-obat/update-stok/'.$obatId, ['jumlah' => 5, 'action' => 'add'])->assertOk();
 

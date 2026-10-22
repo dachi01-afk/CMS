@@ -13,6 +13,7 @@ use App\Models\StokTransaksi;
 use App\Models\BatchObatDepot;
 use App\Models\MutasiStokObat;
 use App\Models\BahanHabisPakai;
+use App\Support\ObatAccess;
 use Illuminate\Support\Facades\DB;
 use App\Models\StokTransaksiDetail;
 use App\Http\Controllers\Controller;
@@ -364,8 +365,9 @@ class RestockDanReturnController extends Controller
                     // 'keterangan'            => $it['keterangan'] ?? null,
                 ]);
 
-                // Opsional: Update Harga Jual di tabel Obat jika ada harga baru
-                if ($it['type'] === 'obat' && !empty($it['harga_jual'])) {
+                // Opsional: Update Harga Jual di tabel Obat jika ada harga baru.
+                // Harga obat termasuk data obat, jadi hanya Super Admin yang boleh mengubahnya.
+                if ($it['type'] === 'obat' && !empty($it['harga_jual']) && ObatAccess::canManage()) {
                     \App\Models\Obat::where('id', $it['obat_id'])->update([
                         'harga_beli_terakhir' => $it['harga_beli'],
                         'harga_jual' => $it['harga_jual']
