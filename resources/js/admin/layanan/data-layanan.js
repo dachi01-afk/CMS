@@ -609,14 +609,20 @@ $(function () {
             id: id,
         };
 
+        const isSuperAdmin =
+            document.querySelector('meta[name="user-role"]')?.content ===
+            "Super Admin";
+
         Swal.fire({
             title: "Apakah Anda yakin?",
-            text: "Data yang dihapus tidak bisa dikembalikan!",
+            text: isSuperAdmin
+                ? "Data yang dihapus tidak bisa dikembalikan!"
+                : "Pengajuan penghapusan akan dikirim ke Verifikator. Data baru dihapus setelah disetujui.",
             icon: "warning",
             showCancelButton: true,
             confirmButtonColor: "#d33",
             cancelButtonColor: "#3085d6",
-            confirmButtonText: "Ya, hapus!",
+            confirmButtonText: isSuperAdmin ? "Ya, hapus!" : "Ya, ajukan!",
             cancelButtonText: "Batal",
         }).then((result) => {
             if (result.isConfirmed) {

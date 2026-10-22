@@ -22,6 +22,8 @@ class RedirectIfAuthenticatedWithRole
                     return redirect()->route('admin.index');
                 case 'Farmasi':
                     return redirect()->route('farmasi.dashboard');
+                case 'Verifikator':
+                    return redirect()->route('verifikator.pengajuan.index');
                 default:
                     // Kalau role tidak dikenali, logout dan arahkan ke login
                     Auth::logout();

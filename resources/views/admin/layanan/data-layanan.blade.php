@@ -354,7 +354,7 @@
                     <button type="submit"
                         class="px-5 py-2.5 text-sm font-semibold rounded-lg bg-teal-600 text-white hover:bg-teal-700 shadow-md
                                focus:ring-4 focus:ring-teal-200 dark:focus:ring-teal-800">
-                        Simpan Perubahan
+                        Ajukan Perubahan
                     </button>
                 </div>
             </form>

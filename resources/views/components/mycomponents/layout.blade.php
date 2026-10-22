@@ -880,7 +880,7 @@
                         </div>
                     </aside>
 
-                    <main class="app-main flex-1 w-full pt-16 p-4 sm:pt-24 sm:ml-64 transition-all duration-300">
+                    <main class="app-main min-w-0 flex-1 w-full pt-16 p-4 sm:pt-24 sm:ml-64 transition-all duration-300">
                         {{ $slot }}
                     </main>
                 </div>
@@ -1031,7 +1031,74 @@
                         </div>
                     </aside>
 
-                    <main class="app-main flex-1 w-full pt-16 p-4 sm:pt-24 sm:ml-64 transition-all duration-300">
+                    <main class="app-main min-w-0 flex-1 w-full pt-16 p-4 sm:pt-24 sm:ml-64 transition-all duration-300">
+                        {{ $slot }}
+                    </main>
+                </div>
+            @elseif ($role === 'Verifikator')
+                <div class="flex min-h-screen bg-slate-50 dark:bg-slate-900">
+                    <aside id="logo-sidebar"
+                        class="app-sidebar fixed top-0 left-0 z-40 h-screen pt-20 transition-all duration-300 -translate-x-full sm:translate-x-0
+                            bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border-r border-slate-200 dark:border-slate-800 shadow-sm w-64"
+                        aria-label="Sidebar">
+
+                        <div class="h-full flex flex-col px-3 pb-4 overflow-y-auto overflow-x-visible">
+                            <div class="px-4 pb-4 border-b border-slate-200 dark:border-slate-800">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md shrink-0">
+                                        <i class="fa-solid fa-clipboard-check text-lg"></i>
+                                    </div>
+
+                                    <div class="flex flex-col min-w-0 sidebar-brand-text">
+                                        <span
+                                            class="text-[11px] font-semibold tracking-wide text-slate-400 dark:text-slate-500 uppercase">
+                                            CMS Royal Klinik
+                                        </span>
+                                        <span class="text-sm font-semibold text-slate-700 dark:text-slate-200">
+                                            Panel Verifikator
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <nav class="flex-1 space-y-4 text-sm font-medium mt-4">
+                                <div class="space-y-1">
+                                    <p
+                                        class="sidebar-heading px-2 text-[11px] font-semibold tracking-wide uppercase text-slate-400 dark:text-slate-500">
+                                        Persetujuan
+                                    </p>
+                                    <ul class="space-y-1">
+                                        <x-mycomponents.sidebar_link href="verifikator.pengajuan.index"
+                                            class="fa-solid fa-clipboard-check"
+                                            :active="Request::routeIs('verifikator.pengajuan.*')">
+                                            Pengajuan Perubahan Data
+                                        </x-mycomponents.sidebar_link>
+                                    </ul>
+                                </div>
+
+                                <div class="mx-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-3">
+                                    <p class="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wide text-indigo-700">
+                                        <i class="fa-solid fa-circle-info"></i> Alur Persetujuan
+                                    </p>
+                                    <p class="mt-1 text-[11px] leading-relaxed text-indigo-700/80">
+                                        Edit dan hapus data layanan dari Admin serta data obat dari Farmasi
+                                        baru diterapkan setelah disetujui di halaman ini.
+                                    </p>
+                                </div>
+                            </nav>
+
+                            <div class="mt-6 pt-3 border-t border-slate-200 dark:border-slate-800 px-2">
+                                <div class="sidebar-footer-text">
+                                    <p class="text-[11px] text-slate-400 dark:text-slate-600">
+                                        © {{ now()->year }} CMS-Royal-Klinik · Verifikator
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </aside>
+
+                    <main class="app-main min-w-0 flex-1 w-full pt-16 p-4 sm:pt-24 sm:ml-64 transition-all duration-300">
                         {{ $slot }}
                     </main>
                 </div>

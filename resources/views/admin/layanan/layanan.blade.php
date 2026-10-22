@@ -21,6 +21,17 @@
         </div>
         <hr class="mb-2 border-gray-200">
 
+        @if (auth()->user()?->role === 'Admin')
+            <div
+                class="mb-3 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200">
+                <i class="fa-solid fa-circle-info mt-0.5"></i>
+                <p>
+                    Edit dan hapus data layanan tidak langsung diterapkan. Pengajuan akan dikirim ke role
+                    <span class="font-semibold">Verifikator</span> untuk disetujui terlebih dahulu.
+                </p>
+            </div>
+        @endif
+
         {{-- sub menu --}}
         <div class="border-b border-gray-200 dark:border-gray-700 ">
             <ul class="flex flex-wrap -mb-px text-sm font-medium text-center whitespace-nowrap" id="default-tab"

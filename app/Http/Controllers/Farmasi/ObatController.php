@@ -6,13 +6,16 @@ use App\Models\Obat;
 use App\Models\Depot;
 use App\Models\BatchObat;
 use App\Models\JenisObat;
+use App\Models\PengajuanPerubahanData;
 use App\Exports\ObatExport;
 use App\Imports\ObatImport;
+use App\Services\PengajuanPerubahanService;
 use Illuminate\Support\Str;
 use App\Models\KategoriObat;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use App\Support\ObatAccess;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreObatRequest;
@@ -22,6 +25,10 @@ use Yajra\DataTables\Facades\DataTables;
 
 class ObatController extends Controller
 {
+    public function __construct(private PengajuanPerubahanService $pengajuanService)
+    {
+    }
+
     public function index()
     {
         return view('farmasi.obat.obat');
@@ -123,18 +130,20 @@ class ObatController extends Controller
             })
 
             // AKSI
-            // Edit & Hapus data obat hanya untuk Super Admin. Untuk role lain
-            // tombol tetap tampil tetapi nonaktif (tidak bisa diklik).
+            // Super Admin mengedit/menghapus langsung. Farmasi tetap bisa
+            // memakai tombol ini, tetapi aksinya menjadi pengajuan ke Verifikator.
             ->addColumn('action', function ($obat) {
                 $canManage = ObatAccess::canManage();
+                $canRequest = ObatAccess::canRequestChange();
+                $enabled = $canManage || $canRequest;
 
-                $editAttr = $canManage
-                    ? 'data-id="' . $obat->id . '" title="Edit Obat"'
-                    : 'disabled aria-disabled="true" title="Hanya Super Admin yang dapat mengedit atau menghapus data obat" style="opacity:.5;pointer-events:none;cursor:not-allowed"';
+                $editAttr = $enabled
+                    ? 'data-id="' . $obat->id . '" title="' . ($canManage ? 'Edit Obat' : 'Ajukan Edit Obat') . '"'
+                    : 'disabled aria-disabled="true" title="Hanya Super Admin dan Farmasi yang dapat mengajukan perubahan data obat" style="opacity:.5;pointer-events:none;cursor:not-allowed"';
 
-                $deleteAttr = $canManage
-                    ? 'data-id="' . $obat->id . '" title="Hapus"'
-                    : 'disabled aria-disabled="true" title="Hanya Super Admin yang dapat mengedit atau menghapus data obat" style="opacity:.5;pointer-events:none;cursor:not-allowed"';
+                $deleteAttr = $enabled
+                    ? 'data-id="' . $obat->id . '" title="' . ($canManage ? 'Hapus' : 'Ajukan Hapus Obat') . '"'
+                    : 'disabled aria-disabled="true" title="Hanya Super Admin dan Farmasi yang dapat mengajukan perubahan data obat" style="opacity:.5;pointer-events:none;cursor:not-allowed"';
 
                 return '
                         <div class="flex items-center justify-center gap-2">
@@ -254,6 +263,32 @@ class ObatController extends Controller
     {
         $obat = Obat::findOrFail($id);
 
+        $user = Auth::user();
+
+        // Farmasi tidak lagi mengedit langsung. Perubahan diajukan ke Verifikator.
+        if ($user && $user->role !== 'Super Admin') {
+            $dataBaru = $request->validated();
+            $dataBaru['harga_jual_obat'] = (float) $dataBaru['harga_jual_obat'];
+
+            [$pengajuan, $baru] = $this->pengajuanService->ajukan(
+                PengajuanPerubahanData::JENIS_OBAT,
+                PengajuanPerubahanData::AKSI_EDIT,
+                $obat->id,
+                $this->pengajuanService->labelObat($obat),
+                $this->pengajuanService->snapshotObat($obat),
+                $dataBaru,
+                $user
+            );
+
+            return response()->json([
+                'status' => 200,
+                'message' => $baru
+                    ? 'Pengajuan edit data obat berhasil dikirim dan menunggu persetujuan Verifikator.'
+                    : 'Pengajuan edit data obat untuk obat ini sudah ada dan sudah diperbarui. Menunggu persetujuan Verifikator.',
+                'data' => $pengajuan,
+            ]);
+        }
+
         DB::beginTransaction();
 
         try {
@@ -313,7 +348,32 @@ class ObatController extends Controller
     public function deleteObat($id)
     {
         $dataObat = Obat::findOrFail($id);
+
+        $user = Auth::user();
+
+        // Farmasi tidak lagi menghapus langsung. Penghapusan diajukan ke Verifikator.
+        if ($user && $user->role !== 'Super Admin') {
+            [$pengajuan, $baru] = $this->pengajuanService->ajukan(
+                PengajuanPerubahanData::JENIS_OBAT,
+                PengajuanPerubahanData::AKSI_HAPUS,
+                $dataObat->id,
+                $this->pengajuanService->labelObat($dataObat),
+                $this->pengajuanService->snapshotObat($dataObat),
+                null,
+                $user
+            );
+
+            return response()->json([
+                'status' => 200,
+                'message' => $baru
+                    ? 'Pengajuan hapus data obat berhasil dikirim dan menunggu persetujuan Verifikator.'
+                    : 'Pengajuan hapus data obat untuk obat ini sudah ada dan masih menunggu persetujuan Verifikator.',
+                'data' => $pengajuan,
+            ]);
+        }
+
         $dataObat->delete();
+
         return response()->json([
             'status' => 200,
             'data' => $dataObat,

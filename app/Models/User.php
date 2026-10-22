@@ -65,6 +65,11 @@ class User extends Authenticatable
         return $this->hasOne(Auditor::class);
     }
 
+    public function verifikator()
+    {
+        return $this->hasOne(Verifikator::class);
+    }
+
     /**
      * `terakhir_login` diperbarui otomatis oleh heartbeat setiap 60 detik.
      * Kolom ini tidak dicatat sebagai perubahan manajemen user supaya audit log
@@ -101,6 +106,7 @@ class User extends Authenticatable
             'Perawat' => $this->perawat?->nama_perawat ?? '-',
             'Kasir' => $this->kasir?->nama_kasir ?? '-',
             'Auditor' => $this->auditor?->nama_auditor ?? '-',
+            'Verifikator' => $this->verifikator?->nama_verifikator ?? '-',
             default => $this->name ?? '-',
         };
     }

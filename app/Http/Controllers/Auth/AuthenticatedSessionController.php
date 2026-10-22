@@ -42,6 +42,8 @@ class AuthenticatedSessionController extends Controller
                 return redirect()->route('kasir.dashboard');
             case 'Auditor':
                 return redirect()->route('auditor.dashboard');
+            case 'Verifikator':
+                return redirect()->route('verifikator.pengajuan.index');
             default:
                 Auth::logout();
                 return redirect()->route('login')->withErrors([

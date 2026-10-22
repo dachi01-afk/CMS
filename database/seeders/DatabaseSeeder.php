@@ -31,6 +31,7 @@ use Database\Seeders\SatuanObatSeeder;
 use Database\Seeders\SuperAdminSeeder;
 use Database\Seeders\TipeDepotSeeder;
 use Database\Seeders\UserSeeder;
+use Database\Seeders\VerifikatorSeeder;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -50,6 +51,7 @@ class DatabaseSeeder extends Seeder
             FarmasiSeeder::class,
             KasirSeeder::class,
             AuditorSeeder::class,
+            VerifikatorSeeder::class,
             PasienSeeder::class,
             PoliSeeder::class,
             KategoriLayananSeeder::class,

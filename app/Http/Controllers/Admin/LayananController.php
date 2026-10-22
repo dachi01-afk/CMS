@@ -6,9 +6,12 @@ use App\Exports\LayananExport;
 use App\Http\Controllers\Controller;
 use App\Models\KategoriLayanan;
 use App\Models\Layanan;
+use App\Models\PengajuanPerubahanData;
 use App\Models\Poli;
+use App\Services\PengajuanPerubahanService;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
@@ -18,6 +21,10 @@ use Yajra\DataTables\Facades\DataTables;
 
 class LayananController extends Controller
 {
+    public function __construct(private PengajuanPerubahanService $pengajuanService)
+    {
+    }
+
     public function index()
     {
         $dataKategoriLayanan = KategoriLayanan::all();
@@ -292,6 +299,57 @@ class LayananController extends Controller
             ], 422);
         }
 
+        $user = Auth::user();
+
+        // Admin tidak lagi mengedit langsung. Perubahan diajukan ke Verifikator.
+        if ($user && $user->role !== 'Super Admin') {
+            $layanan = Layanan::with(['kategoriLayanan', 'layananPoli'])
+                ->findOrFail((int) $request->id);
+
+            $hargaAwal = $toNumber($request->harga_sebelum_diskon);
+
+            if ($hargaAwal < 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Validasi gagal.',
+                    'errors' => ['harga_sebelum_diskon' => ['Harga layanan tidak boleh negatif.']],
+                ], 422);
+            }
+
+            $poliIds = collect($request->input('poli_id', []))
+                ->map(fn ($id) => (int) $id)
+                ->values()
+                ->all();
+
+            $dataBaru = [
+                'kategori_layanan_id' => (int) $request->kategori_layanan_id,
+                'kategori_layanan' => optional(KategoriLayanan::find($request->kategori_layanan_id))->nama_kategori,
+                'nama_layanan' => $request->nama_layanan,
+                'harga_sebelum_diskon' => $hargaAwal,
+                'is_global' => (int) $request->input('is_global', 0),
+                'poli_id' => $poliIds,
+                'poli' => Poli::whereIn('id', $poliIds)->pluck('nama_poli')->all(),
+            ];
+
+            [$pengajuan, $baru] = $this->pengajuanService->ajukan(
+                PengajuanPerubahanData::JENIS_LAYANAN,
+                PengajuanPerubahanData::AKSI_EDIT,
+                $layanan->id,
+                $this->pengajuanService->labelLayanan($layanan),
+                $this->pengajuanService->snapshotLayanan($layanan),
+                $dataBaru,
+                $user
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => $baru
+                    ? 'Pengajuan edit layanan berhasil dikirim dan menunggu persetujuan Verifikator.'
+                    : 'Pengajuan edit layanan untuk data ini sudah ada dan sudah diperbarui. Menunggu persetujuan Verifikator.',
+                'data' => $pengajuan,
+            ]);
+        }
+
         try {
             return DB::transaction(function () use ($request, $toNumber) {
 
@@ -367,7 +425,31 @@ class LayananController extends Controller
 
     public function deleteDataLayanan(Request $request)
     {
-        $dataLayanan = Layanan::findOrFail($request->id);
+        $dataLayanan = Layanan::with(['kategoriLayanan', 'layananPoli'])
+            ->findOrFail($request->id);
+
+        $user = Auth::user();
+
+        // Admin tidak lagi menghapus langsung. Penghapusan diajukan ke Verifikator.
+        if ($user && $user->role !== 'Super Admin') {
+            [$pengajuan, $baru] = $this->pengajuanService->ajukan(
+                PengajuanPerubahanData::JENIS_LAYANAN,
+                PengajuanPerubahanData::AKSI_HAPUS,
+                $dataLayanan->id,
+                $this->pengajuanService->labelLayanan($dataLayanan),
+                $this->pengajuanService->snapshotLayanan($dataLayanan),
+                null,
+                $user
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => $baru
+                    ? 'Pengajuan hapus layanan berhasil dikirim dan menunggu persetujuan Verifikator.'
+                    : 'Pengajuan hapus layanan untuk data ini sudah ada dan masih menunggu persetujuan Verifikator.',
+                'data' => $pengajuan,
+            ]);
+        }
 
         $dataLayanan->delete();
 

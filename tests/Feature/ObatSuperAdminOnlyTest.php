@@ -12,7 +12,10 @@ use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 /**
- * Hanya Super Admin yang boleh mengedit & menghapus DATA OBAT.
+ * Perubahan langsung DATA OBAT tetap hanya untuk Super Admin.
+ *
+ * Farmasi boleh menekan Edit/Hapus, tetapi aksinya menjadi pengajuan yang
+ * harus disetujui Verifikator (lihat PengajuanPerubahanDataTest).
  *
  * Di luar data obat, tombol Edit/Hapus kembali normal:
  *  - Admin tetap bisa mengedit/menghapus jenis spesialis, dsb.
@@ -72,7 +75,7 @@ class ObatSuperAdminOnlyTest extends TestCase
         $this->assertNull(Obat::find($obatHapus->id));
     }
 
-    public function test_farmasi_tidak_bisa_edit_dan_hapus_obat(): void
+    public function test_farmasi_bisa_mengajukan_edit_dan_hapus_obat(): void
     {
         $farmasi = $this->user('Farmasi');
 
@@ -80,15 +83,30 @@ class ObatSuperAdminOnlyTest extends TestCase
         $this->actingAs($farmasi)->postJson('/farmasi/obat/update-data-obat/'.$obat->id, [
             'nama_obat' => 'Obat Uji Diubah',
             'harga_jual_obat' => 2500,
-        ])->assertForbidden();
+        ])->assertOk();
 
+        // Data obat belum berubah sebelum disetujui Verifikator.
         $this->assertSame('Obat Uji', $obat->fresh()->nama_obat);
+        $this->assertDatabaseHas('pengajuan_perubahan_data', [
+            'jenis_data' => 'obat',
+            'aksi' => 'edit',
+            'target_id' => $obat->id,
+            'status' => 'menunggu',
+            'diajukan_oleh' => $farmasi->id,
+        ]);
 
         $this->actingAs($farmasi)
             ->deleteJson('/farmasi/obat/delete-data-obat/'.$obat->id)
-            ->assertForbidden();
+            ->assertOk();
 
         $this->assertNotNull(Obat::find($obat->id));
+        $this->assertDatabaseHas('pengajuan_perubahan_data', [
+            'jenis_data' => 'obat',
+            'aksi' => 'hapus',
+            'target_id' => $obat->id,
+            'status' => 'menunggu',
+            'diajukan_oleh' => $farmasi->id,
+        ]);
     }
 
     public function test_admin_tidak_bisa_edit_dan_hapus_obat(): void
@@ -108,7 +126,7 @@ class ObatSuperAdminOnlyTest extends TestCase
         $this->assertSame('Obat Uji', $obat->fresh()->nama_obat);
     }
 
-    public function test_tombol_edit_hapus_obat_nonaktif_untuk_farmasi(): void
+    public function test_tombol_edit_hapus_obat_aktif_untuk_farmasi_sebagai_pengajuan(): void
     {
         $obat = $this->obat();
 
@@ -121,13 +139,14 @@ class ObatSuperAdminOnlyTest extends TestCase
 
         $this->assertStringContainsString('btn-update-obat', $html);
         $this->assertStringContainsString('btn-delete-obat', $html);
-        $this->assertSame(2, substr_count($html, ' disabled aria-disabled="true"'));
-        $this->assertStringContainsString('aria-disabled="true"', $html);
-        $this->assertStringContainsString('Hanya Super Admin yang dapat mengedit atau menghapus data obat', $html);
+        $this->assertStringNotContainsString('aria-disabled', $html);
+        $this->assertStringNotContainsString('disabled', $html);
+        $this->assertSame(3, substr_count($html, 'data-id="'.$obat->id.'"'));
+        $this->assertStringContainsString('Ajukan Edit Obat', $html);
+        $this->assertStringContainsString('Ajukan Hapus Obat', $html);
 
         // Tombol Detail tetap aktif.
         $this->assertStringContainsString('btn-detail-obat', $html);
-        $this->assertStringContainsString('data-id="'.$obat->id.'"', $html);
     }
 
     public function test_tombol_edit_hapus_obat_aktif_untuk_super_admin(): void

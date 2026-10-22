@@ -80,6 +80,7 @@ use App\Http\Controllers\SuperAdmin\SuperAdminController;
 use App\Http\Controllers\SuperAdmin\TransaksiInsightController;
 use App\Http\Controllers\Testing\TestingChartController;
 use App\Http\Controllers\Testing\TestingController;
+use App\Http\Controllers\Verifikator\PengajuanPerubahanController;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -834,6 +835,17 @@ Route::middleware(['auth', 'role:Auditor'])->prefix('auditor')->name('auditor.')
     Route::get('/logs/entity', [AuditorAuditLogController::class, 'entity'])->name('logs.entity');
     // Detail log diletakkan terakhir supaya tidak menangkap 'entity'/'data'.
     Route::get('/logs/{id}', [AuditorAuditLogController::class, 'show'])->name('logs.show');
+});
+
+// //////// ROLE VERIFIKATOR ///////////
+// Menyetujui / menolak pengajuan edit dan hapus data dari Admin (layanan)
+// dan Farmasi (obat).
+Route::middleware(['auth', 'role:Verifikator'])->prefix('verifikator')->name('verifikator.')->group(function () {
+    Route::get('/', [PengajuanPerubahanController::class, 'index'])->name('pengajuan.index');
+    Route::get('/pengajuan/data', [PengajuanPerubahanController::class, 'data'])->name('pengajuan.data');
+    Route::get('/pengajuan/{pengajuan}', [PengajuanPerubahanController::class, 'show'])->name('pengajuan.show');
+    Route::post('/pengajuan/{pengajuan}/setujui', [PengajuanPerubahanController::class, 'setujui'])->name('pengajuan.setujui');
+    Route::post('/pengajuan/{pengajuan}/tolak', [PengajuanPerubahanController::class, 'tolak'])->name('pengajuan.tolak');
 });
 
 Route::middleware(['auth', 'superAdmin'])->prefix('super-admin')->group(function () {

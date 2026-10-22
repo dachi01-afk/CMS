@@ -184,6 +184,9 @@ export default defineConfig({
 
                 // Role Auditor
                 "resources/js/auditor/data-audit-log.js",
+
+                // Role Verifikator
+                "resources/js/verifikator/pengajuan-perubahan.js",
             ],
             refresh: true,
         }),
