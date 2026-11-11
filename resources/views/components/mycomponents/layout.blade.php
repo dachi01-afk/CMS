@@ -312,6 +312,18 @@
                                         :active="Request::routeIs('laporan.index')">
                                         Laporan Klinik
                                     </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="super.admin.laporan.order.layanan.index"
+                                        class="fa-solid fa-file-invoice-dollar"
+                                        :active="Request::routeIs('super.admin.laporan.order.layanan.index')">
+                                        Laporan Transaksi Order Layanan
+                                    </x-mycomponents.sidebar_link>
+
+                                    <x-mycomponents.sidebar_link href="super.admin.laporan.audit.kunjungan.index"
+                                        class="fa-solid fa-clipboard-check"
+                                        :active="Request::routeIs('super.admin.laporan.audit.kunjungan.index')">
+                                        Laporan Audit Kunjungan
+                                    </x-mycomponents.sidebar_link>
                                 </ul>
                             </div>
 

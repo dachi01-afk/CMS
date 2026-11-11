@@ -22,6 +22,12 @@ export default defineConfig({
                 "resources/js/super-admin/approve-diskon-order-layanan/data-belum-approve-diskon-order-layanan.js",
                 "resources/js/super-admin/approve-diskon-order-layanan/data-sudah-approve-diskon-order-layanan.js",
 
+                // Laporan Transaksi Order Layanan
+                "resources/js/super-admin/laporan-order-layanan/data-laporan-order-layanan.js",
+
+                // Laporan Audit Kunjungan
+                "resources/js/super-admin/laporan-audit-kunjungan/data-laporan-audit-kunjungan.js",
+
                 // admin
                 "resources/js/admin/dashboard.js",
 

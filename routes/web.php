@@ -74,6 +74,8 @@ use App\Http\Controllers\SuperAdmin\ApproveDiskonOrderLayananController;
 use App\Http\Controllers\SuperAdmin\ApproveDiskonOrderLayananManagerController;
 use App\Http\Controllers\SuperAdmin\ApproveDiskonPenjualanObatManagerController;
 use App\Http\Controllers\SuperAdmin\DiskonApprovalManagerController;
+use App\Http\Controllers\SuperAdmin\LaporanAuditKunjunganController;
+use App\Http\Controllers\SuperAdmin\LaporanOrderLayananController;
 use App\Http\Controllers\SuperAdmin\PasienHariIniController;
 use App\Http\Controllers\SuperAdmin\PasienInsightController;
 use App\Http\Controllers\SuperAdmin\SuperAdminController;
@@ -907,6 +909,25 @@ Route::middleware(['auth', 'superAdmin'])->prefix('super-admin')->group(function
 
         Route::post('/approve/{approval}', [ApproveDiskonOrderLayananManagerController::class, 'approve'])->name('super.admin.approve.diskon.order.layanan');
         Route::post('/reject/{approval}', [ApproveDiskonOrderLayananManagerController::class, 'reject'])->name('super.admin.reject.diskon.order.layanan');
+    });
+
+    // Laporan Transaksi Order Layanan (pembelian layanan langsung ke klinik)
+    Route::prefix('laporan-order-layanan')->name('super.admin.laporan.order.layanan.')->group(function () {
+        Route::get('/', [LaporanOrderLayananController::class, 'index'])->name('index');
+        Route::get('/data', [LaporanOrderLayananController::class, 'data'])->name('data');
+        Route::get('/cari-layanan', [LaporanOrderLayananController::class, 'searchLayanan'])->name('search.layanan');
+        Route::get('/export-excel', [LaporanOrderLayananController::class, 'export'])->name('export');
+        Route::get('/{id}/detail', [LaporanOrderLayananController::class, 'detail'])->whereNumber('id')->name('detail');
+    });
+
+    // Laporan Audit Kunjungan (alur pendaftaran -> EMR -> kasir -> farmasi)
+    Route::prefix('laporan-audit-kunjungan')->name('super.admin.laporan.audit.kunjungan.')->group(function () {
+        Route::get('/', [LaporanAuditKunjunganController::class, 'index'])->name('index');
+        Route::get('/data', [LaporanAuditKunjunganController::class, 'data'])->name('data');
+        Route::get('/export-excel', [LaporanAuditKunjunganController::class, 'export'])->name('export');
+        Route::get('/{id}/detail', [LaporanAuditKunjunganController::class, 'detail'])->whereNumber('id')->name('detail');
+        Route::get('/cari-layanan', [LaporanAuditKunjunganController::class, 'searchLayanan'])->name('search.layanan');
+        Route::get('/cari-poli', [LaporanAuditKunjunganController::class, 'searchPoli'])->name('search.poli');
     });
 });
 

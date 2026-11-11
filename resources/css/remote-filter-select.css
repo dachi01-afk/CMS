@@ -1,0 +1,87 @@
+/* TomSelect filter bersama: Laporan Audit Kunjungan & Laporan Transaksi Order Layanan */
+.remote-filter-select .ts-wrapper {
+    width: 100%;
+}
+
+.remote-filter-select .ts-control {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 38px;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid #cbd5e1;
+    border-radius: 0.5rem;
+    background-color: #ffffff;
+    color: #1e293b;
+    font-size: 0.875rem;
+    line-height: 1.25rem;
+    box-shadow: none;
+}
+
+.remote-filter-select .ts-control.focus {
+    border-color: #0ea5e9;
+    box-shadow: 0 0 0 1px #0ea5e9;
+}
+
+.remote-filter-select .ts-control > input {
+    font-size: 0.875rem;
+    color: inherit;
+    box-shadow: none;
+    background: transparent;
+}
+
+.remote-filter-select .ts-control > input::placeholder {
+    color: #94a3b8;
+}
+
+.remote-filter-select .ts-control .clear-button {
+    color: #94a3b8;
+}
+
+.remote-filter-select .ts-dropdown {
+    margin-top: 0.25rem;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    background-color: #ffffff;
+    font-size: 0.875rem;
+    box-shadow: 0 12px 28px -12px rgba(15, 23, 42, 0.35);
+    overflow: hidden;
+}
+
+.remote-filter-select .ts-dropdown .option {
+    padding: 0.5rem 0.75rem;
+    color: #1e293b;
+}
+
+.remote-filter-select .ts-dropdown .option.active,
+.remote-filter-select .ts-dropdown .option:hover {
+    background-color: #e0f2fe;
+    color: #0369a1;
+}
+
+.dark .remote-filter-select .ts-control {
+    border-color: #475569;
+    background-color: #334155;
+    color: #f1f5f9;
+}
+
+.dark .remote-filter-select .ts-control.focus {
+    border-color: #0ea5e9;
+    box-shadow: 0 0 0 1px #0ea5e9;
+}
+
+.dark .remote-filter-select .ts-dropdown {
+    border-color: #475569;
+    background-color: #1e293b;
+    box-shadow: 0 12px 28px -12px rgba(0, 0, 0, 0.6);
+}
+
+.dark .remote-filter-select .ts-dropdown .option {
+    color: #f1f5f9;
+}
+
+.dark .remote-filter-select .ts-dropdown .option.active,
+.dark .remote-filter-select .ts-dropdown .option:hover {
+    background-color: #0c4a6e;
+    color: #e0f2fe;
+}
