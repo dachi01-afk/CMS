@@ -35,7 +35,7 @@
         </div>
 
         {{-- Filter: Layanan, Poli, Periode tahunan/bulanan + Export --}}
-        <form action="{{ route('super.admin.laporan.audit.kunjungan.export') }}" method="GET"
+        <form action="{{ route('laporan.audit.kunjungan.export') }}" method="GET"
             class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-12 gap-2 md:gap-3 items-end w-full">
 
             <div class="sm:col-span-2 xl:col-span-3 remote-filter-select">
@@ -43,7 +43,7 @@
                     Layanan (Tindakan)
                 </label>
                 <select name="layanan_id" id="layananAudit"
-                    data-search-url="{{ route('super.admin.laporan.audit.kunjungan.search.layanan') }}"
+                    data-search-url="{{ route('laporan.audit.kunjungan.search.layanan') }}"
                     data-placeholder="Semua Layanan">
                     <option value=""></option>
                 </select>
@@ -54,7 +54,7 @@
                     Poli
                 </label>
                 <select name="poli_id" id="poliAudit"
-                    data-search-url="{{ route('super.admin.laporan.audit.kunjungan.search.poli') }}"
+                    data-search-url="{{ route('laporan.audit.kunjungan.search.poli') }}"
                     data-placeholder="Semua Poli">
                     <option value=""></option>
                 </select>
@@ -196,7 +196,8 @@
 
         {{-- TABEL --}}
         <div class="overflow-x-auto">
-            <table id="tabelAuditKunjungan" class="min-w-full text-sm text-left text-slate-700 dark:text-slate-100">
+            <table id="tabelAuditKunjungan" data-url="{{ route('laporan.audit.kunjungan.data') }}"
+                class="min-w-full text-sm text-left text-slate-700 dark:text-slate-100">
                 <thead class="text-xs uppercase bg-sky-500 dark:bg-sky-600 text-white tracking-wide">
                     <tr>
                         <th class="px-4 py-3">No</th>

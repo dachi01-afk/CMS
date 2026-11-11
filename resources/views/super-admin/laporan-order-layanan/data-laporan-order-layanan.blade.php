@@ -35,7 +35,7 @@
         </div>
 
         {{-- Filter Layanan + Periode + Status + Export --}}
-        <form action="{{ route('super.admin.laporan.order.layanan.export') }}" method="GET"
+        <form action="{{ route('laporan.order.layanan.export') }}" method="GET"
             class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-12 gap-2 md:gap-3 items-end w-full">
 
             <div class="sm:col-span-2 xl:col-span-3 remote-filter-select">
@@ -43,7 +43,7 @@
                     Layanan
                 </label>
                 <select name="layanan_id" id="layananOrderLayanan"
-                    data-search-url="{{ route('super.admin.laporan.order.layanan.search.layanan') }}"
+                    data-search-url="{{ route('laporan.order.layanan.search.layanan') }}"
                     data-placeholder="Semua Layanan">
                     <option value=""></option>
                 </select>
@@ -222,7 +222,8 @@
 
         {{-- TABEL --}}
         <div class="overflow-x-auto">
-            <table id="tabelLaporanOrderLayanan" class="min-w-full text-sm text-left text-slate-700 dark:text-slate-100">
+            <table id="tabelLaporanOrderLayanan" data-url="{{ route('laporan.order.layanan.data') }}"
+                class="min-w-full text-sm text-left text-slate-700 dark:text-slate-100">
                 <thead class="text-xs uppercase bg-sky-500 dark:bg-sky-600 text-white tracking-wide">
                     <tr>
                         <th class="px-6 py-3">No</th>

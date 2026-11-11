@@ -49,9 +49,10 @@ class LaporanAuditKunjunganController extends Controller
 
         $role = strtolower(trim((string) ($user->role ?? '')));
 
-        $isManager = $role === 'super admin' || (bool) ($user->is_super_admin ?? false);
+        $isManager = in_array($role, ['super admin', 'admin'], true)
+            || (bool) ($user->is_super_admin ?? false);
 
-        abort_unless($user && $isManager, 403, 'Hanya Super Admin yang dapat mengakses laporan ini.');
+        abort_unless($user && $isManager, 403, 'Hanya Super Admin dan Admin yang dapat mengakses laporan ini.');
     }
 
     public function index()
@@ -507,7 +508,7 @@ class LaporanAuditKunjunganController extends Controller
 
     private function selAksi($row): string
     {
-        $url = route('super.admin.laporan.audit.kunjungan.detail', ['id' => $row->id]);
+        $url = route('laporan.audit.kunjungan.detail', ['id' => $row->id]);
 
         return '<button type="button"'
             . ' class="btn-detail-audit-kunjungan inline-flex items-center gap-2 rounded-xl bg-sky-500 px-3 py-2 text-xs font-semibold text-white shadow-md transition duration-200 hover:bg-sky-600 hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-sky-300 active:scale-95"'

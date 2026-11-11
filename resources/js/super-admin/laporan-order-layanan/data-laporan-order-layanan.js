@@ -29,7 +29,7 @@ $(function () {
         lengthChange: false,
         info: false,
         ajax: {
-            url: "/super-admin/laporan-order-layanan/data",
+            url: $("#tabelLaporanOrderLayanan").data("url"),
             type: "GET",
             data: function (d) {
                 d.periode = $periode.val();

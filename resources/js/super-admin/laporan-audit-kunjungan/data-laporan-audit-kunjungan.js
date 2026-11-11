@@ -26,7 +26,7 @@ $(function () {
         lengthChange: false,
         info: false,
         ajax: {
-            url: "/super-admin/laporan-audit-kunjungan/data",
+            url: $("#tabelAuditKunjungan").data("url"),
             type: "GET",
             data: function (d) {
                 d.periode = $periode.val();

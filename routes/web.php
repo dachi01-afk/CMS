@@ -318,6 +318,26 @@ Route::middleware(['auth', 'role:Admin'])->group(function () {
         Route::get('/laporan_transaksi_apoteker', [LaporanController::class, 'dataTransaksiApoteker'])->name('laporan_transaksi_apoteker');
         Route::get('/laporan_administrasi', [LaporanController::class, 'dataAdministrasi'])->name('laporan_administrasi');
         Route::get('/export-laporan-keuangan', [LaporanController::class, 'exportKeuangan'])->name('export.laporan.keuangan');
+
+        // Laporan Transaksi Order Layanan: dapat diakses Super Admin & Admin
+        // (Super Admin lolos middleware role:Admin lewat RoleMiddleware).
+        Route::prefix('order-layanan')->name('order.layanan.')->group(function () {
+            Route::get('/', [LaporanOrderLayananController::class, 'index'])->name('index');
+            Route::get('/data', [LaporanOrderLayananController::class, 'data'])->name('data');
+            Route::get('/cari-layanan', [LaporanOrderLayananController::class, 'searchLayanan'])->name('search.layanan');
+            Route::get('/export-excel', [LaporanOrderLayananController::class, 'export'])->name('export');
+            Route::get('/{id}/detail', [LaporanOrderLayananController::class, 'detail'])->whereNumber('id')->name('detail');
+        });
+
+        // Laporan Audit Kunjungan: dapat diakses Super Admin & Admin.
+        Route::prefix('audit-kunjungan')->name('audit.kunjungan.')->group(function () {
+            Route::get('/', [LaporanAuditKunjunganController::class, 'index'])->name('index');
+            Route::get('/data', [LaporanAuditKunjunganController::class, 'data'])->name('data');
+            Route::get('/export-excel', [LaporanAuditKunjunganController::class, 'export'])->name('export');
+            Route::get('/{id}/detail', [LaporanAuditKunjunganController::class, 'detail'])->whereNumber('id')->name('detail');
+            Route::get('/cari-layanan', [LaporanAuditKunjunganController::class, 'searchLayanan'])->name('search.layanan');
+            Route::get('/cari-poli', [LaporanAuditKunjunganController::class, 'searchPoli'])->name('search.poli');
+        });
     });
 
     Route::prefix('data_medis_pasien')->name('data_medis_pasien.')->group(function () {
@@ -909,25 +929,6 @@ Route::middleware(['auth', 'superAdmin'])->prefix('super-admin')->group(function
 
         Route::post('/approve/{approval}', [ApproveDiskonOrderLayananManagerController::class, 'approve'])->name('super.admin.approve.diskon.order.layanan');
         Route::post('/reject/{approval}', [ApproveDiskonOrderLayananManagerController::class, 'reject'])->name('super.admin.reject.diskon.order.layanan');
-    });
-
-    // Laporan Transaksi Order Layanan (pembelian layanan langsung ke klinik)
-    Route::prefix('laporan-order-layanan')->name('super.admin.laporan.order.layanan.')->group(function () {
-        Route::get('/', [LaporanOrderLayananController::class, 'index'])->name('index');
-        Route::get('/data', [LaporanOrderLayananController::class, 'data'])->name('data');
-        Route::get('/cari-layanan', [LaporanOrderLayananController::class, 'searchLayanan'])->name('search.layanan');
-        Route::get('/export-excel', [LaporanOrderLayananController::class, 'export'])->name('export');
-        Route::get('/{id}/detail', [LaporanOrderLayananController::class, 'detail'])->whereNumber('id')->name('detail');
-    });
-
-    // Laporan Audit Kunjungan (alur pendaftaran -> EMR -> kasir -> farmasi)
-    Route::prefix('laporan-audit-kunjungan')->name('super.admin.laporan.audit.kunjungan.')->group(function () {
-        Route::get('/', [LaporanAuditKunjunganController::class, 'index'])->name('index');
-        Route::get('/data', [LaporanAuditKunjunganController::class, 'data'])->name('data');
-        Route::get('/export-excel', [LaporanAuditKunjunganController::class, 'export'])->name('export');
-        Route::get('/{id}/detail', [LaporanAuditKunjunganController::class, 'detail'])->whereNumber('id')->name('detail');
-        Route::get('/cari-layanan', [LaporanAuditKunjunganController::class, 'searchLayanan'])->name('search.layanan');
-        Route::get('/cari-poli', [LaporanAuditKunjunganController::class, 'searchPoli'])->name('search.poli');
     });
 });
 

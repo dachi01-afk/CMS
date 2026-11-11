@@ -26,9 +26,10 @@ class LaporanOrderLayananController extends Controller
 
         $role = strtolower(trim((string) ($user->role ?? '')));
 
-        $isManager = $role === 'super admin' || (bool) ($user->is_super_admin ?? false);
+        $isManager = in_array($role, ['super admin', 'admin'], true)
+            || (bool) ($user->is_super_admin ?? false);
 
-        abort_unless($user && $isManager, 403, 'Hanya Super Admin yang dapat mengakses laporan ini.');
+        abort_unless($user && $isManager, 403, 'Hanya Super Admin dan Admin yang dapat mengakses laporan ini.');
     }
 
     public function index()
@@ -92,7 +93,7 @@ class LaporanOrderLayananController extends Controller
                     : '-';
             })
             ->addColumn('action', function ($row) {
-                $detailUrl = route('super.admin.laporan.order.layanan.detail', ['id' => $row->id]);
+                $detailUrl = route('laporan.order.layanan.detail', ['id' => $row->id]);
 
                 return '
                     <button
