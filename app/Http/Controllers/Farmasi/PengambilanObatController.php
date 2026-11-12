@@ -815,6 +815,89 @@ class PengambilanObatController extends Controller
 
         DB::beginTransaction();
         try {
+            $namaItemKey = fn ($nama) => strtolower(trim(preg_replace('/\s+/', ' ', (string) $nama)));
+
+            /*
+            |--------------------------------------------------------------------------
+            | KUNCI TRANSAKSI + SNAPSHOT DISKON OBAT SEBELUM RESEP DIUBAH
+            |--------------------------------------------------------------------------
+            | Pembayaran dicari lewat emr.resep_id. Snapshot diskon harus diambil
+            | sebelum sync(), karena resep_obat.id bisa berubah/hilang.
+            |--------------------------------------------------------------------------
+            */
+            $pembayaran = Pembayaran::whereHas('emr', function ($q) use ($resep) {
+                $q->where('resep_id', $resep->id);
+
+                if (! empty($resep->kunjungan_id)) {
+                    $q->orWhere('kunjungan_id', $resep->kunjungan_id);
+                }
+            })->lockForUpdate()->first();
+
+            if ($pembayaran && $pembayaran->status === 'Sudah Bayar') {
+                DB::rollBack();
+
+                return response()->json([
+                    'message' => 'Transaksi sudah dibayar, resep tidak dapat diubah.',
+                ], 422);
+            }
+
+            $diskonByKey = [];
+            $diskonByName = [];
+            $kunciLamaById = [];
+
+            if ($pembayaran) {
+                $detailObatLama = DB::table('pembayaran_detail as pd')
+                    ->leftJoin('resep_obat as ro', 'ro.id', '=', 'pd.resep_obat_id')
+                    ->where('pd.pembayaran_id', $pembayaran->id)
+                    ->where(function ($q) {
+                        $q->whereNotNull('pd.resep_obat_id')
+                            ->orWhere('pd.nama_item', 'like', 'Obat:%');
+                    })
+                    ->select(
+                        'pd.id',
+                        'pd.resep_obat_id',
+                        'pd.nama_item',
+                        'pd.subtotal',
+                        'pd.diskon_tipe',
+                        'pd.diskon_nilai',
+                        'pd.total_setelah_diskon',
+                        'ro.obat_id'
+                    )
+                    ->get();
+
+                foreach ($detailObatLama as $d) {
+                    $subtotalLama = (float) ($d->subtotal ?? 0);
+                    $persen = (float) ($d->diskon_nilai ?? 0);
+
+                    if (($d->diskon_tipe ?: 'persen') !== 'persen' || $persen <= 0) {
+                        if ($d->total_setelah_diskon !== null && $subtotalLama > 0) {
+                            $persen = (($subtotalLama - (float) $d->total_setelah_diskon) / $subtotalLama) * 100;
+                        }
+                    }
+
+                    $kunciStabil = ! empty($d->obat_id)
+                        ? 'obat:'.$d->obat_id
+                        : 'nama:'.$namaItemKey($d->nama_item);
+
+                    $kunciLamaById[$d->id] = $kunciStabil;
+
+                    if ($persen <= 0) {
+                        continue;
+                    }
+
+                    $entry = [
+                        'persen' => min($persen, 100),
+                        'tipe' => 'persen',
+                    ];
+
+                    if (! empty($d->obat_id)) {
+                        $diskonByKey['obat:'.$d->obat_id] = $entry;
+                    }
+
+                    $diskonByName[$namaItemKey($d->nama_item)] = $entry;
+                }
+            }
+
             // bentuk payload sync pivot
             $syncData = [];
             foreach ($validated['obat'] as $row) {
@@ -829,6 +912,92 @@ class PengambilanObatController extends Controller
             // ✅ sync pivot (hapus yang tidak ada, update yang ada, tambah yang baru)
             $resep->obat()->sync($syncData);
 
+            /*
+            |--------------------------------------------------------------------------
+            | SINKRONKAN BARIS OBAT DI PEMBAYARAN_DETAIL (HANYA BELUM BAYAR)
+            |--------------------------------------------------------------------------
+            | Baris layanan/lab/radiologi tidak disentuh. Baris obat dibuat ulang
+            | mengikuti resep_obat terkini, diskon per obat dipertahankan, lalu total
+            | header dan diskon_approval disesuaikan.
+            |--------------------------------------------------------------------------
+            */
+            if ($pembayaran) {
+                DB::table('pembayaran_detail')
+                    ->where('pembayaran_id', $pembayaran->id)
+                    ->where(function ($q) {
+                        $q->whereNotNull('resep_obat_id')
+                            ->orWhere('nama_item', 'like', 'Obat:%');
+                    })
+                    ->delete();
+
+                $detailIdBaru = [];
+
+                $obatRows = DB::table('resep_obat as ro')
+                    ->join('obat as o', 'o.id', '=', 'ro.obat_id')
+                    ->where('ro.resep_id', $resep->id)
+                    ->select('ro.id as resep_obat_id', 'ro.obat_id', 'ro.jumlah', 'o.nama_obat', 'o.harga_jual_obat')
+                    ->get();
+
+                foreach ($obatRows as $row) {
+                    $qty = (int) ($row->jumlah ?? 1);
+                    $harga = (float) ($row->harga_jual_obat ?? 0);
+                    $subtotal = $harga * $qty;
+
+                    $kunci = 'obat:'.$row->obat_id;
+                    $diskon = $diskonByKey[$kunci]
+                        ?? ($diskonByName[$namaItemKey('Obat: '.$row->nama_obat)] ?? null);
+
+                    $persen = $diskon ? min((float) $diskon['persen'], 100) : 0;
+                    $setelahDiskon = $persen > 0
+                        ? max($subtotal - ($subtotal * $persen / 100), 0)
+                        : null;
+
+                    $detailIdBaru[$kunci] = DB::table('pembayaran_detail')->insertGetId([
+                        'pembayaran_id' => $pembayaran->id,
+                        'nama_item' => 'Obat: '.$row->nama_obat,
+                        'qty' => $qty,
+                        'harga' => $harga,
+                        'subtotal' => $subtotal,
+                        'total_tagihan' => $subtotal,
+                        'diskon_tipe' => $persen > 0 ? 'persen' : null,
+                        'diskon_nilai' => $persen,
+                        'total_setelah_diskon' => $setelahDiskon,
+                        'resep_obat_id' => $row->resep_obat_id,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+
+                $totalTagihan = (float) DB::table('pembayaran_detail')
+                    ->where('pembayaran_id', $pembayaran->id)
+                    ->sum('subtotal');
+
+                $updateHeader = [
+                    'total_tagihan' => $totalTagihan,
+                    'updated_at' => now(),
+                ];
+
+                $updateHeader['total_setelah_diskon'] = (float) DB::table('pembayaran_detail')
+                    ->where('pembayaran_id', $pembayaran->id)
+                    ->selectRaw('COALESCE(SUM(COALESCE(total_setelah_diskon, subtotal)), 0) as total')
+                    ->value('total');
+
+                DB::table('pembayaran')->where('id', $pembayaran->id)->update($updateHeader);
+
+                /*
+                | Remap approval: id baris obat berubah, id baris lain tetap.
+                */
+                $petaIdDetail = [];
+
+                foreach ($kunciLamaById as $idLama => $kunciStabil) {
+                    if (isset($detailIdBaru[$kunciStabil])) {
+                        $petaIdDetail[(int) $idLama] = (int) $detailIdBaru[$kunciStabil];
+                    }
+                }
+
+                $this->remapDiskonApprovalSetelahRebuild($pembayaran->id, $petaIdDetail, true);
+            }
+
             DB::commit();
 
             return response()->json([
@@ -841,6 +1010,75 @@ class PengambilanObatController extends Controller
                 'error'   => $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Menyesuaikan diskon_approval.diskon_items setelah baris pembayaran_detail berubah.
+     *
+     * Item yang id-nya tidak ada di peta dianggap sudah dihapus, kecuali
+     * $pertahankanIdTidakDikenal = true (baris non-obat tidak ikut di-rebuild).
+     */
+    private function remapDiskonApprovalSetelahRebuild(int $pembayaranId, array $petaIdDetail, bool $pertahankanIdTidakDikenal = false): void
+    {
+        $approval = DB::table('diskon_approval')
+            ->where('pembayaran_id', $pembayaranId)
+            ->whereIn('status', ['pending', 'approved'])
+            ->latest('id')
+            ->first();
+
+        if (! $approval) {
+            return;
+        }
+
+        $itemsLama = is_string($approval->diskon_items)
+            ? json_decode($approval->diskon_items, true)
+            : $approval->diskon_items;
+
+        if (! is_array($itemsLama)) {
+            return;
+        }
+
+        $itemsBaru = [];
+
+        foreach ($itemsLama as $item) {
+            $idLama = (int) ($item['id'] ?? 0);
+            $persen = (float) ($item['persen'] ?? 0);
+
+            if ($idLama <= 0 || $persen <= 0) {
+                continue;
+            }
+
+            if (array_key_exists($idLama, $petaIdDetail)) {
+                $idBaru = (int) $petaIdDetail[$idLama];
+            } else {
+                $idBaru = $pertahankanIdTidakDikenal ? $idLama : 0;
+            }
+
+            if ($idBaru <= 0) {
+                continue;
+            }
+
+            $itemsBaru[$idBaru] = [
+                'id' => $idBaru,
+                'persen' => min($persen, 100),
+            ];
+        }
+
+        $itemsBaru = array_values($itemsBaru);
+        usort($itemsBaru, fn ($a, $b) => $a['id'] <=> $b['id']);
+
+        $update = [
+            'diskon_items' => json_encode($itemsBaru),
+            'diskon_hash' => hash('sha256', json_encode($itemsBaru)),
+            'updated_at' => now(),
+        ];
+
+        if (count($itemsBaru) === 0 && $approval->status === 'pending') {
+            $update['status'] = 'rejected';
+            $update['rejection_note'] = '[Sistem] Semua item yang diajukan untuk diskon sudah tidak ada di tagihan. Silakan ajukan diskon ulang bila masih diperlukan.';
+        }
+
+        DB::table('diskon_approval')->where('id', $approval->id)->update($update);
     }
 
     public function getDataResepObatYangSudahSelesai()
