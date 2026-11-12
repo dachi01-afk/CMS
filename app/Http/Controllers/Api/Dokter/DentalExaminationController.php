@@ -574,27 +574,20 @@ class DentalExaminationController extends Controller
     private function snapshotDiskonPembayaranDetail(?int $emrId): array
     {
         if (! $emrId) {
-            return ['key' => [], 'nama' => []];
+            return ['key' => [], 'nama' => [], 'idkey' => []];
         }
 
         $pembayaran = Pembayaran::where('emr_id', $emrId)->first();
 
         if (! $pembayaran) {
-            return ['key' => [], 'nama' => []];
+            return ['key' => [], 'nama' => [], 'idkey' => []];
         }
 
         $rows = DB::table('pembayaran_detail as pd')
             ->leftJoin('resep_obat as ro', 'ro.id', '=', 'pd.resep_obat_id')
             ->where('pd.pembayaran_id', $pembayaran->id)
-            ->where(function ($q) {
-                $q->where(function ($q2) {
-                    $q2->whereNotNull('pd.diskon_nilai')->where('pd.diskon_nilai', '>', 0);
-                })->orWhere(function ($q2) {
-                    $q2->whereNotNull('pd.total_setelah_diskon')
-                        ->whereColumn('pd.total_setelah_diskon', '<', 'pd.subtotal');
-                });
-            })
             ->select(
+                'pd.id',
                 'pd.layanan_id',
                 'pd.resep_obat_id',
                 'pd.order_lab_detail_id',
@@ -612,6 +605,7 @@ class DentalExaminationController extends Controller
 
         $byKey = [];
         $byName = [];
+        $byId = [];
 
         foreach ($rows as $d) {
             $subtotalLama = (float) ($d->subtotal ?? 0);
@@ -622,6 +616,24 @@ class DentalExaminationController extends Controller
                     $persen = (($subtotalLama - (float) $d->total_setelah_diskon) / $subtotalLama) * 100;
                 }
             }
+
+            /*
+            | Penanda stabil per baris detail lama, dipakai untuk memetakan ulang
+            | diskon_approval.diskon_items ke id pembayaran_detail baru.
+            */
+            if (! empty($d->layanan_id)) {
+                $kunciStabil = 'layanan:'.$d->layanan_id;
+            } elseif (! empty($d->obat_id)) {
+                $kunciStabil = 'obat:'.$d->obat_id;
+            } elseif (! empty($d->order_lab_detail_id)) {
+                $kunciStabil = 'lab:'.$d->order_lab_detail_id;
+            } elseif (! empty($d->order_radiologi_detail_id)) {
+                $kunciStabil = 'radiologi:'.$d->order_radiologi_detail_id;
+            } else {
+                $kunciStabil = 'nama:'.$namaKey($d->nama_item);
+            }
+
+            $byId[$d->id] = $kunciStabil;
 
             if ($persen <= 0) {
                 continue;
@@ -655,7 +667,7 @@ class DentalExaminationController extends Controller
             $byName[$namaKey($d->nama_item)] = $entry;
         }
 
-        return ['key' => $byKey, 'nama' => $byName];
+        return ['key' => $byKey, 'nama' => $byName, 'idkey' => $byId];
     }
 
     private function rebuildPembayaranDental(
@@ -703,9 +715,11 @@ class DentalExaminationController extends Controller
 
         $diskonByKey = $diskonSebelumnya['key'] ?? [];
         $diskonByName = $diskonSebelumnya['nama'] ?? [];
+        $kunciLamaById = $diskonSebelumnya['idkey'] ?? [];
+        $detailIdBaru = [];
         $namaItemKey = fn ($nama) => strtolower(trim(preg_replace('/\s+/', ' ', (string) $nama)));
 
-        $insertDetail = function (array $data) use ($pembayaran, &$total, &$totalSetelahDiskon, &$adaDiskon, $diskonByKey, $diskonByName, $namaItemKey) {
+        $insertDetail = function (array $data) use ($pembayaran, &$total, &$totalSetelahDiskon, &$adaDiskon, &$detailIdBaru, $diskonByKey, $diskonByName, $namaItemKey) {
             $qty = (int) $data['qty'];
             $harga = (float) $data['harga'];
             $subtotal = (float) $data['subtotal'];
@@ -727,6 +741,8 @@ class DentalExaminationController extends Controller
             if (! $diskon) {
                 $diskon = $diskonByName[$namaItemKey($data['nama_item'] ?? '')] ?? null;
             }
+
+            $kunciApproval = $diskonKey ?: 'nama:'.$namaItemKey($data['nama_item'] ?? '');
 
             $persen = $diskon ? (float) $diskon['persen'] : 0;
             $totalItemSetelahDiskon = $subtotal;
@@ -754,7 +770,7 @@ class DentalExaminationController extends Controller
                 'order_radiologi_detail_id' => $data['order_radiologi_detail_id'] ?? null,
             ];
 
-            DB::table('pembayaran_detail')->insert($row);
+            $detailIdBaru[$kunciApproval] = DB::table('pembayaran_detail')->insertGetId($row);
             $total += $subtotal;
             $totalSetelahDiskon += $totalItemSetelahDiskon;
         };
@@ -850,6 +866,25 @@ class DentalExaminationController extends Controller
             }
         }
 
+        /*
+        |--------------------------------------------------------------------------
+        | REMAP DISKON_APPROVAL KE ID DETAIL BARU
+        |--------------------------------------------------------------------------
+        | Diskon approval menyimpan id pembayaran_detail lama. Setelah rebuild, id
+        | tersebut dipetakan ke id baru memakai penanda stabil yang sama dengan
+        | snapshot diskon. Item yang sudah dihapus dokter otomatis keluar.
+        |--------------------------------------------------------------------------
+        */
+        $petaIdDetail = [];
+
+        foreach ($kunciLamaById as $idLama => $kunciStabil) {
+            if (isset($detailIdBaru[$kunciStabil])) {
+                $petaIdDetail[(int) $idLama] = (int) $detailIdBaru[$kunciStabil];
+            }
+        }
+
+        $this->remapDiskonApprovalSetelahRebuild($pembayaran->id, $petaIdDetail);
+
         $updateTotal = [
             'total_tagihan' => $total,
         ];
@@ -861,6 +896,80 @@ class DentalExaminationController extends Controller
         $pembayaran->update($updateTotal);
 
         return $pembayaran->fresh();
+    }
+
+    /**
+     * Menyesuaikan diskon_approval.diskon_items setelah pembayaran_detail di-rebuild.
+     *
+     * Approval menyimpan id pembayaran_detail. Karena rebuild menghapus lalu membuat
+     * ulang baris detail, id lama dipetakan ke id baru memakai penanda stabil
+     * (layanan_id, obat_id, order_lab_detail_id, order_radiologi_detail_id).
+     * Item yang sudah tidak ada (dihapus dokter) dikeluarkan dari daftar.
+     *
+     * Bila tidak ada item tersisa dan approval masih pending, status diubah menjadi
+     * rejected agar kasir tidak terkunci oleh approval yang sudah tidak berlaku.
+     */
+    private function remapDiskonApprovalSetelahRebuild(int $pembayaranId, array $petaIdDetail, bool $pertahankanIdTidakDikenal = false): void
+    {
+        $approval = DB::table('diskon_approval')
+            ->where('pembayaran_id', $pembayaranId)
+            ->whereIn('status', ['pending', 'approved'])
+            ->latest('id')
+            ->first();
+
+        if (! $approval) {
+            return;
+        }
+
+        $itemsLama = is_string($approval->diskon_items)
+            ? json_decode($approval->diskon_items, true)
+            : $approval->diskon_items;
+
+        if (! is_array($itemsLama)) {
+            return;
+        }
+
+        $itemsBaru = [];
+
+        foreach ($itemsLama as $item) {
+            $idLama = (int) ($item['id'] ?? 0);
+            $persen = (float) ($item['persen'] ?? 0);
+
+            if ($idLama <= 0 || $persen <= 0) {
+                continue;
+            }
+
+            if (array_key_exists($idLama, $petaIdDetail)) {
+                $idBaru = (int) $petaIdDetail[$idLama];
+            } else {
+                $idBaru = $pertahankanIdTidakDikenal ? $idLama : 0;
+            }
+
+            if ($idBaru <= 0) {
+                continue;
+            }
+
+            $itemsBaru[$idBaru] = [
+                'id' => $idBaru,
+                'persen' => min($persen, 100),
+            ];
+        }
+
+        $itemsBaru = array_values($itemsBaru);
+        usort($itemsBaru, fn ($a, $b) => $a['id'] <=> $b['id']);
+
+        $update = [
+            'diskon_items' => json_encode($itemsBaru),
+            'diskon_hash' => hash('sha256', json_encode($itemsBaru)),
+            'updated_at' => now(),
+        ];
+
+        if (count($itemsBaru) === 0 && $approval->status === 'pending') {
+            $update['status'] = 'rejected';
+            $update['rejection_note'] = '[Sistem] Semua item yang diajukan untuk diskon sudah tidak ada di tagihan. Silakan ajukan diskon ulang bila masih diperlukan.';
+        }
+
+        DB::table('diskon_approval')->where('id', $approval->id)->update($update);
     }
 
     private function syncDentalSupportData(Request $request, Kunjungan $kunjungan, Dokter $dokter, ?EMR $emr = null): array
