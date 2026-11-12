@@ -6869,10 +6869,124 @@ class APIMobileController extends Controller
             $result = DB::transaction(function () use ($request, $kunjungan, $emr, $dokter) {
                 /*
                 |--------------------------------------------------------------------------
+                | 7.0 KUNCI TAGIHAN YANG SUDAH DIBAYAR
+                |--------------------------------------------------------------------------
+                | Perubahan resep/layanan tidak boleh mengubah tagihan yang sudah
+                | dibayar. Pengecekan dilakukan sebelum resep_obat disentuh;
+                | melempar DomainException membuat seluruh transaksi DB rollback.
+                |--------------------------------------------------------------------------
+                */
+                $pembayaranTerkunci = Pembayaran::where('emr_id', $emr->id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($pembayaranTerkunci && $pembayaranTerkunci->status === 'Sudah Bayar') {
+                    throw new \DomainException('Transaksi sudah dibayar, perubahan obat/layanan tidak dapat disimpan.');
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | 7.0b SIMPAN DISKON PER ITEM SEBELUM RESEP/DETAIL DI-REBUILD
+                |--------------------------------------------------------------------------
+                | Harus diambil sebelum resep_obat dihapus & di-insert ulang, karena
+                | resep_obat.id berubah. Penanda stabil: layanan_id, obat_id (lewat
+                | resep_obat_id -> resep_obat.obat_id), order_lab_detail_id, dan
+                | order_radiologi_detail_id. Nama item ternormalisasi jadi cadangan.
+                |--------------------------------------------------------------------------
+                */
+                $namaItemKey = fn ($nama) => strtolower(trim(preg_replace('/\s+/', ' ', (string) $nama)));
+
+                $diskonByKey = [];
+                $diskonByName = [];
+
+                if ($pembayaranTerkunci) {
+                    $diskonLama = DB::table('pembayaran_detail as pd')
+                        ->leftJoin('resep_obat as ro', 'ro.id', '=', 'pd.resep_obat_id')
+                        ->where('pd.pembayaran_id', $pembayaranTerkunci->id)
+                        ->where(function ($q) {
+                            $q->where(function ($q2) {
+                                $q2->whereNotNull('pd.diskon_nilai')->where('pd.diskon_nilai', '>', 0);
+                            })->orWhere(function ($q2) {
+                                $q2->whereNotNull('pd.total_setelah_diskon')
+                                    ->whereColumn('pd.total_setelah_diskon', '<', 'pd.subtotal');
+                            });
+                        })
+                        ->select(
+                            'pd.layanan_id',
+                            'pd.resep_obat_id',
+                            'pd.order_lab_detail_id',
+                            'pd.order_radiologi_detail_id',
+                            'pd.nama_item',
+                            'pd.subtotal',
+                            'pd.diskon_tipe',
+                            'pd.diskon_nilai',
+                            'pd.total_setelah_diskon',
+                            'ro.obat_id'
+                        )
+                        ->get();
+
+                    foreach ($diskonLama as $d) {
+                        $subtotalLama = (float) ($d->subtotal ?? 0);
+                        $persen = (float) ($d->diskon_nilai ?? 0);
+
+                        if (($d->diskon_tipe ?: 'persen') !== 'persen' || $persen <= 0) {
+                            if ($d->total_setelah_diskon !== null && $subtotalLama > 0) {
+                                $persen = (($subtotalLama - (float) $d->total_setelah_diskon) / $subtotalLama) * 100;
+                            }
+                        }
+
+                        if ($persen <= 0) {
+                            continue;
+                        }
+
+                        $entry = [
+                            'persen' => min($persen, 100),
+                            'tipe' => 'persen',
+                        ];
+
+                        if (! empty($d->layanan_id)) {
+                            $diskonByKey['layanan:'.$d->layanan_id] = $entry;
+                        }
+
+                        if (! empty($d->obat_id)) {
+                            $diskonByKey['obat:'.$d->obat_id] = $entry;
+                        }
+
+                        if (! empty($d->resep_obat_id)) {
+                            $diskonByKey['resep_obat:'.$d->resep_obat_id] = $entry;
+                        }
+
+                        if (! empty($d->order_lab_detail_id)) {
+                            $diskonByKey['lab:'.$d->order_lab_detail_id] = $entry;
+                        }
+
+                        if (! empty($d->order_radiologi_detail_id)) {
+                            $diskonByKey['radiologi:'.$d->order_radiologi_detail_id] = $entry;
+                        }
+
+                        $diskonByName[$namaItemKey($d->nama_item)] = $entry;
+                    }
+                }
+
+                /*
+                |--------------------------------------------------------------------------
                 | 7.1 RESEP + RESEP_OBAT
                 |--------------------------------------------------------------------------
                 */
                 $resepId = $emr->resep_id ?? null;
+
+                /*
+                |--------------------------------------------------------------------------
+                | Key "resep" dikirim tetapi kosong (resep: [] / resep: null) berarti
+                | dokter menghapus semua obat. Semua item resep harus dihapus agar
+                | pembayaran_detail yang dibuat ulang di bawah ikut kosong.
+                | Kalau key "resep" tidak dikirim sama sekali, resep_obat tidak
+                | disentuh (perilaku lama tetap dipertahankan).
+                |--------------------------------------------------------------------------
+                */
+                if ($request->has('resep') && empty($request->resep) && ! empty($resepId)) {
+                    DB::table('resep_obat')->where('resep_id', $resepId)->delete();
+                }
 
                 if (! empty($request->resep)) {
                     if (! $resepId) {
@@ -7324,11 +7438,39 @@ class APIMobileController extends Controller
                 |--------------------------------------------------------------------------
                 */
                 $detailTotal = 0;
+                $totalSetelahDiskon = 0;
+                $adaDiskon = false;
 
-                $insertPembayaranDetail = function (array $payload) use ($pembayaran, &$detailTotal) {
+                $insertPembayaranDetail = function (array $payload) use ($pembayaran, &$detailTotal, &$totalSetelahDiskon, &$adaDiskon, $diskonByKey, $diskonByName, $namaItemKey) {
                     $qty = (int) ($payload['qty'] ?? 1);
                     $harga = (float) ($payload['harga'] ?? 0);
                     $subtotal = (float) ($payload['subtotal'] ?? ($qty * $harga));
+
+                    $diskonKey = null;
+
+                    if (! empty($payload['layanan_id'])) {
+                        $diskonKey = 'layanan:'.$payload['layanan_id'];
+                    } elseif (! empty($payload['obat_id'])) {
+                        $diskonKey = 'obat:'.$payload['obat_id'];
+                    } elseif (! empty($payload['order_lab_detail_id'])) {
+                        $diskonKey = 'lab:'.$payload['order_lab_detail_id'];
+                    } elseif (! empty($payload['order_radiologi_detail_id'])) {
+                        $diskonKey = 'radiologi:'.$payload['order_radiologi_detail_id'];
+                    }
+
+                    $diskon = $diskonKey ? ($diskonByKey[$diskonKey] ?? null) : null;
+
+                    if (! $diskon) {
+                        $diskon = $diskonByName[$namaItemKey($payload['nama_item'] ?? '')] ?? null;
+                    }
+
+                    $persen = $diskon ? (float) $diskon['persen'] : 0;
+                    $totalItemSetelahDiskon = $subtotal;
+
+                    if ($persen > 0) {
+                        $totalItemSetelahDiskon = max($subtotal - ($subtotal * $persen / 100), 0);
+                        $adaDiskon = true;
+                    }
 
                     $detailData = [
                         'pembayaran_id' => $pembayaran->id,
@@ -7378,15 +7520,15 @@ class APIMobileController extends Controller
                     }
 
                     if (Schema::hasColumn('pembayaran_detail', 'diskon_tipe')) {
-                        $detailData['diskon_tipe'] = null;
+                        $detailData['diskon_tipe'] = $persen > 0 ? ($diskon['tipe'] ?? 'persen') : null;
                     }
 
                     if (Schema::hasColumn('pembayaran_detail', 'diskon_nilai')) {
-                        $detailData['diskon_nilai'] = 0;
+                        $detailData['diskon_nilai'] = $persen;
                     }
 
                     if (Schema::hasColumn('pembayaran_detail', 'total_setelah_diskon')) {
-                        $detailData['total_setelah_diskon'] = null;
+                        $detailData['total_setelah_diskon'] = $persen > 0 ? $totalItemSetelahDiskon : null;
                     }
 
                     if (Schema::hasColumn('pembayaran_detail', 'uang_yang_diterima')) {
@@ -7400,6 +7542,7 @@ class APIMobileController extends Controller
                     DB::table('pembayaran_detail')->insert($detailData);
 
                     $detailTotal += $subtotal;
+                    $totalSetelahDiskon += $totalItemSetelahDiskon;
                 };
 
                 /*
@@ -7448,6 +7591,7 @@ class APIMobileController extends Controller
                         ->where('ro.resep_id', $resepId)
                         ->select(
                             'ro.id as resep_obat_id',
+                            'ro.obat_id',
                             'ro.jumlah',
                             'o.nama_obat',
                             'o.harga_jual_obat',
@@ -7466,6 +7610,7 @@ class APIMobileController extends Controller
 
                         $insertPembayaranDetail([
                             'resep_obat_id' => $row->resep_obat_id,
+                            'obat_id' => $row->obat_id,
                             'nama_item' => 'Obat: '.$row->nama_obat,
                             'qty' => $qty,
                             'harga' => $harga,
@@ -7537,9 +7682,15 @@ class APIMobileController extends Controller
                 */
                 $finalTotal = $detailTotal > 0 ? $detailTotal : $totalTagihan;
 
-                $pembayaran->update([
+                $updateTotal = [
                     'total_tagihan' => $finalTotal,
-                ]);
+                ];
+
+                if ($adaDiskon) {
+                    $updateTotal['total_setelah_diskon'] = $totalSetelahDiskon;
+                }
+
+                $pembayaran->update($updateTotal);
 
                 $pembayaran->refresh();
 
@@ -7577,6 +7728,16 @@ class APIMobileController extends Controller
                 'data' => $result,
             ], 200);
 
+        } catch (\DomainException $e) {
+            Log::warning('saveEMRLayanan ditolak karena transaksi sudah dibayar', [
+                'kunjungan_id' => $request->kunjungan_id,
+                'message' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
         } catch (\Illuminate\Validation\ValidationException $e) {
             Log::error('saveEMRLayanan validation error: ', [
                 'errors' => $e->errors(),

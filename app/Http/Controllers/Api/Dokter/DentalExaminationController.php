@@ -561,12 +561,110 @@ class DentalExaminationController extends Controller
         ]);
     }
 
+    /**
+     * Snapshot diskon per item pembayaran_detail sebelum resep/detail di-rebuild.
+     *
+     * Penanda stabil: layanan_id, obat_id (lewat resep_obat_id -> resep_obat.obat_id),
+     * order_lab_detail_id, order_radiologi_detail_id. Nama item ternormalisasi
+     * dipakai sebagai cadangan bila id tidak tersedia.
+     *
+     * Dipanggil SEBELUM syncDentalSupportData(), karena resep_obat dihapus dan
+     * di-insert ulang sehingga resep_obat.id berubah.
+     */
+    private function snapshotDiskonPembayaranDetail(?int $emrId): array
+    {
+        if (! $emrId) {
+            return ['key' => [], 'nama' => []];
+        }
+
+        $pembayaran = Pembayaran::where('emr_id', $emrId)->first();
+
+        if (! $pembayaran) {
+            return ['key' => [], 'nama' => []];
+        }
+
+        $rows = DB::table('pembayaran_detail as pd')
+            ->leftJoin('resep_obat as ro', 'ro.id', '=', 'pd.resep_obat_id')
+            ->where('pd.pembayaran_id', $pembayaran->id)
+            ->where(function ($q) {
+                $q->where(function ($q2) {
+                    $q2->whereNotNull('pd.diskon_nilai')->where('pd.diskon_nilai', '>', 0);
+                })->orWhere(function ($q2) {
+                    $q2->whereNotNull('pd.total_setelah_diskon')
+                        ->whereColumn('pd.total_setelah_diskon', '<', 'pd.subtotal');
+                });
+            })
+            ->select(
+                'pd.layanan_id',
+                'pd.resep_obat_id',
+                'pd.order_lab_detail_id',
+                'pd.order_radiologi_detail_id',
+                'pd.nama_item',
+                'pd.subtotal',
+                'pd.diskon_tipe',
+                'pd.diskon_nilai',
+                'pd.total_setelah_diskon',
+                'ro.obat_id'
+            )
+            ->get();
+
+        $namaKey = fn ($nama) => strtolower(trim(preg_replace('/\s+/', ' ', (string) $nama)));
+
+        $byKey = [];
+        $byName = [];
+
+        foreach ($rows as $d) {
+            $subtotalLama = (float) ($d->subtotal ?? 0);
+            $persen = (float) ($d->diskon_nilai ?? 0);
+
+            if (($d->diskon_tipe ?: 'persen') !== 'persen' || $persen <= 0) {
+                if ($d->total_setelah_diskon !== null && $subtotalLama > 0) {
+                    $persen = (($subtotalLama - (float) $d->total_setelah_diskon) / $subtotalLama) * 100;
+                }
+            }
+
+            if ($persen <= 0) {
+                continue;
+            }
+
+            $entry = [
+                'persen' => min($persen, 100),
+                'tipe' => 'persen',
+            ];
+
+            if (! empty($d->layanan_id)) {
+                $byKey['layanan:'.$d->layanan_id] = $entry;
+            }
+
+            if (! empty($d->obat_id)) {
+                $byKey['obat:'.$d->obat_id] = $entry;
+            }
+
+            if (! empty($d->resep_obat_id)) {
+                $byKey['resep_obat:'.$d->resep_obat_id] = $entry;
+            }
+
+            if (! empty($d->order_lab_detail_id)) {
+                $byKey['lab:'.$d->order_lab_detail_id] = $entry;
+            }
+
+            if (! empty($d->order_radiologi_detail_id)) {
+                $byKey['radiologi:'.$d->order_radiologi_detail_id] = $entry;
+            }
+
+            $byName[$namaKey($d->nama_item)] = $entry;
+        }
+
+        return ['key' => $byKey, 'nama' => $byName];
+    }
+
     private function rebuildPembayaranDental(
         ?EMR $emr,
         Kunjungan $kunjungan,
         ?int $resepId,
         ?int $orderLabId,
-        ?int $orderRadiologiId
+        ?int $orderRadiologiId,
+        array $diskonSebelumnya = []
     ): ?Pembayaran {
         if (! $emr) {
             return null;
@@ -574,20 +672,25 @@ class DentalExaminationController extends Controller
 
         $existingPembayaran = Pembayaran::where('emr_id', $emr->id)->first();
 
+        // Tagihan yang sudah dibayar tidak boleh di-rebuild.
+        if ($existingPembayaran && $existingPembayaran->status === 'Sudah Bayar') {
+            return $existingPembayaran;
+        }
+
         $pembayaran = Pembayaran::updateOrCreate(
             ['emr_id' => $emr->id],
             [
                 'kode_transaksi' => $existingPembayaran?->kode_transaksi ?? strtoupper(uniqid('TRX_')),
-                'tanggal_pembayaran' => null,
-                'status' => 'Belum Bayar',
-                'metode_pembayaran_id' => null,
-                'bukti_pembayaran' => null,
+                'tanggal_pembayaran' => $existingPembayaran?->tanggal_pembayaran,
+                'status' => $existingPembayaran?->status ?? 'Belum Bayar',
+                'metode_pembayaran_id' => $existingPembayaran?->metode_pembayaran_id,
+                'bukti_pembayaran' => $existingPembayaran?->bukti_pembayaran,
                 'total_tagihan' => 0,
                 'diskon_tipe' => $existingPembayaran?->diskon_tipe,
                 'diskon_nilai' => $existingPembayaran?->diskon_nilai ?? 0,
                 'total_setelah_diskon' => null,
-                'uang_yang_diterima' => 0,
-                'kembalian' => 0,
+                'uang_yang_diterima' => $existingPembayaran?->uang_yang_diterima ?? 0,
+                'kembalian' => $existingPembayaran?->kembalian ?? 0,
                 'catatan' => 'Menunggu pembayaran di kasir - Pemeriksaan gigi selesai',
             ]
         );
@@ -595,14 +698,54 @@ class DentalExaminationController extends Controller
         DB::table('pembayaran_detail')->where('pembayaran_id', $pembayaran->id)->delete();
 
         $total = 0;
+        $totalSetelahDiskon = 0;
+        $adaDiskon = false;
 
-        $insertDetail = function (array $data) use ($pembayaran, &$total) {
+        $diskonByKey = $diskonSebelumnya['key'] ?? [];
+        $diskonByName = $diskonSebelumnya['nama'] ?? [];
+        $namaItemKey = fn ($nama) => strtolower(trim(preg_replace('/\s+/', ' ', (string) $nama)));
+
+        $insertDetail = function (array $data) use ($pembayaran, &$total, &$totalSetelahDiskon, &$adaDiskon, $diskonByKey, $diskonByName, $namaItemKey) {
+            $qty = (int) $data['qty'];
+            $harga = (float) $data['harga'];
+            $subtotal = (float) $data['subtotal'];
+
+            $diskonKey = null;
+
+            if (! empty($data['layanan_id'])) {
+                $diskonKey = 'layanan:'.$data['layanan_id'];
+            } elseif (! empty($data['obat_id'])) {
+                $diskonKey = 'obat:'.$data['obat_id'];
+            } elseif (! empty($data['order_lab_detail_id'])) {
+                $diskonKey = 'lab:'.$data['order_lab_detail_id'];
+            } elseif (! empty($data['order_radiologi_detail_id'])) {
+                $diskonKey = 'radiologi:'.$data['order_radiologi_detail_id'];
+            }
+
+            $diskon = $diskonKey ? ($diskonByKey[$diskonKey] ?? null) : null;
+
+            if (! $diskon) {
+                $diskon = $diskonByName[$namaItemKey($data['nama_item'] ?? '')] ?? null;
+            }
+
+            $persen = $diskon ? (float) $diskon['persen'] : 0;
+            $totalItemSetelahDiskon = $subtotal;
+
+            if ($persen > 0) {
+                $totalItemSetelahDiskon = max($subtotal - ($subtotal * $persen / 100), 0);
+                $adaDiskon = true;
+            }
+
             $row = [
                 'pembayaran_id' => $pembayaran->id,
                 'nama_item' => $data['nama_item'],
-                'qty' => (int) $data['qty'],
-                'harga' => (float) $data['harga'],
-                'subtotal' => (float) $data['subtotal'],
+                'qty' => $qty,
+                'harga' => $harga,
+                'subtotal' => $subtotal,
+                'total_tagihan' => $subtotal,
+                'diskon_tipe' => $persen > 0 ? ($diskon['tipe'] ?? 'persen') : null,
+                'diskon_nilai' => $persen,
+                'total_setelah_diskon' => $persen > 0 ? $totalItemSetelahDiskon : null,
                 'created_at' => now(),
                 'updated_at' => now(),
                 'layanan_id' => $data['layanan_id'] ?? null,
@@ -612,7 +755,8 @@ class DentalExaminationController extends Controller
             ];
 
             DB::table('pembayaran_detail')->insert($row);
-            $total += (float) $row['subtotal'];
+            $total += $subtotal;
+            $totalSetelahDiskon += $totalItemSetelahDiskon;
         };
 
         $layananRows = DB::table('kunjungan_layanan as kl')
@@ -644,7 +788,7 @@ class DentalExaminationController extends Controller
             $obatRows = DB::table('resep_obat as ro')
                 ->join('obat as o', 'o.id', '=', 'ro.obat_id')
                 ->where('ro.resep_id', $resepId)
-                ->select('ro.id as resep_obat_id', 'ro.jumlah', 'o.nama_obat', 'o.harga_jual_obat')
+                ->select('ro.id as resep_obat_id', 'ro.obat_id', 'ro.jumlah', 'o.nama_obat', 'o.harga_jual_obat')
                 ->get();
 
             foreach ($obatRows as $row) {
@@ -653,6 +797,7 @@ class DentalExaminationController extends Controller
 
                 $insertDetail([
                     'resep_obat_id' => $row->resep_obat_id,
+                    'obat_id' => $row->obat_id,
                     'nama_item' => 'Obat: '.$row->nama_obat,
                     'qty' => $qty,
                     'harga' => $harga,
@@ -705,9 +850,15 @@ class DentalExaminationController extends Controller
             }
         }
 
-        $pembayaran->update([
+        $updateTotal = [
             'total_tagihan' => $total,
-        ]);
+        ];
+
+        if ($adaDiskon) {
+            $updateTotal['total_setelah_diskon'] = $totalSetelahDiskon;
+        }
+
+        $pembayaran->update($updateTotal);
 
         return $pembayaran->fresh();
     }
@@ -719,6 +870,16 @@ class DentalExaminationController extends Controller
         $orderRadiologiId = null;
 
         // 1) RESEP + RESEP_OBAT
+        /*
+        | Key "resep" dikirim tetapi kosong (resep: [] / resep: null) berarti
+        | dokter menghapus semua obat. Semua item resep harus dihapus agar
+        | pembayaran_detail yang dibuat ulang setelah ini ikut kosong.
+        | Kalau key "resep" tidak dikirim sama sekali, resep_obat tidak disentuh.
+        */
+        if ($request->has('resep') && empty($request->resep) && ! empty($resepId)) {
+            DB::table('resep_obat')->where('resep_id', $resepId)->delete();
+        }
+
         if (! empty($request->resep)) {
             if (! $resepId) {
                 $resepId = DB::table('resep')->insertGetId([
@@ -917,6 +1078,21 @@ class DentalExaminationController extends Controller
 
                 $emr = $kunjungan->emr;
 
+                /*
+                | Transaksi yang sudah dibayar tidak boleh diubah lewat form gigi.
+                | Cek dilakukan sebelum data apa pun ditulis; DomainException
+                | membuat seluruh transaksi DB rollback.
+                */
+                if ($emr) {
+                    $pembayaranTerkunci = Pembayaran::where('emr_id', $emr->id)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if ($pembayaranTerkunci && $pembayaranTerkunci->status === 'Sudah Bayar') {
+                        throw new \DomainException('Transaksi sudah dibayar, perubahan obat/layanan tidak dapat disimpan.');
+                    }
+                }
+
                 $dental = DentalExamination::updateOrCreate(
                     [
                         'kunjungan_id' => $kunjungan->id,
@@ -970,6 +1146,9 @@ class DentalExaminationController extends Controller
                     'order_radiologi_id' => null,
                 ];
 
+                // Diskon diambil sebelum resep_obat dihapus/di-insert ulang oleh sync.
+                $diskonSebelumnya = $this->snapshotDiskonPembayaranDetail($emr?->id);
+
                 $sync = $this->syncDentalSupportData($request, $kunjungan, $dokter, $emr);
 
                 if (($request->status ?? 'draft') === 'completed') {
@@ -984,7 +1163,8 @@ class DentalExaminationController extends Controller
                         $kunjungan,
                         $sync['resep_id'],
                         $sync['order_lab_id'],
-                        $sync['order_radiologi_id']
+                        $sync['order_radiologi_id'],
+                        $diskonSebelumnya
                     );
                 }
 
@@ -1005,6 +1185,15 @@ class DentalExaminationController extends Controller
                     : 'Draft pemeriksaan gigi berhasil disimpan',
                 'data' => $result,
             ], 201);
+        } catch (\DomainException $e) {
+            Log::warning('DentalExaminationController@save ditolak karena transaksi sudah dibayar', [
+                'message' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
@@ -1076,6 +1265,22 @@ class DentalExaminationController extends Controller
                 if ($kunjungan) {
                     $payload['kunjungan_id'] = $kunjungan->id;
                     $payload['pasien_id'] = $payload['pasien_id'] ?? $kunjungan->pasien_id;
+
+                    /*
+                    | Transaksi yang sudah dibayar tidak boleh diubah lewat form gigi.
+                    | DomainException membuat seluruh transaksi DB rollback.
+                    */
+                    $emrTerkunci = $kunjungan->emr;
+
+                    if ($emrTerkunci) {
+                        $pembayaranTerkunci = Pembayaran::where('emr_id', $emrTerkunci->id)
+                            ->lockForUpdate()
+                            ->first();
+
+                        if ($pembayaranTerkunci && $pembayaranTerkunci->status === 'Sudah Bayar') {
+                            throw new \DomainException('Transaksi sudah dibayar, perubahan obat/layanan tidak dapat disimpan.');
+                        }
+                    }
                 }
 
                 // terapi akan ikut masuk dari $payload ke dental_examinations
@@ -1092,7 +1297,12 @@ class DentalExaminationController extends Controller
                     'order_radiologi_id' => null,
                 ];
 
+                $diskonSebelumnya = ['key' => [], 'nama' => []];
+
                 if ($kunjungan) {
+                    // Diskon diambil sebelum resep_obat dihapus/di-insert ulang oleh sync.
+                    $diskonSebelumnya = $this->snapshotDiskonPembayaranDetail($emr?->id);
+
                     $sync = $this->syncDentalSupportData($request, $kunjungan, $dokter, $emr);
 
                     if (($request->status ?? $dentalExam->status) === 'completed') {
@@ -1108,7 +1318,8 @@ class DentalExaminationController extends Controller
                         $kunjungan,
                         $sync['resep_id'],
                         $sync['order_lab_id'],
-                        $sync['order_radiologi_id']
+                        $sync['order_radiologi_id'],
+                        $diskonSebelumnya
                     );
                 }
 
@@ -1129,6 +1340,15 @@ class DentalExaminationController extends Controller
                     : 'Form pemeriksaan gigi berhasil diperbarui',
                 'data' => $result,
             ]);
+        } catch (\DomainException $e) {
+            Log::warning('DentalExaminationController@update ditolak karena transaksi sudah dibayar', [
+                'message' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
