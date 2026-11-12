@@ -291,6 +291,25 @@ class PengkajianAwalPenyakitDalamController extends Controller
 
         DB::beginTransaction();
         try {
+            /*
+            |--------------------------------------------------------------------------
+            | KUNCI TRANSAKSI + CEGAH FINAL BERUBAH MENJADI DRAFT
+            |--------------------------------------------------------------------------
+            | Draft murni tidak pernah membuat pembayaran. Tetapi form yang sudah
+            | pernah final sudah punya pembayaran; menyimpannya kembali sebagai draft
+            | akan meninggalkan resep_obat/billing lama tidak sinkron.
+            |--------------------------------------------------------------------------
+            */
+            $pembayaranTerkunci = Pembayaran::where('emr_id', $emr->id)->lockForUpdate()->first();
+
+            if ($pembayaranTerkunci && $pembayaranTerkunci->status === 'Sudah Bayar') {
+                throw new \DomainException('Transaksi sudah dibayar, pengkajian tidak dapat diubah.');
+            }
+
+            if ($pembayaranTerkunci && ($validated['status_form'] ?? 'draft') !== 'final') {
+                throw new \DomainException('Form sudah difinalisasi dan tagihan sudah dibuat. Simpan sebagai "final" agar resep dan tagihan tetap sinkron.');
+            }
+
             $pengkajian = EmrPengkajianAwalPenyakitDalam::create([
                 'emr_id' => $validated['emr_id'],
                 'dokter_id' => $validated['dokter_id'] ?? $emr->dokter_id,
@@ -415,7 +434,7 @@ class PengkajianAwalPenyakitDalamController extends Controller
             $pembayaran = null;
 
             if (($validated['status_form'] ?? 'draft') === 'final') {
-                $resepId = $this->syncResepPenyakitDalam($emr, $kunjungan, $validated);
+                $resepId = $this->syncResepPenyakitDalam($request, $emr, $kunjungan, $validated);
                 $this->syncLayananPenyakitDalam($kunjungan, $validated);
                 $orderLabId = $this->syncOrderLabPenyakitDalam($dokter, $kunjungan, $validated);
                 $orderRadiologiId = $this->syncOrderRadiologiPenyakitDalam($dokter, $kunjungan, $validated);
@@ -453,6 +472,13 @@ class PengkajianAwalPenyakitDalamController extends Controller
                 ],
             ], 201);
 
+        } catch (\DomainException $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
         } catch (\Throwable $e) {
             DB::rollBack();
 
@@ -479,6 +505,26 @@ class PengkajianAwalPenyakitDalamController extends Controller
 
         DB::beginTransaction();
         try {
+            /*
+            |--------------------------------------------------------------------------
+            | KUNCI TRANSAKSI + CEGAH FINAL BERUBAH MENJADI DRAFT
+            |--------------------------------------------------------------------------
+            | Draft murni tidak pernah membuat pembayaran. Tetapi form yang sudah
+            | pernah final sudah punya pembayaran; menyimpannya kembali sebagai draft
+            | akan meninggalkan resep_obat/billing lama tidak sinkron.
+            |--------------------------------------------------------------------------
+            */
+            $emrTerkunci = Emr::findOrFail($validated['emr_id']);
+            $pembayaranTerkunci = Pembayaran::where('emr_id', $emrTerkunci->id)->lockForUpdate()->first();
+
+            if ($pembayaranTerkunci && $pembayaranTerkunci->status === 'Sudah Bayar') {
+                throw new \DomainException('Transaksi sudah dibayar, pengkajian tidak dapat diubah.');
+            }
+
+            if ($pembayaranTerkunci && ($validated['status_form'] ?? 'draft') !== 'final') {
+                throw new \DomainException('Form sudah difinalisasi dan tagihan sudah dibuat. Simpan sebagai "final" agar resep dan tagihan tetap sinkron.');
+            }
+
             $pengkajian->update([
                 'emr_id' => $validated['emr_id'],
                 'dokter_id' => $validated['dokter_id'] ?? $pengkajian->dokter_id,
@@ -605,7 +651,7 @@ class PengkajianAwalPenyakitDalamController extends Controller
             $pembayaran = null;
 
             if (($validated['status_form'] ?? 'draft') === 'final') {
-                $resepId = $this->syncResepPenyakitDalam($emr, $kunjungan, $validated);
+                $resepId = $this->syncResepPenyakitDalam($request, $emr, $kunjungan, $validated);
                 $this->syncLayananPenyakitDalam($kunjungan, $validated);
                 $orderLabId = $this->syncOrderLabPenyakitDalam($dokter, $kunjungan, $validated);
                 $orderRadiologiId = $this->syncOrderRadiologiPenyakitDalam($dokter, $kunjungan, $validated);
@@ -642,6 +688,13 @@ class PengkajianAwalPenyakitDalamController extends Controller
                     'pembayaran' => $pembayaran,
                 ],
             ]);
+        } catch (\DomainException $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
         } catch (\Throwable $e) {
             DB::rollBack();
 
@@ -807,9 +860,17 @@ class PengkajianAwalPenyakitDalamController extends Controller
         return Dokter::where('user_id', $userId)->firstOrFail();
     }
 
-    private function syncResepPenyakitDalam(Emr $emr, Kunjungan $kunjungan, array $validated): ?int
+    private function syncResepPenyakitDalam(Request $request, Emr $emr, Kunjungan $kunjungan, array $validated): ?int
     {
         $resepId = $emr->resep_id;
+
+        /*
+        | Key "resep" tidak dikirim = jangan sentuh resep_obat yang sudah ada.
+        | Key dikirim tetapi kosong = dokter menghapus semua obat.
+        */
+        if (! $request->has('resep')) {
+            return $resepId;
+        }
 
         if (empty($validated['resep'])) {
             if (! empty($resepId)) {
