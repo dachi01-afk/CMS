@@ -12,6 +12,7 @@ use App\Models\OrderLayananDetail;
 use App\Models\Pasien;
 use App\Models\PenjualanLayanan;
 use App\Models\Poli;
+use App\Traits\FilterTanggalDataTable;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
@@ -21,6 +22,9 @@ use Yajra\DataTables\Facades\DataTables;
 
 class OrderLayananController extends Controller
 {
+
+    use FilterTanggalDataTable;
+
     public function index()
     {
         $dataPoli = Poli::all();
@@ -45,27 +49,7 @@ class OrderLayananController extends Controller
                 });
             })
             ->filterColumn('tanggal_order', function ($query, $keyword) {
-                $tanggal = $this->normalisasiKeywordTanggal($keyword);
-
-                if (!$tanggal) {
-                    return; // bukan keyword tanggal, lewati
-                }
-
-                // Keyword hanya nama bulan, misal "November"
-                if ($tanggal['bulan']) {
-                    $query->whereMonth('order_layanan.tanggal_order', $tanggal['bulan']);
-                    return;
-                }
-
-                $query->where(function ($q) use ($tanggal) {
-                    $q->whereRaw(
-                        "DATE_FORMAT(order_layanan.tanggal_order, '%d %m %Y') LIKE ?",
-                        ["%{$tanggal['teks']}%"]
-                    )->orWhereRaw(
-                        "DATE_FORMAT(order_layanan.tanggal_order, '%Y %m %d') LIKE ?",
-                        ["%{$tanggal['teks']}%"]
-                    );
-                });
+                $this->filterTanggal($query, $keyword, 'order_layanan.tanggal_order');
             })
             ->orderColumn('nama_pasien', function ($query, $order) {
                 $query->orderBy(
@@ -702,60 +686,5 @@ class OrderLayananController extends Controller
                 // 'error' => $e->getMessage(),
             ], 500);
         }
-    }
-
-    private function normalisasiKeywordTanggal(string $keyword): ?array
-    {
-        $daftarBulan = [
-            'januari' => 1,
-            'februari' => 2,
-            'maret' => 3,
-            'april' => 4,
-            'mei' => 5,
-            'juni' => 6,
-            'juli' => 7,
-            'agustus' => 8,
-            'september' => 9,
-            'oktober' => 10,
-            'november' => 11,
-            'desember' => 12,
-        ];
-
-        // Pisahkan keyword berdasarkan spasi, /, -, titik, koma
-        $tokens = preg_split('/[\s\/\-\.,]+/', strtolower(trim($keyword)), -1, PREG_SPLIT_NO_EMPTY);
-
-        if (empty($tokens)) {
-            return null;
-        }
-
-        $hasil = [];
-        $bulan = null;
-
-        foreach ($tokens as $token) {
-            // Angka: 1 digit dipad jadi 2 digit (5 -> 05)
-            if (ctype_digit($token)) {
-                $hasil[] = strlen($token) === 1 ? '0' . $token : $token;
-                continue;
-            }
-
-            // Nama bulan, boleh disingkat minimal 3 huruf (nov, okt, agu)
-            if (strlen($token) >= 3) {
-                foreach ($daftarBulan as $nama => $angka) {
-                    if (str_starts_with($nama, $token)) {
-                        $hasil[] = str_pad($angka, 2, '0', STR_PAD_LEFT);
-                        $bulan = $angka;
-                        continue 2;
-                    }
-                }
-            }
-
-            // Ada kata yang bukan tanggal (misal nama pasien) -> bukan pencarian tanggal
-            return null;
-        }
-
-        return [
-            'teks'  => implode(' ', $hasil),
-            'bulan' => count($tokens) === 1 ? $bulan : null, // keyword hanya nama bulan
-        ];
     }
 }

@@ -5,7 +5,9 @@ namespace App\Http\Controllers\Kasir;
 use App\Http\Controllers\Controller;
 use App\Models\MetodePembayaran;
 use App\Models\OrderLayanan;
+use App\Models\Pasien;
 use App\Models\PenjualanLayanan;
+use App\Traits\FilterTanggalDataTable;
 use Illuminate\Http\Request;
 // use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -16,6 +18,9 @@ use Yajra\DataTables\Facades\DataTables;
 
 class TransaksiLayananController extends Controller
 {
+
+    use FilterTanggalDataTable;
+
     public function getDataTransaksiLayanan()
     {
         $dataOrderLayanan = OrderLayanan::with([
@@ -374,65 +379,90 @@ class TransaksiLayananController extends Controller
         $dataOrderLayanan = OrderLayanan::with([
             'pasien',
             'metodePembayaran',
-        ])->where('status_order_layanan', 'Sudah Bayar')->latest();
+        ])
+            ->select('order_layanan.*')
+            ->where('status_order_layanan', 'Sudah Bayar')
+            ->latest();
 
         return DataTables::of($dataOrderLayanan)
             ->addIndexColumn()
-            ->filter(function ($dataOrderLayanan) {
-                $search = trim(request('search.value'));
 
-                if ($search !== '') {
-                    $dataOrderLayanan->where(function ($query) use ($search) {
-                        $query->whereRaw("DATE_FORMAT(order_layanan.tanggal_order, '%d %b %Y') LIKE ?", ["%{$search}%"])
-                            ->orWhereRaw("DATE_FORMAT(order_layanan.tanggal_order, '%d') LIKE ?", ["%{$search}%"])
-                            ->orWhereRaw("DATE_FORMAT(order_layanan.tanggal_order, '%m') LIKE ?", ["%{$search}%"])
-                            ->orWhereRaw("DATE_FORMAT(order_layanan.tanggal_order, '%Y') LIKE ?", ["%{$search}%"])
-                            ->orWhereHas('orderLayanan.pasien', function ($qq) use ($search) {
-                                $qq->where('nama_pasien', 'like', '%' . $search . '%');
-                            });
-                    });
-                };
+            // ===== Nama Pasien (relasi) =====
+            ->addColumn('nama_pasien', function ($order) {
+                return $order->pasien->nama_pasien ?? '-';
             })
-            ->addColumn('nama_pasien', function ($dataOrderLayanan) {
-                return $dataOrderLayanan->pasien->nama_pasien ?? '-';
+            ->filterColumn('nama_pasien', function ($query, $keyword) {
+                $query->whereHas('pasien', function ($q) use ($keyword) {
+                    $q->where('nama_pasien', 'like', "%{$keyword}%");
+                });
             })
-            ->addColumn('nama_metode', function ($dataOrderLayanan) {
-                return $dataOrderLayanan->metodePembayaran->nama_metode ?? '-';
+            ->orderColumn('nama_pasien', function ($query, $order) {
+                $query->orderBy(
+                    Pasien::select('nama_pasien')
+                        ->whereColumn('pasien.id', 'order_layanan.pasien_id')
+                        ->limit(1),
+                    $order
+                );
             })
-            ->addColumn('tanggal_order', function ($dataOrderLayanan) {
-                return $dataOrderLayanan->getFormatTanggalOrder();
+
+            // ===== Metode Pembayaran (relasi) =====
+            ->addColumn('nama_metode', function ($order) {
+                return $order->metodePembayaran->nama_metode ?? '-';
             })
-            ->addColumn('bukti_pembayaran', function ($dataOrderLayanan) {
-                if (!$dataOrderLayanan->bukti_pembayaran) {
+            ->filterColumn('nama_metode', function ($query, $keyword) {
+                $query->whereHas('metodePembayaran', function ($q) use ($keyword) {
+                    $q->where('nama_metode', 'like', "%{$keyword}%");
+                });
+            })
+            ->orderColumn('nama_metode', function ($query, $order) {
+                $query->orderBy(
+                    MetodePembayaran::select('nama_metode')
+                        ->whereColumn('metode_pembayaran.id', 'order_layanan.metode_pembayaran_id')
+                        ->limit(1),
+                    $order
+                );
+            })
+
+            // ===== Tanggal Order (pakai Trait) =====
+            ->editColumn('tanggal_order', function ($order) {
+                return $order->getFormatTanggalOrder();
+            })
+            ->filterColumn('tanggal_order', function ($query, $keyword) {
+                $this->filterTanggal($query, $keyword, 'order_layanan.tanggal_order');
+            })
+
+            // ===== Bukti & Action (tetap sama) =====
+            ->addColumn('bukti_pembayaran', function ($order) {
+                if (!$order->bukti_pembayaran) {
                     return '<span class="text-gray-400 italic">Tidak ada</span>';
                 }
 
-                $url = asset('storage/' . $dataOrderLayanan->bukti_pembayaran);
+                $url = e(asset('storage/' . $order->bukti_pembayaran));
 
                 return '
-                <div class="flex flex-col items-center text-center space-y-2">
-                    <img src="' . e($url) . '" alt="Bukti Pembayaran"
-                         class="w-24 h-24 object-cover rounded-lg border border-gray-300 shadow-sm hover:scale-105 transition-transform duration-200 cursor-pointer"
-                         onclick="window.open(\'' . e($url) . '\', \'_blank\')" />
-                    <a href="' . e($url) . '" target="_blank"
-                       class="text-sky-600 underline text-sm font-medium">
-                        Lihat Bukti Pembayaran
-                    </a>
-                </div>
-            ';
+            <div class="flex flex-col items-center text-center space-y-2">
+                <img src="' . $url . '" alt="Bukti Pembayaran"
+                     class="w-24 h-24 object-cover rounded-lg border border-gray-300 shadow-sm hover:scale-105 transition-transform duration-200 cursor-pointer"
+                     onclick="window.open(\'' . $url . '\', \'_blank\')" />
+                <a href="' . $url . '" target="_blank"
+                   class="text-sky-600 underline text-sm font-medium">
+                    Lihat Bukti Pembayaran
+                </a>
+            </div>
+        ';
             })
-            ->addColumn('action', function ($dataOrderLayanan) {
+            ->addColumn('action', function ($order) {
                 $url = route('kasir.show.kwitansi.transaksi.layanan', [
-                    'kodeTransaksi' => $dataOrderLayanan->kode_transaksi,
+                    'kodeTransaksi' => $order->kode_transaksi,
                 ]);
 
                 return '
-                <button class="cetakKuitansi text-blue-600 hover:text-blue-800"
-                        data-url="' . e($url) . '"
-                        title="Cetak Kwitansi">
-                    <i class="fa-solid fa-print"></i> Cetak Kwitansi
-                </button>
-            ';
+            <button class="cetakKuitansi text-blue-600 hover:text-blue-800"
+                    data-url="' . e($url) . '"
+                    title="Cetak Kwitansi">
+                <i class="fa-solid fa-print"></i> Cetak Kwitansi
+            </button>
+        ';
             })
             ->rawColumns(['bukti_pembayaran', 'action'])
             ->make(true);

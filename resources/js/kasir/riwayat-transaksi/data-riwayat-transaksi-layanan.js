@@ -64,7 +64,12 @@ $(function () {
             },
             { data: "nama_metode", name: "nama_metode" },
             { data: "status_order_layanan", name: "status_order_layanan" },
-            { data: "bukti_pembayaran", name: "bukti_pembayaran" },
+            {
+                data: "bukti_pembayaran",
+                name: "bukti_pembayaran",
+                orderable: false,
+                searchable: false,
+            },
             {
                 data: "action",
                 name: "action",
@@ -84,14 +89,13 @@ $(function () {
         },
     });
 
-    // 🔎 Search
-    $("#riwayat-transaksi-search-input").on("keyup", function () {
+    $("#riwayat-order-layanan-search-input").on("keyup", function () {
         tabel.search(this.value).draw();
     });
 
-    const $info = $("#riwayat-transaksi-custom-info");
-    const $pagination = $("#riwayat-transaksi-custom-pagination");
-    const $perPage = $("#riwayat-transaksi-page-length");
+    const $info = $("#riwayat-order-layanan-custom-info");
+    const $pagination = $("#riwayat-order-layanan-custom-pagination");
+    const $perPage = $("#riwayat-order-layanan-page-length");
 
     function updatePagination() {
         const info = tabel.page.info();
