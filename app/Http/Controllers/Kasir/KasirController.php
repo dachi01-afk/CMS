@@ -20,6 +20,7 @@ use App\Models\Pembayaran;
 use App\Models\PembayaranDetail;
 use App\Models\PenjualanObat;
 use App\Models\User;
+use App\Traits\FilterTanggalDataTable;
 use Carbon\CarbonPeriod;
 use Illuminate\Http\Exceptions\PostTooLargeException;
 use Illuminate\Http\Request;
@@ -36,6 +37,8 @@ use Yajra\DataTables\DataTables;
 
 class KasirController extends Controller
 {
+    use FilterTanggalDataTable;
+
     private function getNamaKasir(): string
     {
         $user = Auth::user();
@@ -907,8 +910,7 @@ class KasirController extends Controller
             'metodePembayaran',
         ])
             ->where('status', 'Sudah Bayar')
-            ->latest()
-            ->get();
+            ->latest();
 
         return DataTables::of($dataPembayaran)
             ->addIndexColumn()
@@ -919,11 +921,16 @@ class KasirController extends Controller
                 optional($p->emr->kunjungan->pasien)->nama_pasien ?? '-'
             )
 
-            ->addColumn(
-                'tanggal_kunjungan',
-                fn($p) =>
-                optional($p->emr->kunjungan)->tanggal_kunjungan ?? '-'
-            )
+            ->addColumn('tanggal_kunjungan', fn($p) => $p->emr?->kunjungan?->tanggal_kunjungan)
+            ->filterColumn('tanggal_kunjungan', function ($query, $keyword) {
+                if (!$this->normalisasiKeywordTanggal($keyword)) {
+                    return; // bukan keyword tanggal
+                }
+
+                $query->whereHas('emr.kunjungan', function ($q) use ($keyword) {
+                    $this->filterTanggal($q, $keyword, 'kunjungan.tanggal_kunjungan');
+                });
+            })
 
             ->addColumn(
                 'no_antrian',

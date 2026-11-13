@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Kasir;
 
 use App\Http\Controllers\Controller;
 use App\Models\MetodePembayaran;
+use App\Models\Pasien;
 use App\Models\PenjualanObat;
+use App\Traits\FilterTanggalDataTable;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -13,6 +15,8 @@ use Yajra\DataTables\Facades\DataTables;
 
 class TransaksiObatController extends Controller
 {
+    use FilterTanggalDataTable;
+
     public function getDataTransaksiObat(Request $request)
     {
         $query = PenjualanObat::with([
@@ -244,54 +248,91 @@ class TransaksiObatController extends Controller
 
     public function getDataRiwayatTransaksiObat()
     {
-        $dataOrderObat = PenjualanObat::with([
-            'pasien',
-            'metodePembayaran'
-        ])->where('status', 'Sudah Bayar')->latest();
+        $dataOrderObat = PenjualanObat::with(['pasien', 'metodePembayaran'])
+            ->select('penjualan_obat.*')
+            ->where('status', 'Sudah Bayar')
+            ->latest();
 
         return DataTables::of($dataOrderObat)
             ->addIndexColumn()
-            ->editColumn('nama_pasien', function ($dataOrderan) {
-                return $dataOrderan->pasien->nama_pasien ?? '-';
+
+            // ===== Nama Pasien =====
+            ->addColumn('nama_pasien', fn($row) => $row->pasien?->nama_pasien ?? '-')
+            ->filterColumn('nama_pasien', function ($query, $keyword) {
+                $query->whereHas('pasien', function ($q) use ($keyword) {
+                    $q->where('nama_pasien', 'like', "%{$keyword}%");
+                });
             })
-            ->editColumn('metode_pembayaran', function ($dataOrderan) {
-                return $dataOrderan->metodePembayaran->nama_metode ?? '-';
+            ->orderColumn('nama_pasien', function ($query, $order) {
+                $query->orderBy(
+                    Pasien::select('nama_pasien')
+                        ->whereColumn('pasien.id', 'penjualan_obat.pasien_id')
+                        ->limit(1),
+                    $order
+                );
             })
-            ->editColumn('tanggal_pembayaran', function ($dataOrderan) {
-                return $dataOrderan->getFormatTanggalTransaksi() ?? '-';
+
+            // ===== Metode Pembayaran =====
+            ->addColumn('metode_pembayaran', fn($row) => $row->metodePembayaran?->nama_metode ?? '-')
+            ->filterColumn('metode_pembayaran', function ($query, $keyword) {
+                $query->whereHas('metodePembayaran', function ($q) use ($keyword) {
+                    $q->where('nama_metode', 'like', "%{$keyword}%");
+                });
             })
-            // ->editColumn('')
-            ->editColumn('bukti_pembayaran', function ($dataOrderan) {
-                if (!$dataOrderan->bukti_pembayaran) {
+            ->orderColumn('metode_pembayaran', function ($query, $order) {
+                $query->orderBy(
+                    MetodePembayaran::select('nama_metode')
+                        ->whereColumn('metode_pembayaran.id', 'penjualan_obat.metode_pembayaran_id')
+                        ->limit(1),
+                    $order
+                );
+            })
+
+            // ===== Tanggal Pembayaran (kolom aslinya: tanggal_transaksi) =====
+            ->addColumn('tanggal_pembayaran', function ($row) {
+                return $row->tanggal_transaksi
+                    ? Carbon::parse($row->tanggal_transaksi)->locale('id')->translatedFormat('d F Y')
+                    : '-';
+            })
+            ->filterColumn('tanggal_pembayaran', function ($query, $keyword) {
+                $this->filterTanggal($query, $keyword, 'penjualan_obat.tanggal_transaksi');
+            })
+            ->orderColumn('tanggal_pembayaran', function ($query, $order) {
+                $query->orderBy('penjualan_obat.tanggal_transaksi', $order);
+            })
+
+            // ===== Bukti & Action (tetap sama) =====
+            ->editColumn('bukti_pembayaran', function ($row) {
+                if (!$row->bukti_pembayaran) {
                     return '<span class="text-gray-400 italic">Tidak ada</span>';
                 }
 
-                $url = asset('storage/' . $dataOrderan->bukti_pembayaran);
+                $url = e(asset('storage/' . $row->bukti_pembayaran));
 
                 return '
-                <div class="flex flex-col items-center text-center space-y-2">
-                    <img src="' . e($url) . '" alt="Bukti Pembayaran"
-                         class="w-24 h-24 object-cover rounded-lg border border-gray-300 shadow-sm hover:scale-105 transition-transform duration-200 cursor-pointer"
-                         onclick="window.open(\'' . e($url) . '\', \'_blank\')" />
-                    <a href="' . e($url) . '" target="_blank"
-                       class="text-sky-600 underline text-sm font-medium">
-                        Lihat Bukti Pembayaran
-                    </a>
-                </div>
-            ';
+            <div class="flex flex-col items-center text-center space-y-2">
+                <img src="' . $url . '" alt="Bukti Pembayaran"
+                     class="w-24 h-24 object-cover rounded-lg border border-gray-300 shadow-sm hover:scale-105 transition-transform duration-200 cursor-pointer"
+                     onclick="window.open(\'' . $url . '\', \'_blank\')" />
+                <a href="' . $url . '" target="_blank"
+                   class="text-sky-600 underline text-sm font-medium">
+                    Lihat Bukti Pembayaran
+                </a>
+            </div>
+        ';
             })
-            ->addColumn('action', function ($dataOrderan) {
-                $url = route('get.show.kwitansi.transaksi.obat', [
-                    'kodeTransaksi' => $dataOrderan->kode_transaksi,
-                ]);
+            ->addColumn('action', function ($row) {
+                $url = e(route('get.show.kwitansi.transaksi.obat', [
+                    'kodeTransaksi' => $row->kode_transaksi,
+                ]));
 
                 return '
-                <button class="cetakKuitansi text-blue-600 hover:text-blue-800"
-                        data-url="' . e($url) . '"
-                        title="Cetak Kwitansi">
-                    <i class="fa-solid fa-print"></i> Cetak Kwitansi
-                </button>
-            ';
+            <button class="cetakKuitansi text-blue-600 hover:text-blue-800"
+                    data-url="' . $url . '"
+                    title="Cetak Kwitansi">
+                <i class="fa-solid fa-print"></i> Cetak Kwitansi
+            </button>
+        ';
             })
             ->rawColumns(['bukti_pembayaran', 'action'])
             ->make(true);

@@ -70,12 +70,11 @@ $(function () {
     function updatePagination() {
         const info = tabel.page.info();
         const currentPage = info.page + 1;
-        const totalPages = info.pages;
+        const totalPages = Math.max(info.pages, 1);
+        const from = info.recordsDisplay === 0 ? 0 : info.start + 1;
 
         $info.text(
-            `Menampilkan ${info.start + 1}–${info.end} dari ${
-                info.recordsDisplay
-            } data (Halaman ${currentPage} dari ${totalPages})`,
+            `Menampilkan ${from}–${info.end} dari ${info.recordsDisplay} data (Halaman ${currentPage} dari ${totalPages})`,
         );
         $pagination.empty();
 
