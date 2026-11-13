@@ -11,7 +11,7 @@ $(function () {
         serverSide: true,
         searching: true,
         ordering: true,
-        pageLength: true,
+        pageLength: 10,
         lengthChange: true,
         info: false,
         ajax: "/order-layanan/get-data-order-layanan",
